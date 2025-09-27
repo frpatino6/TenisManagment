@@ -1,15 +1,26 @@
 import { Request, Response } from 'express';
 import { container, TYPES } from '../../infrastructure/di/container.js';
 import { PublishScheduleUseCase, ManageCourtAvailabilityUseCase, TrackIncomeUseCase, ManageServicesUseCase } from '../../domain/use-cases/index.js';
+import { ScheduleRepository } from '../../domain/repositories/index.js';
 
 export class ProfessorController {
   private publish = container.get<PublishScheduleUseCase>(TYPES.PublishScheduleUseCase);
   private availability = container.get<ManageCourtAvailabilityUseCase>(TYPES.ManageCourtAvailabilityUseCase);
   private income = container.get<TrackIncomeUseCase>(TYPES.TrackIncomeUseCase);
   private services = container.get<ManageServicesUseCase>(TYPES.ManageServicesUseCase);
+  private schedules = container.get<ScheduleRepository>(TYPES.ScheduleRepository);
 
-  getSchedule = async (_req: Request, res: Response) => {
-    return res.json({ items: [] });
+  getSchedule = async (req: Request, res: Response) => {
+    try {
+      const professorId = String(req.query.professorId);
+      const from = req.query.from ? new Date(String(req.query.from)) : undefined;
+      const to = req.query.to ? new Date(String(req.query.to)) : undefined;
+      if (!professorId) return res.status(400).json({ error: 'professorId is required' });
+      const items = await this.schedules.findAvailableByProfessor(professorId, from, to);
+      return res.json({ items });
+    } catch (e) {
+      return res.status(400).json({ error: (e as Error).message });
+    }
   };
 
   createSchedule = async (req: Request, res: Response) => {
@@ -27,8 +38,13 @@ export class ProfessorController {
     return res.json(updated);
   };
 
-  deleteSchedule = async (_req: Request, res: Response) => {
-    return res.status(204).send();
+  deleteSchedule = async (req: Request, res: Response) => {
+    try {
+      await this.schedules.delete(req.params.id);
+      return res.status(204).send();
+    } catch (e) {
+      return res.status(400).json({ error: (e as Error).message });
+    }
   };
 
   incomeReport = async (req: Request, res: Response) => {

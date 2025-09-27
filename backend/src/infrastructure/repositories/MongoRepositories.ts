@@ -154,6 +154,9 @@ export class MongoServiceRepository implements ServiceRepository {
     const docs = await ServiceModel.find({}).lean();
     return docs.map(d => ({ id: d._id.toString(), name: d.name, description: d.description, price: d.price, category: d.category }));
   }
+  async delete(id: string): Promise<void> {
+    await ServiceModel.findByIdAndDelete(id);
+  }
 }
 
 export class MongoReportRepository implements ReportRepository {

@@ -6,6 +6,9 @@ export class ProfessorController {
         this.income = container.get(TYPES.TrackIncomeUseCase);
         this.services = container.get(TYPES.ManageServicesUseCase);
         this.schedules = container.get(TYPES.ScheduleRepository);
+        this.serviceRepo = container.get(TYPES.ServiceRepository);
+        this.payments = container.get(TYPES.PaymentRepository);
+        this.students = container.get(TYPES.StudentRepository);
         this.getSchedule = async (req, res) => {
             try {
                 const professorId = String(req.query.professorId);
@@ -59,6 +62,28 @@ export class ProfessorController {
             if (!updated)
                 return res.status(404).json({ error: 'Not found' });
             return res.json(updated);
+        };
+        this.listServices = async (_req, res) => {
+            const items = await this.serviceRepo.list();
+            return res.json({ items });
+        };
+        this.deleteService = async (req, res) => {
+            await this.serviceRepo.delete(req.params.id);
+            return res.status(204).send();
+        };
+        this.createPayment = async (req, res) => {
+            try {
+                const { studentId, professorId, amount, date, method, concept } = req.body ?? {};
+                if (!studentId || !professorId || !amount || !date || !method || !concept) {
+                    return res.status(400).json({ error: 'Missing required fields' });
+                }
+                const payment = await this.payments.create({ studentId, professorId, amount, date: new Date(date), method, concept });
+                await this.students.updateBalance(studentId, -Math.abs(amount));
+                return res.status(201).json(payment);
+            }
+            catch (e) {
+                return res.status(400).json({ error: e.message });
+            }
         };
     }
 }

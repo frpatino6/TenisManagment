@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { container, TYPES } from '../../infrastructure/di/container.js';
 import { PublishScheduleUseCase, ManageCourtAvailabilityUseCase, TrackIncomeUseCase, ManageServicesUseCase } from '../../domain/use-cases/index.js';
-import { ScheduleRepository } from '../../domain/repositories/index.js';
+import { ScheduleRepository, ServiceRepository } from '../../domain/repositories/index.js';
 
 export class ProfessorController {
   private publish = container.get<PublishScheduleUseCase>(TYPES.PublishScheduleUseCase);
@@ -9,6 +9,9 @@ export class ProfessorController {
   private income = container.get<TrackIncomeUseCase>(TYPES.TrackIncomeUseCase);
   private services = container.get<ManageServicesUseCase>(TYPES.ManageServicesUseCase);
   private schedules = container.get<ScheduleRepository>(TYPES.ScheduleRepository);
+  private serviceRepo = container.get<ServiceRepository>(TYPES.ServiceRepository);
+  private payments = container.get<any>(TYPES.PaymentRepository);
+  private students = container.get<any>(TYPES.StudentRepository);
 
   getSchedule = async (req: Request, res: Response) => {
     try {
@@ -63,6 +66,30 @@ export class ProfessorController {
     const updated = await this.services.update(req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: 'Not found' });
     return res.json(updated);
+  };
+
+  listServices = async (_req: Request, res: Response) => {
+    const items = await this.serviceRepo.list();
+    return res.json({ items });
+  };
+
+  deleteService = async (req: Request, res: Response) => {
+    await this.serviceRepo.delete(req.params.id);
+    return res.status(204).send();
+  };
+
+  createPayment = async (req: Request, res: Response) => {
+    try {
+      const { studentId, professorId, amount, date, method, concept } = req.body ?? {};
+      if (!studentId || !professorId || !amount || !date || !method || !concept) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+      const payment = await this.payments.create({ studentId, professorId, amount, date: new Date(date), method, concept });
+      await this.students.updateBalance(studentId, -Math.abs(amount));
+      return res.status(201).json(payment);
+    } catch (e) {
+      return res.status(400).json({ error: (e as Error).message });
+    }
   };
 }
 

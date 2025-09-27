@@ -145,6 +145,9 @@ export class MongoServiceRepository {
         const docs = await ServiceModel.find({}).lean();
         return docs.map(d => ({ id: d._id.toString(), name: d.name, description: d.description, price: d.price, category: d.category }));
     }
+    async delete(id) {
+        await ServiceModel.findByIdAndDelete(id);
+    }
 }
 export class MongoReportRepository {
     async getProfessorIncome(professorId, from, to) {

@@ -1,5 +1,5 @@
 import { Types, PipelineStage } from 'mongoose';
-import { ProfessorRepository, StudentRepository, ScheduleRepository, BookingRepository, PaymentRepository, ServiceRepository, ReportRepository } from '../../domain/repositories/index.js';
+import { ProfessorRepository, StudentRepository, ScheduleRepository, BookingRepository, PaymentRepository, ServiceRepository, ReportRepository, ServiceRequestRepository } from '../../domain/repositories/index.js';
 import { Professor } from '../../domain/entities/Professor.js';
 import { Student } from '../../domain/entities/Student.js';
 import { Schedule } from '../../domain/entities/Schedule.js';
@@ -12,6 +12,8 @@ import { ScheduleModel } from '../database/models/ScheduleModel.js';
 import { BookingModel } from '../database/models/BookingModel.js';
 import { PaymentModel } from '../database/models/PaymentModel.js';
 import { ServiceModel } from '../database/models/ServiceModel.js';
+import { ServiceRequestModel } from '../database/models/ServiceRequestModel.js';
+import { ServiceRequest } from '../../domain/entities/ServiceRequest.js';
 
 export class MongoProfessorRepository implements ProfessorRepository {
   async create(professor: Omit<Professor, 'id'>): Promise<Professor> {
@@ -27,18 +29,17 @@ export class MongoProfessorRepository implements ProfessorRepository {
     return doc ? { id: doc._id.toString(), name: doc.name, email: doc.email, phone: doc.phone, specialties: doc.specialties, hourlyRate: doc.hourlyRate } : null;
   }
   async listStudents(professorId: string): Promise<Student[]> {
-    // Placeholder: join via bookings or professor-student relation if added later
-    const bookings = await BookingModel.find({}).populate('studentId').lean();
-    const seen = new Set<string>();
-    const students: Student[] = [];
-    for (const b of bookings) {
-      const s: any = b.studentId;
-      if (s && !seen.has(s._id.toString())) {
-        students.push({ id: s._id.toString(), name: s.name, email: s.email, phone: s.phone, membershipType: s.membershipType, balance: s.balance });
-        seen.add(s._id.toString());
-      }
-    }
-    return students;
+    const pipeline: any[] = [
+      { $match: { professorId: new Types.ObjectId(professorId) } },
+      { $lookup: { from: 'bookings', localField: '_id', foreignField: 'scheduleId', as: 'bookings' } },
+      { $unwind: '$bookings' },
+      { $lookup: { from: 'students', localField: 'bookings.studentId', foreignField: '_id', as: 'student' } },
+      { $unwind: '$student' },
+      { $group: { _id: '$student._id', doc: { $first: '$student' } } },
+      { $replaceWith: '$doc' }
+    ];
+    const rows: Array<any> = await (ScheduleModel as any).aggregate(pipeline);
+    return rows.map(s => ({ id: s._id.toString(), name: s.name, email: s.email, phone: s.phone, membershipType: s.membershipType, balance: s.balance }));
   }
   async update(id: string, update: Partial<Professor>): Promise<Professor | null> {
     const doc = await ProfessorModel.findByIdAndUpdate(id, update, { new: true }).lean();
@@ -170,6 +171,24 @@ export class MongoReportRepository implements ReportRepository {
     const rows: Array<{ date: string; amount: number }> = await PaymentModel.aggregate(pipeline);
     const total = rows.reduce((acc, r) => acc + r.amount, 0);
     return { total, breakdown: rows };
+  }
+}
+
+export class MongoServiceRequestRepository implements ServiceRequestRepository {
+  async create(request: Omit<ServiceRequest, 'id' | 'createdAt'>): Promise<ServiceRequest> {
+    const created = await ServiceRequestModel.create({
+      ...request,
+      studentId: new Types.ObjectId(request.studentId),
+      serviceId: new Types.ObjectId(request.serviceId)
+    });
+    return {
+      id: created._id.toString(),
+      studentId: created.studentId.toString(),
+      serviceId: created.serviceId.toString(),
+      notes: created.notes,
+      status: created.status,
+      createdAt: created.createdAt
+    };
   }
 }
 

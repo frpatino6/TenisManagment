@@ -59,3 +59,9 @@ export const PaymentCreateSchema = z.object({
   concept: z.string().min(2)
 });
 
+export const RequestServiceSchema = z.object({
+  studentId: z.string().min(1),
+  serviceId: z.string().min(1),
+  notes: z.string().min(1).optional()
+});
+

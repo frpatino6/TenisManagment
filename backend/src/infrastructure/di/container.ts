@@ -1,6 +1,6 @@
 import { Container } from 'inversify';
-import { MongoProfessorRepository, MongoStudentRepository, MongoScheduleRepository, MongoBookingRepository, MongoPaymentRepository, MongoServiceRepository, MongoReportRepository } from '../repositories/MongoRepositories.js';
-import { ProfessorRepository, StudentRepository, ScheduleRepository, BookingRepository, PaymentRepository, ServiceRepository, ReportRepository } from '../../domain/repositories/index.js';
+import { MongoProfessorRepository, MongoStudentRepository, MongoScheduleRepository, MongoBookingRepository, MongoPaymentRepository, MongoServiceRepository, MongoReportRepository, MongoServiceRequestRepository } from '../repositories/MongoRepositories.js';
+import { ProfessorRepository, StudentRepository, ScheduleRepository, BookingRepository, PaymentRepository, ServiceRepository, ReportRepository, ServiceRequestRepository } from '../../domain/repositories/index.js';
 import { PublishSchedule, ManageCourtAvailability, TrackIncome, ManageServices } from '../../domain/use-cases/ProfessorUseCases.js';
 import { BookLesson, CheckCourtAvailability, ViewBalance, ViewPaymentHistory, RequestService } from '../../domain/use-cases/StudentUseCases.js';
 import { PublishScheduleUseCase, ManageCourtAvailabilityUseCase, TrackIncomeUseCase, ManageServicesUseCase, BookLessonUseCase, CheckCourtAvailabilityUseCase, ViewBalanceUseCase, ViewPaymentHistoryUseCase, RequestServiceUseCase } from '../../domain/use-cases/index.js';
@@ -14,6 +14,7 @@ export const TYPES = {
   PaymentRepository: Symbol.for('PaymentRepository'),
   ServiceRepository: Symbol.for('ServiceRepository'),
   ReportRepository: Symbol.for('ReportRepository'),
+  ServiceRequestRepository: Symbol.for('ServiceRequestRepository'),
   // Use cases
   PublishScheduleUseCase: Symbol.for('PublishScheduleUseCase'),
   ManageCourtAvailabilityUseCase: Symbol.for('ManageCourtAvailabilityUseCase'),
@@ -37,6 +38,7 @@ container.bind<BookingRepository>(TYPES.BookingRepository).toConstantValue(new M
 container.bind<PaymentRepository>(TYPES.PaymentRepository).toConstantValue(new MongoPaymentRepository());
 container.bind<ServiceRepository>(TYPES.ServiceRepository).toConstantValue(new MongoServiceRepository());
 container.bind<ReportRepository>(TYPES.ReportRepository).toConstantValue(new MongoReportRepository());
+container.bind<ServiceRequestRepository>(TYPES.ServiceRequestRepository).toConstantValue(new MongoServiceRequestRepository());
 
 // services
 container.bind<JwtService>(TYPES.JwtService).toConstantValue(new JwtService(process.env.JWT_SECRET || 'dev_secret'));
@@ -50,5 +52,5 @@ container.bind<BookLessonUseCase>(TYPES.BookLessonUseCase).toDynamicValue(ctx =>
 container.bind<CheckCourtAvailabilityUseCase>(TYPES.CheckCourtAvailabilityUseCase).toDynamicValue(ctx => new CheckCourtAvailability(ctx.container.get(TYPES.ScheduleRepository)));
 container.bind<ViewBalanceUseCase>(TYPES.ViewBalanceUseCase).toDynamicValue(ctx => new ViewBalance(ctx.container.get(TYPES.StudentRepository)));
 container.bind<ViewPaymentHistoryUseCase>(TYPES.ViewPaymentHistoryUseCase).toDynamicValue(ctx => new ViewPaymentHistory(ctx.container.get(TYPES.PaymentRepository)));
-container.bind<RequestServiceUseCase>(TYPES.RequestServiceUseCase).toDynamicValue(() => new RequestService());
+container.bind<RequestServiceUseCase>(TYPES.RequestServiceUseCase).toDynamicValue(ctx => new RequestService(ctx.container.get(TYPES.ServiceRequestRepository)));
 

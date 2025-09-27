@@ -5,6 +5,7 @@ import { ScheduleModel } from '../database/models/ScheduleModel.js';
 import { BookingModel } from '../database/models/BookingModel.js';
 import { PaymentModel } from '../database/models/PaymentModel.js';
 import { ServiceModel } from '../database/models/ServiceModel.js';
+import { ServiceRequestModel } from '../database/models/ServiceRequestModel.js';
 export class MongoProfessorRepository {
     async create(professor) {
         const created = await ProfessorModel.create(professor);
@@ -19,18 +20,17 @@ export class MongoProfessorRepository {
         return doc ? { id: doc._id.toString(), name: doc.name, email: doc.email, phone: doc.phone, specialties: doc.specialties, hourlyRate: doc.hourlyRate } : null;
     }
     async listStudents(professorId) {
-        // Placeholder: join via bookings or professor-student relation if added later
-        const bookings = await BookingModel.find({}).populate('studentId').lean();
-        const seen = new Set();
-        const students = [];
-        for (const b of bookings) {
-            const s = b.studentId;
-            if (s && !seen.has(s._id.toString())) {
-                students.push({ id: s._id.toString(), name: s.name, email: s.email, phone: s.phone, membershipType: s.membershipType, balance: s.balance });
-                seen.add(s._id.toString());
-            }
-        }
-        return students;
+        const pipeline = [
+            { $match: { professorId: new Types.ObjectId(professorId) } },
+            { $lookup: { from: 'bookings', localField: '_id', foreignField: 'scheduleId', as: 'bookings' } },
+            { $unwind: '$bookings' },
+            { $lookup: { from: 'students', localField: 'bookings.studentId', foreignField: '_id', as: 'student' } },
+            { $unwind: '$student' },
+            { $group: { _id: '$student._id', doc: { $first: '$student' } } },
+            { $replaceWith: '$doc' }
+        ];
+        const rows = await ScheduleModel.aggregate(pipeline);
+        return rows.map(s => ({ id: s._id.toString(), name: s.name, email: s.email, phone: s.phone, membershipType: s.membershipType, balance: s.balance }));
     }
     async update(id, update) {
         const doc = await ProfessorModel.findByIdAndUpdate(id, update, { new: true }).lean();
@@ -160,6 +160,23 @@ export class MongoReportRepository {
         const rows = await PaymentModel.aggregate(pipeline);
         const total = rows.reduce((acc, r) => acc + r.amount, 0);
         return { total, breakdown: rows };
+    }
+}
+export class MongoServiceRequestRepository {
+    async create(request) {
+        const created = await ServiceRequestModel.create({
+            ...request,
+            studentId: new Types.ObjectId(request.studentId),
+            serviceId: new Types.ObjectId(request.serviceId)
+        });
+        return {
+            id: created._id.toString(),
+            studentId: created.studentId.toString(),
+            serviceId: created.serviceId.toString(),
+            notes: created.notes,
+            status: created.status,
+            createdAt: created.createdAt
+        };
     }
 }
 //# sourceMappingURL=MongoRepositories.js.map

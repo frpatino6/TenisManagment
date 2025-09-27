@@ -78,6 +78,17 @@ export class ProfessorController {
     return res.status(204).send();
   };
 
+  listStudents = async (req: Request, res: Response) => {
+    try {
+      const professorId = String(req.query.professorId);
+      if (!professorId) return res.status(400).json({ error: 'professorId is required' });
+      const items = await this.students.listStudents(professorId);
+      return res.json({ items });
+    } catch (e) {
+      return res.status(400).json({ error: (e as Error).message });
+    }
+  };
+
   createPayment = async (req: Request, res: Response) => {
     try {
       const { studentId, professorId, amount, date, method, concept } = req.body ?? {};

@@ -13,6 +13,7 @@ router.post('/schedule', validateBody(PublishScheduleSchema), controller.createS
 router.put('/schedule/:id', validateBody(UpdateAvailabilitySchema), controller.updateSchedule);
 router.delete('/schedule/:id', controller.deleteSchedule);
 router.get('/income-report', controller.incomeReport);
+router.get('/students', controller.listStudents);
 router.post('/services', validateBody(ServiceCreateSchema), controller.createService);
 router.put('/services/:id', validateBody(ServiceUpdateSchema), controller.updateService);
 router.get('/services', controller.listServices);

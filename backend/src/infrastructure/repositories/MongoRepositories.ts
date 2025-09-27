@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import { Types, PipelineStage } from 'mongoose';
 import { ProfessorRepository, StudentRepository, ScheduleRepository, BookingRepository, PaymentRepository, ServiceRepository, ReportRepository } from '../../domain/repositories/index.js';
 import { Professor } from '../../domain/entities/Professor.js';
 import { Student } from '../../domain/entities/Student.js';
@@ -114,8 +114,20 @@ export class MongoBookingRepository implements BookingRepository {
 
 export class MongoPaymentRepository implements PaymentRepository {
   async create(payment: Omit<Payment, 'id'>): Promise<Payment> {
-    const created = await PaymentModel.create({ ...payment, studentId: new Types.ObjectId(payment.studentId) });
-    return { id: created._id.toString(), studentId: created.studentId.toString(), amount: created.amount, date: created.date, method: created.method, concept: created.concept };
+    const created = await PaymentModel.create({
+      ...payment,
+      studentId: new Types.ObjectId(payment.studentId),
+      professorId: new Types.ObjectId(payment.professorId)
+    });
+    return {
+      id: created._id.toString(),
+      studentId: created.studentId.toString(),
+      professorId: created.professorId.toString(),
+      amount: created.amount,
+      date: created.date,
+      method: created.method,
+      concept: created.concept
+    };
   }
   async listByStudent(studentId: string, from?: Date, to?: Date): Promise<Payment[]> {
     const query: any = { studentId: new Types.ObjectId(studentId) };
@@ -125,7 +137,7 @@ export class MongoPaymentRepository implements PaymentRepository {
       if (to) query.date.$lte = to;
     }
     const docs = await PaymentModel.find(query).sort({ date: -1 }).lean();
-    return docs.map(d => ({ id: d._id.toString(), studentId: d.studentId.toString(), amount: d.amount, date: d.date, method: d.method, concept: d.concept }));
+    return docs.map(d => ({ id: d._id.toString(), studentId: d.studentId.toString(), professorId: d.professorId.toString(), amount: d.amount, date: d.date, method: d.method, concept: d.concept }));
   }
 }
 
@@ -146,11 +158,11 @@ export class MongoServiceRepository implements ServiceRepository {
 
 export class MongoReportRepository implements ReportRepository {
   async getProfessorIncome(professorId: string, from: Date, to: Date): Promise<{ total: number; breakdown: Array<{ date: string; amount: number }> }> {
-    const pipeline = [
-      { $match: { date: { $gte: from, $lte: to } } },
+    const pipeline: PipelineStage[] = [
+      { $match: { professorId: new Types.ObjectId(professorId), date: { $gte: from, $lte: to } } },
       { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } }, amount: { $sum: '$amount' } } },
       { $project: { _id: 0, date: '$_id', amount: 1 } },
-      { $sort: { date: 1 } }
+      { $sort: { date: 1 as 1 } }
     ];
     const rows: Array<{ date: string; amount: number }> = await PaymentModel.aggregate(pipeline);
     const total = rows.reduce((acc, r) => acc + r.amount, 0);

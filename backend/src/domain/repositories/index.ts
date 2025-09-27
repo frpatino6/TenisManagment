@@ -4,6 +4,7 @@ import { Schedule } from '../entities/Schedule.js';
 import { Booking } from '../entities/Booking.js';
 import { Payment } from '../entities/Payment.js';
 import { Service } from '../entities/Service.js';
+import { ServiceRequest } from '../entities/ServiceRequest.js';
 
 export interface ProfessorRepository {
   create(professor: Omit<Professor, 'id'>): Promise<Professor>;
@@ -50,5 +51,9 @@ export interface ServiceRepository {
 
 export interface ReportRepository {
   getProfessorIncome(professorId: string, from: Date, to: Date): Promise<{ total: number; breakdown: Array<{ date: string; amount: number }> }>;
+}
+
+export interface ServiceRequestRepository {
+  create(request: Omit<ServiceRequest, 'id' | 'createdAt'>): Promise<ServiceRequest>;
 }
 

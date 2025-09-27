@@ -2,7 +2,7 @@ import { Schedule } from '../entities/Schedule.js';
 import { Booking } from '../entities/Booking.js';
 import { Payment } from '../entities/Payment.js';
 import { BookLessonUseCase, CheckCourtAvailabilityUseCase, ViewBalanceUseCase, ViewPaymentHistoryUseCase, RequestServiceUseCase } from './index.js';
-import { ScheduleRepository, BookingRepository, StudentRepository, PaymentRepository } from '../repositories/index.js';
+import { ScheduleRepository, BookingRepository, StudentRepository, PaymentRepository, ServiceRequestRepository } from '../repositories/index.js';
 
 export class CheckCourtAvailability implements CheckCourtAvailabilityUseCase {
   constructor(private readonly schedules: ScheduleRepository) {}
@@ -29,7 +29,9 @@ export class ViewPaymentHistory implements ViewPaymentHistoryUseCase {
 }
 
 export class RequestService implements RequestServiceUseCase {
-  async execute(_args: { studentId: string; serviceId: string; notes?: string }): Promise<{ status: 'requested' }> {
+  constructor(private readonly serviceRequests: ServiceRequestRepository) {}
+  async execute(args: { studentId: string; serviceId: string; notes?: string }): Promise<{ status: 'requested' }> {
+    await this.serviceRequests.create({ studentId: args.studentId, serviceId: args.serviceId, notes: args.notes, status: 'requested' });
     return { status: 'requested' };
   }
 }

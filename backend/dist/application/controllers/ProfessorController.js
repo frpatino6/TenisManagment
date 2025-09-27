@@ -71,6 +71,18 @@ export class ProfessorController {
             await this.serviceRepo.delete(req.params.id);
             return res.status(204).send();
         };
+        this.listStudents = async (req, res) => {
+            try {
+                const professorId = String(req.query.professorId);
+                if (!professorId)
+                    return res.status(400).json({ error: 'professorId is required' });
+                const items = await this.students.listStudents(professorId);
+                return res.json({ items });
+            }
+            catch (e) {
+                return res.status(400).json({ error: e.message });
+            }
+        };
         this.createPayment = async (req, res) => {
             try {
                 const { studentId, professorId, amount, date, method, concept } = req.body ?? {};

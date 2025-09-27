@@ -1,5 +1,5 @@
 import { Container } from 'inversify';
-import { MongoProfessorRepository, MongoStudentRepository, MongoScheduleRepository, MongoBookingRepository, MongoPaymentRepository, MongoServiceRepository, MongoReportRepository } from '../repositories/MongoRepositories.js';
+import { MongoProfessorRepository, MongoStudentRepository, MongoScheduleRepository, MongoBookingRepository, MongoPaymentRepository, MongoServiceRepository, MongoReportRepository, MongoServiceRequestRepository } from '../repositories/MongoRepositories.js';
 import { PublishSchedule, ManageCourtAvailability, TrackIncome, ManageServices } from '../../domain/use-cases/ProfessorUseCases.js';
 import { BookLesson, CheckCourtAvailability, ViewBalance, ViewPaymentHistory, RequestService } from '../../domain/use-cases/StudentUseCases.js';
 import { JwtService } from '../services/JwtService.js';
@@ -11,6 +11,7 @@ export const TYPES = {
     PaymentRepository: Symbol.for('PaymentRepository'),
     ServiceRepository: Symbol.for('ServiceRepository'),
     ReportRepository: Symbol.for('ReportRepository'),
+    ServiceRequestRepository: Symbol.for('ServiceRequestRepository'),
     // Use cases
     PublishScheduleUseCase: Symbol.for('PublishScheduleUseCase'),
     ManageCourtAvailabilityUseCase: Symbol.for('ManageCourtAvailabilityUseCase'),
@@ -32,6 +33,7 @@ container.bind(TYPES.BookingRepository).toConstantValue(new MongoBookingReposito
 container.bind(TYPES.PaymentRepository).toConstantValue(new MongoPaymentRepository());
 container.bind(TYPES.ServiceRepository).toConstantValue(new MongoServiceRepository());
 container.bind(TYPES.ReportRepository).toConstantValue(new MongoReportRepository());
+container.bind(TYPES.ServiceRequestRepository).toConstantValue(new MongoServiceRequestRepository());
 // services
 container.bind(TYPES.JwtService).toConstantValue(new JwtService(process.env.JWT_SECRET || 'dev_secret'));
 // use cases
@@ -43,5 +45,5 @@ container.bind(TYPES.BookLessonUseCase).toDynamicValue(ctx => new BookLesson(ctx
 container.bind(TYPES.CheckCourtAvailabilityUseCase).toDynamicValue(ctx => new CheckCourtAvailability(ctx.container.get(TYPES.ScheduleRepository)));
 container.bind(TYPES.ViewBalanceUseCase).toDynamicValue(ctx => new ViewBalance(ctx.container.get(TYPES.StudentRepository)));
 container.bind(TYPES.ViewPaymentHistoryUseCase).toDynamicValue(ctx => new ViewPaymentHistory(ctx.container.get(TYPES.PaymentRepository)));
-container.bind(TYPES.RequestServiceUseCase).toDynamicValue(() => new RequestService());
+container.bind(TYPES.RequestServiceUseCase).toDynamicValue(ctx => new RequestService(ctx.container.get(TYPES.ServiceRequestRepository)));
 //# sourceMappingURL=container.js.map

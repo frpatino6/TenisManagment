@@ -28,7 +28,11 @@ export class ViewPaymentHistory {
     }
 }
 export class RequestService {
-    async execute(_args) {
+    constructor(serviceRequests) {
+        this.serviceRequests = serviceRequests;
+    }
+    async execute(args) {
+        await this.serviceRequests.create({ studentId: args.studentId, serviceId: args.serviceId, notes: args.notes, status: 'requested' });
         return { status: 'requested' };
     }
 }

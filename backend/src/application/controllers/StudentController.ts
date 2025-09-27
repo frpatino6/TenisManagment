@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { container, TYPES } from '../../infrastructure/di/container.js';
 import { BookLessonUseCase, CheckCourtAvailabilityUseCase, ViewBalanceUseCase, ViewPaymentHistoryUseCase, RequestServiceUseCase } from '../../domain/use-cases/index.js';
+import { BookingRepository } from '../../domain/repositories/index.js';
 
 export class StudentController {
   private bookLesson = container.get<BookLessonUseCase>(TYPES.BookLessonUseCase);
@@ -8,6 +9,7 @@ export class StudentController {
   private balance = container.get<ViewBalanceUseCase>(TYPES.ViewBalanceUseCase);
   private paymentHistory = container.get<ViewPaymentHistoryUseCase>(TYPES.ViewPaymentHistoryUseCase);
   private requestServiceUseCase = container.get<RequestServiceUseCase>(TYPES.RequestServiceUseCase);
+  private bookings = container.get<BookingRepository>(TYPES.BookingRepository);
 
   availableSchedules = async (req: Request, res: Response) => {
     try {
@@ -27,8 +29,15 @@ export class StudentController {
     }
   };
 
-  listBookings = async (_req: Request, res: Response) => {
-    return res.json({ items: [] });
+  listBookings = async (req: Request, res: Response) => {
+    try {
+      const studentId = String(req.query.studentId);
+      if (!studentId) return res.status(400).json({ error: 'studentId is required' });
+      const items = await this.bookings.listByStudent(studentId);
+      return res.json({ items });
+    } catch (e) {
+      return res.status(400).json({ error: (e as Error).message });
+    }
   };
 
   getBalance = async (req: Request, res: Response) => {

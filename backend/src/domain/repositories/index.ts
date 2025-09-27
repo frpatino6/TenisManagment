@@ -38,12 +38,14 @@ export interface BookingRepository {
 export interface PaymentRepository {
   create(payment: Omit<Payment, 'id'>): Promise<Payment>;
   listByStudent(studentId: string, from?: Date, to?: Date): Promise<Payment[]>;
+  // Optional: could add listByProfessor if needed later
 }
 
 export interface ServiceRepository {
   create(service: Omit<Service, 'id'>): Promise<Service>;
   update(id: string, update: Partial<Service>): Promise<Service | null>;
   list(): Promise<Service[]>;
+  delete(id: string): Promise<void>;
 }
 
 export interface ReportRepository {

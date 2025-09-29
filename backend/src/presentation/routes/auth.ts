@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { AuthController } from '../../application/controllers/AuthController.js';
-import { JwtService } from '../../infrastructure/services/JwtService.js';
-import { validateBody } from '../../application/middleware/validation.js';
-import { LoginSchema, RegisterSchema } from '../../application/dtos/auth.js';
+import { AuthController } from '../../application/controllers/AuthController';
+import { JwtService } from '../../infrastructure/services/JwtService';
+import { validateBody } from '../../application/middleware/validation';
+import { LoginSchema, RegisterSchema } from '../../application/dtos/auth';
 
 const router = Router();
 const jwt = new JwtService(process.env.JWT_SECRET || 'dev_secret');

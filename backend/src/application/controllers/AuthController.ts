@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
-import { BcryptPasswordService } from '../../infrastructure/services/PasswordService.js';
-import { JwtService } from '../../infrastructure/services/JwtService.js';
-import { AuthUserModel } from '../../infrastructure/database/models/AuthUserModel.js';
-import { ProfessorModel } from '../../infrastructure/database/models/ProfessorModel.js';
-import { StudentModel } from '../../infrastructure/database/models/StudentModel.js';
-import { LoginSchema, RegisterSchema } from '../dtos/auth.js';
+import { BcryptPasswordService } from '../../infrastructure/services/PasswordService';
+import { JwtService } from '../../infrastructure/services/JwtService';
+import { AuthUserModel } from '../../infrastructure/database/models/AuthUserModel';
+import { ProfessorModel } from '../../infrastructure/database/models/ProfessorModel';
+import { StudentModel } from '../../infrastructure/database/models/StudentModel';
+import { LoginSchema, RegisterSchema } from '../dtos/auth';
 
 export class AuthController {
-  constructor(private readonly jwt: JwtService, private readonly passwordSvc = new BcryptPasswordService()) {}
+  constructor(private readonly jwt: JwtService, private readonly passwordSvc = new BcryptPasswordService()) { }
 
   register = async (req: Request, res: Response) => {
     const parsed = RegisterSchema.safeParse(req.body);
@@ -52,7 +52,7 @@ export class AuthController {
     const { email, password } = parsed.data;
     const user = await AuthUserModel.findOne({ email });
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-    const valid = await this.passwordSvc.compare(password, user.passwordHash);
+    const valid = await this.passwordSvc.compare(password, user.passwordHash || '');
     if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
     const access = this.jwt.signAccess({ sub: user._id.toString(), role: user.role });
     const refresh = this.jwt.signRefresh({ sub: user._id.toString(), role: user.role });

@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "147485418255",
+    "project_id": "tennis-management-fcd54",
+    "storage_bucket": "tennis-management-fcd54.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:147485418255:android:391210836c25854eae147a",
+        "android_client_info": {
+          "package_name": "com.tennismanagement.tennis_management"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "147485418255-5l66cjpub7hfmf6kt5ji929n9o3no5q3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCpTj2lrD-ew7oB-FlByrv9JVbb9FTwfQQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "147485418255-5l66cjpub7hfmf6kt5ji929n9o3no5q3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

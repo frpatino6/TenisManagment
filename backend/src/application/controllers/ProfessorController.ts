@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { container, TYPES } from '../../infrastructure/di/container.js';
-import { PublishScheduleUseCase, ManageCourtAvailabilityUseCase, TrackIncomeUseCase, ManageServicesUseCase } from '../../domain/use-cases/index.js';
-import { ScheduleRepository, ServiceRepository } from '../../domain/repositories/index.js';
+import { container, TYPES } from '../../infrastructure/di/container';
+import { PublishScheduleUseCase, ManageCourtAvailabilityUseCase, TrackIncomeUseCase, ManageServicesUseCase } from '../../domain/use-cases/index';
+import { ScheduleRepository, ServiceRepository, ProfessorRepository } from '../../domain/repositories/index';
 
 export class ProfessorController {
   private publish = container.get<PublishScheduleUseCase>(TYPES.PublishScheduleUseCase);
@@ -12,6 +12,7 @@ export class ProfessorController {
   private serviceRepo = container.get<ServiceRepository>(TYPES.ServiceRepository);
   private payments = container.get<any>(TYPES.PaymentRepository);
   private students = container.get<any>(TYPES.StudentRepository);
+  private professors = container.get<ProfessorRepository>(TYPES.ProfessorRepository);
 
   getSchedule = async (req: Request, res: Response) => {
     try {
@@ -82,7 +83,7 @@ export class ProfessorController {
     try {
       const professorId = String(req.query.professorId);
       if (!professorId) return res.status(400).json({ error: 'professorId is required' });
-      const items = await this.students.listStudents(professorId);
+      const items = await this.professors.listStudents(professorId);
       return res.json({ items });
     } catch (e) {
       return res.status(400).json({ error: (e as Error).message });

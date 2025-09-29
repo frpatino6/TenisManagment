@@ -1,8 +1,8 @@
-import { Schedule } from '../entities/Schedule.js';
-import { Booking } from '../entities/Booking.js';
-import { Payment } from '../entities/Payment.js';
-import { BookLessonUseCase, CheckCourtAvailabilityUseCase, ViewBalanceUseCase, ViewPaymentHistoryUseCase, RequestServiceUseCase } from './index.js';
-import { ScheduleRepository, BookingRepository, StudentRepository, PaymentRepository, ServiceRequestRepository } from '../repositories/index.js';
+import { Schedule } from '../entities/Schedule';
+import { Booking } from '../entities/Booking';
+import { Payment } from '../entities/Payment';
+import { BookLessonUseCase, CheckCourtAvailabilityUseCase, ViewBalanceUseCase, ViewPaymentHistoryUseCase, RequestServiceUseCase } from './index';
+import { ScheduleRepository, BookingRepository, StudentRepository, PaymentRepository, ServiceRequestRepository } from '../repositories/index';
 
 export class CheckCourtAvailability implements CheckCourtAvailabilityUseCase {
   constructor(private readonly schedules: ScheduleRepository) {}

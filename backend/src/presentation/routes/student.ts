@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { StudentController } from '../../application/controllers/StudentController.js';
-import { JwtService } from '../../infrastructure/services/JwtService.js';
-import { authMiddleware, requireRole } from '../../application/middleware/auth.js';
-import { validateBody } from '../../application/middleware/validation.js';
-import { BookLessonSchema, RequestServiceSchema } from '../../application/dtos/auth.js';
+import { StudentController } from '../../application/controllers/StudentController';
+import { JwtService } from '../../infrastructure/services/JwtService';
+import { authMiddleware, requireRole } from '../../application/middleware/auth';
+import { validateBody } from '../../application/middleware/validation';
+import { BookLessonSchema, RequestServiceSchema } from '../../application/dtos/auth';
 
 const router = Router();
 const jwt = new JwtService(process.env.JWT_SECRET || 'dev_secret');

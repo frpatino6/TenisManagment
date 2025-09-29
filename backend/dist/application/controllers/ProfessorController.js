@@ -1,14 +1,18 @@
-import { container, TYPES } from '../../infrastructure/di/container.js';
-export class ProfessorController {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ProfessorController = void 0;
+const container_1 = require("../../infrastructure/di/container");
+class ProfessorController {
     constructor() {
-        this.publish = container.get(TYPES.PublishScheduleUseCase);
-        this.availability = container.get(TYPES.ManageCourtAvailabilityUseCase);
-        this.income = container.get(TYPES.TrackIncomeUseCase);
-        this.services = container.get(TYPES.ManageServicesUseCase);
-        this.schedules = container.get(TYPES.ScheduleRepository);
-        this.serviceRepo = container.get(TYPES.ServiceRepository);
-        this.payments = container.get(TYPES.PaymentRepository);
-        this.students = container.get(TYPES.StudentRepository);
+        this.publish = container_1.container.get(container_1.TYPES.PublishScheduleUseCase);
+        this.availability = container_1.container.get(container_1.TYPES.ManageCourtAvailabilityUseCase);
+        this.income = container_1.container.get(container_1.TYPES.TrackIncomeUseCase);
+        this.services = container_1.container.get(container_1.TYPES.ManageServicesUseCase);
+        this.schedules = container_1.container.get(container_1.TYPES.ScheduleRepository);
+        this.serviceRepo = container_1.container.get(container_1.TYPES.ServiceRepository);
+        this.payments = container_1.container.get(container_1.TYPES.PaymentRepository);
+        this.students = container_1.container.get(container_1.TYPES.StudentRepository);
+        this.professors = container_1.container.get(container_1.TYPES.ProfessorRepository);
         this.getSchedule = async (req, res) => {
             try {
                 const professorId = String(req.query.professorId);
@@ -76,7 +80,7 @@ export class ProfessorController {
                 const professorId = String(req.query.professorId);
                 if (!professorId)
                     return res.status(400).json({ error: 'professorId is required' });
-                const items = await this.students.listStudents(professorId);
+                const items = await this.professors.listStudents(professorId);
                 return res.json({ items });
             }
             catch (e) {
@@ -99,4 +103,5 @@ export class ProfessorController {
         };
     }
 }
+exports.ProfessorController = ProfessorController;
 //# sourceMappingURL=ProfessorController.js.map

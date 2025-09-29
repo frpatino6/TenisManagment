@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { container, TYPES } from '../../infrastructure/di/container.js';
-import { BookLessonUseCase, CheckCourtAvailabilityUseCase, ViewBalanceUseCase, ViewPaymentHistoryUseCase, RequestServiceUseCase } from '../../domain/use-cases/index.js';
-import { BookingRepository } from '../../domain/repositories/index.js';
+import { container, TYPES } from '../../infrastructure/di/container';
+import { BookLessonUseCase, CheckCourtAvailabilityUseCase, ViewBalanceUseCase, ViewPaymentHistoryUseCase, RequestServiceUseCase } from '../../domain/use-cases/index';
+import { BookingRepository } from '../../domain/repositories/index';
 
 export class StudentController {
   private bookLesson = container.get<BookLessonUseCase>(TYPES.BookLessonUseCase);
@@ -41,18 +41,30 @@ export class StudentController {
   };
 
   getBalance = async (req: Request, res: Response) => {
-    const result = await this.balance.execute(String(req.query.studentId));
-    return res.json(result);
+    try {
+      const result = await this.balance.execute(String(req.query.studentId));
+      return res.json(result);
+    } catch (e) {
+      return res.status(400).json({ error: (e as Error).message });
+    }
   };
 
   paymentHistoryList = async (req: Request, res: Response) => {
-    const result = await this.paymentHistory.execute(String(req.query.studentId));
-    return res.json(result);
+    try {
+      const result = await this.paymentHistory.execute(String(req.query.studentId));
+      return res.json(result);
+    } catch (e) {
+      return res.status(400).json({ error: (e as Error).message });
+    }
   };
 
   requestService = async (req: Request, res: Response) => {
-    const result = await this.requestServiceUseCase.execute(req.body);
-    return res.status(201).json(result);
+    try {
+      const result = await this.requestServiceUseCase.execute(req.body);
+      return res.status(201).json(result);
+    } catch (e) {
+      return res.status(400).json({ error: (e as Error).message });
+    }
   };
 }
 

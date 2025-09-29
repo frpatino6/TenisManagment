@@ -1,4 +1,7 @@
-export function validateBody(schema) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.validateBody = validateBody;
+function validateBody(schema) {
     return (req, res, next) => {
         try {
             // zod-like interface expected

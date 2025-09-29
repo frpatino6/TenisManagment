@@ -1,19 +1,19 @@
 import { Types, PipelineStage } from 'mongoose';
-import { ProfessorRepository, StudentRepository, ScheduleRepository, BookingRepository, PaymentRepository, ServiceRepository, ReportRepository, ServiceRequestRepository } from '../../domain/repositories/index.js';
-import { Professor } from '../../domain/entities/Professor.js';
-import { Student } from '../../domain/entities/Student.js';
-import { Schedule } from '../../domain/entities/Schedule.js';
-import { Booking } from '../../domain/entities/Booking.js';
-import { Payment } from '../../domain/entities/Payment.js';
-import { Service } from '../../domain/entities/Service.js';
-import { ProfessorModel } from '../database/models/ProfessorModel.js';
-import { StudentModel } from '../database/models/StudentModel.js';
-import { ScheduleModel } from '../database/models/ScheduleModel.js';
-import { BookingModel } from '../database/models/BookingModel.js';
-import { PaymentModel } from '../database/models/PaymentModel.js';
-import { ServiceModel } from '../database/models/ServiceModel.js';
-import { ServiceRequestModel } from '../database/models/ServiceRequestModel.js';
-import { ServiceRequest } from '../../domain/entities/ServiceRequest.js';
+import { ProfessorRepository, StudentRepository, ScheduleRepository, BookingRepository, PaymentRepository, ServiceRepository, ReportRepository, ServiceRequestRepository } from '../../domain/repositories/index';
+import { Professor } from '../../domain/entities/Professor';
+import { Student } from '../../domain/entities/Student';
+import { Schedule } from '../../domain/entities/Schedule';
+import { Booking } from '../../domain/entities/Booking';
+import { Payment } from '../../domain/entities/Payment';
+import { Service } from '../../domain/entities/Service';
+import { ProfessorModel } from '../database/models/ProfessorModel';
+import { StudentModel } from '../database/models/StudentModel';
+import { ScheduleModel } from '../database/models/ScheduleModel';
+import { BookingModel } from '../database/models/BookingModel';
+import { PaymentModel } from '../database/models/PaymentModel';
+import { ServiceModel } from '../database/models/ServiceModel';
+import { ServiceRequestModel } from '../database/models/ServiceRequestModel';
+import { ServiceRequest } from '../../domain/entities/ServiceRequest';
 
 export class MongoProfessorRepository implements ProfessorRepository {
   async create(professor: Omit<Professor, 'id'>): Promise<Professor> {

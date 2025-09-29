@@ -1,4 +1,8 @@
-export function authMiddleware(jwtService) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.authMiddleware = authMiddleware;
+exports.requireRole = requireRole;
+function authMiddleware(jwtService) {
     return (req, res, next) => {
         const header = req.headers.authorization;
         if (!header || !header.startsWith('Bearer ')) {
@@ -15,7 +19,7 @@ export function authMiddleware(jwtService) {
         }
     };
 }
-export function requireRole(role) {
+function requireRole(role) {
     return (req, res, next) => {
         if (!req.user || req.user.role !== role)
             return res.status(403).json({ error: 'Forbidden' });

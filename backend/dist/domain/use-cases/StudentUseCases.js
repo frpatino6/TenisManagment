@@ -1,4 +1,7 @@
-export class CheckCourtAvailability {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BookLesson = exports.RequestService = exports.ViewPaymentHistory = exports.ViewBalance = exports.CheckCourtAvailability = void 0;
+class CheckCourtAvailability {
     constructor(schedules) {
         this.schedules = schedules;
     }
@@ -8,7 +11,8 @@ export class CheckCourtAvailability {
         return this.schedules.findAvailableByProfessor(args.professorId, args.dateFrom, args.dateTo);
     }
 }
-export class ViewBalance {
+exports.CheckCourtAvailability = CheckCourtAvailability;
+class ViewBalance {
     constructor(students) {
         this.students = students;
     }
@@ -19,7 +23,8 @@ export class ViewBalance {
         return { balance: s.balance };
     }
 }
-export class ViewPaymentHistory {
+exports.ViewBalance = ViewBalance;
+class ViewPaymentHistory {
     constructor(payments) {
         this.payments = payments;
     }
@@ -27,7 +32,8 @@ export class ViewPaymentHistory {
         return this.payments.listByStudent(studentId, from, to);
     }
 }
-export class RequestService {
+exports.ViewPaymentHistory = ViewPaymentHistory;
+class RequestService {
     constructor(serviceRequests) {
         this.serviceRequests = serviceRequests;
     }
@@ -36,7 +42,8 @@ export class RequestService {
         return { status: 'requested' };
     }
 }
-export class BookLesson {
+exports.RequestService = RequestService;
+class BookLesson {
     constructor(bookings, schedules) {
         this.bookings = bookings;
         this.schedules = schedules;
@@ -50,4 +57,5 @@ export class BookLesson {
         return booking;
     }
 }
+exports.BookLesson = BookLesson;
 //# sourceMappingURL=StudentUseCases.js.map

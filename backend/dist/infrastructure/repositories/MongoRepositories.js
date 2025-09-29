@@ -1,27 +1,30 @@
-import { Types } from 'mongoose';
-import { ProfessorModel } from '../database/models/ProfessorModel.js';
-import { StudentModel } from '../database/models/StudentModel.js';
-import { ScheduleModel } from '../database/models/ScheduleModel.js';
-import { BookingModel } from '../database/models/BookingModel.js';
-import { PaymentModel } from '../database/models/PaymentModel.js';
-import { ServiceModel } from '../database/models/ServiceModel.js';
-import { ServiceRequestModel } from '../database/models/ServiceRequestModel.js';
-export class MongoProfessorRepository {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.MongoServiceRequestRepository = exports.MongoReportRepository = exports.MongoServiceRepository = exports.MongoPaymentRepository = exports.MongoBookingRepository = exports.MongoScheduleRepository = exports.MongoStudentRepository = exports.MongoProfessorRepository = void 0;
+const mongoose_1 = require("mongoose");
+const ProfessorModel_1 = require("../database/models/ProfessorModel");
+const StudentModel_1 = require("../database/models/StudentModel");
+const ScheduleModel_1 = require("../database/models/ScheduleModel");
+const BookingModel_1 = require("../database/models/BookingModel");
+const PaymentModel_1 = require("../database/models/PaymentModel");
+const ServiceModel_1 = require("../database/models/ServiceModel");
+const ServiceRequestModel_1 = require("../database/models/ServiceRequestModel");
+class MongoProfessorRepository {
     async create(professor) {
-        const created = await ProfessorModel.create(professor);
+        const created = await ProfessorModel_1.ProfessorModel.create(professor);
         return { id: created._id.toString(), ...professor };
     }
     async findById(id) {
-        const doc = await ProfessorModel.findById(id).lean();
+        const doc = await ProfessorModel_1.ProfessorModel.findById(id).lean();
         return doc ? { id: doc._id.toString(), name: doc.name, email: doc.email, phone: doc.phone, specialties: doc.specialties, hourlyRate: doc.hourlyRate } : null;
     }
     async findByEmail(email) {
-        const doc = await ProfessorModel.findOne({ email }).lean();
+        const doc = await ProfessorModel_1.ProfessorModel.findOne({ email }).lean();
         return doc ? { id: doc._id.toString(), name: doc.name, email: doc.email, phone: doc.phone, specialties: doc.specialties, hourlyRate: doc.hourlyRate } : null;
     }
     async listStudents(professorId) {
         const pipeline = [
-            { $match: { professorId: new Types.ObjectId(professorId) } },
+            { $match: { professorId: new mongoose_1.Types.ObjectId(professorId) } },
             { $lookup: { from: 'bookings', localField: '_id', foreignField: 'scheduleId', as: 'bookings' } },
             { $unwind: '$bookings' },
             { $lookup: { from: 'students', localField: 'bookings.studentId', foreignField: '_id', as: 'student' } },
@@ -29,39 +32,41 @@ export class MongoProfessorRepository {
             { $group: { _id: '$student._id', doc: { $first: '$student' } } },
             { $replaceWith: '$doc' }
         ];
-        const rows = await ScheduleModel.aggregate(pipeline);
+        const rows = await ScheduleModel_1.ScheduleModel.aggregate(pipeline);
         return rows.map(s => ({ id: s._id.toString(), name: s.name, email: s.email, phone: s.phone, membershipType: s.membershipType, balance: s.balance }));
     }
     async update(id, update) {
-        const doc = await ProfessorModel.findByIdAndUpdate(id, update, { new: true }).lean();
+        const doc = await ProfessorModel_1.ProfessorModel.findByIdAndUpdate(id, update, { new: true }).lean();
         return doc ? { id: doc._id.toString(), name: doc.name, email: doc.email, phone: doc.phone, specialties: doc.specialties, hourlyRate: doc.hourlyRate } : null;
     }
 }
-export class MongoStudentRepository {
+exports.MongoProfessorRepository = MongoProfessorRepository;
+class MongoStudentRepository {
     async create(student) {
-        const created = await StudentModel.create(student);
+        const created = await StudentModel_1.StudentModel.create(student);
         return { id: created._id.toString(), ...student };
     }
     async findById(id) {
-        const doc = await StudentModel.findById(id).lean();
+        const doc = await StudentModel_1.StudentModel.findById(id).lean();
         return doc ? { id: doc._id.toString(), name: doc.name, email: doc.email, phone: doc.phone, membershipType: doc.membershipType, balance: doc.balance } : null;
     }
     async findByEmail(email) {
-        const doc = await StudentModel.findOne({ email }).lean();
+        const doc = await StudentModel_1.StudentModel.findOne({ email }).lean();
         return doc ? { id: doc._id.toString(), name: doc.name, email: doc.email, phone: doc.phone, membershipType: doc.membershipType, balance: doc.balance } : null;
     }
     async updateBalance(id, delta) {
-        const doc = await StudentModel.findByIdAndUpdate(id, { $inc: { balance: delta } }, { new: true }).lean();
+        const doc = await StudentModel_1.StudentModel.findByIdAndUpdate(id, { $inc: { balance: delta } }, { new: true }).lean();
         return doc ? { id: doc._id.toString(), name: doc.name, email: doc.email, phone: doc.phone, membershipType: doc.membershipType, balance: doc.balance } : null;
     }
 }
-export class MongoScheduleRepository {
+exports.MongoStudentRepository = MongoStudentRepository;
+class MongoScheduleRepository {
     async publish(schedule) {
-        const created = await ScheduleModel.create({ ...schedule, professorId: new Types.ObjectId(schedule.professorId) });
+        const created = await ScheduleModel_1.ScheduleModel.create({ ...schedule, professorId: new mongoose_1.Types.ObjectId(schedule.professorId) });
         return { id: created._id.toString(), professorId: created.professorId.toString(), date: created.date, startTime: created.startTime, endTime: created.endTime, type: created.type, isAvailable: created.isAvailable, maxStudents: created.maxStudents };
     }
     async findAvailableByProfessor(professorId, dateFrom, dateTo) {
-        const query = { professorId: new Types.ObjectId(professorId), isAvailable: true };
+        const query = { professorId: new mongoose_1.Types.ObjectId(professorId), isAvailable: true };
         if (dateFrom || dateTo) {
             query.date = {};
             if (dateFrom)
@@ -69,45 +74,47 @@ export class MongoScheduleRepository {
             if (dateTo)
                 query.date.$lte = dateTo;
         }
-        const docs = await ScheduleModel.find(query).lean();
+        const docs = await ScheduleModel_1.ScheduleModel.find(query).lean();
         return docs.map(d => ({ id: d._id.toString(), professorId: d.professorId.toString(), date: d.date, startTime: d.startTime, endTime: d.endTime, type: d.type, isAvailable: d.isAvailable, maxStudents: d.maxStudents }));
     }
     async findById(id) {
-        const d = await ScheduleModel.findById(id).lean();
+        const d = await ScheduleModel_1.ScheduleModel.findById(id).lean();
         return d ? { id: d._id.toString(), professorId: d.professorId.toString(), date: d.date, startTime: d.startTime, endTime: d.endTime, type: d.type, isAvailable: d.isAvailable, maxStudents: d.maxStudents } : null;
     }
     async update(id, update) {
-        const d = await ScheduleModel.findByIdAndUpdate(id, update, { new: true }).lean();
+        const d = await ScheduleModel_1.ScheduleModel.findByIdAndUpdate(id, update, { new: true }).lean();
         return d ? { id: d._id.toString(), professorId: d.professorId.toString(), date: d.date, startTime: d.startTime, endTime: d.endTime, type: d.type, isAvailable: d.isAvailable, maxStudents: d.maxStudents } : null;
     }
     async delete(id) {
-        await ScheduleModel.findByIdAndDelete(id);
+        await ScheduleModel_1.ScheduleModel.findByIdAndDelete(id);
     }
 }
-export class MongoBookingRepository {
+exports.MongoScheduleRepository = MongoScheduleRepository;
+class MongoBookingRepository {
     async create(booking) {
-        const created = await BookingModel.create({ ...booking, studentId: new Types.ObjectId(booking.studentId), scheduleId: new Types.ObjectId(booking.scheduleId) });
+        const created = await BookingModel_1.BookingModel.create({ ...booking, studentId: new mongoose_1.Types.ObjectId(booking.studentId), scheduleId: new mongoose_1.Types.ObjectId(booking.scheduleId) });
         return { id: created._id.toString(), studentId: created.studentId.toString(), scheduleId: created.scheduleId.toString(), type: created.type, status: created.status, paymentStatus: created.paymentStatus, createdAt: created.createdAt };
     }
     async listByStudent(studentId) {
-        const docs = await BookingModel.find({ studentId: new Types.ObjectId(studentId) }).lean();
+        const docs = await BookingModel_1.BookingModel.find({ studentId: new mongoose_1.Types.ObjectId(studentId) }).lean();
         return docs.map(d => ({ id: d._id.toString(), studentId: d.studentId.toString(), scheduleId: d.scheduleId.toString(), type: d.type, status: d.status, paymentStatus: d.paymentStatus, createdAt: d.createdAt }));
     }
     async listBySchedule(scheduleId) {
-        const docs = await BookingModel.find({ scheduleId: new Types.ObjectId(scheduleId) }).lean();
+        const docs = await BookingModel_1.BookingModel.find({ scheduleId: new mongoose_1.Types.ObjectId(scheduleId) }).lean();
         return docs.map(d => ({ id: d._id.toString(), studentId: d.studentId.toString(), scheduleId: d.scheduleId.toString(), type: d.type, status: d.status, paymentStatus: d.paymentStatus, createdAt: d.createdAt }));
     }
     async update(id, update) {
-        const d = await BookingModel.findByIdAndUpdate(id, update, { new: true }).lean();
+        const d = await BookingModel_1.BookingModel.findByIdAndUpdate(id, update, { new: true }).lean();
         return d ? { id: d._id.toString(), studentId: d.studentId.toString(), scheduleId: d.scheduleId.toString(), type: d.type, status: d.status, paymentStatus: d.paymentStatus, createdAt: d.createdAt } : null;
     }
 }
-export class MongoPaymentRepository {
+exports.MongoBookingRepository = MongoBookingRepository;
+class MongoPaymentRepository {
     async create(payment) {
-        const created = await PaymentModel.create({
+        const created = await PaymentModel_1.PaymentModel.create({
             ...payment,
-            studentId: new Types.ObjectId(payment.studentId),
-            professorId: new Types.ObjectId(payment.professorId)
+            studentId: new mongoose_1.Types.ObjectId(payment.studentId),
+            professorId: new mongoose_1.Types.ObjectId(payment.professorId)
         });
         return {
             id: created._id.toString(),
@@ -120,7 +127,7 @@ export class MongoPaymentRepository {
         };
     }
     async listByStudent(studentId, from, to) {
-        const query = { studentId: new Types.ObjectId(studentId) };
+        const query = { studentId: new mongoose_1.Types.ObjectId(studentId) };
         if (from || to) {
             query.date = {};
             if (from)
@@ -128,46 +135,49 @@ export class MongoPaymentRepository {
             if (to)
                 query.date.$lte = to;
         }
-        const docs = await PaymentModel.find(query).sort({ date: -1 }).lean();
+        const docs = await PaymentModel_1.PaymentModel.find(query).sort({ date: -1 }).lean();
         return docs.map(d => ({ id: d._id.toString(), studentId: d.studentId.toString(), professorId: d.professorId.toString(), amount: d.amount, date: d.date, method: d.method, concept: d.concept }));
     }
 }
-export class MongoServiceRepository {
+exports.MongoPaymentRepository = MongoPaymentRepository;
+class MongoServiceRepository {
     async create(service) {
-        const created = await ServiceModel.create(service);
+        const created = await ServiceModel_1.ServiceModel.create(service);
         return { id: created._id.toString(), name: created.name, description: created.description, price: created.price, category: created.category };
     }
     async update(id, update) {
-        const d = await ServiceModel.findByIdAndUpdate(id, update, { new: true }).lean();
+        const d = await ServiceModel_1.ServiceModel.findByIdAndUpdate(id, update, { new: true }).lean();
         return d ? { id: d._id.toString(), name: d.name, description: d.description, price: d.price, category: d.category } : null;
     }
     async list() {
-        const docs = await ServiceModel.find({}).lean();
+        const docs = await ServiceModel_1.ServiceModel.find({}).lean();
         return docs.map(d => ({ id: d._id.toString(), name: d.name, description: d.description, price: d.price, category: d.category }));
     }
     async delete(id) {
-        await ServiceModel.findByIdAndDelete(id);
+        await ServiceModel_1.ServiceModel.findByIdAndDelete(id);
     }
 }
-export class MongoReportRepository {
+exports.MongoServiceRepository = MongoServiceRepository;
+class MongoReportRepository {
     async getProfessorIncome(professorId, from, to) {
         const pipeline = [
-            { $match: { professorId: new Types.ObjectId(professorId), date: { $gte: from, $lte: to } } },
+            { $match: { professorId: new mongoose_1.Types.ObjectId(professorId), date: { $gte: from, $lte: to } } },
             { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } }, amount: { $sum: '$amount' } } },
             { $project: { _id: 0, date: '$_id', amount: 1 } },
             { $sort: { date: 1 } }
         ];
-        const rows = await PaymentModel.aggregate(pipeline);
+        const rows = await PaymentModel_1.PaymentModel.aggregate(pipeline);
         const total = rows.reduce((acc, r) => acc + r.amount, 0);
         return { total, breakdown: rows };
     }
 }
-export class MongoServiceRequestRepository {
+exports.MongoReportRepository = MongoReportRepository;
+class MongoServiceRequestRepository {
     async create(request) {
-        const created = await ServiceRequestModel.create({
+        const created = await ServiceRequestModel_1.ServiceRequestModel.create({
             ...request,
-            studentId: new Types.ObjectId(request.studentId),
-            serviceId: new Types.ObjectId(request.serviceId)
+            studentId: new mongoose_1.Types.ObjectId(request.studentId),
+            serviceId: new mongoose_1.Types.ObjectId(request.serviceId)
         });
         return {
             id: created._id.toString(),
@@ -179,4 +189,5 @@ export class MongoServiceRequestRepository {
         };
     }
 }
+exports.MongoServiceRequestRepository = MongoServiceRequestRepository;
 //# sourceMappingURL=MongoRepositories.js.map

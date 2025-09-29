@@ -1,10 +1,10 @@
 import { Container } from 'inversify';
-import { MongoProfessorRepository, MongoStudentRepository, MongoScheduleRepository, MongoBookingRepository, MongoPaymentRepository, MongoServiceRepository, MongoReportRepository, MongoServiceRequestRepository } from '../repositories/MongoRepositories.js';
-import { ProfessorRepository, StudentRepository, ScheduleRepository, BookingRepository, PaymentRepository, ServiceRepository, ReportRepository, ServiceRequestRepository } from '../../domain/repositories/index.js';
-import { PublishSchedule, ManageCourtAvailability, TrackIncome, ManageServices } from '../../domain/use-cases/ProfessorUseCases.js';
-import { BookLesson, CheckCourtAvailability, ViewBalance, ViewPaymentHistory, RequestService } from '../../domain/use-cases/StudentUseCases.js';
-import { PublishScheduleUseCase, ManageCourtAvailabilityUseCase, TrackIncomeUseCase, ManageServicesUseCase, BookLessonUseCase, CheckCourtAvailabilityUseCase, ViewBalanceUseCase, ViewPaymentHistoryUseCase, RequestServiceUseCase } from '../../domain/use-cases/index.js';
-import { JwtService } from '../services/JwtService.js';
+import { MongoProfessorRepository, MongoStudentRepository, MongoScheduleRepository, MongoBookingRepository, MongoPaymentRepository, MongoServiceRepository, MongoReportRepository, MongoServiceRequestRepository } from '../repositories/MongoRepositories';
+import { ProfessorRepository, StudentRepository, ScheduleRepository, BookingRepository, PaymentRepository, ServiceRepository, ReportRepository, ServiceRequestRepository } from '../../domain/repositories/index';
+import { PublishSchedule, ManageCourtAvailability, TrackIncome, ManageServices } from '../../domain/use-cases/ProfessorUseCases';
+import { BookLesson, CheckCourtAvailability, ViewBalance, ViewPaymentHistory, RequestService } from '../../domain/use-cases/StudentUseCases';
+import { PublishScheduleUseCase, ManageCourtAvailabilityUseCase, TrackIncomeUseCase, ManageServicesUseCase, BookLessonUseCase, CheckCourtAvailabilityUseCase, ViewBalanceUseCase, ViewPaymentHistoryUseCase, RequestServiceUseCase } from '../../domain/use-cases/index';
+import { JwtService } from '../services/JwtService';
 
 export const TYPES = {
   ProfessorRepository: Symbol.for('ProfessorRepository'),

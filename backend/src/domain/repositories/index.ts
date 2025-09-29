@@ -1,10 +1,10 @@
-import { Professor } from '../entities/Professor.js';
-import { Student } from '../entities/Student.js';
-import { Schedule } from '../entities/Schedule.js';
-import { Booking } from '../entities/Booking.js';
-import { Payment } from '../entities/Payment.js';
-import { Service } from '../entities/Service.js';
-import { ServiceRequest } from '../entities/ServiceRequest.js';
+import { Professor } from '../entities/Professor';
+import { Student } from '../entities/Student';
+import { Schedule } from '../entities/Schedule';
+import { Booking } from '../entities/Booking';
+import { Payment } from '../entities/Payment';
+import { Service } from '../entities/Service';
+import { ServiceRequest } from '../entities/ServiceRequest';
 
 export interface ProfessorRepository {
   create(professor: Omit<Professor, 'id'>): Promise<Professor>;

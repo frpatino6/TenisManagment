@@ -1,6 +1,9 @@
-import { Schema, model } from 'mongoose';
-const ScheduleSchema = new Schema({
-    professorId: { type: Schema.Types.ObjectId, ref: 'Professor', required: true, index: true },
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ScheduleModel = void 0;
+const mongoose_1 = require("mongoose");
+const ScheduleSchema = new mongoose_1.Schema({
+    professorId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Professor', required: true, index: true },
     date: { type: Date, required: true, index: true },
     startTime: { type: String, required: true },
     endTime: { type: String, required: true },
@@ -9,5 +12,5 @@ const ScheduleSchema = new Schema({
     maxStudents: { type: Number }
 }, { timestamps: true });
 ScheduleSchema.index({ date: 1, professorId: 1, isAvailable: 1 });
-export const ScheduleModel = model('Schedule', ScheduleSchema);
+exports.ScheduleModel = (0, mongoose_1.model)('Schedule', ScheduleSchema);
 //# sourceMappingURL=ScheduleModel.js.map

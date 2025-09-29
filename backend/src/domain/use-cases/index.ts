@@ -1,8 +1,8 @@
 // Use case interfaces to enable DI and testability
-import { Schedule } from '../entities/Schedule.js';
-import { Booking } from '../entities/Booking.js';
-import { Payment } from '../entities/Payment.js';
-import { Service } from '../entities/Service.js';
+import { Schedule } from '../entities/Schedule';
+import { Booking } from '../entities/Booking';
+import { Payment } from '../entities/Payment';
+import { Service } from '../entities/Service';
 
 export interface PublishScheduleUseCase {
   execute(input: Omit<Schedule, 'id' | 'isAvailable'> & { isAvailable?: boolean }): Promise<Schedule>;

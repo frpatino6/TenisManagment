@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { JwtService } from '../../infrastructure/services/JwtService.js';
+import { JwtService } from '../../infrastructure/services/JwtService';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace

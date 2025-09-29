@@ -1,4 +1,7 @@
-export class PublishSchedule {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ManageServices = exports.TrackIncome = exports.ManageCourtAvailability = exports.PublishSchedule = void 0;
+class PublishSchedule {
     constructor(schedules) {
         this.schedules = schedules;
     }
@@ -7,7 +10,8 @@ export class PublishSchedule {
         return this.schedules.publish(toCreate);
     }
 }
-export class ManageCourtAvailability {
+exports.PublishSchedule = PublishSchedule;
+class ManageCourtAvailability {
     constructor(schedules) {
         this.schedules = schedules;
     }
@@ -15,7 +19,8 @@ export class ManageCourtAvailability {
         return this.schedules.update(scheduleId, { isAvailable });
     }
 }
-export class TrackIncome {
+exports.ManageCourtAvailability = ManageCourtAvailability;
+class TrackIncome {
     constructor(reports) {
         this.reports = reports;
     }
@@ -23,7 +28,8 @@ export class TrackIncome {
         return this.reports.getProfessorIncome(professorId, from, to);
     }
 }
-export class ManageServices {
+exports.TrackIncome = TrackIncome;
+class ManageServices {
     constructor(services) {
         this.services = services;
     }
@@ -34,4 +40,5 @@ export class ManageServices {
         return this.services.update(id, update);
     }
 }
+exports.ManageServices = ManageServices;
 //# sourceMappingURL=ProfessorUseCases.js.map

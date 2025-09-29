@@ -1,9 +1,12 @@
-import { Container } from 'inversify';
-import { MongoProfessorRepository, MongoStudentRepository, MongoScheduleRepository, MongoBookingRepository, MongoPaymentRepository, MongoServiceRepository, MongoReportRepository, MongoServiceRequestRepository } from '../repositories/MongoRepositories.js';
-import { PublishSchedule, ManageCourtAvailability, TrackIncome, ManageServices } from '../../domain/use-cases/ProfessorUseCases.js';
-import { BookLesson, CheckCourtAvailability, ViewBalance, ViewPaymentHistory, RequestService } from '../../domain/use-cases/StudentUseCases.js';
-import { JwtService } from '../services/JwtService.js';
-export const TYPES = {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.container = exports.TYPES = void 0;
+const inversify_1 = require("inversify");
+const MongoRepositories_1 = require("../repositories/MongoRepositories");
+const ProfessorUseCases_1 = require("../../domain/use-cases/ProfessorUseCases");
+const StudentUseCases_1 = require("../../domain/use-cases/StudentUseCases");
+const JwtService_1 = require("../services/JwtService");
+exports.TYPES = {
     ProfessorRepository: Symbol.for('ProfessorRepository'),
     StudentRepository: Symbol.for('StudentRepository'),
     ScheduleRepository: Symbol.for('ScheduleRepository'),
@@ -24,26 +27,26 @@ export const TYPES = {
     RequestServiceUseCase: Symbol.for('RequestServiceUseCase'),
     JwtService: Symbol.for('JwtService')
 };
-export const container = new Container({ defaultScope: 'Singleton' });
+exports.container = new inversify_1.Container({ defaultScope: 'Singleton' });
 // repositories
-container.bind(TYPES.ProfessorRepository).toConstantValue(new MongoProfessorRepository());
-container.bind(TYPES.StudentRepository).toConstantValue(new MongoStudentRepository());
-container.bind(TYPES.ScheduleRepository).toConstantValue(new MongoScheduleRepository());
-container.bind(TYPES.BookingRepository).toConstantValue(new MongoBookingRepository());
-container.bind(TYPES.PaymentRepository).toConstantValue(new MongoPaymentRepository());
-container.bind(TYPES.ServiceRepository).toConstantValue(new MongoServiceRepository());
-container.bind(TYPES.ReportRepository).toConstantValue(new MongoReportRepository());
-container.bind(TYPES.ServiceRequestRepository).toConstantValue(new MongoServiceRequestRepository());
+exports.container.bind(exports.TYPES.ProfessorRepository).toConstantValue(new MongoRepositories_1.MongoProfessorRepository());
+exports.container.bind(exports.TYPES.StudentRepository).toConstantValue(new MongoRepositories_1.MongoStudentRepository());
+exports.container.bind(exports.TYPES.ScheduleRepository).toConstantValue(new MongoRepositories_1.MongoScheduleRepository());
+exports.container.bind(exports.TYPES.BookingRepository).toConstantValue(new MongoRepositories_1.MongoBookingRepository());
+exports.container.bind(exports.TYPES.PaymentRepository).toConstantValue(new MongoRepositories_1.MongoPaymentRepository());
+exports.container.bind(exports.TYPES.ServiceRepository).toConstantValue(new MongoRepositories_1.MongoServiceRepository());
+exports.container.bind(exports.TYPES.ReportRepository).toConstantValue(new MongoRepositories_1.MongoReportRepository());
+exports.container.bind(exports.TYPES.ServiceRequestRepository).toConstantValue(new MongoRepositories_1.MongoServiceRequestRepository());
 // services
-container.bind(TYPES.JwtService).toConstantValue(new JwtService(process.env.JWT_SECRET || 'dev_secret'));
+exports.container.bind(exports.TYPES.JwtService).toConstantValue(new JwtService_1.JwtService(process.env.JWT_SECRET || 'dev_secret'));
 // use cases
-container.bind(TYPES.PublishScheduleUseCase).toDynamicValue(ctx => new PublishSchedule(ctx.container.get(TYPES.ScheduleRepository)));
-container.bind(TYPES.ManageCourtAvailabilityUseCase).toDynamicValue(ctx => new ManageCourtAvailability(ctx.container.get(TYPES.ScheduleRepository)));
-container.bind(TYPES.TrackIncomeUseCase).toDynamicValue(ctx => new TrackIncome(ctx.container.get(TYPES.ReportRepository)));
-container.bind(TYPES.ManageServicesUseCase).toDynamicValue(ctx => new ManageServices(ctx.container.get(TYPES.ServiceRepository)));
-container.bind(TYPES.BookLessonUseCase).toDynamicValue(ctx => new BookLesson(ctx.container.get(TYPES.BookingRepository), ctx.container.get(TYPES.ScheduleRepository)));
-container.bind(TYPES.CheckCourtAvailabilityUseCase).toDynamicValue(ctx => new CheckCourtAvailability(ctx.container.get(TYPES.ScheduleRepository)));
-container.bind(TYPES.ViewBalanceUseCase).toDynamicValue(ctx => new ViewBalance(ctx.container.get(TYPES.StudentRepository)));
-container.bind(TYPES.ViewPaymentHistoryUseCase).toDynamicValue(ctx => new ViewPaymentHistory(ctx.container.get(TYPES.PaymentRepository)));
-container.bind(TYPES.RequestServiceUseCase).toDynamicValue(ctx => new RequestService(ctx.container.get(TYPES.ServiceRequestRepository)));
+exports.container.bind(exports.TYPES.PublishScheduleUseCase).toDynamicValue(ctx => new ProfessorUseCases_1.PublishSchedule(ctx.container.get(exports.TYPES.ScheduleRepository)));
+exports.container.bind(exports.TYPES.ManageCourtAvailabilityUseCase).toDynamicValue(ctx => new ProfessorUseCases_1.ManageCourtAvailability(ctx.container.get(exports.TYPES.ScheduleRepository)));
+exports.container.bind(exports.TYPES.TrackIncomeUseCase).toDynamicValue(ctx => new ProfessorUseCases_1.TrackIncome(ctx.container.get(exports.TYPES.ReportRepository)));
+exports.container.bind(exports.TYPES.ManageServicesUseCase).toDynamicValue(ctx => new ProfessorUseCases_1.ManageServices(ctx.container.get(exports.TYPES.ServiceRepository)));
+exports.container.bind(exports.TYPES.BookLessonUseCase).toDynamicValue(ctx => new StudentUseCases_1.BookLesson(ctx.container.get(exports.TYPES.BookingRepository), ctx.container.get(exports.TYPES.ScheduleRepository)));
+exports.container.bind(exports.TYPES.CheckCourtAvailabilityUseCase).toDynamicValue(ctx => new StudentUseCases_1.CheckCourtAvailability(ctx.container.get(exports.TYPES.ScheduleRepository)));
+exports.container.bind(exports.TYPES.ViewBalanceUseCase).toDynamicValue(ctx => new StudentUseCases_1.ViewBalance(ctx.container.get(exports.TYPES.StudentRepository)));
+exports.container.bind(exports.TYPES.ViewPaymentHistoryUseCase).toDynamicValue(ctx => new StudentUseCases_1.ViewPaymentHistory(ctx.container.get(exports.TYPES.PaymentRepository)));
+exports.container.bind(exports.TYPES.RequestServiceUseCase).toDynamicValue(ctx => new StudentUseCases_1.RequestService(ctx.container.get(exports.TYPES.ServiceRequestRepository)));
 //# sourceMappingURL=container.js.map

@@ -1,14 +1,19 @@
-import { Router } from 'express';
-import auth from './auth.js';
-import professor from './professor.js';
-import student from './student.js';
-const router = Router();
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_1 = __importDefault(require("./auth"));
+const professor_1 = __importDefault(require("./professor"));
+const student_1 = __importDefault(require("./student"));
+const router = (0, express_1.Router)();
 // Placeholder routers to be mounted later
 router.get('/', (_req, res) => {
     res.json({ message: 'API ready' });
 });
-router.use('/auth', auth);
-router.use('/professor', professor);
-router.use('/student', student);
-export default router;
+router.use('/auth', auth_1.default);
+router.use('/professor', professor_1.default);
+router.use('/student', student_1.default);
+exports.default = router;
 //# sourceMappingURL=index.js.map

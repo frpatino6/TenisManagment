@@ -1,20 +1,27 @@
-import 'reflect-metadata';
-import 'dotenv/config';
-import express from 'express';
-import helmet from 'helmet';
-import cors from 'cors';
-import rateLimit from 'express-rate-limit';
-import mongoose from 'mongoose';
-import apiRouter from './routes/index.js';
-const app = express();
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+require("reflect-metadata");
+require("dotenv/config");
+const express_1 = __importDefault(require("express"));
+const helmet_1 = __importDefault(require("helmet"));
+const cors_1 = __importDefault(require("cors"));
+const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
+const mongoose_1 = __importDefault(require("mongoose"));
+const index_1 = __importDefault(require("./routes/index"));
+const firebaseAuth_1 = __importDefault(require("./routes/firebaseAuth"));
+const app = (0, express_1.default)();
 // Security middlewares
-app.use(helmet());
-app.use(cors());
-app.use(express.json());
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
+app.use((0, helmet_1.default)());
+app.use((0, cors_1.default)());
+app.use(express_1.default.json());
+const limiter = (0, express_rate_limit_1.default)({ windowMs: 15 * 60 * 1000, max: 100 });
 app.use(limiter);
 // API routes
-app.use('/api', apiRouter);
+app.use('/api', index_1.default);
+app.use('/api/auth/firebase', firebaseAuth_1.default);
 // Health check
 app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'ok' });
@@ -29,7 +36,7 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/tennis_mgmt';
 async function start() {
     try {
-        await mongoose.connect(MONGO_URI);
+        await mongoose_1.default.connect(MONGO_URI);
         console.log('Connected to MongoDB');
         app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
     }

@@ -1,7 +1,7 @@
-import { Schedule } from '../entities/Schedule.js';
-import { Service } from '../entities/Service.js';
-import { PublishScheduleUseCase, ManageCourtAvailabilityUseCase, TrackIncomeUseCase, ManageServicesUseCase } from './index.js';
-import { ScheduleRepository, ReportRepository, ServiceRepository } from '../repositories/index.js';
+import { Schedule } from '../entities/Schedule';
+import { Service } from '../entities/Service';
+import { PublishScheduleUseCase, ManageCourtAvailabilityUseCase, TrackIncomeUseCase, ManageServicesUseCase } from './index';
+import { ScheduleRepository, ReportRepository, ServiceRepository } from '../repositories/index';
 
 export class PublishSchedule implements PublishScheduleUseCase {
   constructor(private readonly schedules: ScheduleRepository) {}

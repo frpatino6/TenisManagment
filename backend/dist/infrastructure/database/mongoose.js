@@ -1,6 +1,13 @@
-import mongoose from 'mongoose';
-export async function connectMongo(uri) {
-    await mongoose.connect(uri);
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.mongoose = void 0;
+exports.connectMongo = connectMongo;
+const mongoose_1 = __importDefault(require("mongoose"));
+exports.mongoose = mongoose_1.default;
+async function connectMongo(uri) {
+    await mongoose_1.default.connect(uri);
 }
-export { mongoose };
 //# sourceMappingURL=mongoose.js.map

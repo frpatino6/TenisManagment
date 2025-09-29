@@ -5,7 +5,8 @@ import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
-import apiRouter from './routes/index.js';
+import apiRouter from './routes/index';
+import firebaseAuthRoutes from './routes/firebaseAuth';
 
 const app: Application = express();
 
@@ -19,6 +20,7 @@ app.use(limiter);
 
 // API routes
 app.use('/api', apiRouter);
+app.use('/api/auth/firebase', firebaseAuthRoutes);
 
 // Health check
 app.get('/health', (_req: Request, res: Response) => {

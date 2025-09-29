@@ -1,6 +1,12 @@
 import admin from 'firebase-admin';
 
 // Solo inicializar Firebase si las variables de entorno están configuradas
+console.log('Firebase env vars check:', {
+  projectId: !!process.env.FIREBASE_PROJECT_ID,
+  privateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+  clientEmail: !!process.env.FIREBASE_CLIENT_EMAIL
+});
+
 if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
   const serviceAccount = {
     type: "service_account",
@@ -20,6 +26,9 @@ if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY && proce
       credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
       projectId: process.env.FIREBASE_PROJECT_ID
     });
+    console.log('Firebase Admin SDK initialized successfully');
+  } else {
+    console.log('Firebase Admin SDK already initialized');
   }
 }
 

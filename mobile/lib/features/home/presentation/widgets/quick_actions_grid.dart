@@ -59,13 +59,13 @@ class QuickActionsGrid extends StatelessWidget {
             children: [
               // Icono
               Container(
-                    width: 48,
-                    height: 48,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
                       color: action.color,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(action.icon, size: 24, color: Colors.white),
+                    child: Icon(action.icon, size: 18, color: Colors.white),
                   )
                   .animate()
                   .scale(
@@ -75,22 +75,25 @@ class QuickActionsGrid extends StatelessWidget {
                   )
                   .fadeIn(duration: 400.ms, delay: (index * 100).ms),
 
-              const Gap(12),
+              const Gap(6),
 
               // Título
-              Text(
-                    action.title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  )
-                  .animate()
-                  .fadeIn(duration: 400.ms, delay: (index * 100 + 200).ms)
-                  .slideY(begin: 0.2, end: 0),
+              Flexible(
+                child:
+                    Text(
+                          action.title,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                        .animate()
+                        .fadeIn(duration: 400.ms, delay: (index * 100 + 200).ms)
+                        .slideY(begin: 0.2, end: 0),
+              ),
 
               const Gap(4),
 

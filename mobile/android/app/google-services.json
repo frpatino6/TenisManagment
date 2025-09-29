@@ -16,6 +16,14 @@
         {
           "client_id": "147485418255-5l66cjpub7hfmf6kt5ji929n9o3no5q3.apps.googleusercontent.com",
           "client_type": 3
+        },
+        {
+          "client_id": "147485418255-5l66cjpub7hfmf6kt5ji929n9o3no5q3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tennismanagement.tennis_management",
+            "certificate_hash": "26bafecb92e31cd06381e7084ee75bf60e4fdfbf"
+          }
         }
       ],
       "api_key": [

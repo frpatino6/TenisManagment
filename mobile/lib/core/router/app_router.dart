@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
+import '../../features/professor/presentation/screens/professor_home_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -12,19 +13,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/login',
     redirect: (context, state) {
-      final isAuthenticated = authState.when(
-        data: (user) => user != null,
-        loading: () => false,
-        error: (error, stackTrace) => false,
+      final user = authState.when(
+        data: (user) => user,
+        loading: () => null,
+        error: (error, stackTrace) => null,
       );
 
+      final isAuthenticated = user != null;
       final isLoggingIn =
           state.matchedLocation == '/login' ||
           state.matchedLocation == '/register';
 
-      // Si está autenticado y trata de ir a login/register, redirigir a home
+      // Si está autenticado y trata de ir a login/register, redirigir según rol
       if (isAuthenticated && isLoggingIn) {
-        return '/home';
+        return user.role == 'professor' ? '/professor-home' : '/home';
       }
 
       // Si no está autenticado y no está en login/register, redirigir a login
@@ -50,6 +52,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/home',
         name: 'home',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/professor-home',
+        name: 'professor-home',
+        builder: (context, state) => const ProfessorHomeScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
 
 class AuthService {
-  static const String _baseUrl = 'http://localhost:3000/api/auth';
+  static const String _baseUrl = 'http://192.168.18.6:3000/api/auth';
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
@@ -87,19 +87,40 @@ class AuthService {
     required String role,
   }) async {
     try {
-      // Crear usuario en Firebase
-      final UserCredential userCredential = await _firebaseAuth
-          .createUserWithEmailAndPassword(email: email, password: password);
+      UserCredential userCredential;
+      User? user;
 
-      final User? user = userCredential.user;
-      if (user == null) {
-        throw Exception('Failed to create user');
+      try {
+        // 1. Intentar crear usuario en Firebase
+        userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        user = userCredential.user;
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'email-already-in-use') {
+          debugPrint('Email already in use, attempting to sign in instead.');
+          // Si el email ya está en uso, intentar iniciar sesión
+          userCredential = await _firebaseAuth.signInWithEmailAndPassword(
+            email: email,
+            password: password,
+          );
+          user = userCredential.user;
+        } else {
+          rethrow; // Re-lanzar otras excepciones de Firebase
+        }
       }
 
-      // Actualizar el perfil del usuario
-      await user.updateDisplayName(name);
+      if (user == null) {
+        throw Exception('Failed to register or sign in with Firebase');
+      }
 
-      // Registrar en el backend
+      // 2. Actualizar el perfil del usuario si es nuevo
+      if (user.displayName != name) {
+        await user.updateDisplayName(name);
+      }
+
+      // 3. Registrar en el backend con el rol correcto
       final UserModel userModel = await _registerWithBackend(
         name: name,
         email: email,
@@ -130,16 +151,26 @@ class AuthService {
     try {
       final User? user = currentFirebaseUser;
       if (user == null) {
+        debugPrint('getUserInfo: No user is currently signed in');
         throw Exception('No user is currently signed in');
       }
 
+      debugPrint('getUserInfo: Getting user info for ${user.uid}');
+      final idToken = await user.getIdToken(true); // Force refresh
+      debugPrint(
+        'getUserInfo: Token obtained, length: ${idToken?.length ?? 0}',
+      );
+
       final response = await http.get(
-        Uri.parse('$_baseUrl/me'),
+        Uri.parse('$_baseUrl/firebase/me'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${await user.getIdToken()}',
+          'Authorization': 'Bearer $idToken',
         },
       );
+
+      debugPrint('getUserInfo: Response status: ${response.statusCode}');
+      debugPrint('getUserInfo: Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
@@ -187,7 +218,7 @@ class AuthService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/register'),
+        Uri.parse('$_baseUrl/firebase/register'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'name': name,

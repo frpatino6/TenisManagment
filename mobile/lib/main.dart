@@ -8,8 +8,15 @@ import 'core/theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializar Firebase
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Inicializar Firebase solo si no está ya inicializado
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    // Firebase ya está inicializado, continuar
+    debugPrint('Firebase already initialized: $e');
+  }
 
   runApp(const ProviderScope(child: TennisManagementApp()));
 }

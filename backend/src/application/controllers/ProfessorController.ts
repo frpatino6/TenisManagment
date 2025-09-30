@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { container, TYPES } from '../../infrastructure/di/container';
 import { PublishScheduleUseCase, ManageCourtAvailabilityUseCase, TrackIncomeUseCase, ManageServicesUseCase } from '../../domain/use-cases/index';
-import { ScheduleRepository, ServiceRepository, ProfessorRepository } from '../../domain/repositories/index';
+import { ScheduleRepository, ServiceRepository, ProfessorRepository, PaymentRepository, StudentRepository } from '../../domain/repositories/index';
 
 export class ProfessorController {
   private publish = container.get<PublishScheduleUseCase>(TYPES.PublishScheduleUseCase);
@@ -10,8 +10,8 @@ export class ProfessorController {
   private services = container.get<ManageServicesUseCase>(TYPES.ManageServicesUseCase);
   private schedules = container.get<ScheduleRepository>(TYPES.ScheduleRepository);
   private serviceRepo = container.get<ServiceRepository>(TYPES.ServiceRepository);
-  private payments = container.get<any>(TYPES.PaymentRepository);
-  private students = container.get<any>(TYPES.StudentRepository);
+  private payments = container.get<PaymentRepository>(TYPES.PaymentRepository);
+  private students = container.get<StudentRepository>(TYPES.StudentRepository);
   private professors = container.get<ProfessorRepository>(TYPES.ProfessorRepository);
 
   getSchedule = async (req: Request, res: Response) => {

@@ -26,9 +26,8 @@ export class ProfessorDashboardController {
       if (!professor) {
         logger.info('Professor not found, creating');
         
-        // Buscar el AuthUser para obtener información
-        const { AuthUserModel } = require('../../infrastructure/database/models/AuthUserModel');
-        const authUser = await AuthUserModel.findById(professorId);
+      // Buscar el AuthUser para obtener información
+      const authUser = await AuthUserModel.findById(professorId);
         
         if (!authUser) {
           return res.status(404).json({ error: 'Usuario de autenticación no encontrado' });
@@ -515,7 +514,8 @@ export class ProfessorDashboardController {
         price: schedule.price
       });
     } catch (error) {
-      console.error('Error creating schedule:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Error creating schedule', { error: message, requestId: req.requestId });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -569,7 +569,8 @@ export class ProfessorDashboardController {
       
       res.json({ items: schedulesData });
     } catch (error) {
-      console.error('Error getting schedules:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Error getting schedules', { error: message, requestId: req.requestId });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -607,7 +608,8 @@ export class ProfessorDashboardController {
       
       res.json({ message: 'Horario eliminado exitosamente' });
     } catch (error) {
-      console.error('Error deleting schedule:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Error deleting schedule', { error: message, requestId: req.requestId });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -649,7 +651,8 @@ export class ProfessorDashboardController {
       
       res.json({ message: 'Horario bloqueado exitosamente' });
     } catch (error) {
-      console.error('Error blocking schedule:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Error blocking schedule', { error: message, requestId: req.requestId });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -685,7 +688,8 @@ export class ProfessorDashboardController {
       
       res.json({ message: 'Horario desbloqueado exitosamente' });
     } catch (error) {
-      console.error('Error unblocking schedule:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Error unblocking schedule', { error: message, requestId: req.requestId });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

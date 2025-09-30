@@ -1,48 +1,50 @@
-class AvailableScheduleModel {
+class ProfessorScheduleModel {
   final String id;
-  final String professorId;
+  final DateTime date;
   final DateTime startTime;
   final DateTime endTime;
   final String type;
-  final double price;
+  final bool isAvailable;
+  final bool isBlocked;
+  final String? blockReason;
   final String status;
+  final double price;
+  final String? studentName;
+  final String? studentEmail;
 
-  AvailableScheduleModel({
+  ProfessorScheduleModel({
     required this.id,
-    required this.professorId,
+    required this.date,
     required this.startTime,
     required this.endTime,
     required this.type,
-    required this.price,
+    required this.isAvailable,
+    required this.isBlocked,
+    this.blockReason,
     required this.status,
+    required this.price,
+    this.studentName,
+    this.studentEmail,
   });
 
-  factory AvailableScheduleModel.fromJson(Map<String, dynamic> json) {
-    return AvailableScheduleModel(
+  factory ProfessorScheduleModel.fromJson(Map<String, dynamic> json) {
+    return ProfessorScheduleModel(
       id: json['id'] as String,
-      professorId: json['professorId'] as String,
+      date: DateTime.parse(json['date'] as String),
       startTime: DateTime.parse(json['startTime'] as String),
       endTime: DateTime.parse(json['endTime'] as String),
-      type: json['type'] as String? ?? 'lesson',
+      type: json['type'] as String,
+      isAvailable: json['isAvailable'] as bool,
+      isBlocked: json['isBlocked'] as bool? ?? false,
+      blockReason: json['blockReason'] as String?,
+      status: json['status'] as String,
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      status: json['status'] as String? ?? 'available',
+      studentName: json['studentName'] as String?,
+      studentEmail: json['studentEmail'] as String?,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'professorId': professorId,
-      'startTime': startTime.toIso8601String(),
-      'endTime': endTime.toIso8601String(),
-      'type': type,
-      'price': price,
-      'status': status,
-    };
-  }
-
   String get formattedDate {
-    final localStart = startTime.toLocal();
     final months = [
       '',
       'Ene',
@@ -58,7 +60,7 @@ class AvailableScheduleModel {
       'Nov',
       'Dic',
     ];
-    return '${localStart.day} ${months[localStart.month]}';
+    return '${date.day} ${months[date.month]} ${date.year}';
   }
 
   String get formattedTimeRange {
@@ -75,5 +77,20 @@ class AvailableScheduleModel {
 
   int get durationInMinutes {
     return endTime.difference(startTime).inMinutes;
+  }
+
+  String get statusLabel {
+    switch (status) {
+      case 'pending':
+        return 'Pendiente';
+      case 'confirmed':
+        return 'Confirmada';
+      case 'cancelled':
+        return 'Cancelada';
+      case 'completed':
+        return 'Completada';
+      default:
+        return status;
+    }
   }
 }

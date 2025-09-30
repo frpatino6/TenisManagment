@@ -81,10 +81,13 @@ class BookingService {
       );
 
       debugPrint('Response status: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         final items = data['items'] as List<dynamic>;
+
+        debugPrint('Found ${items.length} available schedules');
 
         return items
             .map(

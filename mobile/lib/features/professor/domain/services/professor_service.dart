@@ -116,6 +116,44 @@ class ProfessorService {
     }
   }
 
+  Future<List<ClassScheduleModel>> getScheduleByDate(DateTime date) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final idToken = await user.getIdToken(true);
+
+      // Format date as YYYY-MM-DD
+      final dateStr =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+      final response = await http.get(
+        Uri.parse(
+          '$_baseUrl/professor-dashboard/schedule/by-date?date=$dateStr',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        final List<dynamic> classesJson = data['items'] ?? [];
+        return classesJson
+            .map((json) => ClassScheduleModel.fromJson(json))
+            .toList();
+      } else {
+        throw Exception('Error al obtener horarios: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error getting schedule by date: $e');
+      rethrow;
+    }
+  }
+
   // Obtener horarios de la semana
   Future<List<ClassScheduleModel>> getWeekSchedule() async {
     try {
@@ -269,6 +307,183 @@ class ProfessorService {
       }
     } catch (e) {
       debugPrint('Error canceling class: $e');
+      rethrow;
+    }
+  }
+
+  /// Create a new schedule
+  Future<Map<String, dynamic>> createSchedule({
+    required DateTime date,
+    required DateTime startTime,
+    required DateTime endTime,
+    required String type,
+    double? price,
+  }) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final idToken = await user.getIdToken(true);
+      debugPrint('Creating schedule...');
+      debugPrint('Local startTime: $startTime');
+      debugPrint('Local endTime: $endTime');
+      debugPrint('ISO startTime: ${startTime.toIso8601String()}');
+
+      final response = await http.post(
+        Uri.parse('$_baseUrl/professor-dashboard/schedules'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+        body: json.encode({
+          'date': date.toIso8601String(),
+          'startTime': startTime.toIso8601String(),
+          'endTime': endTime.toIso8601String(),
+          'type': type,
+          if (price != null) 'price': price,
+        }),
+      );
+
+      debugPrint('Response status: ${response.statusCode}');
+
+      if (response.statusCode == 201) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception('Error al crear horario: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error creating schedule: $e');
+      rethrow;
+    }
+  }
+
+  /// Get all schedules for the professor
+  Future<List<dynamic>> getMySchedules() async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final idToken = await user.getIdToken(true);
+      debugPrint('Getting professor schedules...');
+
+      final response = await http.get(
+        Uri.parse('$_baseUrl/professor-dashboard/schedules'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      debugPrint('Response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return data['items'] as List<dynamic>;
+      } else {
+        throw Exception('Error al obtener horarios: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Error getting schedules: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete a schedule
+  Future<void> deleteSchedule(String scheduleId) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final idToken = await user.getIdToken(true);
+      debugPrint('Deleting schedule: $scheduleId');
+
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/professor-dashboard/schedules/$scheduleId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      debugPrint('Response status: ${response.statusCode}');
+
+      if (response.statusCode != 200) {
+        final error = json.decode(response.body);
+        throw Exception(error['error'] ?? 'Error al eliminar horario');
+      }
+    } catch (e) {
+      debugPrint('Error deleting schedule: $e');
+      rethrow;
+    }
+  }
+
+  /// Block a schedule
+  Future<void> blockSchedule(String scheduleId, String reason) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final idToken = await user.getIdToken(true);
+      debugPrint('Blocking schedule: $scheduleId');
+
+      final response = await http.put(
+        Uri.parse('$_baseUrl/professor-dashboard/schedules/$scheduleId/block'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+        body: json.encode({'reason': reason}),
+      );
+
+      debugPrint('Response status: ${response.statusCode}');
+
+      if (response.statusCode != 200) {
+        final error = json.decode(response.body);
+        throw Exception(error['error'] ?? 'Error al bloquear horario');
+      }
+    } catch (e) {
+      debugPrint('Error blocking schedule: $e');
+      rethrow;
+    }
+  }
+
+  /// Unblock a schedule
+  Future<void> unblockSchedule(String scheduleId) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final idToken = await user.getIdToken(true);
+      debugPrint('Unblocking schedule: $scheduleId');
+
+      final response = await http.put(
+        Uri.parse(
+          '$_baseUrl/professor-dashboard/schedules/$scheduleId/unblock',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      debugPrint('Response status: ${response.statusCode}');
+
+      if (response.statusCode != 200) {
+        final error = json.decode(response.body);
+        throw Exception(error['error'] ?? 'Error al desbloquear horario');
+      }
+    } catch (e) {
+      debugPrint('Error unblocking schedule: $e');
       rethrow;
     }
   }

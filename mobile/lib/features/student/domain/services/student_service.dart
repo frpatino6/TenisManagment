@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
+ 
 import 'package:http/http.dart' as http;
 import '../models/recent_activity_model.dart';
 
@@ -22,8 +22,7 @@ class StudentService {
         throw Exception('No se pudo obtener el token de autenticación');
       }
 
-      debugPrint('Getting recent activities for student');
-      debugPrint('Token length: ${idToken.length}');
+      
 
       final response = await http.get(
         Uri.parse('$_baseUrl/student-dashboard/activities'),
@@ -33,8 +32,7 @@ class StudentService {
         },
       );
 
-      debugPrint('Response status: ${response.statusCode}');
-      debugPrint('Response body: ${response.body}');
+      
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
@@ -52,7 +50,6 @@ class StudentService {
         );
       }
     } catch (e) {
-      debugPrint('Error in getRecentActivities: $e');
       rethrow;
     }
   }
@@ -86,7 +83,6 @@ class StudentService {
         );
       }
     } catch (e) {
-      debugPrint('Error in getStudentInfo: $e');
       rethrow;
     }
   }

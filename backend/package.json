@@ -6,7 +6,9 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/presentation/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/presentation/server.ts",
-    "lint": "echo 'No linter configured'"
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "format": "prettier --write \"src/**/*.{ts,js,json,md}\""
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -29,6 +31,11 @@
     "@types/helmet": "^4.0.0",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.11.30",
+    "@typescript-eslint/eslint-plugin": "^8.45.0",
+    "@typescript-eslint/parser": "^8.45.0",
+    "eslint": "^9.36.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.6.2",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.20.6",

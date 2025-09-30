@@ -6,4 +6,3 @@ export interface Professor {
   specialties: string[];
   hourlyRate: number;
 }
-

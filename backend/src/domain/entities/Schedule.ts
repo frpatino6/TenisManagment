@@ -10,4 +10,3 @@ export interface Schedule {
   isAvailable: boolean;
   maxStudents?: number;
 }
-

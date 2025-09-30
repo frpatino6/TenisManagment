@@ -7,4 +7,3 @@ export interface Service {
   price: number;
   category: ServiceCategory;
 }
-

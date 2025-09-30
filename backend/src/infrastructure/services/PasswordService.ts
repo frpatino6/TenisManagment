@@ -14,4 +14,3 @@ export class BcryptPasswordService implements PasswordService {
     return bcrypt.compare(password, hash);
   }
 }
-

@@ -35,7 +35,7 @@ const corsOptions: cors.CorsOptions = {
     if (!isProd && allowedOrigins.size === 0) return callback(null, true);
     return callback(new Error('Not allowed by CORS'));
   },
-  credentials: true
+  credentials: true,
 };
 app.use(cors(corsOptions));
 // Handle preflight
@@ -45,7 +45,10 @@ app.options('*', cors(corsOptions));
 app.use(express.json({ limit: config.http.jsonLimit }));
 
 // Global rate limit
-const limiter = rateLimit({ windowMs: config.http.rateLimit.windowMs, max: config.http.rateLimit.max });
+const limiter = rateLimit({
+  windowMs: config.http.rateLimit.windowMs,
+  max: config.http.rateLimit.max,
+});
 app.use(limiter);
 
 // API routes
@@ -64,7 +67,7 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // Global error handler
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   const message = err instanceof Error ? err.message : 'Unknown error';
   logger.error('Unhandled error', { requestId: req.requestId, error: message });
@@ -83,10 +86,11 @@ async function start() {
     logger.info('Connected to MongoDB');
     app.listen(PORT, () => logger.info('Server started', { port: PORT }));
   } catch (error) {
-    logger.error('Failed to start server', { error: error instanceof Error ? error.message : String(error) });
+    logger.error('Failed to start server', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     process.exit(1);
   }
 }
 
 void start();
-

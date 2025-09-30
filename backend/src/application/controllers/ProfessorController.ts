@@ -1,11 +1,24 @@
 import { Request, Response } from 'express';
 import { container, TYPES } from '../../infrastructure/di/container';
-import { PublishScheduleUseCase, ManageCourtAvailabilityUseCase, TrackIncomeUseCase, ManageServicesUseCase } from '../../domain/use-cases/index';
-import { ScheduleRepository, ServiceRepository, ProfessorRepository, PaymentRepository, StudentRepository } from '../../domain/repositories/index';
+import {
+  PublishScheduleUseCase,
+  ManageCourtAvailabilityUseCase,
+  TrackIncomeUseCase,
+  ManageServicesUseCase,
+} from '../../domain/use-cases/index';
+import {
+  ScheduleRepository,
+  ServiceRepository,
+  ProfessorRepository,
+  PaymentRepository,
+  StudentRepository,
+} from '../../domain/repositories/index';
 
 export class ProfessorController {
   private publish = container.get<PublishScheduleUseCase>(TYPES.PublishScheduleUseCase);
-  private availability = container.get<ManageCourtAvailabilityUseCase>(TYPES.ManageCourtAvailabilityUseCase);
+  private availability = container.get<ManageCourtAvailabilityUseCase>(
+    TYPES.ManageCourtAvailabilityUseCase,
+  );
   private income = container.get<TrackIncomeUseCase>(TYPES.TrackIncomeUseCase);
   private services = container.get<ManageServicesUseCase>(TYPES.ManageServicesUseCase);
   private schedules = container.get<ScheduleRepository>(TYPES.ScheduleRepository);
@@ -37,7 +50,10 @@ export class ProfessorController {
   };
 
   updateSchedule = async (req: Request, res: Response) => {
-    const updated = await this.availability.setAvailability(req.params.id, Boolean(req.body?.isAvailable));
+    const updated = await this.availability.setAvailability(
+      req.params.id,
+      Boolean(req.body?.isAvailable),
+    );
     if (!updated) return res.status(404).json({ error: 'Not found' });
     return res.json(updated);
   };
@@ -96,7 +112,14 @@ export class ProfessorController {
       if (!studentId || !professorId || !amount || !date || !method || !concept) {
         return res.status(400).json({ error: 'Missing required fields' });
       }
-      const payment = await this.payments.create({ studentId, professorId, amount, date: new Date(date), method, concept });
+      const payment = await this.payments.create({
+        studentId,
+        professorId,
+        amount,
+        date: new Date(date),
+        method,
+        concept,
+      });
       await this.students.updateBalance(studentId, -Math.abs(amount));
       return res.status(201).json(payment);
     } catch (e) {
@@ -104,4 +127,3 @@ export class ProfessorController {
     }
   };
 }
-

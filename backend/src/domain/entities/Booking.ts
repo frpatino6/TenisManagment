@@ -11,4 +11,3 @@ export interface Booking {
   paymentStatus: PaymentStatus;
   createdAt?: Date;
 }
-

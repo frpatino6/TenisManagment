@@ -34,7 +34,8 @@ export const firebaseAuthMiddleware = async (req: Request, res: Response, next: 
     // Agregar información del usuario a la request
     req.user = {
       id: user._id.toString(),
-      role: user.role
+      role: user.role,
+      uid: decodedToken.uid
     };
     
     logger.debug('Next middleware');

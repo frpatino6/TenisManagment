@@ -1,19 +1,33 @@
 import { Request, Response } from 'express';
 import { container, TYPES } from '../../infrastructure/di/container';
-import { BookLessonUseCase, CheckCourtAvailabilityUseCase, ViewBalanceUseCase, ViewPaymentHistoryUseCase, RequestServiceUseCase } from '../../domain/use-cases/index';
+import {
+  BookLessonUseCase,
+  CheckCourtAvailabilityUseCase,
+  ViewBalanceUseCase,
+  ViewPaymentHistoryUseCase,
+  RequestServiceUseCase,
+} from '../../domain/use-cases/index';
 import { BookingRepository } from '../../domain/repositories/index';
 
 export class StudentController {
   private bookLesson = container.get<BookLessonUseCase>(TYPES.BookLessonUseCase);
-  private availability = container.get<CheckCourtAvailabilityUseCase>(TYPES.CheckCourtAvailabilityUseCase);
+  private availability = container.get<CheckCourtAvailabilityUseCase>(
+    TYPES.CheckCourtAvailabilityUseCase,
+  );
   private balance = container.get<ViewBalanceUseCase>(TYPES.ViewBalanceUseCase);
-  private paymentHistory = container.get<ViewPaymentHistoryUseCase>(TYPES.ViewPaymentHistoryUseCase);
+  private paymentHistory = container.get<ViewPaymentHistoryUseCase>(
+    TYPES.ViewPaymentHistoryUseCase,
+  );
   private requestServiceUseCase = container.get<RequestServiceUseCase>(TYPES.RequestServiceUseCase);
   private bookings = container.get<BookingRepository>(TYPES.BookingRepository);
 
   availableSchedules = async (req: Request, res: Response) => {
     try {
-      const result = await this.availability.execute({ professorId: String(req.query.professorId), dateFrom: req.query.from ? new Date(String(req.query.from)) : undefined, dateTo: req.query.to ? new Date(String(req.query.to)) : undefined });
+      const result = await this.availability.execute({
+        professorId: String(req.query.professorId),
+        dateFrom: req.query.from ? new Date(String(req.query.from)) : undefined,
+        dateTo: req.query.to ? new Date(String(req.query.to)) : undefined,
+      });
       return res.json(result);
     } catch (e) {
       return res.status(400).json({ error: (e as Error).message });
@@ -67,4 +81,3 @@ export class StudentController {
     }
   };
 }
-

@@ -10,14 +10,16 @@ export interface StudentDocument {
   balance: number;
 }
 
-const StudentSchema = new Schema<StudentDocument>({
-  authUserId: { type: Schema.Types.ObjectId, ref: 'AuthUser', required: true, unique: true },
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true, index: true },
-  phone: { type: String }, // Made optional for Google Sign-In users
-  membershipType: { type: String, enum: ['basic', 'premium'], required: true },
-  balance: { type: Number, default: 0 }
-}, { timestamps: true });
+const StudentSchema = new Schema<StudentDocument>(
+  {
+    authUserId: { type: Schema.Types.ObjectId, ref: 'AuthUser', required: true, unique: true },
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true, index: true },
+    phone: { type: String }, // Made optional for Google Sign-In users
+    membershipType: { type: String, enum: ['basic', 'premium'], required: true },
+    balance: { type: Number, default: 0 },
+  },
+  { timestamps: true },
+);
 
 export const StudentModel = model<StudentDocument>('Student', StudentSchema);
-

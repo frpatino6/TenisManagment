@@ -5,4 +5,3 @@ export async function connectMongo(uri: string): Promise<void> {
 }
 
 export { mongoose };
-

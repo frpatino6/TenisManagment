@@ -20,4 +20,3 @@ router.get('/payment-history', controller.paymentHistoryList);
 router.post('/request-service', validateBody(RequestServiceSchema), controller.requestService);
 
 export default router;
-

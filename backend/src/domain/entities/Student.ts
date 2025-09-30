@@ -8,4 +8,3 @@ export interface Student {
   membershipType: MembershipType;
   balance: number;
 }
-

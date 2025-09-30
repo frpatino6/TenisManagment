@@ -19,19 +19,26 @@ export class Logger {
       msg,
       time: new Date().toISOString(),
       ...this.defaultFields,
-      ...(fields || {})
+      ...(fields || {}),
     };
-    // eslint-disable-next-line no-console
+
     console[level === 'debug' ? 'log' : level](JSON.stringify(record));
   }
 
-  debug(msg: string, fields?: LogFields): void { this.write('debug', msg, fields); }
-  info(msg: string, fields?: LogFields): void { this.write('info', msg, fields); }
-  warn(msg: string, fields?: LogFields): void { this.write('warn', msg, fields); }
-  error(msg: string, fields?: LogFields): void { this.write('error', msg, fields); }
+  debug(msg: string, fields?: LogFields): void {
+    this.write('debug', msg, fields);
+  }
+  info(msg: string, fields?: LogFields): void {
+    this.write('info', msg, fields);
+  }
+  warn(msg: string, fields?: LogFields): void {
+    this.write('warn', msg, fields);
+  }
+  error(msg: string, fields?: LogFields): void {
+    this.write('error', msg, fields);
+  }
 }
 
 export function createRequestId(): string {
   return randomUUID();
 }
-

@@ -9,4 +9,3 @@ export interface Payment {
   method: PaymentMethod;
   concept: string;
 }
-

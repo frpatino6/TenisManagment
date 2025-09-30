@@ -5,6 +5,7 @@ import { PublishSchedule, ManageCourtAvailability, TrackIncome, ManageServices }
 import { BookLesson, CheckCourtAvailability, ViewBalance, ViewPaymentHistory, RequestService } from '../../domain/use-cases/StudentUseCases';
 import { PublishScheduleUseCase, ManageCourtAvailabilityUseCase, TrackIncomeUseCase, ManageServicesUseCase, BookLessonUseCase, CheckCourtAvailabilityUseCase, ViewBalanceUseCase, ViewPaymentHistoryUseCase, RequestServiceUseCase } from '../../domain/use-cases/index';
 import { JwtService } from '../services/JwtService';
+import { config } from '../config';
 
 export const TYPES = {
   ProfessorRepository: Symbol.for('ProfessorRepository'),
@@ -41,7 +42,7 @@ container.bind<ReportRepository>(TYPES.ReportRepository).toConstantValue(new Mon
 container.bind<ServiceRequestRepository>(TYPES.ServiceRequestRepository).toConstantValue(new MongoServiceRequestRepository());
 
 // services
-container.bind<JwtService>(TYPES.JwtService).toConstantValue(new JwtService(process.env.JWT_SECRET || 'dev_secret'));
+container.bind<JwtService>(TYPES.JwtService).toConstantValue(new JwtService(config.jwtSecret));
 
 // use cases
 container.bind<PublishScheduleUseCase>(TYPES.PublishScheduleUseCase).toDynamicValue(ctx => new PublishSchedule(ctx.container.get(TYPES.ScheduleRepository)));

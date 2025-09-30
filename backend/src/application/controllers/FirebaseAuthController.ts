@@ -3,9 +3,10 @@ import { AuthUserModel } from '../../infrastructure/database/models/AuthUserMode
 import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { ProfessorModel } from '../../infrastructure/database/models/ProfessorModel';
 import { JwtService } from '../../infrastructure/services/JwtService';
+import { config } from '../../infrastructure/config';
 
 export class FirebaseAuthController {
-  private jwtService = new JwtService(process.env.JWT_SECRET!);
+  private jwtService = new JwtService(config.jwtSecret);
 
   // Verificar token de Firebase y crear/actualizar usuario
   verifyToken = async (req: Request, res: Response) => {

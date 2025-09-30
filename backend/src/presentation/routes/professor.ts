@@ -4,9 +4,10 @@ import { JwtService } from '../../infrastructure/services/JwtService';
 import { authMiddleware, requireRole } from '../../application/middleware/auth';
 import { validateBody } from '../../application/middleware/validation';
 import { PublishScheduleSchema, UpdateAvailabilitySchema, ServiceCreateSchema, ServiceUpdateSchema, PaymentCreateSchema } from '../../application/dtos/auth';
+import { config } from '../../infrastructure/config';
 
 const router = Router();
-const jwt = new JwtService(process.env.JWT_SECRET || 'dev_secret');
+const jwt = new JwtService(config.jwtSecret);
 const controller = new ProfessorController();
 
 router.use(authMiddleware(jwt), requireRole('professor'));

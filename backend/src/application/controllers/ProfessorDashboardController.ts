@@ -199,10 +199,8 @@ export class ProfessorDashboardController {
         studentId: (schedule.studentId as any)._id.toString(),
         startTime: schedule.startTime,
         endTime: schedule.endTime,
-        type: schedule.type,
         status: schedule.status || 'confirmed',
         notes: schedule.notes,
-        price: schedule.price || 0,
       }));
 
       res.json({ items: classesData });
@@ -285,10 +283,8 @@ export class ProfessorDashboardController {
         studentId: schedule.studentId ? (schedule.studentId as any)._id.toString() : '',
         startTime: schedule.startTime,
         endTime: schedule.endTime,
-        type: schedule.type,
         status: schedule.status || 'pending',
         notes: schedule.notes,
-        price: schedule.price || 0,
       }));
 
       res.json({ items: classesData });
@@ -338,10 +334,8 @@ export class ProfessorDashboardController {
         studentId: schedule.studentId ? (schedule.studentId as any)._id.toString() : '',
         startTime: schedule.startTime,
         endTime: schedule.endTime,
-        type: schedule.type,
         status: schedule.status || 'pending',
         notes: schedule.notes,
-        price: schedule.price || 0,
       }));
 
       res.json({ items: classesData });
@@ -481,10 +475,10 @@ export class ProfessorDashboardController {
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
-      const { date, startTime, endTime, type, price } = req.body;
+      const { date, startTime, endTime } = req.body;
       
-      if (!date || !startTime || !endTime || !type) {
-        return res.status(400).json({ error: 'Faltan campos requeridos' });
+      if (!date || !startTime || !endTime) {
+        return res.status(400).json({ error: 'Faltan campos requeridos: date, startTime, endTime' });
       }
 
       // Get professor
@@ -522,10 +516,8 @@ export class ProfessorDashboardController {
         date: parsedDate,
         startTime: parsedStartTime,
         endTime: parsedEndTime,
-        type,
         isAvailable: true,
-        status: 'pending',
-        price: price || professor.hourlyRate
+        status: 'pending'
       });
 
       console.log(`Schedule created: ${schedule._id}`);
@@ -536,10 +528,8 @@ export class ProfessorDashboardController {
         date: schedule.date,
         startTime: schedule.startTime,
         endTime: schedule.endTime,
-        type: schedule.type,
         isAvailable: schedule.isAvailable,
-        status: schedule.status,
-        price: schedule.price
+        status: schedule.status
       });
     } catch (error) {
       console.error('Error creating schedule:', error);
@@ -583,12 +573,10 @@ export class ProfessorDashboardController {
         date: schedule.date,
         startTime: schedule.startTime,
         endTime: schedule.endTime,
-        type: schedule.type,
         isAvailable: schedule.isAvailable,
         isBlocked: schedule.isBlocked || false,
         blockReason: schedule.blockReason || null,
         status: schedule.status,
-        price: schedule.price,
         studentName: schedule.studentId ? (schedule.studentId as any).name : null,
         studentEmail: schedule.studentId ? (schedule.studentId as any).email : null
       }));

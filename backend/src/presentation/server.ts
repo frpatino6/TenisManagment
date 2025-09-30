@@ -9,11 +9,15 @@ import apiRouter from './routes/index';
 import firebaseAuthRoutes from './routes/firebaseAuth';
 import professorDashboardRoutes from './routes/professorDashboard';
 import { config } from '../infrastructure/config';
+import { Logger } from '../infrastructure/services/Logger';
+import { requestIdMiddleware } from '../application/middleware/requestId';
 
 const app: Application = express();
+const logger = new Logger({ service: 'backend', env: config.nodeEnv });
 
 // Security middlewares
 app.use(helmet());
+app.use(requestIdMiddleware);
 
 // CORS with allowlist
 const allowedOrigins = new Set(config.http.corsOrigins);
@@ -37,15 +41,16 @@ app.use('/api/auth/firebase', firebaseAuthRoutes);
 app.use('/api/professor-dashboard', professorDashboardRoutes);
 
 // Health check
-app.get('/health', (_req: Request, res: Response) => {
-  res.status(200).json({ status: 'ok' });
+app.get('/health', (req: Request, res: Response) => {
+  res.status(200).json({ status: 'ok', requestId: req.requestId });
 });
 
 // Global error handler
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   const message = err instanceof Error ? err.message : 'Unknown error';
-  res.status(500).json({ error: message });
+  logger.error('Unhandled error', { requestId: req.requestId, error: message });
+  res.status(500).json({ error: 'Internal server error', requestId: req.requestId });
 });
 
 const PORT = config.port;
@@ -54,10 +59,10 @@ const MONGO_URI = config.mongoUri;
 async function start() {
   try {
     await mongoose.connect(MONGO_URI);
-    console.log('Connected to MongoDB');
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    logger.info('Connected to MongoDB');
+    app.listen(PORT, () => logger.info('Server started', { port: PORT }));
   } catch (error) {
-    console.error('Failed to start server', error);
+    logger.error('Failed to start server', { error: error instanceof Error ? error.message : String(error) });
     process.exit(1);
   }
 }

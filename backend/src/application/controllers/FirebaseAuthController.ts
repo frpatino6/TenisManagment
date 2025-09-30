@@ -4,9 +4,11 @@ import { StudentModel } from '../../infrastructure/database/models/StudentModel'
 import { ProfessorModel } from '../../infrastructure/database/models/ProfessorModel';
 import { JwtService } from '../../infrastructure/services/JwtService';
 import { config } from '../../infrastructure/config';
+import { Logger } from '../../infrastructure/services/Logger';
 
 export class FirebaseAuthController {
   private jwtService = new JwtService(config.jwtSecret);
+  private logger = new Logger({ controller: 'FirebaseAuthController' });
 
   // Verificar token de Firebase y crear/actualizar usuario
   verifyToken = async (req: Request, res: Response) => {
@@ -23,16 +25,16 @@ export class FirebaseAuthController {
       
       // Buscar usuario existente por Firebase UID
       let user = await AuthUserModel.findOne({ firebaseUid: decodedToken.uid });
-      console.log('User found by Firebase UID:', user ? 'Yes' : 'No');
+      this.logger.debug('User lookup by Firebase UID', { found: Boolean(user) });
       
       if (user) {
         // Verificar si ya tiene un registro en students o professors según su rol
         if (user.role === 'student') {
           const existingStudent = await StudentModel.findOne({ authUserId: user._id });
-          console.log('Student profile exists:', existingStudent ? 'Yes' : 'No');
+          this.logger.debug('Student profile exists', { found: Boolean(existingStudent) });
           
           if (!existingStudent) {
-            console.log('Creating missing Student profile for existing user:', user._id);
+            this.logger.info('Creating missing Student profile for existing user');
             await StudentModel.create({
               authUserId: user._id,
               name: user.name || decodedToken.name || 'Usuario',
@@ -40,14 +42,14 @@ export class FirebaseAuthController {
               membershipType: 'basic',
               balance: 0
             });
-            console.log('Student profile created for existing user');
+            this.logger.info('Student profile created');
           }
         } else if (user.role === 'professor') {
           const existingProfessor = await ProfessorModel.findOne({ authUserId: user._id });
-          console.log('Professor profile exists:', existingProfessor ? 'Yes' : 'No');
+          this.logger.debug('Professor profile exists', { found: Boolean(existingProfessor) });
           
           if (!existingProfessor) {
-            console.log('Creating missing Professor profile for existing user:', user._id);
+            this.logger.info('Creating missing Professor profile for existing user');
             await ProfessorModel.create({
               authUserId: user._id,
               name: user.name || decodedToken.name || 'Usuario',
@@ -56,32 +58,32 @@ export class FirebaseAuthController {
               specialties: [],
               hourlyRate: 0
             });
-            console.log('Professor profile created for existing user');
+            this.logger.info('Professor profile created');
           }
         }
       } else if (!user) {
         // Buscar por email si no existe Firebase UID
         user = await AuthUserModel.findOne({ email: decodedToken.email });
-        console.log('User found by email:', user ? 'Yes' : 'No');
+        this.logger.debug('User lookup by email', { found: Boolean(user) });
         
         if (user) {
           // Vincular Firebase UID a usuario existente
-          console.log('Linking Firebase UID to existing user:', user._id);
+          this.logger.info('Linking Firebase UID to existing user');
           user.firebaseUid = decodedToken.uid;
           await user.save();
         } else {
           // Crear nuevo usuario
-          console.log('Creating new AuthUser for Firebase UID:', decodedToken.uid);
+          this.logger.info('Creating new AuthUser for Firebase UID');
           user = await AuthUserModel.create({
             firebaseUid: decodedToken.uid,
             email: decodedToken.email,
             name: decodedToken.name || 'Usuario',
             role: 'student' // Por defecto
           });
-          console.log('AuthUser created with ID:', user._id);
+          this.logger.info('AuthUser created');
           
           // Crear perfil de estudiante por defecto
-          console.log('Creating Student profile for AuthUser:', user._id);
+          this.logger.info('Creating Student profile for AuthUser');
           const student = await StudentModel.create({
             authUserId: user._id,
             name: decodedToken.name || user.name || 'Usuario',
@@ -90,7 +92,7 @@ export class FirebaseAuthController {
             membershipType: 'basic',
             balance: 0
           });
-          console.log('Student created with ID:', student._id);
+          this.logger.info('Student created');
         }
       }
       
@@ -109,7 +111,8 @@ export class FirebaseAuthController {
         }
       });
     } catch (error) {
-      console.error('Firebase auth error:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error('Firebase auth error', { error: message });
       res.status(401).json({ error: 'Invalid token' });
     }
   };
@@ -136,18 +139,18 @@ export class FirebaseAuthController {
       }
 
       // Crear nuevo usuario
-      console.log('Creating new AuthUser for registration:', firebaseUid);
+      this.logger.info('Creating new AuthUser for registration');
       user = await AuthUserModel.create({
         firebaseUid: firebaseUid,
         email: email,
         name: name,
         role: role
       });
-      console.log('AuthUser created with ID:', user._id);
+      this.logger.info('AuthUser created');
 
       // Crear perfil según el rol
       if (role === 'student') {
-        console.log('Creating Student profile for AuthUser:', user._id);
+        this.logger.info('Creating Student profile for AuthUser');
         const student = await StudentModel.create({
           authUserId: user._id,
           name: name,
@@ -156,9 +159,9 @@ export class FirebaseAuthController {
           membershipType: 'basic',
           balance: 0
         });
-        console.log('Student created with ID:', student._id);
+        this.logger.info('Student created');
       } else if (role === 'professor') {
-        console.log('Creating Professor profile for AuthUser:', user._id);
+        this.logger.info('Creating Professor profile for AuthUser');
         const professor = await ProfessorModel.create({
           authUserId: user._id,
           name: name,
@@ -167,7 +170,7 @@ export class FirebaseAuthController {
           specialties: [],
           hourlyRate: 0
         });
-        console.log('Professor created with ID:', professor._id);
+        this.logger.info('Professor created');
       }
 
       // Generar tokens JWT
@@ -185,8 +188,9 @@ export class FirebaseAuthController {
         }
       });
     } catch (error) {
-      console.error('Registration error:', error);
-      res.status(400).json({ error: (error as Error).message });
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error('Registration error', { error: message });
+      res.status(400).json({ error: message });
     }
   };
 

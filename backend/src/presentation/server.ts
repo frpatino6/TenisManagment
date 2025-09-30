@@ -20,14 +20,26 @@ const logger = new Logger({ service: 'backend', env: config.nodeEnv });
 app.use(helmet());
 app.use(requestIdMiddleware);
 
+// Trust proxy in non-development environments (needed for correct client IP and secure cookies behind proxies)
+if (config.nodeEnv !== 'development') {
+  app.set('trust proxy', 1);
+}
+
 // CORS with allowlist
 const allowedOrigins = new Set(config.http.corsOrigins);
-app.use(cors({
-  origin: allowedOrigins.size > 0 ? (origin, callback) => {
-    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+const isProd = config.nodeEnv === 'production';
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.has(origin)) return callback(null, true);
+    if (!isProd && allowedOrigins.size === 0) return callback(null, true);
     return callback(new Error('Not allowed by CORS'));
-  } : true
-}));
+  },
+  credentials: true
+};
+app.use(cors(corsOptions));
+// Handle preflight
+app.options('*', cors(corsOptions));
 
 // JSON body limit
 app.use(express.json({ limit: config.http.jsonLimit }));
@@ -38,7 +50,11 @@ app.use(limiter);
 
 // API routes
 app.use('/api', apiRouter);
-app.use('/api/auth/firebase', firebaseAuthRoutes);
+if (config.firebase.enabled) {
+  app.use('/api/auth/firebase', firebaseAuthRoutes);
+} else {
+  logger.info('Firebase routes disabled (config.firebase.enabled is false)');
+}
 app.use('/api/professor-dashboard', professorDashboardRoutes);
 app.use('/api/student-dashboard', studentDashboardRoutes);
 
@@ -52,6 +68,9 @@ app.get('/health', (req: Request, res: Response) => {
 app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   const message = err instanceof Error ? err.message : 'Unknown error';
   logger.error('Unhandled error', { requestId: req.requestId, error: message });
+  if (message === 'Not allowed by CORS') {
+    return res.status(403).json({ error: 'CORS forbidden', requestId: req.requestId });
+  }
   res.status(500).json({ error: 'Internal server error', requestId: req.requestId });
 });
 

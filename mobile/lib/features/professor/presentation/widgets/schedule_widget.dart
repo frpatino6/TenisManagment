@@ -170,7 +170,7 @@ class ScheduleWidget extends ConsumerWidget {
                       delay: (index * 100).ms,
                     )
                     .fadeIn(duration: 400.ms, delay: (index * 100).ms);
-              }).toList(),
+              }),
             ],
           ),
         );

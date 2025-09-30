@@ -31,6 +31,16 @@ final todayScheduleProvider = FutureProvider<List<ClassScheduleModel>>((
   return await service.getTodaySchedule();
 });
 
+// Provider para el horario de una fecha específica
+final scheduleByDateProvider =
+    FutureProvider.family<List<ClassScheduleModel>, DateTime>((
+      ref,
+      date,
+    ) async {
+      final service = ref.read(professorServiceProvider);
+      return await service.getScheduleByDate(date);
+    });
+
 // Provider para el horario de la semana
 final weekScheduleProvider = FutureProvider<List<ClassScheduleModel>>((
   ref,
@@ -43,6 +53,12 @@ final weekScheduleProvider = FutureProvider<List<ClassScheduleModel>>((
 final earningsStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final service = ref.read(professorServiceProvider);
   return await service.getEarningsStats();
+});
+
+// Provider para todos los horarios del profesor
+final professorSchedulesProvider = FutureProvider<List<dynamic>>((ref) async {
+  final service = ref.read(professorServiceProvider);
+  return await service.getMySchedules();
 });
 
 // Notifier para manejar acciones del profesor
@@ -115,6 +131,56 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
+  // Crear horario disponible
+  Future<void> createSchedule({
+    required DateTime date,
+    required DateTime startTime,
+    required DateTime endTime,
+    required String type,
+    double? price,
+  }) async {
+    state = const AsyncValue.loading();
+
+    try {
+      final service = ref.read(professorServiceProvider);
+      await service.createSchedule(
+        date: date,
+        startTime: startTime,
+        endTime: endTime,
+        type: type,
+        price: price,
+      );
+
+      // Invalidar providers para refrescar datos
+      ref.invalidate(professorSchedulesProvider);
+      ref.invalidate(todayScheduleProvider);
+      ref.invalidate(weekScheduleProvider);
+
+      state = const AsyncValue.data(null);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+    }
+  }
+
+  // Eliminar horario
+  Future<void> deleteSchedule(String scheduleId) async {
+    state = const AsyncValue.loading();
+
+    try {
+      final service = ref.read(professorServiceProvider);
+      await service.deleteSchedule(scheduleId);
+
+      // Invalidar providers para refrescar datos
+      ref.invalidate(professorSchedulesProvider);
+      ref.invalidate(todayScheduleProvider);
+      ref.invalidate(weekScheduleProvider);
+
+      state = const AsyncValue.data(null);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+    }
+  }
+
   // Refrescar todos los datos
   Future<void> refreshAll() async {
     ref.invalidate(professorInfoProvider);
@@ -122,6 +188,7 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     ref.invalidate(todayScheduleProvider);
     ref.invalidate(weekScheduleProvider);
     ref.invalidate(earningsStatsProvider);
+    ref.invalidate(professorSchedulesProvider);
   }
 }
 

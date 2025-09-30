@@ -142,14 +142,6 @@ class ProfessorProfileCard extends ConsumerWidget {
                     height: 40,
                     color: colorScheme.outline.withValues(alpha: 0.2),
                   ),
-                  Expanded(
-                    child: _buildStatItem(
-                      context,
-                      'Experiencia',
-                      '${professor.experienceYears} años',
-                      Icons.work_outline,
-                    ),
-                  ),
                 ],
               ).animate().fadeIn(duration: 400.ms, delay: 500.ms),
             ],

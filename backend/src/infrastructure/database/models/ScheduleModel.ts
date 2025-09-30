@@ -9,6 +9,8 @@ export interface ScheduleDocument {
   endTime: Date;
   type: 'individual' | 'group' | 'court_rental';
   isAvailable: boolean;
+  isBlocked?: boolean;
+  blockReason?: string;
   maxStudents?: number;
   status?: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   notes?: string;
@@ -23,6 +25,8 @@ const ScheduleSchema = new Schema<ScheduleDocument>({
   endTime: { type: Date, required: true },
   type: { type: String, enum: ['individual', 'group', 'court_rental'], required: true },
   isAvailable: { type: Boolean, default: true, index: true },
+  isBlocked: { type: Boolean, default: false },
+  blockReason: { type: String },
   maxStudents: { type: Number },
   status: { type: String, enum: ['pending', 'confirmed', 'cancelled', 'completed'], default: 'pending' },
   notes: { type: String },

@@ -5,7 +5,6 @@ import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/professor_profile_card.dart';
-import '../widgets/students_list_widget.dart';
 import '../widgets/schedule_widget.dart';
 import '../widgets/earnings_widget.dart';
 import '../providers/professor_provider.dart';
@@ -40,6 +39,11 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
         backgroundColor: colorScheme.surface,
         elevation: 0,
         actions: [
+          IconButton(
+            onPressed: () => context.push('/manage-schedules'),
+            icon: Icon(Icons.calendar_month, color: colorScheme.onSurface),
+            tooltip: 'Ver mis horarios',
+          ),
           IconButton(
             onPressed: () => _showProfileMenu(context),
             icon: Icon(
@@ -77,19 +81,17 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
             // Tarjeta de perfil del profesor
             const ProfessorProfileCard(),
             const Gap(24),
-
-            // Estadísticas rápidas
-            _buildQuickStats(context),
-            const Gap(24),
-
-            // Lista de estudiantes
-            _buildStudentsSection(context),
-            const Gap(24),
-
             // Horarios de hoy
             _buildTodaySchedule(context),
             const Gap(24),
 
+            // Acciones rápidas
+            _buildQuickActionsGrid(context),
+            const Gap(24),
+
+            // Estadísticas rápidas
+            _buildQuickStats(context),
+            const Gap(24),
             // Ganancias del mes
             _buildEarningsSection(context),
             const Gap(24),
@@ -293,41 +295,140 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
         .fadeIn(duration: 400.ms);
   }
 
-  Widget _buildStudentsSection(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildQuickActionsGrid(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.3,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Mis Estudiantes',
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                // TODO: Navegar a lista completa de estudiantes
-              },
-              child: Text(
-                'Ver todos',
-                style: GoogleFonts.inter(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.w500,
+        _buildQuickActionCard(
+          context: context,
+          icon: Icons.people,
+          title: 'Mis Estudiantes',
+          subtitle: 'Ver lista completa',
+          color: Colors.blue,
+          onTap: () {
+            // TODO: Navigate to students list screen
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Pantalla de estudiantes próximamente',
+                  style: GoogleFonts.inter(),
                 ),
               ),
-            ),
-          ],
-        ).animate().fadeIn(duration: 400.ms, delay: 600.ms),
-        const Gap(16),
-        const StudentsListWidget(),
+            );
+          },
+        ),
+        _buildQuickActionCard(
+          context: context,
+          icon: Icons.calendar_today,
+          title: 'Mis Horarios',
+          subtitle: 'Gestionar disponibilidad',
+          color: Colors.green,
+          onTap: () {
+            context.push('/manage-schedules');
+          },
+        ),
+        _buildQuickActionCard(
+          context: context,
+          icon: Icons.add_circle,
+          title: 'Crear Horario',
+          subtitle: 'Agregar disponibilidad',
+          color: Colors.orange,
+          onTap: () {
+            context.push('/create-schedule');
+          },
+        ),
+        _buildQuickActionCard(
+          context: context,
+          icon: Icons.attach_money,
+          title: 'Pagos',
+          subtitle: 'Ver transacciones',
+          color: Colors.purple,
+          onTap: () {
+            // TODO: Navigate to payments screen
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Pantalla de pagos próximamente',
+                  style: GoogleFonts.inter(),
+                ),
+              ),
+            );
+          },
+        ),
       ],
+    ).animate().fadeIn(duration: 400.ms, delay: 400.ms);
+  }
+
+  Widget _buildQuickActionCard({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: [
+                color.withValues(alpha: 0.1),
+                color.withValues(alpha: 0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const Gap(8),
+              Text(
+                title,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const Gap(2),
+              Text(
+                subtitle,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

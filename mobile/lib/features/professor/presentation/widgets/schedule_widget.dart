@@ -3,16 +3,66 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../providers/professor_provider.dart';
 
-class ScheduleWidget extends ConsumerWidget {
+class ScheduleWidget extends ConsumerStatefulWidget {
   const ScheduleWidget({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ScheduleWidget> createState() => _ScheduleWidgetState();
+}
+
+class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
+  DateTime _selectedDate = DateTime.now();
+  bool _showAll = false;
+
+  void _previousDay() {
+    setState(() {
+      _selectedDate = _selectedDate.subtract(const Duration(days: 1));
+      _showAll = false; // Reset when changing date
+    });
+  }
+
+  void _nextDay() {
+    setState(() {
+      _selectedDate = _selectedDate.add(const Duration(days: 1));
+      _showAll = false; // Reset when changing date
+    });
+  }
+
+  void _toggleShowAll() {
+    setState(() {
+      _showAll = !_showAll;
+    });
+  }
+
+  String _getDateLabel() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final selected = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+    );
+
+    if (selected == today) {
+      return 'Hoy';
+    } else if (selected == today.add(const Duration(days: 1))) {
+      return 'Mañana';
+    } else if (selected == today.subtract(const Duration(days: 1))) {
+      return 'Ayer';
+    } else {
+      return DateFormat('EEE d MMM').format(_selectedDate);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final scheduleAsync = ref.watch(todayScheduleProvider);
+    // Use scheduleByDateProvider to filter schedules by selected date
+    final scheduleAsync = ref.watch(scheduleByDateProvider(_selectedDate));
 
     return scheduleAsync.when(
       data: (todayClasses) {
@@ -37,7 +87,10 @@ class ScheduleWidget extends ConsumerWidget {
                 // Header
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: colorScheme.primaryContainer.withValues(alpha: 0.3),
                     borderRadius: const BorderRadius.vertical(
@@ -52,15 +105,57 @@ class ScheduleWidget extends ConsumerWidget {
                         size: 20,
                       ),
                       const Gap(8),
-                      Text(
-                        'Horarios de Hoy',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Horarios',
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                IconButton(
+                                  onPressed: _previousDay,
+                                  icon: const Icon(
+                                    Icons.chevron_left,
+                                    size: 20,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  visualDensity: VisualDensity.compact,
+                                  color: colorScheme.primary,
+                                ),
+                                const Gap(8),
+                                Text(
+                                  _getDateLabel(),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+                                const Gap(8),
+                                IconButton(
+                                  onPressed: _nextDay,
+                                  icon: const Icon(
+                                    Icons.chevron_right,
+                                    size: 20,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  visualDensity: VisualDensity.compact,
+                                  color: colorScheme.primary,
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
-                      const Spacer(),
                       Text(
                         '0 clases',
                         style: GoogleFonts.inter(
@@ -118,7 +213,10 @@ class ScheduleWidget extends ConsumerWidget {
               // Header
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: colorScheme.primaryContainer.withValues(alpha: 0.3),
                   borderRadius: const BorderRadius.vertical(
@@ -133,15 +231,51 @@ class ScheduleWidget extends ConsumerWidget {
                       size: 20,
                     ),
                     const Gap(8),
-                    Text(
-                      'Horarios de Hoy',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Horarios',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              IconButton(
+                                onPressed: _previousDay,
+                                icon: const Icon(Icons.chevron_left, size: 20),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                visualDensity: VisualDensity.compact,
+                                color: colorScheme.primary,
+                              ),
+                              const Gap(8),
+                              Text(
+                                _getDateLabel(),
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: colorScheme.onSurface,
+                                ),
+                              ),
+                              const Gap(8),
+                              IconButton(
+                                onPressed: _nextDay,
+                                icon: const Icon(Icons.chevron_right, size: 20),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                visualDensity: VisualDensity.compact,
+                                color: colorScheme.primary,
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
-                    const Spacer(),
                     Text(
                       '${todayClasses.length} clases',
                       style: GoogleFonts.inter(
@@ -153,24 +287,59 @@ class ScheduleWidget extends ConsumerWidget {
                 ),
               ),
 
-              // Lista de clases
-              ...todayClasses.asMap().entries.map((entry) {
-                final index = entry.key;
-                final classData = entry.value;
+              // Lista de clases (mostrar 3 o todas según _showAll)
+              ...(_showAll ? todayClasses : todayClasses.take(3).toList())
+                  .asMap()
+                  .entries
+                  .map((entry) {
+                    final index = entry.key;
+                    final classData = entry.value;
+                    final isLast = _showAll
+                        ? index == todayClasses.length - 1
+                        : index == 2 || index == todayClasses.length - 1;
 
-                return _buildClassItem(
-                      context,
-                      classData,
-                      isLast: index == todayClasses.length - 1,
-                    )
-                    .animate()
-                    .slideX(
-                      duration: 600.ms,
-                      curve: Curves.easeOut,
-                      delay: (index * 100).ms,
-                    )
-                    .fadeIn(duration: 400.ms, delay: (index * 100).ms);
-              }),
+                    return _buildClassItem(context, classData, isLast: isLast)
+                        .animate()
+                        .slideX(
+                          duration: 600.ms,
+                          curve: Curves.easeOut,
+                          delay: (index * 100).ms,
+                        )
+                        .fadeIn(duration: 400.ms, delay: (index * 100).ms);
+                  }),
+
+              // Botón "Ver más/menos" si hay más de 3 clases
+              if (todayClasses.length > 3)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(
+                        color: colorScheme.outline.withValues(alpha: 0.1),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: TextButton.icon(
+                    onPressed: _toggleShowAll,
+                    icon: Icon(
+                      _showAll ? Icons.expand_less : Icons.expand_more,
+                      size: 20,
+                      color: colorScheme.primary,
+                    ),
+                    label: Text(
+                      _showAll
+                          ? 'Ver menos'
+                          : 'Ver ${todayClasses.length - 3} más',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         );

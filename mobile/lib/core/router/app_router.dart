@@ -5,6 +5,8 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/professor/presentation/screens/professor_home_screen.dart';
+import '../../features/professor/presentation/screens/create_schedule_screen.dart';
+import '../../features/professor/presentation/screens/manage_schedules_screen.dart';
 import '../../features/booking/presentation/screens/book_class_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 
@@ -63,6 +65,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/book-class',
         name: 'book-class',
         builder: (context, state) => const BookClassScreen(),
+      ),
+      GoRoute(
+        path: '/create-schedule',
+        name: 'create-schedule',
+        builder: (context, state) => const CreateScheduleScreen(),
+      ),
+      GoRoute(
+        path: '/manage-schedules',
+        name: 'manage-schedules',
+        builder: (context, state) => const ManageSchedulesScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

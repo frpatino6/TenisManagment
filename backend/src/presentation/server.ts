@@ -8,6 +8,7 @@ import mongoose from 'mongoose';
 import apiRouter from './routes/index';
 import firebaseAuthRoutes from './routes/firebaseAuth';
 import professorDashboardRoutes from './routes/professorDashboard';
+import { config } from '../infrastructure/config';
 
 const app: Application = express();
 
@@ -36,8 +37,8 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: message });
 });
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/tennis_mgmt';
+const PORT = config.port;
+const MONGO_URI = config.mongoUri;
 
 async function start() {
   try {

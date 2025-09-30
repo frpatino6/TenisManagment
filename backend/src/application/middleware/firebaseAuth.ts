@@ -14,7 +14,6 @@ export const firebaseAuthMiddleware = async (req: Request, res: Response, next: 
     }
     
     const idToken = authHeader.split('Bearer ')[1];
-    logger.debug('Verifying Firebase token');
     
     // Verificar token con Firebase
     const decodedToken = await admin.auth().verifyIdToken(idToken);
@@ -22,14 +21,13 @@ export const firebaseAuthMiddleware = async (req: Request, res: Response, next: 
     
     // Buscar usuario en la base de datos por firebaseUid
     const user = await AuthUserModel.findOne({ firebaseUid: decodedToken.uid });
-    logger.debug('User lookup by firebaseUid', { found: Boolean(user) });
     
     if (!user) {
       logger.warn('User not found for Firebase UID');
       return res.status(404).json({ error: 'User not found' });
     }
     
-    logger.debug('User authenticated');
+    
     
     // Agregar información del usuario a la request
     req.user = {
@@ -38,7 +36,6 @@ export const firebaseAuthMiddleware = async (req: Request, res: Response, next: 
       uid: decodedToken.uid
     };
     
-    logger.debug('Next middleware');
     next();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

@@ -10,7 +10,7 @@ const logger = new Logger({ controller: 'ProfessorDashboardController' });
 export class ProfessorDashboardController {
   // Obtener información del profesor
   getProfessorInfo = async (req: Request, res: Response) => {
-    logger.debug('getProfessorInfo called', { requestId: req.requestId });
+    
     
     try {
       
@@ -234,11 +234,7 @@ export class ProfessorDashboardController {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      console.log('Filtering schedules for today:', {
-        today: today.toISOString(),
-        tomorrow: tomorrow.toISOString(),
-        professorId: professor._id.toString()
-      });
+      
 
       // First, let's see ALL schedules with studentId for this professor
       const allReservedSchedules = await ScheduleModel.find({
@@ -249,15 +245,7 @@ export class ProfessorDashboardController {
         .sort({ startTime: 1 })
         .limit(5);
 
-      console.log(`Total reserved schedules for professor: ${allReservedSchedules.length}`);
-      allReservedSchedules.forEach((s, i) => {
-        console.log(`Reserved schedule ${i + 1}:`, {
-          id: s._id.toString(),
-          startTime: s.startTime.toISOString(),
-          studentName: (s.studentId as any)?.name,
-          status: s.status
-        });
-      });
+      
 
       const todayClasses = await ScheduleModel.find({
         professorId: professor._id,
@@ -270,13 +258,7 @@ export class ProfessorDashboardController {
         .populate('studentId', 'name email')
         .sort({ startTime: 1 });
 
-      console.log(`Found ${todayClasses.length} classes for today (between ${today.toISOString()} and ${tomorrow.toISOString()})`);
-      if (todayClasses.length > 0) {
-        console.log('First class:', {
-          startTime: todayClasses[0].startTime.toISOString(),
-          studentName: (todayClasses[0].studentId as any)?.name
-        });
-      }
+      
 
       // Transformar los datos para que coincidan con el formato esperado
       const classesData = todayClasses.map(schedule => ({
@@ -329,7 +311,7 @@ export class ProfessorDashboardController {
         .populate('studentId', 'name email')
         .sort({ startTime: 1 });
 
-      console.log(`Found ${weekClasses.length} classes for this week`);
+      
 
       // Transformar los datos para que coincidan con el formato esperado
       const classesData = weekClasses.map(schedule => ({
@@ -473,7 +455,7 @@ export class ProfessorDashboardController {
    * Create a new available schedule
    */
   createSchedule = async (req: Request, res: Response) => {
-    console.log('=== ProfessorDashboardController.createSchedule called ===');
+      
     
     try {
       const firebaseUid = req.user?.uid;
@@ -505,16 +487,7 @@ export class ProfessorDashboardController {
       const parsedEndTime = new Date(endTime);
       const parsedDate = new Date(date);
 
-      console.log('Received dates (from client):', { date, startTime, endTime });
-      console.log('Parsed as UTC:', { 
-        parsedDate: parsedDate.toISOString(), 
-        parsedStartTime: parsedStartTime.toISOString(),
-        parsedEndTime: parsedEndTime.toISOString()
-      });
-      console.log('Local time interpretation:', {
-        startHour: parsedStartTime.getUTCHours(),
-        endHour: parsedEndTime.getUTCHours(),
-      });
+      
 
       // Create schedule
       const schedule = await ScheduleModel.create({
@@ -528,7 +501,7 @@ export class ProfessorDashboardController {
         price: price || professor.hourlyRate
       });
 
-      console.log(`Schedule created: ${schedule._id}`);
+      
       
       res.status(201).json({
         id: schedule._id,
@@ -551,7 +524,7 @@ export class ProfessorDashboardController {
    * Get all schedules for the professor
    */
   getMySchedules = async (req: Request, res: Response) => {
-    console.log('=== ProfessorDashboardController.getMySchedules called ===');
+      
     
     try {
       const firebaseUid = req.user?.uid;
@@ -593,7 +566,7 @@ export class ProfessorDashboardController {
         studentEmail: schedule.studentId ? (schedule.studentId as any).email : null
       }));
 
-      console.log(`Found ${schedulesData.length} schedules for professor ${professor._id}`);
+      
       res.json({ items: schedulesData });
     } catch (error) {
       console.error('Error getting schedules:', error);
@@ -605,7 +578,7 @@ export class ProfessorDashboardController {
    * Delete a schedule
    */
   deleteSchedule = async (req: Request, res: Response) => {
-    console.log('=== ProfessorDashboardController.deleteSchedule called ===');
+      
     
     try {
       const firebaseUid = req.user?.uid;
@@ -631,7 +604,7 @@ export class ProfessorDashboardController {
 
       await ScheduleModel.findByIdAndDelete(scheduleId);
 
-      console.log(`Schedule deleted: ${scheduleId}`);
+      
       res.json({ message: 'Horario eliminado exitosamente' });
     } catch (error) {
       console.error('Error deleting schedule:', error);
@@ -643,7 +616,7 @@ export class ProfessorDashboardController {
    * Block a schedule (mark as unavailable for students)
    */
   blockSchedule = async (req: Request, res: Response) => {
-    console.log('=== ProfessorDashboardController.blockSchedule called ===');
+      
     
     try {
       const firebaseUid = req.user?.uid;
@@ -673,7 +646,7 @@ export class ProfessorDashboardController {
       schedule.isAvailable = false;
       await schedule.save();
 
-      console.log(`Schedule blocked: ${scheduleId}`);
+      
       res.json({ message: 'Horario bloqueado exitosamente' });
     } catch (error) {
       console.error('Error blocking schedule:', error);
@@ -685,7 +658,7 @@ export class ProfessorDashboardController {
    * Unblock a schedule
    */
   unblockSchedule = async (req: Request, res: Response) => {
-    console.log('=== ProfessorDashboardController.unblockSchedule called ===');
+      
     
     try {
       const firebaseUid = req.user?.uid;
@@ -709,7 +682,7 @@ export class ProfessorDashboardController {
       schedule.isAvailable = true;
       await schedule.save();
 
-      console.log(`Schedule unblocked: ${scheduleId}`);
+      
       res.json({ message: 'Horario desbloqueado exitosamente' });
     } catch (error) {
       console.error('Error unblocking schedule:', error);

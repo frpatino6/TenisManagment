@@ -1,11 +1,6 @@
 import admin from 'firebase-admin';
 import { config } from '../config';
 
-// Solo inicializar Firebase si las variables de entorno están configuradas
-console.log('Firebase env vars check:', {
-  enabled: config.firebase.enabled
-});
-
 if (config.firebase.enabled) {
   const serviceAccount = {
     type: "service_account",
@@ -25,9 +20,7 @@ if (config.firebase.enabled) {
       credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
       projectId: config.firebase.projectId
     });
-    console.log('Firebase Admin SDK initialized successfully');
   } else {
-    console.log('Firebase Admin SDK already initialized');
   }
 }
 

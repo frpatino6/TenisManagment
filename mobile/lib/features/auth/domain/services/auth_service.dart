@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+ 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
@@ -52,7 +52,6 @@ class AuthService {
       final UserModel userModel = await _authenticateWithBackend(user);
       return userModel;
     } catch (e) {
-      debugPrint('Error signing in with Google: $e');
       rethrow;
     }
   }
@@ -73,7 +72,6 @@ class AuthService {
       final UserModel userModel = await _authenticateWithBackend(user);
       return userModel;
     } catch (e) {
-      debugPrint('Error signing in with email: $e');
       rethrow;
     }
   }
@@ -99,7 +97,6 @@ class AuthService {
         user = userCredential.user;
       } on FirebaseAuthException catch (e) {
         if (e.code == 'email-already-in-use') {
-          debugPrint('Email already in use, attempting to sign in instead.');
           // Si el email ya está en uso, intentar iniciar sesión
           userCredential = await _firebaseAuth.signInWithEmailAndPassword(
             email: email,
@@ -131,7 +128,6 @@ class AuthService {
 
       return userModel;
     } catch (e) {
-      debugPrint('Error registering with email: $e');
       rethrow;
     }
   }
@@ -141,7 +137,6 @@ class AuthService {
     try {
       await Future.wait([_firebaseAuth.signOut(), _googleSignIn.signOut()]);
     } catch (e) {
-      debugPrint('Error signing out: $e');
       rethrow;
     }
   }
@@ -151,15 +146,11 @@ class AuthService {
     try {
       final User? user = currentFirebaseUser;
       if (user == null) {
-        debugPrint('getUserInfo: No user is currently signed in');
         throw Exception('No user is currently signed in');
       }
-
-      debugPrint('getUserInfo: Getting user info for ${user.uid}');
+      
       final idToken = await user.getIdToken(true); // Force refresh
-      debugPrint(
-        'getUserInfo: Token obtained, length: ${idToken?.length ?? 0}',
-      );
+      
 
       final response = await http.get(
         Uri.parse('$_baseUrl/firebase/me'),
@@ -169,8 +160,7 @@ class AuthService {
         },
       );
 
-      debugPrint('getUserInfo: Response status: ${response.statusCode}');
-      debugPrint('getUserInfo: Response body: ${response.body}');
+      
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
@@ -179,7 +169,6 @@ class AuthService {
         throw Exception('Failed to get user info: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error getting user info: $e');
       rethrow;
     }
   }
@@ -199,11 +188,9 @@ class AuthService {
         final Map<String, dynamic> data = json.decode(response.body);
         return UserModel.fromJson(data['user'] as Map<String, dynamic>);
       } else {
-        debugPrint('Backend authentication failed: ${response.statusCode}');
         throw Exception('Backend authentication failed');
       }
     } catch (e) {
-      debugPrint('Error authenticating with backend: $e');
       rethrow;
     }
   }
@@ -236,7 +223,6 @@ class AuthService {
         throw Exception('Failed to register user: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error registering with backend: $e');
       rethrow;
     }
   }
@@ -249,7 +235,6 @@ class AuthService {
         await user.sendEmailVerification();
       }
     } catch (e) {
-      debugPrint('Error sending email verification: $e');
       rethrow;
     }
   }
@@ -259,7 +244,6 @@ class AuthService {
     try {
       await _firebaseAuth.sendPasswordResetEmail(email: email);
     } catch (e) {
-      debugPrint('Error sending password reset email: $e');
       rethrow;
     }
   }

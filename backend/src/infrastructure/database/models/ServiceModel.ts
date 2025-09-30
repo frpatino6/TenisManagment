@@ -8,12 +8,14 @@ export interface ServiceDocument {
   category: 'stringing' | 'grip' | 'other';
 }
 
-const ServiceSchema = new Schema<ServiceDocument>({
-  name: { type: String, required: true },
-  description: { type: String, required: true },
-  price: { type: Number, required: true },
-  category: { type: String, enum: ['stringing', 'grip', 'other'], required: true }
-}, { timestamps: true });
+const ServiceSchema = new Schema<ServiceDocument>(
+  {
+    name: { type: String, required: true },
+    description: { type: String, required: true },
+    price: { type: Number, required: true },
+    category: { type: String, enum: ['stringing', 'grip', 'other'], required: true },
+  },
+  { timestamps: true },
+);
 
 export const ServiceModel = model<ServiceDocument>('Service', ServiceSchema);
-

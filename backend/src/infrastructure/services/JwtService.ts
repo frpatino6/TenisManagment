@@ -22,4 +22,3 @@ export class JwtService {
     return jwt.verify(token, this.secret) as JwtPayload;
   }
 }
-

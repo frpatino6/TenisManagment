@@ -7,7 +7,10 @@ import { StudentModel } from '../../infrastructure/database/models/StudentModel'
 import { LoginSchema, RegisterSchema } from '../dtos/auth';
 
 export class AuthController {
-  constructor(private readonly jwt: JwtService, private readonly passwordSvc = new BcryptPasswordService()) { }
+  constructor(
+    private readonly jwt: JwtService,
+    private readonly passwordSvc = new BcryptPasswordService(),
+  ) {}
 
   register = async (req: Request, res: Response) => {
     const parsed = RegisterSchema.safeParse(req.body);
@@ -24,7 +27,7 @@ export class AuthController {
         email,
         phone: profile.phone,
         specialties: profile.specialties ?? [],
-        hourlyRate: profile.hourlyRate ?? 0
+        hourlyRate: profile.hourlyRate ?? 0,
       });
       linkedId = prof._id;
     } else {
@@ -33,7 +36,7 @@ export class AuthController {
         email,
         phone: profile.phone,
         membershipType: profile.membershipType ?? 'basic',
-        balance: 0
+        balance: 0,
       });
       linkedId = student._id;
     }
@@ -67,7 +70,8 @@ export class AuthController {
     try {
       const payload = this.jwt.verify(token);
       const user = await AuthUserModel.findById(payload.sub);
-      if (!user || user.refreshToken !== token) return res.status(401).json({ error: 'Invalid refresh token' });
+      if (!user || user.refreshToken !== token)
+        return res.status(401).json({ error: 'Invalid refresh token' });
       const access = this.jwt.signAccess({ sub: user._id.toString(), role: user.role });
       const refresh = this.jwt.signRefresh({ sub: user._id.toString(), role: user.role });
       user.refreshToken = refresh;
@@ -78,4 +82,3 @@ export class AuthController {
     }
   };
 }
-

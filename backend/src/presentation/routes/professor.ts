@@ -3,7 +3,13 @@ import { ProfessorController } from '../../application/controllers/ProfessorCont
 import { JwtService } from '../../infrastructure/services/JwtService';
 import { authMiddleware, requireRole } from '../../application/middleware/auth';
 import { validateBody } from '../../application/middleware/validation';
-import { PublishScheduleSchema, UpdateAvailabilitySchema, ServiceCreateSchema, ServiceUpdateSchema, PaymentCreateSchema } from '../../application/dtos/auth';
+import {
+  PublishScheduleSchema,
+  UpdateAvailabilitySchema,
+  ServiceCreateSchema,
+  ServiceUpdateSchema,
+  PaymentCreateSchema,
+} from '../../application/dtos/auth';
 import { config } from '../../infrastructure/config';
 
 const router = Router();
@@ -25,4 +31,3 @@ router.delete('/services/:id', controller.deleteService);
 router.post('/payments', validateBody(PaymentCreateSchema), controller.createPayment);
 
 export default router;
-

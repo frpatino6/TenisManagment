@@ -5,6 +5,7 @@ import { ProfessorModel } from '../../infrastructure/database/models/ProfessorMo
 import { JwtService } from '../../infrastructure/services/JwtService';
 import { config } from '../../infrastructure/config';
 import { Logger } from '../../infrastructure/services/Logger';
+import admin from '../../infrastructure/auth/firebase';
 
 export class FirebaseAuthController {
   private jwtService = new JwtService(config.jwtSecret);
@@ -13,6 +14,9 @@ export class FirebaseAuthController {
   // Verificar token de Firebase y crear/actualizar usuario
   verifyToken = async (req: Request, res: Response) => {
     try {
+      if (!config.firebase.enabled) {
+        return res.status(503).json({ error: 'Firebase auth disabled' });
+      }
       const { idToken } = req.body;
       
       if (!idToken) {
@@ -20,7 +24,6 @@ export class FirebaseAuthController {
       }
 
       // Verificar token con Firebase Admin SDK
-      const admin = require('../../infrastructure/auth/firebase').default;
       const decodedToken = await admin.auth().verifyIdToken(idToken);
       
       // Buscar usuario existente por Firebase UID

@@ -1,11 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import admin from '../../infrastructure/auth/firebase';
+import { config } from '../../infrastructure/config';
 import { AuthUserModel } from '../../infrastructure/database/models/AuthUserModel';
 import { Logger } from '../../infrastructure/services/Logger';
 const logger = new Logger({ module: 'firebaseAuthMiddleware' });
 
 export const firebaseAuthMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (!config.firebase.enabled) {
+      logger.warn('Firebase middleware called while disabled');
+      return res.status(503).json({ error: 'Firebase auth disabled' });
+    }
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

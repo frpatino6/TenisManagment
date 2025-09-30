@@ -15,7 +15,7 @@ void main() async {
     );
   } catch (e) {
     // Firebase ya está inicializado, continuar
-    debugPrint('Firebase already initialized: $e');
+    
   }
 
   runApp(const ProviderScope(child: TennisManagementApp()));

@@ -311,15 +311,7 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
           subtitle: 'Ver lista completa',
           color: Colors.blue,
           onTap: () {
-            // TODO: Navigate to students list screen
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Pantalla de estudiantes próximamente',
-                  style: GoogleFonts.inter(),
-                ),
-              ),
-            );
+            
           },
         ),
         _buildQuickActionCard(
@@ -349,15 +341,7 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
           subtitle: 'Ver transacciones',
           color: Colors.purple,
           onTap: () {
-            // TODO: Navigate to payments screen
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Pantalla de pagos próximamente',
-                  style: GoogleFonts.inter(),
-                ),
-              ),
-            );
+            
           },
         ),
       ],

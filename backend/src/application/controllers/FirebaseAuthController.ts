@@ -25,13 +25,11 @@ export class FirebaseAuthController {
       
       // Buscar usuario existente por Firebase UID
       let user = await AuthUserModel.findOne({ firebaseUid: decodedToken.uid });
-      this.logger.debug('User lookup by Firebase UID', { found: Boolean(user) });
       
       if (user) {
         // Verificar si ya tiene un registro en students o professors según su rol
         if (user.role === 'student') {
           const existingStudent = await StudentModel.findOne({ authUserId: user._id });
-          this.logger.debug('Student profile exists', { found: Boolean(existingStudent) });
           
           if (!existingStudent) {
             this.logger.info('Creating missing Student profile for existing user');
@@ -46,7 +44,6 @@ export class FirebaseAuthController {
           }
         } else if (user.role === 'professor') {
           const existingProfessor = await ProfessorModel.findOne({ authUserId: user._id });
-          this.logger.debug('Professor profile exists', { found: Boolean(existingProfessor) });
           
           if (!existingProfessor) {
             this.logger.info('Creating missing Professor profile for existing user');
@@ -64,7 +61,6 @@ export class FirebaseAuthController {
       } else if (!user) {
         // Buscar por email si no existe Firebase UID
         user = await AuthUserModel.findOne({ email: decodedToken.email });
-        this.logger.debug('User lookup by email', { found: Boolean(user) });
         
         if (user) {
           // Vincular Firebase UID a usuario existente

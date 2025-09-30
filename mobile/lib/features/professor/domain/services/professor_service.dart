@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+ 
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/professor_model.dart';
@@ -16,16 +16,12 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        debugPrint('No Firebase user found');
         throw Exception('Usuario no autenticado');
       }
-
-      debugPrint('Firebase user found: ${user.uid}');
+      
       final idToken = await user.getIdToken(true); // Force refresh
-      debugPrint('ID Token obtained, length: ${idToken?.length ?? 0}');
-
+      
       final url = '$_baseUrl/professor-dashboard/me';
-      debugPrint('Making request to: $url');
 
       final response = await http.get(
         Uri.parse(url),
@@ -35,8 +31,7 @@ class ProfessorService {
         },
       );
 
-      debugPrint('Response status: ${response.statusCode}');
-      debugPrint('Response body: ${response.body}');
+      
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
@@ -47,7 +42,6 @@ class ProfessorService {
         );
       }
     } catch (e) {
-      debugPrint('Error getting professor info: $e');
       rethrow;
     }
   }
@@ -79,7 +73,6 @@ class ProfessorService {
         throw Exception('Error al obtener estudiantes: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error getting students: $e');
       rethrow;
     }
   }
@@ -111,7 +104,6 @@ class ProfessorService {
         throw Exception('Error al obtener horarios: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error getting today schedule: $e');
       rethrow;
     }
   }
@@ -150,7 +142,6 @@ class ProfessorService {
         throw Exception('Error al obtener horarios: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error getting schedule by date: $e');
       rethrow;
     }
   }
@@ -184,7 +175,6 @@ class ProfessorService {
         );
       }
     } catch (e) {
-      debugPrint('Error getting week schedule: $e');
       rethrow;
     }
   }
@@ -214,7 +204,6 @@ class ProfessorService {
         );
       }
     } catch (e) {
-      debugPrint('Error getting earnings stats: $e');
       rethrow;
     }
   }
@@ -254,7 +243,6 @@ class ProfessorService {
         throw Exception('Error al actualizar perfil: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error updating profile: $e');
       rethrow;
     }
   }
@@ -280,7 +268,6 @@ class ProfessorService {
         throw Exception('Error al confirmar clase: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error confirming class: $e');
       rethrow;
     }
   }
@@ -307,7 +294,6 @@ class ProfessorService {
         throw Exception('Error al cancelar clase: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error canceling class: $e');
       rethrow;
     }
   }
@@ -327,10 +313,6 @@ class ProfessorService {
       }
 
       final idToken = await user.getIdToken(true);
-      debugPrint('Creating schedule...');
-      debugPrint('Local startTime: $startTime');
-      debugPrint('Local endTime: $endTime');
-      debugPrint('ISO startTime: ${startTime.toIso8601String()}');
 
       final response = await http.post(
         Uri.parse('$_baseUrl/professor-dashboard/schedules'),
@@ -347,7 +329,7 @@ class ProfessorService {
         }),
       );
 
-      debugPrint('Response status: ${response.statusCode}');
+      
 
       if (response.statusCode == 201) {
         return json.decode(response.body) as Map<String, dynamic>;
@@ -355,7 +337,6 @@ class ProfessorService {
         throw Exception('Error al crear horario: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error creating schedule: $e');
       rethrow;
     }
   }
@@ -369,7 +350,6 @@ class ProfessorService {
       }
 
       final idToken = await user.getIdToken(true);
-      debugPrint('Getting professor schedules...');
 
       final response = await http.get(
         Uri.parse('$_baseUrl/professor-dashboard/schedules'),
@@ -379,7 +359,7 @@ class ProfessorService {
         },
       );
 
-      debugPrint('Response status: ${response.statusCode}');
+      
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
@@ -388,7 +368,6 @@ class ProfessorService {
         throw Exception('Error al obtener horarios: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error getting schedules: $e');
       rethrow;
     }
   }
@@ -402,7 +381,6 @@ class ProfessorService {
       }
 
       final idToken = await user.getIdToken(true);
-      debugPrint('Deleting schedule: $scheduleId');
 
       final response = await http.delete(
         Uri.parse('$_baseUrl/professor-dashboard/schedules/$scheduleId'),
@@ -412,14 +390,13 @@ class ProfessorService {
         },
       );
 
-      debugPrint('Response status: ${response.statusCode}');
+      
 
       if (response.statusCode != 200) {
         final error = json.decode(response.body);
         throw Exception(error['error'] ?? 'Error al eliminar horario');
       }
     } catch (e) {
-      debugPrint('Error deleting schedule: $e');
       rethrow;
     }
   }
@@ -433,7 +410,6 @@ class ProfessorService {
       }
 
       final idToken = await user.getIdToken(true);
-      debugPrint('Blocking schedule: $scheduleId');
 
       final response = await http.put(
         Uri.parse('$_baseUrl/professor-dashboard/schedules/$scheduleId/block'),
@@ -444,14 +420,13 @@ class ProfessorService {
         body: json.encode({'reason': reason}),
       );
 
-      debugPrint('Response status: ${response.statusCode}');
+      
 
       if (response.statusCode != 200) {
         final error = json.decode(response.body);
         throw Exception(error['error'] ?? 'Error al bloquear horario');
       }
     } catch (e) {
-      debugPrint('Error blocking schedule: $e');
       rethrow;
     }
   }
@@ -465,7 +440,6 @@ class ProfessorService {
       }
 
       final idToken = await user.getIdToken(true);
-      debugPrint('Unblocking schedule: $scheduleId');
 
       final response = await http.put(
         Uri.parse(
@@ -477,14 +451,13 @@ class ProfessorService {
         },
       );
 
-      debugPrint('Response status: ${response.statusCode}');
+      
 
       if (response.statusCode != 200) {
         final error = json.decode(response.body);
         throw Exception(error['error'] ?? 'Error al desbloquear horario');
       }
     } catch (e) {
-      debugPrint('Error unblocking schedule: $e');
       rethrow;
     }
   }

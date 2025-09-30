@@ -14,19 +14,29 @@ class ScheduleWidget extends ConsumerStatefulWidget {
 }
 
 class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
-  DateTime _selectedDate = DateTime.now();
+  late DateTime _selectedDate;
   bool _showAll = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicializar con la fecha de hoy (sin hora)
+    final now = DateTime.now();
+    _selectedDate = DateTime(now.year, now.month, now.day);
+  }
 
   void _previousDay() {
     setState(() {
-      _selectedDate = _selectedDate.subtract(const Duration(days: 1));
+      final newDate = _selectedDate.subtract(const Duration(days: 1));
+      _selectedDate = DateTime(newDate.year, newDate.month, newDate.day);
       _showAll = false; // Reset when changing date
     });
   }
 
   void _nextDay() {
     setState(() {
-      _selectedDate = _selectedDate.add(const Duration(days: 1));
+      final newDate = _selectedDate.add(const Duration(days: 1));
+      _selectedDate = DateTime(newDate.year, newDate.month, newDate.day);
       _showAll = false; // Reset when changing date
     });
   }
@@ -404,9 +414,7 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
             width: 4,
             height: 60,
             decoration: BoxDecoration(
-              color: isConfirmed
-                  ? colorScheme.primary
-                  : colorScheme.outline.withValues(alpha: 0.3),
+              color: colorScheme.primary,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -434,17 +442,15 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: isConfirmed
-                            ? Colors.green.withValues(alpha: 0.1)
-                            : Colors.orange.withValues(alpha: 0.1),
+                        color: Colors.green.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        isConfirmed ? 'Confirmada' : 'Pendiente',
+                        'Confirmada',
                         style: GoogleFonts.inter(
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
-                          color: isConfirmed ? Colors.green : Colors.orange,
+                          color: Colors.green,
                         ),
                       ),
                     ),

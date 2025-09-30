@@ -280,10 +280,18 @@ export class StudentDashboardController {
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
-      const { scheduleId } = req.body;
+      const { scheduleId, serviceType, price } = req.body;
       
       if (!scheduleId) {
         return res.status(400).json({ error: 'scheduleId es requerido' });
+      }
+      
+      if (!serviceType) {
+        return res.status(400).json({ error: 'serviceType es requerido' });
+      }
+      
+      if (!price || price <= 0) {
+        return res.status(400).json({ error: 'price es requerido y debe ser mayor a 0' });
       }
 
       // Get student
@@ -307,13 +315,21 @@ export class StudentDashboardController {
         return res.status(400).json({ error: 'Este horario ya no está disponible' });
       }
 
+      // Get professor from schedule
+      const professor = await ProfessorModel.findById(schedule.professorId);
+      if (!professor) {
+        return res.status(404).json({ error: 'Profesor no encontrado' });
+      }
+
       // Create booking
       const booking = await BookingModel.create({
-        studentId: student._id,
         scheduleId: schedule._id,
-        type: schedule.type === 'individual' ? 'lesson' : 'court_rental',
+        studentId: student._id,
+        professorId: professor._id,
+        serviceType: serviceType,
+        price: price,
         status: 'confirmed',
-        paymentStatus: 'pending'
+        notes: `Reserva de ${serviceType}`
       });
 
       // Update schedule availability

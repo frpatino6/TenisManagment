@@ -107,7 +107,11 @@ class BookingService {
   }
 
   /// Book a lesson
-  Future<Map<String, dynamic>> bookLesson(String scheduleId) async {
+  Future<Map<String, dynamic>> bookLesson(
+    String scheduleId, {
+    required String serviceType,
+    required double price,
+  }) async {
     try {
       final user = _auth.currentUser;
       if (user == null) {
@@ -119,7 +123,9 @@ class BookingService {
         throw Exception('No se pudo obtener el token de autenticación');
       }
 
-      debugPrint('Booking lesson with scheduleId: $scheduleId');
+      debugPrint(
+        'Booking lesson with scheduleId: $scheduleId, serviceType: $serviceType, price: $price',
+      );
 
       final response = await http.post(
         Uri.parse('$_baseUrl/student-dashboard/book-lesson'),
@@ -127,7 +133,11 @@ class BookingService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',
         },
-        body: json.encode({'scheduleId': scheduleId}),
+        body: json.encode({
+          'scheduleId': scheduleId,
+          'serviceType': serviceType,
+          'price': price,
+        }),
       );
 
       debugPrint('Response status: ${response.statusCode}');

@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../domain/models/professor_model.dart';
 import '../../domain/models/available_schedule_model.dart';
+import '../../domain/models/service_type.dart';
 import '../providers/booking_provider.dart';
 
 class BookClassScreen extends ConsumerStatefulWidget {
@@ -17,6 +18,7 @@ class BookClassScreen extends ConsumerStatefulWidget {
 class _BookClassScreenState extends ConsumerState<BookClassScreen> {
   ProfessorBookingModel? _selectedProfessor;
   AvailableScheduleModel? _selectedSchedule;
+  ServiceType _selectedServiceType = ServiceType.individualClass;
   bool _isBooking = false;
 
   @override
@@ -67,6 +69,16 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
           }),
 
           if (_selectedProfessor != null) ...[
+            const Gap(32),
+            Text(
+              'Tipo de servicio',
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.2, end: 0),
+            const Gap(16),
+            _buildServiceTypeSelection(),
             const Gap(32),
             Text(
               'Horarios disponibles',
@@ -241,6 +253,130 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
         .slideX(begin: -0.2, end: 0);
   }
 
+  Widget _buildServiceTypeSelection() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      children: ServiceType.values.map((serviceType) {
+        final isSelected = _selectedServiceType == serviceType;
+
+        return Card(
+          elevation: isSelected ? 4 : 1,
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: isSelected
+                  ? colorScheme.primary
+                  : colorScheme.outline.withValues(alpha: 0.2),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _selectedServiceType = serviceType;
+              });
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? colorScheme.primary
+                          : colorScheme.primaryContainer.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      _getServiceTypeIcon(serviceType),
+                      color: isSelected
+                          ? colorScheme.onPrimary
+                          : colorScheme.primary,
+                    ),
+                  ),
+                  const Gap(16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          serviceType.displayName,
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected
+                                ? colorScheme.primary
+                                : colorScheme.onSurface,
+                          ),
+                        ),
+                        const Gap(4),
+                        Text(
+                          _getServiceTypeDescription(serviceType),
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '\$${serviceType.defaultPrice.toStringAsFixed(0)}',
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                      Text(
+                        'por hora',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  IconData _getServiceTypeIcon(ServiceType serviceType) {
+    switch (serviceType) {
+      case ServiceType.individualClass:
+        return Icons.person;
+      case ServiceType.groupClass:
+        return Icons.groups;
+      case ServiceType.courtRental:
+        return Icons.sports_tennis;
+    }
+  }
+
+  String _getServiceTypeDescription(ServiceType serviceType) {
+    switch (serviceType) {
+      case ServiceType.individualClass:
+        return 'Clase personalizada 1 a 1';
+      case ServiceType.groupClass:
+        return 'Clase grupal (máx. 4 personas)';
+      case ServiceType.courtRental:
+        return 'Solo alquiler de cancha';
+    }
+  }
+
   Widget _buildScheduleSelection() {
     if (_selectedProfessor == null) return const SizedBox.shrink();
 
@@ -389,11 +525,18 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '\$${schedule.price.toStringAsFixed(0)}',
+                          '\$${_selectedServiceType.defaultPrice.toStringAsFixed(0)}',
                           style: GoogleFonts.inter(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                             color: colorScheme.primary,
+                          ),
+                        ),
+                        Text(
+                          _selectedServiceType.displayName,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -453,7 +596,11 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
 
     try {
       final service = ref.read(bookingServiceProvider);
-      await service.bookLesson(schedule.id);
+      await service.bookLesson(
+        schedule.id,
+        serviceType: _selectedServiceType.value,
+        price: _selectedServiceType.defaultPrice,
+      );
 
       if (!mounted) return;
 

@@ -1,8 +1,20 @@
 import { Schedule } from '../entities/Schedule';
 import { Booking } from '../entities/Booking';
 import { Payment } from '../entities/Payment';
-import { BookLessonUseCase, CheckCourtAvailabilityUseCase, ViewBalanceUseCase, ViewPaymentHistoryUseCase, RequestServiceUseCase } from './index';
-import { ScheduleRepository, BookingRepository, StudentRepository, PaymentRepository, ServiceRequestRepository } from '../repositories/index';
+import {
+  BookLessonUseCase,
+  CheckCourtAvailabilityUseCase,
+  ViewBalanceUseCase,
+  ViewPaymentHistoryUseCase,
+  RequestServiceUseCase,
+} from './index';
+import {
+  ScheduleRepository,
+  BookingRepository,
+  StudentRepository,
+  PaymentRepository,
+  ServiceRequestRepository,
+} from '../repositories/index';
 
 export class CheckCourtAvailability implements CheckCourtAvailabilityUseCase {
   constructor(private readonly schedules: ScheduleRepository) {}
@@ -30,20 +42,41 @@ export class ViewPaymentHistory implements ViewPaymentHistoryUseCase {
 
 export class RequestService implements RequestServiceUseCase {
   constructor(private readonly serviceRequests: ServiceRequestRepository) {}
-  async execute(args: { studentId: string; serviceId: string; notes?: string }): Promise<{ status: 'requested' }> {
-    await this.serviceRequests.create({ studentId: args.studentId, serviceId: args.serviceId, notes: args.notes, status: 'requested' });
+  async execute(args: {
+    studentId: string;
+    serviceId: string;
+    notes?: string;
+  }): Promise<{ status: 'requested' }> {
+    await this.serviceRequests.create({
+      studentId: args.studentId,
+      serviceId: args.serviceId,
+      notes: args.notes,
+      status: 'requested',
+    });
     return { status: 'requested' };
   }
 }
 
 export class BookLesson implements BookLessonUseCase {
-  constructor(private readonly bookings: BookingRepository, private readonly schedules: ScheduleRepository) {}
-  async execute(args: { studentId: string; scheduleId: string; type: 'lesson' | 'court_rental' }): Promise<Booking> {
+  constructor(
+    private readonly bookings: BookingRepository,
+    private readonly schedules: ScheduleRepository,
+  ) {}
+  async execute(args: {
+    studentId: string;
+    scheduleId: string;
+    type: 'lesson' | 'court_rental';
+  }): Promise<Booking> {
     const schedule = await this.schedules.findById(args.scheduleId);
     if (!schedule || !schedule.isAvailable) throw new Error('Schedule not available');
-    const booking = await this.bookings.create({ studentId: args.studentId, scheduleId: args.scheduleId, type: args.type, status: 'confirmed', paymentStatus: 'pending' });
+    const booking = await this.bookings.create({
+      studentId: args.studentId,
+      scheduleId: args.scheduleId,
+      type: args.type,
+      status: 'confirmed',
+      paymentStatus: 'pending',
+    });
     await this.schedules.update(args.scheduleId, { isAvailable: false });
     return booking;
   }
 }
-

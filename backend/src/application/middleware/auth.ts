@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { JwtService } from '../../infrastructure/services/JwtService';
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: { id: string; role: 'professor' | 'student'; uid?: string };
@@ -33,4 +32,3 @@ export function requireRole(role: 'professor' | 'student') {
     next();
   };
 }
-

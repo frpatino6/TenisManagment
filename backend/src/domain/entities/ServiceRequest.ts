@@ -6,4 +6,3 @@ export interface ServiceRequest {
   status: 'requested';
   createdAt: Date;
 }
-

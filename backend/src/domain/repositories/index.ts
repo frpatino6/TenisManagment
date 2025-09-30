@@ -23,7 +23,11 @@ export interface StudentRepository {
 
 export interface ScheduleRepository {
   publish(schedule: Omit<Schedule, 'id'>): Promise<Schedule>;
-  findAvailableByProfessor(professorId: string, dateFrom?: Date, dateTo?: Date): Promise<Schedule[]>;
+  findAvailableByProfessor(
+    professorId: string,
+    dateFrom?: Date,
+    dateTo?: Date,
+  ): Promise<Schedule[]>;
   findById(id: string): Promise<Schedule | null>;
   update(id: string, update: Partial<Schedule>): Promise<Schedule | null>;
   delete(id: string): Promise<void>;
@@ -50,10 +54,13 @@ export interface ServiceRepository {
 }
 
 export interface ReportRepository {
-  getProfessorIncome(professorId: string, from: Date, to: Date): Promise<{ total: number; breakdown: Array<{ date: string; amount: number }> }>;
+  getProfessorIncome(
+    professorId: string,
+    from: Date,
+    to: Date,
+  ): Promise<{ total: number; breakdown: Array<{ date: string; amount: number }> }>;
 }
 
 export interface ServiceRequestRepository {
   create(request: Omit<ServiceRequest, 'id' | 'createdAt'>): Promise<ServiceRequest>;
 }
-

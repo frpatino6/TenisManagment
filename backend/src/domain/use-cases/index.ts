@@ -5,7 +5,9 @@ import { Payment } from '../entities/Payment';
 import { Service } from '../entities/Service';
 
 export interface PublishScheduleUseCase {
-  execute(input: Omit<Schedule, 'id' | 'isAvailable'> & { isAvailable?: boolean }): Promise<Schedule>;
+  execute(
+    input: Omit<Schedule, 'id' | 'isAvailable'> & { isAvailable?: boolean },
+  ): Promise<Schedule>;
 }
 
 export interface ManageCourtAvailabilityUseCase {
@@ -13,7 +15,11 @@ export interface ManageCourtAvailabilityUseCase {
 }
 
 export interface TrackIncomeUseCase {
-  execute(professorId: string, from: Date, to: Date): Promise<{ total: number; breakdown: Array<{ date: string; amount: number }> }>;
+  execute(
+    professorId: string,
+    from: Date,
+    to: Date,
+  ): Promise<{ total: number; breakdown: Array<{ date: string; amount: number }> }>;
 }
 
 export interface ManageServicesUseCase {
@@ -22,7 +28,11 @@ export interface ManageServicesUseCase {
 }
 
 export interface BookLessonUseCase {
-  execute(args: { studentId: string; scheduleId: string; type: 'lesson' | 'court_rental' }): Promise<Booking>;
+  execute(args: {
+    studentId: string;
+    scheduleId: string;
+    type: 'lesson' | 'court_rental';
+  }): Promise<Booking>;
 }
 
 export interface CheckCourtAvailabilityUseCase {
@@ -38,6 +48,9 @@ export interface ViewPaymentHistoryUseCase {
 }
 
 export interface RequestServiceUseCase {
-  execute(args: { studentId: string; serviceId: string; notes?: string }): Promise<{ status: 'requested' }>;
+  execute(args: {
+    studentId: string;
+    serviceId: string;
+    notes?: string;
+  }): Promise<{ status: 'requested' }>;
 }
-

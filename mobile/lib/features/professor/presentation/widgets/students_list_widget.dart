@@ -49,7 +49,7 @@ class StudentsListWidget extends ConsumerWidget {
           );
         }
 
-        return Container(
+        return SizedBox(
           height: 200,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
@@ -105,7 +105,7 @@ class StudentsListWidget extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -120,13 +120,14 @@ class StudentsListWidget extends ConsumerWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Avatar y nombre
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: colorScheme.primary.withValues(alpha: 0.1),
@@ -137,32 +138,34 @@ class StudentsListWidget extends ConsumerWidget {
                         ? student.name[0].toUpperCase()
                         : '?',
                     style: GoogleFonts.inter(
-                      fontSize: 16,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: colorScheme.primary,
                     ),
                   ),
                 ),
               ),
-              const Gap(12),
+              const Gap(8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       student.name,
                       style: GoogleFonts.inter(
-                        fontSize: 14,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: colorScheme.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    const Gap(2),
                     Text(
                       student.level,
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: 10,
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -172,52 +175,56 @@ class StudentsListWidget extends ConsumerWidget {
             ],
           ),
 
-          const Gap(16),
+          const Gap(10),
 
           // Próxima clase
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Próxima clase',
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: 10,
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const Gap(4),
+                const Gap(2),
                 Text(
                   student.nextClassTime != null
                       ? '${student.nextClassDate} ${student.nextClassTime}'
                       : 'Sin clase programada',
                   style: GoogleFonts.inter(
-                    fontSize: 13,
+                    fontSize: 11,
                     fontWeight: FontWeight.w500,
                     color: colorScheme.onSurface,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
 
-          const Spacer(),
+          const Gap(8),
 
           // Botón de ver perfil
           SizedBox(
             width: double.infinity,
+            height: 32,
             child: TextButton(
               onPressed: () {
                 // TODO: Navegar al perfil del estudiante
               },
               style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -225,7 +232,7 @@ class StudentsListWidget extends ConsumerWidget {
               child: Text(
                 'Ver perfil',
                 style: GoogleFonts.inter(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w500,
                   color: colorScheme.primary,
                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import '../../../auth/domain/models/user_model.dart';
 
 class QuickActionsGrid extends StatelessWidget {
@@ -12,7 +13,7 @@ class QuickActionsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final actions = user.isProfessor
         ? _getProfessorActions()
-        : _getStudentActions();
+        : _getStudentActions(context);
 
     return GridView.builder(
       shrinkWrap: true,
@@ -158,7 +159,7 @@ class QuickActionsGrid extends StatelessWidget {
     ];
   }
 
-  List<QuickAction> _getStudentActions() {
+  List<QuickAction> _getStudentActions(BuildContext context) {
     return [
       QuickAction(
         title: 'Reservar Clase',
@@ -166,7 +167,7 @@ class QuickActionsGrid extends StatelessWidget {
         icon: Icons.book_online,
         color: Colors.blue,
         onTap: () {
-          // TODO: Implementar reserva de clases
+          context.push('/book-class');
         },
       ),
       QuickAction(

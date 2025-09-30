@@ -1,0 +1,603 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gap/gap.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
+import '../../domain/models/professor_model.dart';
+import '../../domain/models/available_schedule_model.dart';
+import '../providers/booking_provider.dart';
+
+class BookClassScreen extends ConsumerStatefulWidget {
+  const BookClassScreen({super.key});
+
+  @override
+  ConsumerState<BookClassScreen> createState() => _BookClassScreenState();
+}
+
+class _BookClassScreenState extends ConsumerState<BookClassScreen> {
+  ProfessorBookingModel? _selectedProfessor;
+  AvailableScheduleModel? _selectedSchedule;
+  bool _isBooking = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final professorsAsync = ref.watch(professorsProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Reservar Clase',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
+      ),
+      body: professorsAsync.when(
+        data: (professors) {
+          if (professors.isEmpty) {
+            return _buildEmptyState(context);
+          }
+          return _buildContent(context, professors);
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => _buildErrorState(context, error),
+      ),
+    );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    List<ProfessorBookingModel> professors,
+  ) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Step indicator
+          _buildStepIndicator(),
+          const Gap(24),
+
+          // Professor selection
+          Text(
+            'Paso 1: Selecciona un profesor',
+            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600),
+          ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.2, end: 0),
+          const Gap(16),
+
+          ...professors.asMap().entries.map((entry) {
+            final index = entry.key;
+            final professor = entry.value;
+            return _buildProfessorCard(professor, index);
+          }),
+
+          if (_selectedProfessor != null) ...[
+            const Gap(32),
+            Text(
+              'Paso 2: Selecciona un horario',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.2, end: 0),
+            const Gap(16),
+            _buildScheduleSelection(),
+          ],
+
+          if (_selectedSchedule != null) ...[
+            const Gap(32),
+            _buildBookingButton(),
+          ],
+
+          const Gap(24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepIndicator() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Row(
+      children: [
+        _buildStepCircle('1', _selectedProfessor != null, colorScheme),
+        Expanded(
+          child: Container(
+            height: 2,
+            color: _selectedProfessor != null
+                ? colorScheme.primary
+                : colorScheme.outline.withValues(alpha: 0.3),
+          ),
+        ),
+        _buildStepCircle('2', _selectedSchedule != null, colorScheme),
+      ],
+    );
+  }
+
+  Widget _buildStepCircle(
+    String number,
+    bool isActive,
+    ColorScheme colorScheme,
+  ) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isActive ? colorScheme.primary : colorScheme.surface,
+        border: Border.all(
+          color: isActive ? colorScheme.primary : colorScheme.outline,
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          number,
+          style: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: isActive ? colorScheme.onPrimary : colorScheme.onSurface,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfessorCard(ProfessorBookingModel professor, int index) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isSelected = _selectedProfessor?.id == professor.id;
+
+    return Card(
+          elevation: isSelected ? 4 : 1,
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: isSelected
+                  ? colorScheme.primary
+                  : colorScheme.outline.withValues(alpha: 0.2),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _selectedProfessor = professor;
+                _selectedSchedule =
+                    null; // Reset schedule when changing professor
+              });
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: colorScheme.primary.withValues(alpha: 0.1),
+                        ),
+                        child: Center(
+                          child: Text(
+                            professor.name.isNotEmpty
+                                ? professor.name[0].toUpperCase()
+                                : '?',
+                            style: GoogleFonts.inter(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Gap(16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              professor.name,
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const Gap(4),
+                            Row(
+                              children: [
+                                Icon(Icons.star, size: 16, color: Colors.amber),
+                                const Gap(4),
+                                Text(
+                                  professor.rating.toStringAsFixed(1),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                const Gap(12),
+                                Icon(
+                                  Icons.work_outline,
+                                  size: 16,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                                const Gap(4),
+                                Text(
+                                  '${professor.experienceYears} años',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '\$${professor.hourlyRate.toStringAsFixed(0)}',
+                            style: GoogleFonts.inter(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                          Text(
+                            'por hora',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (professor.specialties.isNotEmpty) ...[
+                    const Gap(12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: professor.specialties.map((specialty) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primaryContainer.withValues(
+                              alpha: 0.3,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            specialty,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        )
+        .animate()
+        .fadeIn(duration: 400.ms, delay: (index * 100).ms)
+        .slideX(begin: -0.2, end: 0);
+  }
+
+  Widget _buildScheduleSelection() {
+    if (_selectedProfessor == null) return const SizedBox.shrink();
+
+    final schedulesAsync = ref.watch(
+      availableSchedulesProvider(_selectedProfessor!.id),
+    );
+
+    return schedulesAsync.when(
+      data: (schedules) {
+        if (schedules.isEmpty) {
+          return Card(
+            elevation: 1,
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.event_busy,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const Gap(16),
+                  Text(
+                    'No hay horarios disponibles',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Column(
+          children: schedules.asMap().entries.map((entry) {
+            final index = entry.key;
+            final schedule = entry.value;
+            return _buildScheduleCard(schedule, index);
+          }).toList(),
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (error, stackTrace) => Card(
+        elevation: 1,
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const Gap(16),
+              Text(
+                'Error al cargar horarios',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScheduleCard(AvailableScheduleModel schedule, int index) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isSelected = _selectedSchedule?.id == schedule.id;
+
+    return Card(
+          elevation: isSelected ? 4 : 1,
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: isSelected
+                  ? colorScheme.primary
+                  : colorScheme.outline.withValues(alpha: 0.2),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _selectedSchedule = schedule;
+              });
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer.withValues(
+                        alpha: 0.3,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.access_time, color: colorScheme.primary),
+                  ),
+                  const Gap(16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          schedule.formattedDate,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const Gap(4),
+                        Text(
+                          schedule.formattedTimeRange,
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                        const Gap(2),
+                        Text(
+                          '${schedule.durationInMinutes} minutos',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '\$${schedule.price.toStringAsFixed(0)}',
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        )
+        .animate()
+        .fadeIn(duration: 400.ms, delay: (index * 100).ms)
+        .slideX(begin: -0.2, end: 0);
+  }
+
+  Widget _buildBookingButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: FilledButton(
+        onPressed: _isBooking ? null : _handleBooking,
+        style: FilledButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: _isBooking
+            ? const CircularProgressIndicator(color: Colors.white)
+            : Text(
+                'Confirmar Reserva',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+      ),
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0);
+  }
+
+  Future<void> _handleBooking() async {
+    if (_selectedSchedule == null || _isBooking) return;
+
+    setState(() {
+      _isBooking = true;
+    });
+
+    try {
+      final service = ref.read(bookingServiceProvider);
+      await service.bookLesson(_selectedSchedule!.id);
+
+      if (!mounted) return;
+
+      // Invalidate providers to refresh data
+      ref.invalidate(professorsProvider);
+      ref.invalidate(availableSchedulesProvider(_selectedProfessor!.id));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '¡Clase reservada exitosamente!',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      context.pop();
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isBooking = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString(), style: GoogleFonts.inter()),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.people_outline,
+              size: 64,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const Gap(16),
+            Text(
+              'No hay profesores disponibles',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, Object error) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: colorScheme.error),
+            const Gap(16),
+            Text(
+              'Error al cargar profesores',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Gap(8),
+            Text(
+              error.toString(),
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

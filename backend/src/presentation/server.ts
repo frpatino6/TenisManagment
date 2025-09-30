@@ -8,6 +8,7 @@ import mongoose from 'mongoose';
 import apiRouter from './routes/index';
 import firebaseAuthRoutes from './routes/firebaseAuth';
 import professorDashboardRoutes from './routes/professorDashboard';
+import studentDashboardRoutes from './routes/studentDashboard';
 import { config } from '../infrastructure/config';
 import { Logger } from '../infrastructure/services/Logger';
 import { requestIdMiddleware } from '../application/middleware/requestId';
@@ -39,6 +40,7 @@ app.use(limiter);
 app.use('/api', apiRouter);
 app.use('/api/auth/firebase', firebaseAuthRoutes);
 app.use('/api/professor-dashboard', professorDashboardRoutes);
+app.use('/api/student-dashboard', studentDashboardRoutes);
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {

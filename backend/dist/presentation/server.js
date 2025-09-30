@@ -12,16 +12,29 @@ const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const index_1 = __importDefault(require("./routes/index"));
 const firebaseAuth_1 = __importDefault(require("./routes/firebaseAuth"));
+const professorDashboard_1 = __importDefault(require("./routes/professorDashboard"));
+const config_1 = require("../infrastructure/config");
 const app = (0, express_1.default)();
 // Security middlewares
 app.use((0, helmet_1.default)());
-app.use((0, cors_1.default)());
-app.use(express_1.default.json());
-const limiter = (0, express_rate_limit_1.default)({ windowMs: 15 * 60 * 1000, max: 100 });
+// CORS with allowlist
+const allowedOrigins = new Set(config_1.config.http.corsOrigins);
+app.use((0, cors_1.default)({
+    origin: allowedOrigins.size > 0 ? (origin, callback) => {
+        if (!origin || allowedOrigins.has(origin))
+            return callback(null, true);
+        return callback(new Error('Not allowed by CORS'));
+    } : true
+}));
+// JSON body limit
+app.use(express_1.default.json({ limit: config_1.config.http.jsonLimit }));
+// Global rate limit
+const limiter = (0, express_rate_limit_1.default)({ windowMs: config_1.config.http.rateLimit.windowMs, max: config_1.config.http.rateLimit.max });
 app.use(limiter);
 // API routes
 app.use('/api', index_1.default);
 app.use('/api/auth/firebase', firebaseAuth_1.default);
+app.use('/api/professor-dashboard', professorDashboard_1.default);
 // Health check
 app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'ok' });
@@ -32,8 +45,8 @@ app.use((err, _req, res, _next) => {
     const message = err instanceof Error ? err.message : 'Unknown error';
     res.status(500).json({ error: message });
 });
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/tennis_mgmt';
+const PORT = config_1.config.port;
+const MONGO_URI = config_1.config.mongoUri;
 async function start() {
     try {
         await mongoose_1.default.connect(MONGO_URI);

@@ -6,6 +6,7 @@ const MongoRepositories_1 = require("../repositories/MongoRepositories");
 const ProfessorUseCases_1 = require("../../domain/use-cases/ProfessorUseCases");
 const StudentUseCases_1 = require("../../domain/use-cases/StudentUseCases");
 const JwtService_1 = require("../services/JwtService");
+const config_1 = require("../config");
 exports.TYPES = {
     ProfessorRepository: Symbol.for('ProfessorRepository'),
     StudentRepository: Symbol.for('StudentRepository'),
@@ -38,7 +39,7 @@ exports.container.bind(exports.TYPES.ServiceRepository).toConstantValue(new Mong
 exports.container.bind(exports.TYPES.ReportRepository).toConstantValue(new MongoRepositories_1.MongoReportRepository());
 exports.container.bind(exports.TYPES.ServiceRequestRepository).toConstantValue(new MongoRepositories_1.MongoServiceRequestRepository());
 // services
-exports.container.bind(exports.TYPES.JwtService).toConstantValue(new JwtService_1.JwtService(process.env.JWT_SECRET || 'dev_secret'));
+exports.container.bind(exports.TYPES.JwtService).toConstantValue(new JwtService_1.JwtService(config_1.config.jwtSecret));
 // use cases
 exports.container.bind(exports.TYPES.PublishScheduleUseCase).toDynamicValue(ctx => new ProfessorUseCases_1.PublishSchedule(ctx.container.get(exports.TYPES.ScheduleRepository)));
 exports.container.bind(exports.TYPES.ManageCourtAvailabilityUseCase).toDynamicValue(ctx => new ProfessorUseCases_1.ManageCourtAvailability(ctx.container.get(exports.TYPES.ScheduleRepository)));

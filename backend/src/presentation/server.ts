@@ -14,10 +14,21 @@ const app: Application = express();
 
 // Security middlewares
 app.use(helmet());
-app.use(cors());
-app.use(express.json());
 
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
+// CORS with allowlist
+const allowedOrigins = new Set(config.http.corsOrigins);
+app.use(cors({
+  origin: allowedOrigins.size > 0 ? (origin, callback) => {
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  } : true
+}));
+
+// JSON body limit
+app.use(express.json({ limit: config.http.jsonLimit }));
+
+// Global rate limit
+const limiter = rateLimit({ windowMs: config.http.rateLimit.windowMs, max: config.http.rateLimit.max });
 app.use(limiter);
 
 // API routes

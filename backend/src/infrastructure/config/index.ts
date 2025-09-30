@@ -7,7 +7,12 @@ const EnvSchema = z.object({
   JWT_SECRET: z.string().min(10, 'JWT_SECRET must be at least 10 characters'),
   FIREBASE_PROJECT_ID: z.string().optional(),
   FIREBASE_PRIVATE_KEY: z.string().optional(),
-  FIREBASE_CLIENT_EMAIL: z.string().optional()
+  FIREBASE_CLIENT_EMAIL: z.string().optional(),
+  CORS_ORIGINS: z.string().optional(), // comma-separated
+  JSON_LIMIT: z.string().default('1mb'),
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(15 * 60 * 1000),
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
+  RATE_LIMIT_AUTH_MAX: z.coerce.number().int().positive().default(20)
 });
 
 const parsed = EnvSchema.safeParse(process.env);
@@ -27,6 +32,15 @@ export const config = {
   port: env.PORT,
   mongoUri: env.MONGO_URI,
   jwtSecret: env.JWT_SECRET,
+  http: {
+    corsOrigins: env.CORS_ORIGINS?.split(',').map(o => o.trim()).filter(Boolean) ?? [],
+    jsonLimit: env.JSON_LIMIT,
+    rateLimit: {
+      windowMs: env.RATE_LIMIT_WINDOW_MS,
+      max: env.RATE_LIMIT_MAX,
+      authMax: env.RATE_LIMIT_AUTH_MAX
+    }
+  },
   firebase: {
     enabled: firebaseEnabled,
     projectId: env.FIREBASE_PROJECT_ID,

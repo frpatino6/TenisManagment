@@ -11,6 +11,8 @@ router.use(firebaseAuth_1.firebaseAuthMiddleware);
 router.get('/me', professorDashboardController.getProfessorInfo);
 // Obtener lista de estudiantes
 router.get('/students', professorDashboardController.getStudents);
+// Obtener horarios por fecha específica
+router.get('/schedule/by-date', professorDashboardController.getScheduleByDate);
 // Obtener horarios de hoy
 router.get('/schedule/today', professorDashboardController.getTodaySchedule);
 // Obtener horarios de la semana
@@ -23,5 +25,15 @@ router.put('/profile', professorDashboardController.updateProfile);
 router.put('/schedule/:classId/confirm', professorDashboardController.confirmClass);
 // Cancelar clase
 router.put('/schedule/:classId/cancel', professorDashboardController.cancelClass);
+// Create a new schedule
+router.post('/schedules', professorDashboardController.createSchedule);
+// Get all schedules for the professor
+router.get('/schedules', professorDashboardController.getMySchedules);
+// Delete a schedule
+router.delete('/schedules/:scheduleId', professorDashboardController.deleteSchedule);
+// Block a schedule
+router.put('/schedules/:scheduleId/block', professorDashboardController.blockSchedule);
+// Unblock a schedule
+router.put('/schedules/:scheduleId/unblock', professorDashboardController.unblockSchedule);
 exports.default = router;
 //# sourceMappingURL=professorDashboard.js.map

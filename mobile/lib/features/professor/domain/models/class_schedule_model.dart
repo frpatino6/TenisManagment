@@ -52,13 +52,15 @@ class ClassScheduleModel extends Equatable {
   }
 
   String get formattedTime {
-    final hour = startTime.hour.toString().padLeft(2, '0');
-    final minute = startTime.minute.toString().padLeft(2, '0');
-    return '$hour:$minute ${startTime.hour < 12 ? 'AM' : 'PM'}';
+    final localStart = startTime.toLocal();
+    final hour = localStart.hour.toString().padLeft(2, '0');
+    final minute = localStart.minute.toString().padLeft(2, '0');
+    return '$hour:$minute ${localStart.hour < 12 ? 'AM' : 'PM'}';
   }
 
   String get formattedDate {
-    return '${startTime.day}/${startTime.month}/${startTime.year}';
+    final localStart = startTime.toLocal();
+    return '${localStart.day}/${localStart.month}/${localStart.year}';
   }
 
   Duration get duration {

@@ -125,9 +125,10 @@ class ProfessorService {
 
       final idToken = await user.getIdToken(true);
 
-      // Format date as YYYY-MM-DD
+      // Format date as YYYY-MM-DD (use local date, not UTC)
+      final localDate = DateTime(date.year, date.month, date.day);
       final dateStr =
-          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+          '${localDate.year}-${localDate.month.toString().padLeft(2, '0')}-${localDate.day.toString().padLeft(2, '0')}';
 
       final response = await http.get(
         Uri.parse(

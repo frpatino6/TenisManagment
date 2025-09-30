@@ -174,39 +174,33 @@ export class ProfessorDashboardController {
         return res.status(400).json({ error: 'Formato de fecha inválido (use YYYY-MM-DD)' });
       }
 
-      // Adjust for Colombia timezone (UTC-5)
-      const colombiaDate = new Date(targetDate.getTime() - (5 * 60 * 60 * 1000));
-      colombiaDate.setHours(0, 0, 0, 0);
-      const nextDay = new Date(colombiaDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-
-      console.log(`Getting schedules for date ${date}:`, {
-        targetDate: targetDate.toISOString(),
-        colombiaDate: colombiaDate.toISOString(),
-        nextDay: nextDay.toISOString()
-      });
-
+      // Create date range for the target date (handle timezone properly)
+      const startOfDay = new Date(targetDate);
+      startOfDay.setUTCHours(0, 0, 0, 0);
+      const endOfDay = new Date(targetDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+      
       const schedules = await ScheduleModel.find({
         professorId: professor._id,
         startTime: {
-          $gte: colombiaDate,
-          $lt: nextDay
+          $gte: startOfDay,
+          $lte: endOfDay
         },
-        studentId: { $exists: true, $ne: null }
+        studentId: { $exists: true, $ne: null } // Only reserved schedules
       })
         .populate('studentId', 'name email')
         .sort({ startTime: 1 });
 
-      console.log(`Found ${schedules.length} classes for date ${date}`);
+
 
       const classesData = schedules.map(schedule => ({
         id: schedule._id.toString(),
-        studentName: schedule.studentId ? (schedule.studentId as any).name : 'Estudiante',
-        studentId: schedule.studentId ? (schedule.studentId as any)._id.toString() : '',
+        studentName: (schedule.studentId as any).name,
+        studentId: (schedule.studentId as any)._id.toString(),
         startTime: schedule.startTime,
         endTime: schedule.endTime,
         type: schedule.type,
-        status: schedule.status || 'pending',
+        status: schedule.status || 'confirmed',
         notes: schedule.notes,
         price: schedule.price || 0,
       }));

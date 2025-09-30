@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:go_router/go_router.dart';
 import '../../domain/models/professor_model.dart';
 import '../../domain/models/available_schedule_model.dart';
 import '../providers/booking_provider.dart';
@@ -54,14 +53,10 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Step indicator
-          _buildStepIndicator(),
-          const Gap(24),
-
           // Professor selection
           Text(
-            'Paso 1: Selecciona un profesor',
-            style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600),
+            'Selecciona un profesor',
+            style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700),
           ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.2, end: 0),
           const Gap(16),
 
@@ -74,72 +69,18 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
           if (_selectedProfessor != null) ...[
             const Gap(32),
             Text(
-              'Paso 2: Selecciona un horario',
+              'Horarios disponibles',
               style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
               ),
             ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.2, end: 0),
             const Gap(16),
             _buildScheduleSelection(),
           ],
 
-          if (_selectedSchedule != null) ...[
-            const Gap(32),
-            _buildBookingButton(),
-          ],
-
           const Gap(24),
         ],
-      ),
-    );
-  }
-
-  Widget _buildStepIndicator() {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Row(
-      children: [
-        _buildStepCircle('1', _selectedProfessor != null, colorScheme),
-        Expanded(
-          child: Container(
-            height: 2,
-            color: _selectedProfessor != null
-                ? colorScheme.primary
-                : colorScheme.outline.withValues(alpha: 0.3),
-          ),
-        ),
-        _buildStepCircle('2', _selectedSchedule != null, colorScheme),
-      ],
-    );
-  }
-
-  Widget _buildStepCircle(
-    String number,
-    bool isActive,
-    ColorScheme colorScheme,
-  ) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isActive ? colorScheme.primary : colorScheme.surface,
-        border: Border.all(
-          color: isActive ? colorScheme.primary : colorScheme.outline,
-          width: 2,
-        ),
-      ),
-      child: Center(
-        child: Text(
-          number,
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: isActive ? colorScheme.onPrimary : colorScheme.onSurface,
-          ),
-        ),
       ),
     );
   }
@@ -378,90 +319,120 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
   Widget _buildScheduleCard(AvailableScheduleModel schedule, int index) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isSelected = _selectedSchedule?.id == schedule.id;
+    final isBookingThisSchedule =
+        _isBooking && _selectedSchedule?.id == schedule.id;
 
     return Card(
-          elevation: isSelected ? 4 : 1,
+          elevation: 1,
           margin: const EdgeInsets.only(bottom: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
-              color: isSelected
-                  ? colorScheme.primary
-                  : colorScheme.outline.withValues(alpha: 0.2),
-              width: isSelected ? 2 : 1,
+              color: colorScheme.outline.withValues(alpha: 0.2),
+              width: 1,
             ),
           ),
-          child: InkWell(
-            onTap: () {
-              setState(() {
-                _selectedSchedule = schedule;
-              });
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer.withValues(
-                        alpha: 0.3,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer.withValues(
+                          alpha: 0.3,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      borderRadius: BorderRadius.circular(8),
+                      child: Icon(
+                        Icons.access_time,
+                        color: colorScheme.primary,
+                      ),
                     ),
-                    child: Icon(Icons.access_time, color: colorScheme.primary),
-                  ),
-                  const Gap(16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const Gap(16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            schedule.formattedDate,
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          const Gap(4),
+                          Text(
+                            schedule.formattedTimeRange,
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                          const Gap(2),
+                          Text(
+                            '${schedule.durationInMinutes} minutos',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          schedule.formattedDate,
+                          '\$${schedule.price.toStringAsFixed(0)}',
                           style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        const Gap(4),
-                        Text(
-                          schedule.formattedTimeRange,
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
                             color: colorScheme.primary,
-                          ),
-                        ),
-                        const Gap(2),
-                        Text(
-                          '${schedule.durationInMinutes} minutos',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '\$${schedule.price.toStringAsFixed(0)}',
-                        style: GoogleFonts.inter(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: colorScheme.primary,
-                        ),
+                  ],
+                ),
+                const Gap(12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: FilledButton.icon(
+                    onPressed: isBookingThisSchedule
+                        ? null
+                        : () => _handleBookingForSchedule(schedule),
+                    style: FilledButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    ],
+                    ),
+                    icon: isBookingThisSchedule
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(Icons.check_circle, size: 20),
+                    label: Text(
+                      isBookingThisSchedule ? 'Reservando...' : 'Reservar',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         )
@@ -470,46 +441,27 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
         .slideX(begin: -0.2, end: 0);
   }
 
-  Widget _buildBookingButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: FilledButton(
-        onPressed: _isBooking ? null : _handleBooking,
-        style: FilledButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: _isBooking
-            ? const CircularProgressIndicator(color: Colors.white)
-            : Text(
-                'Confirmar Reserva',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-      ),
-    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0);
-  }
-
-  Future<void> _handleBooking() async {
-    if (_selectedSchedule == null || _isBooking) return;
+  Future<void> _handleBookingForSchedule(
+    AvailableScheduleModel schedule,
+  ) async {
+    if (_isBooking) return;
 
     setState(() {
       _isBooking = true;
+      _selectedSchedule = schedule;
     });
 
     try {
       final service = ref.read(bookingServiceProvider);
-      await service.bookLesson(_selectedSchedule!.id);
+      await service.bookLesson(schedule.id);
 
       if (!mounted) return;
 
       // Invalidate providers to refresh data
       ref.invalidate(professorsProvider);
-      ref.invalidate(availableSchedulesProvider(_selectedProfessor!.id));
+      if (_selectedProfessor != null) {
+        ref.invalidate(availableSchedulesProvider(_selectedProfessor!.id));
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -518,15 +470,21 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
             style: GoogleFonts.inter(),
           ),
           backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
         ),
       );
 
-      context.pop();
+      // Reset state after successful booking
+      setState(() {
+        _isBooking = false;
+        _selectedSchedule = null;
+      });
     } catch (error) {
       if (!mounted) return;
 
       setState(() {
         _isBooking = false;
+        _selectedSchedule = null;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(

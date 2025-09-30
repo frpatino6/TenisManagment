@@ -241,7 +241,11 @@ export class StudentDashboardController {
       const schedules = await ScheduleModel.find({
         professorId,
         startTime: { $gte: new Date() }, // Only future schedules
-        isAvailable: true // Only available slots
+        isAvailable: true, // Only available slots
+        $or: [
+          { isBlocked: { $exists: false } },
+          { isBlocked: false }
+        ]
       })
         .sort({ startTime: 1 })
         .limit(100);

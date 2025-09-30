@@ -317,8 +317,6 @@ class ProfessorService {
     required DateTime date,
     required DateTime startTime,
     required DateTime endTime,
-    required String type,
-    double? price,
   }) async {
     try {
       final user = _firebaseAuth.currentUser;
@@ -342,8 +340,6 @@ class ProfessorService {
           'date': date.toIso8601String(),
           'startTime': startTime.toIso8601String(),
           'endTime': endTime.toIso8601String(),
-          'type': type,
-          if (price != null) 'price': price,
         }),
       );
 

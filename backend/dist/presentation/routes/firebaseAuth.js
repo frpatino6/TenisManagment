@@ -7,6 +7,8 @@ const router = (0, express_1.Router)();
 const firebaseAuthController = new FirebaseAuthController_1.FirebaseAuthController();
 // Verificar token de Firebase
 router.post('/verify', firebaseAuthController.verifyToken);
+// Registrar usuario con email/contraseña
+router.post('/register', firebaseAuthController.registerUser);
 // Obtener información del usuario autenticado
 router.get('/me', firebaseAuth_1.firebaseAuthMiddleware, firebaseAuthController.getMe);
 exports.default = router;

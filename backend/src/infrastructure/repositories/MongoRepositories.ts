@@ -54,22 +54,22 @@ export class MongoStudentRepository implements StudentRepository {
   }
   async findById(id: string): Promise<Student | null> {
     const doc = await StudentModel.findById(id).lean();
-    return doc ? { id: doc._id.toString(), name: doc.name, email: doc.email, phone: doc.phone, membershipType: doc.membershipType, balance: doc.balance } : null;
+    return doc ? { id: doc._id.toString(), name: doc.name, email: doc.email, phone: doc.phone ?? '', membershipType: doc.membershipType, balance: doc.balance } : null;
   }
   async findByEmail(email: string): Promise<Student | null> {
     const doc = await StudentModel.findOne({ email }).lean();
-    return doc ? { id: doc._id.toString(), name: doc.name, email: doc.email, phone: doc.phone, membershipType: doc.membershipType, balance: doc.balance } : null;
+    return doc ? { id: doc._id.toString(), name: doc.name, email: doc.email, phone: doc.phone ?? '', membershipType: doc.membershipType, balance: doc.balance } : null;
   }
   async updateBalance(id: string, delta: number): Promise<Student | null> {
     const doc = await StudentModel.findByIdAndUpdate(id, { $inc: { balance: delta } }, { new: true }).lean();
-    return doc ? { id: doc._id.toString(), name: doc.name, email: doc.email, phone: doc.phone, membershipType: doc.membershipType, balance: doc.balance } : null;
+    return doc ? { id: doc._id.toString(), name: doc.name, email: doc.email, phone: doc.phone ?? '', membershipType: doc.membershipType, balance: doc.balance } : null;
   }
 }
 
 export class MongoScheduleRepository implements ScheduleRepository {
   async publish(schedule: Omit<Schedule, 'id'>): Promise<Schedule> {
     const created = await ScheduleModel.create({ ...schedule, professorId: new Types.ObjectId(schedule.professorId) });
-    return { id: created._id.toString(), professorId: created.professorId.toString(), date: created.date, startTime: created.startTime, endTime: created.endTime, type: created.type, isAvailable: created.isAvailable, maxStudents: created.maxStudents };
+    return { id: created._id.toString(), professorId: created.professorId.toString(), date: created.date, startTime: created.startTime.toISOString(), endTime: created.endTime.toISOString(), type: created.type, isAvailable: created.isAvailable, maxStudents: created.maxStudents };
   }
   async findAvailableByProfessor(professorId: string, dateFrom?: Date, dateTo?: Date): Promise<Schedule[]> {
     const query: any = { professorId: new Types.ObjectId(professorId), isAvailable: true };
@@ -79,15 +79,15 @@ export class MongoScheduleRepository implements ScheduleRepository {
       if (dateTo) query.date.$lte = dateTo;
     }
     const docs = await ScheduleModel.find(query).lean();
-    return docs.map(d => ({ id: d._id.toString(), professorId: d.professorId.toString(), date: d.date, startTime: d.startTime, endTime: d.endTime, type: d.type, isAvailable: d.isAvailable, maxStudents: d.maxStudents }));
+    return docs.map(d => ({ id: d._id.toString(), professorId: d.professorId.toString(), date: d.date, startTime: (d.startTime as Date).toISOString(), endTime: (d.endTime as Date).toISOString(), type: d.type, isAvailable: d.isAvailable, maxStudents: d.maxStudents }));
   }
   async findById(id: string): Promise<Schedule | null> {
     const d = await ScheduleModel.findById(id).lean();
-    return d ? { id: d._id.toString(), professorId: d.professorId.toString(), date: d.date, startTime: d.startTime, endTime: d.endTime, type: d.type, isAvailable: d.isAvailable, maxStudents: d.maxStudents } : null;
+    return d ? { id: d._id.toString(), professorId: d.professorId.toString(), date: d.date, startTime: (d.startTime as Date).toISOString(), endTime: (d.endTime as Date).toISOString(), type: d.type, isAvailable: d.isAvailable, maxStudents: d.maxStudents } : null;
   }
   async update(id: string, update: Partial<Schedule>): Promise<Schedule | null> {
     const d = await ScheduleModel.findByIdAndUpdate(id, update, { new: true }).lean();
-    return d ? { id: d._id.toString(), professorId: d.professorId.toString(), date: d.date, startTime: d.startTime, endTime: d.endTime, type: d.type, isAvailable: d.isAvailable, maxStudents: d.maxStudents } : null;
+    return d ? { id: d._id.toString(), professorId: d.professorId.toString(), date: d.date, startTime: (d.startTime as Date).toISOString(), endTime: (d.endTime as Date).toISOString(), type: d.type, isAvailable: d.isAvailable, maxStudents: d.maxStudents } : null;
   }
   async delete(id: string): Promise<void> {
     await ScheduleModel.findByIdAndDelete(id);

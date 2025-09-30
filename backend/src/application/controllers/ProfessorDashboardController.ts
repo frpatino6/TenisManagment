@@ -3,29 +3,27 @@ import { ProfessorModel } from '../../infrastructure/database/models/ProfessorMo
 import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { ScheduleModel } from '../../infrastructure/database/models/ScheduleModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
+import { Logger } from '../../infrastructure/services/Logger';
+const logger = new Logger({ controller: 'ProfessorDashboardController' });
 
 export class ProfessorDashboardController {
   // Obtener información del profesor
   getProfessorInfo = async (req: Request, res: Response) => {
-    console.log('=== ProfessorDashboardController.getProfessorInfo called ===');
-    console.log('req.user:', req.user);
-    console.log('req.headers:', req.headers);
-    console.log('req.url:', req.url);
-    console.log('req.method:', req.method);
+    logger.debug('getProfessorInfo called', { requestId: req.requestId });
     
     try {
       
       const professorId = req.user?.id;
       if (!professorId) {
-        console.log('No professorId found in req.user');
+        logger.warn('Missing professorId in req.user', { requestId: req.requestId });
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
-      console.log('Looking for professor with authUserId:', professorId);
+      logger.debug('Looking for professor by authUserId');
       let professor = await ProfessorModel.findOne({ authUserId: professorId });
       
       if (!professor) {
-        console.log('Professor not found for authUserId:', professorId);
+        logger.info('Professor not found, creating');
         
         // Buscar el AuthUser para obtener información
         const { AuthUserModel } = require('../../infrastructure/database/models/AuthUserModel');
@@ -35,7 +33,7 @@ export class ProfessorDashboardController {
           return res.status(404).json({ error: 'Usuario de autenticación no encontrado' });
         }
         
-        console.log('Creating professor record for authUser:', authUser.email);
+        logger.debug('Creating professor record');
         
         // Crear el registro del profesor
         professor = await ProfessorModel.create({
@@ -47,9 +45,9 @@ export class ProfessorDashboardController {
           hourlyRate: 0
         });
         
-        console.log('Professor created:', { id: professor._id, name: professor.name });
+        logger.info('Professor created');
       } else {
-        console.log('Professor found:', { id: professor._id, name: professor.name });
+        logger.debug('Professor found');
       }
 
       // Calcular estadísticas reales
@@ -80,11 +78,11 @@ export class ProfessorDashboardController {
         experienceYears: experienceYears,
       };
 
-      console.log('Sending response with professor info:', professorInfo);
+      logger.debug('Sending professor info');
       res.json(professorInfo);
     } catch (error) {
-      console.error('Error getting professor info:', error);
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Error getting professor info', { error: message, requestId: req.requestId });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -144,7 +142,8 @@ export class ProfessorDashboardController {
 
       res.json({ items: studentsData });
     } catch (error) {
-      console.error('Error getting students:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Error getting students', { error: message, requestId: req.requestId });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -191,7 +190,8 @@ export class ProfessorDashboardController {
 
       res.json({ items: classesData });
     } catch (error) {
-      console.error('Error getting today schedule:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Error getting today schedule', { error: message, requestId: req.requestId });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -238,7 +238,8 @@ export class ProfessorDashboardController {
 
       res.json({ items: classesData });
     } catch (error) {
-      console.error('Error getting week schedule:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Error getting week schedule', { error: message, requestId: req.requestId });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -292,7 +293,8 @@ export class ProfessorDashboardController {
 
       res.json(earnings);
     } catch (error) {
-      console.error('Error getting earnings stats:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Error getting earnings stats', { error: message, requestId: req.requestId });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -324,7 +326,8 @@ export class ProfessorDashboardController {
 
       res.json(professor);
     } catch (error) {
-      console.error('Error updating profile:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Error updating profile', { error: message, requestId: req.requestId });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -334,10 +337,11 @@ export class ProfessorDashboardController {
     try {
       const { classId } = req.params;
       // TODO: Implement actual class confirmation logic
-      console.log(`Class ${classId} confirmed`);
+      logger.info('Class confirmed', { classId, requestId: req.requestId });
       res.json({ message: `Class ${classId} confirmed` });
     } catch (error) {
-      console.error('Error confirming class:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Error confirming class', { error: message, requestId: req.requestId });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -348,10 +352,11 @@ export class ProfessorDashboardController {
       const { classId } = req.params;
       const { reason } = req.body;
       // TODO: Implement actual class cancellation logic
-      console.log(`Class ${classId} cancelled with reason: ${reason}`);
+      logger.info('Class cancelled', { classId, requestId: req.requestId });
       res.json({ message: `Class ${classId} cancelled` });
     } catch (error) {
-      console.error('Error canceling class:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Error canceling class', { error: message, requestId: req.requestId });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

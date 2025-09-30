@@ -13,6 +13,7 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const index_1 = __importDefault(require("./routes/index"));
 const firebaseAuth_1 = __importDefault(require("./routes/firebaseAuth"));
 const professorDashboard_1 = __importDefault(require("./routes/professorDashboard"));
+const studentDashboard_1 = __importDefault(require("./routes/studentDashboard"));
 const config_1 = require("../infrastructure/config");
 const Logger_1 = require("../infrastructure/services/Logger");
 const requestId_1 = require("../application/middleware/requestId");
@@ -39,6 +40,7 @@ app.use(limiter);
 app.use('/api', index_1.default);
 app.use('/api/auth/firebase', firebaseAuth_1.default);
 app.use('/api/professor-dashboard', professorDashboard_1.default);
+app.use('/api/student-dashboard', studentDashboard_1.default);
 // Health check
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok', requestId: req.requestId });

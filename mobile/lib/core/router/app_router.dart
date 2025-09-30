@@ -5,6 +5,7 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/professor/presentation/screens/professor_home_screen.dart';
+import '../../features/booking/presentation/screens/book_class_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -57,6 +58,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/professor-home',
         name: 'professor-home',
         builder: (context, state) => const ProfessorHomeScreen(),
+      ),
+      GoRoute(
+        path: '/book-class',
+        name: 'book-class',
+        builder: (context, state) => const BookClassScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

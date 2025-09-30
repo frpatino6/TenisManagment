@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/user_model.dart';
 
 class AuthService {
@@ -23,26 +24,36 @@ class AuthService {
   // Iniciar sesión con Google
   Future<UserModel> signInWithGoogle() async {
     try {
-      // Iniciar el flujo de Google Sign-In
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        throw Exception('Google Sign-In was cancelled');
+      User? user;
+
+      if (kIsWeb) {
+        // Web: usar popup con Firebase Auth directamente
+        final provider = GoogleAuthProvider();
+        provider.setCustomParameters({
+          'prompt': 'select_account',
+        });
+        final UserCredential userCredential =
+            await _firebaseAuth.signInWithPopup(provider);
+        user = userCredential.user;
+      } else {
+        // Mobile/Desktop: usar flujo de google_sign_in + credenciales
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) {
+          throw Exception('Google Sign-In was cancelled');
+        }
+
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+
+        final OAuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        final UserCredential userCredential =
+            await _firebaseAuth.signInWithCredential(credential);
+        user = userCredential.user;
       }
-
-      // Obtener los detalles de autenticación
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      // Crear una nueva credencial
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Iniciar sesión con Firebase
-      final UserCredential userCredential = await _firebaseAuth
-          .signInWithCredential(credential);
-      final User? user = userCredential.user;
 
       if (user == null) {
         throw Exception('Failed to sign in with Google');
@@ -135,7 +146,15 @@ class AuthService {
   // Cerrar sesión
   Future<void> signOut() async {
     try {
-      await Future.wait([_firebaseAuth.signOut(), _googleSignIn.signOut()]);
+      if (kIsWeb) {
+        // En web solo es necesario cerrar sesión en Firebase
+        await _firebaseAuth.signOut();
+      } else {
+        await Future.wait([
+          _firebaseAuth.signOut(),
+          _googleSignIn.signOut(),
+        ]);
+      }
     } catch (e) {
       rethrow;
     }

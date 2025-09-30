@@ -12,31 +12,25 @@ export class StudentDashboardController {
    * Get student's recent activities (bookings, payments, service requests)
    */
   getRecentActivities = async (req: Request, res: Response) => {
-    console.log('=== StudentDashboardController.getRecentActivities called ===');
-    console.log('req.user:', req.user);
     
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
-        console.log('No firebaseUid found in req.user');
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
       // Get AuthUser by Firebase UID
       const authUser = await AuthUserModel.findOne({ firebaseUid });
       if (!authUser) {
-        console.log('AuthUser not found for Firebase UID:', firebaseUid);
         return res.status(404).json({ error: 'Usuario no encontrado' });
       }
 
       // Get Student profile
       const student = await StudentModel.findOne({ authUserId: authUser._id });
       if (!student) {
-        console.log('Student profile not found for authUserId:', authUser._id);
         return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
       }
 
-      console.log('Student found:', student._id);
 
       // Get recent activities (last 30 days)
       const thirtyDaysAgo = new Date();
@@ -136,14 +130,12 @@ export class StudentDashboardController {
       // Return top 10 most recent activities
       const recentActivities = activities.slice(0, 10);
 
-      console.log(`Found ${recentActivities.length} recent activities for student ${student._id}`);
+      
 
       res.json({
         items: recentActivities
       });
     } catch (error) {
-      console.error('Error getting recent activities:', error);
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -152,7 +144,6 @@ export class StudentDashboardController {
    * Get student info/profile
    */
   getStudentInfo = async (req: Request, res: Response) => {
-    console.log('=== StudentDashboardController.getStudentInfo called ===');
     
     try {
       const firebaseUid = req.user?.uid;
@@ -189,7 +180,6 @@ export class StudentDashboardController {
         totalSpent: totalSpent.length > 0 ? totalSpent[0].total : 0
       });
     } catch (error) {
-      console.error('Error getting student info:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -198,7 +188,6 @@ export class StudentDashboardController {
    * Get list of all professors
    */
   getProfessors = async (req: Request, res: Response) => {
-    console.log('=== StudentDashboardController.getProfessors called ===');
     
     try {
       const professors = await ProfessorModel.find()
@@ -216,10 +205,9 @@ export class StudentDashboardController {
         rating: 0 // Can be added to model later
       }));
 
-      console.log(`Found ${professorsData.length} professors`);
+      
       res.json({ items: professorsData });
     } catch (error) {
-      console.error('Error getting professors:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -228,7 +216,6 @@ export class StudentDashboardController {
    * Get available schedules for a specific professor
    */
   getAvailableSchedules = async (req: Request, res: Response) => {
-    console.log('=== StudentDashboardController.getAvailableSchedules called ===');
     
     try {
       const { professorId } = req.query;
@@ -260,10 +247,9 @@ export class StudentDashboardController {
         status: schedule.status
       }));
 
-      console.log(`Found ${schedulesData.length} available schedules for professor ${professorId}`);
+      
       res.json({ items: schedulesData });
     } catch (error) {
-      console.error('Error getting available schedules:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -272,7 +258,6 @@ export class StudentDashboardController {
    * Book a lesson
    */
   bookLesson = async (req: Request, res: Response) => {
-    console.log('=== StudentDashboardController.bookLesson called ===');
     
     try {
       const firebaseUid = req.user?.uid;
@@ -322,7 +307,7 @@ export class StudentDashboardController {
       schedule.status = 'confirmed';
       await schedule.save();
 
-      console.log(`Booking created: ${booking._id}`);
+      
       
       res.status(201).json({
         id: booking._id,
@@ -334,7 +319,6 @@ export class StudentDashboardController {
         createdAt: booking.createdAt
       });
     } catch (error) {
-      console.error('Error booking lesson:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

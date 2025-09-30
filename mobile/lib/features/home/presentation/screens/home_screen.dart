@@ -102,12 +102,7 @@ class HomeScreen extends ConsumerWidget {
           actions: [
             IconButton(
               icon: const Icon(Icons.notifications_outlined),
-              onPressed: () {
-                // TODO: Implementar notificaciones
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Notificaciones próximamente')),
-                );
-              },
+            onPressed: () {},
             ),
             PopupMenuButton<String>(
               onSelected: (value) => _handleMenuSelection(context, ref, value),
@@ -210,16 +205,8 @@ class HomeScreen extends ConsumerWidget {
   void _handleMenuSelection(BuildContext context, WidgetRef ref, String value) {
     switch (value) {
       case 'profile':
-        // TODO: Implementar perfil
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Perfil próximamente')));
         break;
       case 'settings':
-        // TODO: Implementar configuración
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Configuración próximamente')),
-        );
         break;
       case 'logout':
         _handleLogout(context, ref);

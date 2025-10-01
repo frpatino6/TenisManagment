@@ -2,30 +2,40 @@ import { Schema, model, Types } from 'mongoose';
 
 export interface BookingDocument {
   _id: Types.ObjectId;
-  studentId: Types.ObjectId;
   scheduleId: Types.ObjectId;
-  type: 'lesson' | 'court_rental';
-  status: 'confirmed' | 'pending' | 'cancelled';
-  paymentStatus: 'paid' | 'pending' | 'overdue';
+  studentId: Types.ObjectId;
+  professorId: Types.ObjectId;
+  serviceType: 'individual_class' | 'group_class' | 'court_rental';
+  startTime: Date;
+  endTime: Date;
+  price: number;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  notes?: string;
   createdAt: Date;
+  updatedAt: Date;
 }
 
-const BookingSchema = new Schema<BookingDocument>(
-  {
-    studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: true, index: true },
-    scheduleId: { type: Schema.Types.ObjectId, ref: 'Schedule', required: true, index: true },
-    type: { type: String, enum: ['lesson', 'court_rental'], required: true },
-    status: { type: String, enum: ['confirmed', 'pending', 'cancelled'], default: 'pending' },
-    paymentStatus: {
-      type: String,
-      enum: ['paid', 'pending', 'overdue'],
-      default: 'pending',
-      index: true,
-    },
+const BookingSchema = new Schema<BookingDocument>({
+  scheduleId: { type: Schema.Types.ObjectId, ref: 'Schedule', required: true, index: true },
+  studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: true, index: true },
+  professorId: { type: Schema.Types.ObjectId, ref: 'Professor', required: true, index: true },
+  serviceType: { 
+    type: String, 
+    enum: ['individual_class', 'group_class', 'court_rental'], 
+    required: true 
   },
-  { timestamps: { createdAt: true, updatedAt: true } },
-);
+  startTime: { type: Date, required: true },
+  endTime: { type: Date, required: true },
+  price: { type: Number, required: true },
+  status: { 
+    type: String, 
+    enum: ['pending', 'confirmed', 'cancelled', 'completed'], 
+    default: 'pending' 
+  },
+  notes: { type: String }
+}, { timestamps: true });
 
-BookingSchema.index({ studentId: 1, scheduleId: 1 });
+BookingSchema.index({ scheduleId: 1, studentId: 1 });
+BookingSchema.index({ professorId: 1, startTime: 1 });
 
 export const BookingModel = model<BookingDocument>('Booking', BookingSchema);

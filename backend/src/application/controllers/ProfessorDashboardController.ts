@@ -10,7 +10,10 @@ const logger = new Logger({ controller: 'ProfessorDashboardController' });
 export class ProfessorDashboardController {
   // Obtener información del profesor
   getProfessorInfo = async (req: Request, res: Response) => {
+    logger.debug('getProfessorInfo called', { requestId: req.requestId });
+    
     try {
+      
       const professorId = req.user?.id;
       if (!professorId) {
         logger.warn('Missing professorId in req.user', { requestId: req.requestId });
@@ -19,19 +22,20 @@ export class ProfessorDashboardController {
 
       logger.debug('Looking for professor by authUserId');
       let professor = await ProfessorModel.findOne({ authUserId: professorId });
-
+      
       if (!professor) {
         logger.info('Professor not found, creating');
-
+        
         // Buscar el AuthUser para obtener información
+        const { AuthUserModel } = require('../../infrastructure/database/models/AuthUserModel');
         const authUser = await AuthUserModel.findById(professorId);
-
+        
         if (!authUser) {
           return res.status(404).json({ error: 'Usuario de autenticación no encontrado' });
         }
-
+        
         logger.debug('Creating professor record');
-
+        
         // Crear el registro del profesor
         professor = await ProfessorModel.create({
           authUserId: authUser._id,
@@ -39,9 +43,9 @@ export class ProfessorDashboardController {
           email: authUser.email,
           phone: '',
           specialties: [],
-          hourlyRate: 0,
+          hourlyRate: 0
         });
-
+        
         logger.info('Professor created');
       } else {
         logger.debug('Professor found');
@@ -49,22 +53,19 @@ export class ProfessorDashboardController {
 
       // Calcular estadísticas reales
       const totalStudents = await StudentModel.countDocuments({});
-
+      
       // Calcular rating promedio basado en clases completadas
       const completedClasses = await ScheduleModel.countDocuments({
         professorId: professor._id,
-        status: 'completed',
+        status: 'completed'
       });
-
+      
       // Rating basado en clases completadas (más clases = mejor rating)
-      const rating = Math.min(4.0 + completedClasses / 100, 5.0);
-
+      const rating = Math.min(4.0 + (completedClasses / 100), 5.0);
+      
       // Calcular años de experiencia basado en la fecha de creación del profesor
       const createdAt = (professor as any).createdAt || new Date();
-      const experienceYears = Math.max(
-        1,
-        Math.floor((new Date().getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24 * 365)),
-      );
+      const experienceYears = Math.max(1, Math.floor((new Date().getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24 * 365)));
 
       const professorInfo = {
         id: professor._id.toString(),
@@ -104,45 +105,41 @@ export class ProfessorDashboardController {
       // Por ahora obtenemos todos los estudiantes, pero en el futuro deberíamos
       // implementar una relación real entre profesor y estudiantes
       const students = await StudentModel.find({}).limit(10);
-
+      
       // Transformar los datos para que coincidan con el formato esperado
-      const studentsData = await Promise.all(
-        students.map(async (student) => {
-          // Obtener la próxima clase del estudiante
-          const nextClass = await ScheduleModel.findOne({
-            studentId: student._id,
-            date: { $gte: new Date() },
-            status: { $in: ['pending', 'confirmed'] },
-          }).sort({ date: 1, startTime: 1 });
+      const studentsData = await Promise.all(students.map(async (student) => {
+        // Obtener la próxima clase del estudiante
+        const nextClass = await ScheduleModel.findOne({
+          studentId: student._id,
+          date: { $gte: new Date() },
+          status: { $in: ['pending', 'confirmed'] }
+        }).sort({ date: 1, startTime: 1 });
 
-          // Contar clases del estudiante
-          const totalClasses = await ScheduleModel.countDocuments({
-            studentId: student._id,
-            status: 'completed',
-          });
+        // Contar clases del estudiante
+        const totalClasses = await ScheduleModel.countDocuments({
+          studentId: student._id,
+          status: 'completed'
+        });
 
-          // Calcular progreso basado en clases completadas
-          const progress = totalClasses > 0 ? Math.min(totalClasses / 20, 1.0) : 0.0; // Máximo 20 clases para 100%
+        // Calcular progreso basado en clases completadas
+        const progress = totalClasses > 0 ? Math.min(totalClasses / 20, 1.0) : 0.0; // Máximo 20 clases para 100%
 
-          // Determinar nivel basado en progreso
-          let level = 'Principiante';
-          if (progress >= 0.7) level = 'Avanzado';
-          else if (progress >= 0.3) level = 'Intermedio';
+        // Determinar nivel basado en progreso
+        let level = 'Principiante';
+        if (progress >= 0.7) level = 'Avanzado';
+        else if (progress >= 0.3) level = 'Intermedio';
 
-          return {
-            id: student._id.toString(),
-            name: student.name,
-            email: student.email,
-            level: level,
-            nextClassDate: nextClass ? nextClass.date.toISOString().split('T')[0] : null,
-            nextClassTime: nextClass
-              ? nextClass.startTime.toTimeString().split(' ')[0].substring(0, 5)
-              : null,
-            totalClasses: totalClasses,
-            progress: progress,
-          };
-        }),
-      );
+        return {
+          id: student._id.toString(),
+          name: student.name,
+          email: student.email,
+          level: level,
+          nextClassDate: nextClass ? nextClass.date.toISOString().split('T')[0] : null,
+          nextClassTime: nextClass ? nextClass.startTime.toTimeString().split(' ')[0].substring(0, 5) : null,
+          totalClasses: totalClasses,
+          progress: progress,
+        };
+      }));
 
       res.json({ items: studentsData });
     } catch (error) {
@@ -151,6 +148,7 @@ export class ProfessorDashboardController {
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
+
 
   // Obtener horarios por fecha específica
   getScheduleByDate = async (req: Request, res: Response) => {
@@ -181,28 +179,28 @@ export class ProfessorDashboardController {
       startOfDay.setUTCHours(0, 0, 0, 0);
       const endOfDay = new Date(targetDate);
       endOfDay.setUTCHours(23, 59, 59, 999);
-
+      
       const schedules = await ScheduleModel.find({
         professorId: professor._id,
         startTime: {
           $gte: startOfDay,
-          $lte: endOfDay,
+          $lte: endOfDay
         },
-        studentId: { $exists: true, $ne: null }, // Only reserved schedules
+        studentId: { $exists: true, $ne: null } // Only reserved schedules
       })
         .populate('studentId', 'name email')
         .sort({ startTime: 1 });
 
-      const classesData = schedules.map((schedule) => ({
+
+
+      const classesData = schedules.map(schedule => ({
         id: schedule._id.toString(),
         studentName: (schedule.studentId as any).name,
         studentId: (schedule.studentId as any)._id.toString(),
         startTime: schedule.startTime,
         endTime: schedule.endTime,
-        type: schedule.type,
         status: schedule.status || 'confirmed',
         notes: schedule.notes,
-        price: schedule.price || 0,
       }));
 
       res.json({ items: classesData });
@@ -229,42 +227,64 @@ export class ProfessorDashboardController {
       // Obtener horarios reales de hoy (usando startTime en lugar de date)
       // Ajustar para zona horaria de Colombia (UTC-5)
       const now = new Date();
-      const today = new Date(now.getTime() - 5 * 60 * 60 * 1000); // Ajustar a Colombia UTC-5
+      const today = new Date(now.getTime() - (5 * 60 * 60 * 1000)); // Ajustar a Colombia UTC-5
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
+      console.log('Filtering schedules for today:', {
+        today: today.toISOString(),
+        tomorrow: tomorrow.toISOString(),
+        professorId: professor._id.toString()
+      });
+
       // First, let's see ALL schedules with studentId for this professor
       const allReservedSchedules = await ScheduleModel.find({
         professorId: professor._id,
-        studentId: { $exists: true, $ne: null },
+        studentId: { $exists: true, $ne: null }
       })
         .populate('studentId', 'name email')
         .sort({ startTime: 1 })
         .limit(5);
 
+      console.log(`Total reserved schedules for professor: ${allReservedSchedules.length}`);
+      allReservedSchedules.forEach((s, i) => {
+        console.log(`Reserved schedule ${i + 1}:`, {
+          id: s._id.toString(),
+          startTime: s.startTime.toISOString(),
+          studentName: (s.studentId as any)?.name,
+          status: s.status
+        });
+      });
+
       const todayClasses = await ScheduleModel.find({
         professorId: professor._id,
         startTime: {
           $gte: today,
-          $lt: tomorrow,
+          $lt: tomorrow
         },
-        studentId: { $exists: true, $ne: null }, // Solo horarios reservados
+        studentId: { $exists: true, $ne: null } // Solo horarios reservados
       })
         .populate('studentId', 'name email')
         .sort({ startTime: 1 });
 
+      console.log(`Found ${todayClasses.length} classes for today (between ${today.toISOString()} and ${tomorrow.toISOString()})`);
+      if (todayClasses.length > 0) {
+        console.log('First class:', {
+          startTime: todayClasses[0].startTime.toISOString(),
+          studentName: (todayClasses[0].studentId as any)?.name
+        });
+      }
+
       // Transformar los datos para que coincidan con el formato esperado
-      const classesData = todayClasses.map((schedule) => ({
+      const classesData = todayClasses.map(schedule => ({
         id: schedule._id.toString(),
         studentName: schedule.studentId ? (schedule.studentId as any).name : 'Estudiante',
         studentId: schedule.studentId ? (schedule.studentId as any)._id.toString() : '',
         startTime: schedule.startTime,
         endTime: schedule.endTime,
-        type: schedule.type,
         status: schedule.status || 'pending',
         notes: schedule.notes,
-        price: schedule.price || 0,
       }));
 
       res.json({ items: classesData });
@@ -298,24 +318,24 @@ export class ProfessorDashboardController {
         professorId: professor._id,
         startTime: {
           $gte: today,
-          $lt: weekEnd,
+          $lt: weekEnd
         },
-        studentId: { $exists: true, $ne: null }, // Solo horarios reservados
+        studentId: { $exists: true, $ne: null } // Solo horarios reservados
       })
         .populate('studentId', 'name email')
         .sort({ startTime: 1 });
 
+      console.log(`Found ${weekClasses.length} classes for this week`);
+
       // Transformar los datos para que coincidan con el formato esperado
-      const classesData = weekClasses.map((schedule) => ({
+      const classesData = weekClasses.map(schedule => ({
         id: schedule._id.toString(),
         studentName: schedule.studentId ? (schedule.studentId as any).name : 'Estudiante',
         studentId: schedule.studentId ? (schedule.studentId as any)._id.toString() : '',
         startTime: schedule.startTime,
         endTime: schedule.endTime,
-        type: schedule.type,
         status: schedule.status || 'pending',
         notes: schedule.notes,
-        price: schedule.price || 0,
       }));
 
       res.json({ items: classesData });
@@ -348,13 +368,13 @@ export class ProfessorDashboardController {
       // Obtener pagos del mes
       const monthlyPayments = await PaymentModel.find({
         professorId: professor._id,
-        createdAt: { $gte: startOfMonth },
+        createdAt: { $gte: startOfMonth }
       });
 
       // Obtener pagos de la semana
       const weeklyPayments = await PaymentModel.find({
         professorId: professor._id,
-        createdAt: { $gte: startOfWeek },
+        createdAt: { $gte: startOfWeek }
       });
 
       // Calcular totales
@@ -399,7 +419,7 @@ export class ProfessorDashboardController {
           specialties,
           hourlyRate,
         },
-        { new: true },
+        { new: true }
       );
 
       if (!professor) {
@@ -447,16 +467,18 @@ export class ProfessorDashboardController {
    * Create a new available schedule
    */
   createSchedule = async (req: Request, res: Response) => {
+    console.log('=== ProfessorDashboardController.createSchedule called ===');
+    
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
-      const { date, startTime, endTime, type, price } = req.body;
-
-      if (!date || !startTime || !endTime || !type) {
-        return res.status(400).json({ error: 'Faltan campos requeridos' });
+      const { date, startTime, endTime } = req.body;
+      
+      if (!date || !startTime || !endTime) {
+        return res.status(400).json({ error: 'Faltan campos requeridos: date, startTime, endTime' });
       }
 
       // Get professor
@@ -477,32 +499,40 @@ export class ProfessorDashboardController {
       const parsedEndTime = new Date(endTime);
       const parsedDate = new Date(date);
 
+      console.log('Received dates (from client):', { date, startTime, endTime });
+      console.log('Parsed as UTC:', { 
+        parsedDate: parsedDate.toISOString(), 
+        parsedStartTime: parsedStartTime.toISOString(),
+        parsedEndTime: parsedEndTime.toISOString()
+      });
+      console.log('Local time interpretation:', {
+        startHour: parsedStartTime.getUTCHours(),
+        endHour: parsedEndTime.getUTCHours(),
+      });
+
       // Create schedule
       const schedule = await ScheduleModel.create({
         professorId: professor._id,
         date: parsedDate,
         startTime: parsedStartTime,
         endTime: parsedEndTime,
-        type,
         isAvailable: true,
-        status: 'pending',
-        price: price || professor.hourlyRate,
+        status: 'pending'
       });
 
+      console.log(`Schedule created: ${schedule._id}`);
+      
       res.status(201).json({
         id: schedule._id,
         professorId: schedule.professorId,
         date: schedule.date,
         startTime: schedule.startTime,
         endTime: schedule.endTime,
-        type: schedule.type,
         isAvailable: schedule.isAvailable,
-        status: schedule.status,
-        price: schedule.price,
+        status: schedule.status
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      logger.error('Error creating schedule', { error: message, requestId: req.requestId });
+      console.error('Error creating schedule:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -511,6 +541,8 @@ export class ProfessorDashboardController {
    * Get all schedules for the professor
    */
   getMySchedules = async (req: Request, res: Response) => {
+    console.log('=== ProfessorDashboardController.getMySchedules called ===');
+    
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
@@ -530,31 +562,29 @@ export class ProfessorDashboardController {
       // Get all schedules for the professor
       const schedules = await ScheduleModel.find({
         professorId: professor._id,
-        startTime: { $gte: new Date() }, // Only future schedules
+        startTime: { $gte: new Date() } // Only future schedules
       })
         .populate('studentId', 'name email')
         .sort({ startTime: 1 })
         .limit(100);
 
-      const schedulesData = schedules.map((schedule) => ({
+      const schedulesData = schedules.map(schedule => ({
         id: schedule._id.toString(),
         date: schedule.date,
         startTime: schedule.startTime,
         endTime: schedule.endTime,
-        type: schedule.type,
         isAvailable: schedule.isAvailable,
         isBlocked: schedule.isBlocked || false,
         blockReason: schedule.blockReason || null,
         status: schedule.status,
-        price: schedule.price,
         studentName: schedule.studentId ? (schedule.studentId as any).name : null,
-        studentEmail: schedule.studentId ? (schedule.studentId as any).email : null,
+        studentEmail: schedule.studentId ? (schedule.studentId as any).email : null
       }));
 
+      console.log(`Found ${schedulesData.length} schedules for professor ${professor._id}`);
       res.json({ items: schedulesData });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      logger.error('Error getting schedules', { error: message, requestId: req.requestId });
+      console.error('Error getting schedules:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -563,6 +593,8 @@ export class ProfessorDashboardController {
    * Delete a schedule
    */
   deleteSchedule = async (req: Request, res: Response) => {
+    console.log('=== ProfessorDashboardController.deleteSchedule called ===');
+    
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
@@ -570,7 +602,7 @@ export class ProfessorDashboardController {
       }
 
       const { scheduleId } = req.params;
-
+      
       if (!scheduleId) {
         return res.status(400).json({ error: 'scheduleId es requerido' });
       }
@@ -587,10 +619,10 @@ export class ProfessorDashboardController {
 
       await ScheduleModel.findByIdAndDelete(scheduleId);
 
+      console.log(`Schedule deleted: ${scheduleId}`);
       res.json({ message: 'Horario eliminado exitosamente' });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      logger.error('Error deleting schedule', { error: message, requestId: req.requestId });
+      console.error('Error deleting schedule:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -599,6 +631,8 @@ export class ProfessorDashboardController {
    * Block a schedule (mark as unavailable for students)
    */
   blockSchedule = async (req: Request, res: Response) => {
+    console.log('=== ProfessorDashboardController.blockSchedule called ===');
+    
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
@@ -607,7 +641,7 @@ export class ProfessorDashboardController {
 
       const { scheduleId } = req.params;
       const { reason } = req.body;
-
+      
       if (!scheduleId) {
         return res.status(400).json({ error: 'scheduleId es requerido' });
       }
@@ -627,10 +661,10 @@ export class ProfessorDashboardController {
       schedule.isAvailable = false;
       await schedule.save();
 
+      console.log(`Schedule blocked: ${scheduleId}`);
       res.json({ message: 'Horario bloqueado exitosamente' });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      logger.error('Error blocking schedule', { error: message, requestId: req.requestId });
+      console.error('Error blocking schedule:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -639,6 +673,8 @@ export class ProfessorDashboardController {
    * Unblock a schedule
    */
   unblockSchedule = async (req: Request, res: Response) => {
+    console.log('=== ProfessorDashboardController.unblockSchedule called ===');
+    
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
@@ -646,7 +682,7 @@ export class ProfessorDashboardController {
       }
 
       const { scheduleId } = req.params;
-
+      
       if (!scheduleId) {
         return res.status(400).json({ error: 'scheduleId es requerido' });
       }
@@ -661,10 +697,10 @@ export class ProfessorDashboardController {
       schedule.isAvailable = true;
       await schedule.save();
 
+      console.log(`Schedule unblocked: ${scheduleId}`);
       res.json({ message: 'Horario desbloqueado exitosamente' });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      logger.error('Error unblocking schedule', { error: message, requestId: req.requestId });
+      console.error('Error unblocking schedule:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

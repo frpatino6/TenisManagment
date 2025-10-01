@@ -1,18 +1,31 @@
-enum ServiceType {
-  individualClass('individual_class', 'Clase Individual', 50000),
-  groupClass('group_class', 'Clase Grupal', 35000),
-  courtRental('court_rental', 'Alquiler de Cancha', 25000);
+import 'professor_model.dart';
 
-  const ServiceType(this.value, this.displayName, this.defaultPrice);
+enum ServiceType {
+  individualClass('individual_class', 'Clase Individual'),
+  groupClass('group_class', 'Clase Grupal'),
+  courtRental('court_rental', 'Alquiler de Cancha');
+
+  const ServiceType(this.value, this.displayName);
 
   final String value;
   final String displayName;
-  final double defaultPrice;
 
   static ServiceType fromValue(String value) {
     return ServiceType.values.firstWhere(
       (type) => type.value == value,
       orElse: () => ServiceType.individualClass,
     );
+  }
+  
+  /// Get price for this service type from professor's pricing
+  double getPrice(PricingConfig pricing) {
+    switch (this) {
+      case ServiceType.individualClass:
+        return pricing.individualClass;
+      case ServiceType.groupClass:
+        return pricing.groupClass;
+      case ServiceType.courtRental:
+        return pricing.courtRental;
+    }
   }
 }

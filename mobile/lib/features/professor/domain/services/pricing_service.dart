@@ -44,12 +44,27 @@ class PricingResponse {
   });
 
   factory PricingResponse.fromJson(Map<String, dynamic> json) {
+    final customPricingMap = json['customPricing'] as Map<String, dynamic>;
+    final basePricingMap = json['basePricing'] as Map<String, dynamic>;
+
+    // If customPricing is empty, use basePricing for all values
+    final effectiveCustomPricing = customPricingMap.isEmpty
+        ? basePricingMap
+        : {
+            'individualClass':
+                customPricingMap['individualClass'] ??
+                basePricingMap['individualClass'],
+            'groupClass':
+                customPricingMap['groupClass'] ?? basePricingMap['groupClass'],
+            'courtRental':
+                customPricingMap['courtRental'] ??
+                basePricingMap['courtRental'],
+          };
+
     return PricingResponse(
       pricing: PricingConfig.fromJson(json['pricing'] as Map<String, dynamic>),
-      customPricing:
-          PricingConfig.fromJson(json['customPricing'] as Map<String, dynamic>),
-      basePricing:
-          PricingConfig.fromJson(json['basePricing'] as Map<String, dynamic>),
+      customPricing: PricingConfig.fromJson(effectiveCustomPricing),
+      basePricing: PricingConfig.fromJson(basePricingMap),
       hasCustomPricing: json['hasCustomPricing'] as bool,
     );
   }
@@ -166,4 +181,3 @@ class PricingService {
     }
   }
 }
-

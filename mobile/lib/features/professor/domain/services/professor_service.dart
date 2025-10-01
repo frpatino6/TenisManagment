@@ -463,7 +463,7 @@ class ProfessorService {
   }
 
   /// Mark a class as completed
-  Future<void> completeClass(String scheduleId) async {
+  Future<void> completeClass(String scheduleId, {double? paymentAmount}) async {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
@@ -480,6 +480,7 @@ class ProfessorService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',
         },
+        body: json.encode({'paymentAmount': paymentAmount}),
       );
 
       if (response.statusCode != 200) {

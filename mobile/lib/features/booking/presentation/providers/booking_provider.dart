@@ -25,15 +25,3 @@ final availableSchedulesProvider =
       final service = ref.watch(bookingServiceProvider);
       return service.getAvailableSchedules(professorId);
     });
-
-// Booking action provider
-final bookLessonProvider = FutureProvider.family<void, String>((
-  ref,
-  scheduleId,
-) async {
-  final service = ref.watch(bookingServiceProvider);
-  await service.bookLesson(scheduleId);
-
-  // Invalidate providers to refresh data
-  ref.invalidate(professorsProvider);
-});

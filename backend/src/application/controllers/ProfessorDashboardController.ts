@@ -744,6 +744,7 @@ export class ProfessorDashboardController {
       }
 
       const { scheduleId } = req.params;
+      const { paymentAmount } = req.body;
       
       if (!scheduleId) {
         return res.status(400).json({ error: 'scheduleId es requerido' });
@@ -784,10 +785,26 @@ export class ProfessorDashboardController {
         await booking.save();
       }
 
+      // Create payment record if amount provided
+      let payment = null;
+      if (paymentAmount && paymentAmount > 0 && schedule.studentId && booking) {
+        payment = await PaymentModel.create({
+          studentId: schedule.studentId,
+          professorId: professor._id,
+          bookingId: booking._id,
+          amount: paymentAmount,
+          date: new Date(),
+          status: 'paid',
+          method: 'cash', // Default to cash, can be updated later
+          description: `Pago por ${booking.serviceType} - ${schedule.startTime.toLocaleDateString()}`
+        });
+      }
+
       res.json({ 
-        message: 'Clase marcada como completada',
+        message: 'Clase marcada como completada' + (payment ? ' y pago registrado' : ''),
         scheduleId: schedule._id,
-        bookingId: booking?._id
+        bookingId: booking?._id,
+        paymentId: payment?._id
       });
     } catch (error) {
       console.error('Error completing class:', error);

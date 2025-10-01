@@ -501,6 +501,8 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
   }
 
   Future<void> _showCompleteDialog(BuildContext context, classData) async {
+    final paymentController = TextEditingController();
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -508,9 +510,30 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
           'Completar Clase',
           style: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
-        content: Text(
-          '¿Confirmas que la clase con ${classData.studentName} fue completada exitosamente?',
-          style: GoogleFonts.inter(),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Estudiante: ${classData.studentName}',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+            ),
+            const Gap(16),
+            TextField(
+              controller: paymentController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'Monto pagado (opcional)',
+                hintText: 'Ej: 50000',
+                prefixText: '\$ ',
+                border: const OutlineInputBorder(),
+                labelStyle: GoogleFonts.inter(),
+                hintStyle: GoogleFonts.inter(),
+                helperText: 'Ingresa el monto si el estudiante pagó',
+                helperStyle: GoogleFonts.inter(fontSize: 12),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -529,13 +552,22 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
     if (confirmed == true && context.mounted) {
       try {
         final notifier = ref.read(professorNotifierProvider.notifier);
-        await notifier.completeClass(classData.id);
+        final paymentAmount = paymentController.text.isNotEmpty
+            ? double.tryParse(paymentController.text)
+            : null;
+
+        await notifier.completeClass(
+          classData.id,
+          paymentAmount: paymentAmount,
+        );
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Clase marcada como completada',
+                paymentAmount != null
+                    ? 'Clase completada y pago de \$${paymentAmount.toStringAsFixed(0)} registrado'
+                    : 'Clase marcada como completada',
                 style: GoogleFonts.inter(),
               ),
               backgroundColor: Colors.green,
@@ -553,6 +585,8 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
         }
       }
     }
+
+    paymentController.dispose();
   }
 
   Future<void> _showCancelDialog(BuildContext context, classData) async {

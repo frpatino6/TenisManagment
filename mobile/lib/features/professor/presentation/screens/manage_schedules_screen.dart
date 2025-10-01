@@ -426,32 +426,34 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          '\$${schedule.price.toStringAsFixed(0)}',
-                          style: GoogleFonts.inter(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: colorScheme.primary,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: cardColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            _getTypeLabel(schedule.type),
+                        if (schedule.price != null)
+                          Text(
+                            '\$${schedule.price!.toStringAsFixed(0)}',
                             style: GoogleFonts.inter(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: cardColor,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.primary,
                             ),
                           ),
-                        ),
+                        if (schedule.type != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: cardColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              _getTypeLabel(schedule.type!),
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: cardColor,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ],

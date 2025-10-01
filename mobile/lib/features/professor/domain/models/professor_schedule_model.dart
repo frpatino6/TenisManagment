@@ -3,12 +3,12 @@ class ProfessorScheduleModel {
   final DateTime date;
   final DateTime startTime;
   final DateTime endTime;
-  final String type;
+  final String? type;
   final bool isAvailable;
   final bool isBlocked;
   final String? blockReason;
-  final String status;
-  final double price;
+  final String? status;
+  final double? price;
   final String? studentName;
   final String? studentEmail;
 
@@ -17,12 +17,12 @@ class ProfessorScheduleModel {
     required this.date,
     required this.startTime,
     required this.endTime,
-    required this.type,
+    this.type,
     required this.isAvailable,
     required this.isBlocked,
     this.blockReason,
-    required this.status,
-    required this.price,
+    this.status,
+    this.price,
     this.studentName,
     this.studentEmail,
   });
@@ -33,12 +33,12 @@ class ProfessorScheduleModel {
       date: DateTime.parse(json['date'] as String),
       startTime: DateTime.parse(json['startTime'] as String),
       endTime: DateTime.parse(json['endTime'] as String),
-      type: json['type'] as String,
-      isAvailable: json['isAvailable'] as bool,
+      type: json['type'] as String?,
+      isAvailable: json['isAvailable'] as bool? ?? true,
       isBlocked: json['isBlocked'] as bool? ?? false,
       blockReason: json['blockReason'] as String?,
-      status: json['status'] as String,
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      status: json['status'] as String?,
+      price: (json['price'] as num?)?.toDouble(),
       studentName: json['studentName'] as String?,
       studentEmail: json['studentEmail'] as String?,
     );
@@ -90,7 +90,7 @@ class ProfessorScheduleModel {
       case 'completed':
         return 'Completada';
       default:
-        return status;
+        return status ?? 'Pendiente';
     }
   }
 }

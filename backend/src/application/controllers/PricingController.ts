@@ -12,6 +12,40 @@ const DEFAULT_BASE_PRICING = {
 
 export class PricingController {
   /**
+   * Initialize base pricing in database (call once to setup)
+   */
+  initializeBasePricing = async (req: Request, res: Response) => {
+    try {
+      // Check if already exists
+      const existingConfig = await SystemConfigModel.findOne({ key: 'base_pricing' });
+
+      if (existingConfig) {
+        return res.json({
+          message: 'Base pricing already exists',
+          pricing: existingConfig.value,
+          createdAt: existingConfig.createdAt,
+        });
+      }
+
+      // Create base pricing
+      const config = await SystemConfigModel.create({
+        key: 'base_pricing',
+        value: DEFAULT_BASE_PRICING,
+        description: 'Base pricing for all service types (used as default for professors)',
+      });
+
+      res.status(201).json({
+        message: 'Base pricing initialized successfully',
+        pricing: config.value,
+        createdAt: config.createdAt,
+      });
+    } catch (error) {
+      console.error('Error initializing base pricing:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
    * Get base pricing configuration (system-wide defaults)
    */
   getBasePricing = async (req: Request, res: Response) => {

@@ -393,7 +393,6 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isConfirmed = classData.status == 'confirmed';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -574,6 +573,13 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
           paymentAmount: paymentAmount,
         );
 
+        // Force refresh of the schedule for the current date
+        ref.invalidate(scheduleByDateProvider(_selectedDate));
+        // Refresh earnings if payment was recorded
+        if (paymentAmount != null && paymentAmount > 0) {
+          ref.invalidate(earningsStatsProvider);
+        }
+
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -670,12 +676,19 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
         final penaltyAmount = paymentController.text.isNotEmpty
             ? double.tryParse(paymentController.text)
             : null;
-        
+
         await notifier.cancelBooking(
           classData.id,
           reason: reasonController.text,
           penaltyAmount: penaltyAmount,
         );
+
+        // Force refresh of the schedule for the current date
+        ref.invalidate(scheduleByDateProvider(_selectedDate));
+        // Refresh earnings if penalty was charged
+        if (penaltyAmount != null && penaltyAmount > 0) {
+          ref.invalidate(earningsStatsProvider);
+        }
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

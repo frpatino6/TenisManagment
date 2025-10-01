@@ -514,10 +514,7 @@ class ProfessorService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',
         },
-        body: json.encode({
-          'reason': reason,
-          'penaltyAmount': penaltyAmount,
-        }),
+        body: json.encode({'reason': reason, 'penaltyAmount': penaltyAmount}),
       );
 
       if (response.statusCode != 200) {

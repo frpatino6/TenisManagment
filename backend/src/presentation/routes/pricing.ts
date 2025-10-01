@@ -8,6 +8,7 @@ const pricingController = new PricingController();
 // Public routes
 router.get('/base', pricingController.getBasePricing);
 router.post('/initialize', pricingController.initializeBasePricing); // Call once to setup
+router.post('/clean-pricing', pricingController.cleanProfessorPricing); // Debug: clean old pricing
 router.get('/professor/:professorId', pricingController.getProfessorPricing);
 
 // Protected routes (requires authentication)

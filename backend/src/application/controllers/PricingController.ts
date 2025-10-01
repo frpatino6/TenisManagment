@@ -12,6 +12,27 @@ const DEFAULT_BASE_PRICING = {
 
 export class PricingController {
   /**
+   * Debug: Clean pricing field for all professors (removes old invalid structure)
+   */
+  cleanProfessorPricing = async (req: Request, res: Response) => {
+    try {
+      // Remove pricing field from all professors to start fresh
+      const result = await ProfessorModel.updateMany(
+        {},
+        { $unset: { pricing: "" } }
+      );
+
+      res.json({
+        message: 'Pricing field cleaned for all professors',
+        modifiedCount: result.modifiedCount,
+      });
+    } catch (error) {
+      console.error('Error cleaning pricing:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
    * Initialize base pricing in database (call once to setup)
    */
   initializeBasePricing = async (req: Request, res: Response) => {

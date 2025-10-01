@@ -271,6 +271,7 @@ export class PricingController {
         pricing: effectivePricing,
         customPricing: updatedProfessor.pricing || {},
         basePricing,
+        hasCustomPricing: !!updatedProfessor.pricing && Object.keys(updatedProfessor.pricing).length > 0,
       });
     } catch (error) {
       console.error('Error updating pricing:', error);
@@ -309,7 +310,9 @@ export class PricingController {
       res.json({
         message: 'Precios restablecidos a valores base',
         pricing: basePricing,
+        customPricing: {},
         basePricing,
+        hasCustomPricing: false,
       });
     } catch (error) {
       console.error('Error resetting pricing:', error);

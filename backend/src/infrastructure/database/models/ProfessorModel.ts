@@ -26,12 +26,9 @@ const ProfessorSchema = new Schema<ProfessorDocument>(
     specialties: { type: [String], default: [] },
     hourlyRate: { type: Number, required: true },
     pricing: {
-      type: {
-        individualClass: { type: Number },
-        groupClass: { type: Number },
-        courtRental: { type: Number },
-      },
-      required: false,
+      individualClass: { type: Number },
+      groupClass: { type: Number },
+      courtRental: { type: Number },
     },
   },
   { timestamps: true },

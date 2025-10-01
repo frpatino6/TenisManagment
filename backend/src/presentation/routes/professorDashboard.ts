@@ -50,4 +50,10 @@ router.put('/schedules/:scheduleId/block', professorDashboardController.blockSch
 // Unblock a schedule
 router.put('/schedules/:scheduleId/unblock', professorDashboardController.unblockSchedule);
 
+// Complete a class
+router.put('/schedules/:scheduleId/complete', professorDashboardController.completeClass);
+
+// Cancel a booking
+router.put('/schedules/:scheduleId/cancel-booking', professorDashboardController.cancelBooking);
+
 export default router;

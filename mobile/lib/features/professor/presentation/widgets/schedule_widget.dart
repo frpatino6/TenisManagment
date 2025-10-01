@@ -477,15 +477,161 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
             ),
           ),
 
-          // Botón de acción
-          IconButton(
-            onPressed: () {
-              // TODO: Mostrar detalles de la clase
-            },
-            icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
+          // Botones de acción
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Botón completar
+              IconButton(
+                onPressed: () => _showCompleteDialog(context, classData),
+                icon: const Icon(Icons.check_circle, color: Colors.green),
+                tooltip: 'Completar clase',
+              ),
+              // Botón cancelar
+              IconButton(
+                onPressed: () => _showCancelDialog(context, classData),
+                icon: const Icon(Icons.cancel, color: Colors.orange),
+                tooltip: 'Cancelar reserva',
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _showCompleteDialog(BuildContext context, classData) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Completar Clase',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+        content: Text(
+          '¿Confirmas que la clase con ${classData.studentName} fue completada exitosamente?',
+          style: GoogleFonts.inter(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancelar', style: GoogleFonts.inter()),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.green),
+            child: Text('Completar', style: GoogleFonts.inter()),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final notifier = ref.read(professorNotifierProvider.notifier);
+        await notifier.completeClass(classData.id);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Clase marcada como completada',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString(), style: GoogleFonts.inter()),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showCancelDialog(BuildContext context, classData) async {
+    final reasonController = TextEditingController();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Cancelar Reserva',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Estudiante: ${classData.studentName}',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+            ),
+            const Gap(16),
+            TextField(
+              controller: reasonController,
+              decoration: InputDecoration(
+                labelText: 'Motivo (opcional)',
+                hintText: 'Ej: Enfermedad, emergencia, etc.',
+                border: const OutlineInputBorder(),
+                labelStyle: GoogleFonts.inter(),
+                hintStyle: GoogleFonts.inter(),
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Volver', style: GoogleFonts.inter()),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+            child: Text('Cancelar Reserva', style: GoogleFonts.inter()),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final notifier = ref.read(professorNotifierProvider.notifier);
+        await notifier.cancelBooking(
+          classData.id,
+          reason: reasonController.text,
+        );
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Reserva cancelada. El horario queda disponible nuevamente.',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString(), style: GoogleFonts.inter()),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+
+    reasonController.dispose();
   }
 }

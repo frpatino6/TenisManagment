@@ -3,6 +3,7 @@ import { AuthUserModel } from '../../infrastructure/database/models/AuthUserMode
 import { ProfessorModel } from '../../infrastructure/database/models/ProfessorModel';
 import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { ScheduleModel } from '../../infrastructure/database/models/ScheduleModel';
+import { BookingModel } from '../../infrastructure/database/models/BookingModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
 import { Logger } from '../../infrastructure/services/Logger';
 const logger = new Logger({ controller: 'ProfessorDashboardController' });
@@ -726,6 +727,129 @@ export class ProfessorDashboardController {
       res.json({ message: 'Horario desbloqueado exitosamente' });
     } catch (error) {
       console.error('Error unblocking schedule:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * Mark a class as completed
+   */
+  completeClass = async (req: Request, res: Response) => {
+    try {
+      const firebaseUid = req.user?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+
+      const { scheduleId } = req.params;
+      
+      if (!scheduleId) {
+        return res.status(400).json({ error: 'scheduleId es requerido' });
+      }
+
+      const authUser = await AuthUserModel.findOne({ firebaseUid });
+      if (!authUser) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+
+      const professor = await ProfessorModel.findOne({ authUserId: authUser._id });
+      if (!professor) {
+        return res.status(404).json({ error: 'Perfil de profesor no encontrado' });
+      }
+
+      // Find schedule and verify it belongs to this professor
+      const schedule = await ScheduleModel.findById(scheduleId);
+      if (!schedule) {
+        return res.status(404).json({ error: 'Horario no encontrado' });
+      }
+
+      if (schedule.professorId.toString() !== professor._id.toString()) {
+        return res.status(403).json({ error: 'No autorizado para completar esta clase' });
+      }
+
+      if (!schedule.studentId) {
+        return res.status(400).json({ error: 'Este horario no tiene una reserva' });
+      }
+
+      // Update schedule status
+      schedule.status = 'completed';
+      await schedule.save();
+
+      // Update booking status
+      const booking = await BookingModel.findOne({ scheduleId: schedule._id });
+      if (booking) {
+        booking.status = 'completed';
+        await booking.save();
+      }
+
+      res.json({ 
+        message: 'Clase marcada como completada',
+        scheduleId: schedule._id,
+        bookingId: booking?._id
+      });
+    } catch (error) {
+      console.error('Error completing class:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * Cancel a booking
+   */
+  cancelBooking = async (req: Request, res: Response) => {
+    try {
+      const firebaseUid = req.user?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+
+      const { scheduleId } = req.params;
+      const { reason } = req.body;
+      
+      if (!scheduleId) {
+        return res.status(400).json({ error: 'scheduleId es requerido' });
+      }
+
+      const authUser = await AuthUserModel.findOne({ firebaseUid });
+      if (!authUser) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+
+      const professor = await ProfessorModel.findOne({ authUserId: authUser._id });
+      if (!professor) {
+        return res.status(404).json({ error: 'Perfil de profesor no encontrado' });
+      }
+
+      // Find schedule
+      const schedule = await ScheduleModel.findById(scheduleId);
+      if (!schedule) {
+        return res.status(404).json({ error: 'Horario no encontrado' });
+      }
+
+      if (schedule.professorId.toString() !== professor._id.toString()) {
+        return res.status(403).json({ error: 'No autorizado para cancelar esta reserva' });
+      }
+
+      // Update booking
+      const booking = await BookingModel.findOne({ scheduleId: schedule._id });
+      if (booking) {
+        booking.status = 'cancelled';
+        booking.notes = reason || 'Cancelado por el profesor';
+        await booking.save();
+      }
+
+      // Free up the schedule
+      schedule.studentId = undefined;
+      schedule.isAvailable = true;
+      schedule.status = 'cancelled';
+      await schedule.save();
+
+      res.json({ 
+        message: 'Reserva cancelada exitosamente',
+        scheduleId: schedule._id
+      });
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

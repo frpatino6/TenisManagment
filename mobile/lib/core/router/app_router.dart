@@ -7,6 +7,7 @@ import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/professor/presentation/screens/professor_home_screen.dart';
 import '../../features/professor/presentation/screens/create_schedule_screen.dart';
 import '../../features/professor/presentation/screens/manage_schedules_screen.dart';
+import '../../features/professor/presentation/screens/pricing_config_screen.dart';
 import '../../features/booking/presentation/screens/book_class_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 
@@ -75,6 +76,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/manage-schedules',
         name: 'manage-schedules',
         builder: (context, state) => const ManageSchedulesScreen(),
+      ),
+      GoRoute(
+        path: '/pricing-config',
+        name: 'pricing-config',
+        builder: (context, state) => const PricingConfigScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

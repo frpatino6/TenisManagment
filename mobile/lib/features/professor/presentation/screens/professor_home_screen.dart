@@ -336,12 +336,12 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
         ),
         _buildQuickActionCard(
           context: context,
-          icon: Icons.attach_money,
-          title: 'Pagos',
-          subtitle: 'Ver transacciones',
+          icon: Icons.price_change,
+          title: 'Precios',
+          subtitle: 'Configurar tarifas',
           color: Colors.purple,
           onTap: () {
-            
+            context.push('/pricing-config');
           },
         ),
       ],

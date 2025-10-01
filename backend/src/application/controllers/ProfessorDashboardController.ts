@@ -187,7 +187,8 @@ export class ProfessorDashboardController {
           $gte: startOfDay,
           $lte: endOfDay
         },
-        studentId: { $exists: true, $ne: null } // Only reserved schedules
+        studentId: { $exists: true, $ne: null }, // Only reserved schedules
+        status: 'confirmed' // Only confirmed classes (not completed or cancelled)
       })
         .populate('studentId', 'name email')
         .sort({ startTime: 1 });
@@ -264,7 +265,8 @@ export class ProfessorDashboardController {
           $gte: today,
           $lt: tomorrow
         },
-        studentId: { $exists: true, $ne: null } // Solo horarios reservados
+        studentId: { $exists: true, $ne: null }, // Solo horarios reservados
+        status: 'confirmed' // Solo clases confirmadas (no completadas ni canceladas)
       })
         .populate('studentId', 'name email')
         .sort({ startTime: 1 });

@@ -6,6 +6,14 @@ import { PaymentModel } from '../../infrastructure/database/models/PaymentModel'
 import { ServiceRequestModel } from '../../infrastructure/database/models/ServiceRequestModel';
 import { ScheduleModel } from '../../infrastructure/database/models/ScheduleModel';
 import { ProfessorModel } from '../../infrastructure/database/models/ProfessorModel';
+import { SystemConfigModel } from '../../infrastructure/database/models/SystemConfigModel';
+
+// Default base pricing
+const DEFAULT_BASE_PRICING = {
+  individualClass: 50000,
+  groupClass: 35000,
+  courtRental: 25000,
+};
 
 export class StudentDashboardController {
   /**
@@ -198,25 +206,37 @@ export class StudentDashboardController {
    * Get list of all professors
    */
   getProfessors = async (req: Request, res: Response) => {
-    console.log('=== StudentDashboardController.getProfessors called ===');
-    
     try {
+      // Get base pricing
+      const baseConfig = await SystemConfigModel.findOne({ key: 'base_pricing' });
+      const basePricing = baseConfig?.value || DEFAULT_BASE_PRICING;
+
       const professors = await ProfessorModel.find()
-        .select('name email phone specialties hourlyRate experienceYears rating')
+        .select('name email phone specialties hourlyRate pricing experienceYears rating')
         .limit(50);
 
-      const professorsData = professors.map(prof => ({
-        id: prof._id.toString(),
-        name: prof.name,
-        email: prof.email,
-        phone: prof.phone || '',
-        specialties: prof.specialties || [],
-        hourlyRate: prof.hourlyRate || 0,
-        experienceYears: 0, // Can be added to model later
-        rating: 0 // Can be added to model later
-      }));
+      const professorsData = professors.map((prof) => {
+        // Calculate effective pricing for this professor
+        const effectivePricing = {
+          individualClass:
+            prof.pricing?.individualClass ?? basePricing.individualClass,
+          groupClass: prof.pricing?.groupClass ?? basePricing.groupClass,
+          courtRental: prof.pricing?.courtRental ?? basePricing.courtRental,
+        };
 
-      console.log(`Found ${professorsData.length} professors`);
+        return {
+          id: prof._id.toString(),
+          name: prof.name,
+          email: prof.email,
+          phone: prof.phone || '',
+          specialties: prof.specialties || [],
+          hourlyRate: prof.hourlyRate || 0,
+          pricing: effectivePricing,
+          experienceYears: 0, // Can be added to model later
+          rating: 0, // Can be added to model later
+        };
+      });
+
       res.json({ items: professorsData });
     } catch (error) {
       console.error('Error getting professors:', error);

@@ -30,10 +30,10 @@ class ClassScheduleModel extends Equatable {
       studentId: json['studentId'] ?? '',
       startTime: DateTime.parse(json['startTime']),
       endTime: DateTime.parse(json['endTime']),
-      type: json['type'] ?? 'Clase individual',
+      type: json['serviceType'] ?? json['type'] ?? 'Clase individual',
       status: json['status'] ?? 'pending',
       notes: json['notes'],
-      price: (json['price'] ?? 0.0).toDouble(),
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
     );
   }
 

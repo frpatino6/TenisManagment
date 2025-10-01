@@ -200,17 +200,26 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
   }
 
   // Cancelar una reserva
-  Future<void> cancelBooking(String scheduleId, {String? reason}) async {
+  Future<void> cancelBooking(
+    String scheduleId, {
+    String? reason,
+    double? penaltyAmount,
+  }) async {
     state = const AsyncValue.loading();
 
     try {
       final service = ref.read(professorServiceProvider);
-      await service.cancelBooking(scheduleId, reason: reason);
+      await service.cancelBooking(
+        scheduleId,
+        reason: reason,
+        penaltyAmount: penaltyAmount,
+      );
 
       // Invalidar providers para refrescar datos
       ref.invalidate(professorSchedulesProvider);
       ref.invalidate(todayScheduleProvider);
       ref.invalidate(scheduleByDateProvider);
+      ref.invalidate(earningsStatsProvider); // Refresh if penalty was charged
 
       state = const AsyncValue.data(null);
     } catch (error, stackTrace) {

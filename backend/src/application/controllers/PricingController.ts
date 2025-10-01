@@ -180,12 +180,17 @@ export class PricingController {
    */
   updateMyPricing = async (req: Request, res: Response) => {
     try {
+      console.log('=== updateMyPricing called ===');
+      console.log('Request body:', req.body);
+      
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
+        console.log('ERROR: No firebaseUid');
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
       const { individualClass, groupClass, courtRental } = req.body;
+      console.log('Prices to update:', { individualClass, groupClass, courtRental });
 
       // Validate pricing values
       if (individualClass !== undefined && (individualClass < 0 || individualClass > 1000000)) {
@@ -236,6 +241,7 @@ export class PricingController {
       }
 
       // Update using findOneAndUpdate
+      console.log('Updating professor with data:', updateData);
       const updatedProfessor = await ProfessorModel.findOneAndUpdate(
         { authUserId: authUser._id },
         { $set: updateData },
@@ -243,8 +249,11 @@ export class PricingController {
       );
 
       if (!updatedProfessor) {
+        console.log('ERROR: Professor not found after update');
         return res.status(404).json({ error: 'Error al actualizar precios' });
       }
+      
+      console.log('Professor updated successfully:', updatedProfessor.pricing);
 
       // Get base pricing for response
       const baseConfig = await SystemConfigModel.findOne({ key: 'base_pricing' });

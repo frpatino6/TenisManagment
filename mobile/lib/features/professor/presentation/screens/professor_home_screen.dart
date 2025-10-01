@@ -310,9 +310,7 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
           title: 'Mis Estudiantes',
           subtitle: 'Ver lista completa',
           color: Colors.blue,
-          onTap: () {
-            
-          },
+          onTap: () {},
         ),
         _buildQuickActionCard(
           context: context,
@@ -537,11 +535,11 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.settings_outlined),
-              title: const Text('Configuración'),
+              leading: const Icon(Icons.palette_outlined),
+              title: const Text('Tema'),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Navegar a configuración
+                context.push('/theme-settings');
               },
             ),
             ListTile(

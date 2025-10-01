@@ -102,7 +102,7 @@ class HomeScreen extends ConsumerWidget {
           actions: [
             IconButton(
               icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
+              onPressed: () {},
             ),
             PopupMenuButton<String>(
               onSelected: (value) => _handleMenuSelection(context, ref, value),
@@ -118,12 +118,12 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
                 const PopupMenuItem(
-                  value: 'settings',
+                  value: 'theme',
                   child: Row(
                     children: [
-                      Icon(Icons.settings_outlined),
+                      Icon(Icons.palette_outlined),
                       Gap(12),
-                      Text('Configuración'),
+                      Text('Tema'),
                     ],
                   ),
                 ),
@@ -206,7 +206,8 @@ class HomeScreen extends ConsumerWidget {
     switch (value) {
       case 'profile':
         break;
-      case 'settings':
+      case 'theme':
+        context.push('/theme-settings');
         break;
       case 'logout':
         _handleLogout(context, ref);

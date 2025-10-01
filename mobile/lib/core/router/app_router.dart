@@ -9,6 +9,7 @@ import '../../features/professor/presentation/screens/create_schedule_screen.dar
 import '../../features/professor/presentation/screens/manage_schedules_screen.dart';
 import '../../features/professor/presentation/screens/pricing_config_screen.dart';
 import '../../features/booking/presentation/screens/book_class_screen.dart';
+import '../../features/settings/presentation/screens/theme_settings_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -81,6 +82,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/pricing-config',
         name: 'pricing-config',
         builder: (context, state) => const PricingConfigScreen(),
+      ),
+      GoRoute(
+        path: '/theme-settings',
+        name: 'theme-settings',
+        builder: (context, state) => const ThemeSettingsScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

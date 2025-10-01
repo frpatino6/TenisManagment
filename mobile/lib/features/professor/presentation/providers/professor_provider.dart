@@ -24,19 +24,15 @@ final professorStudentsProvider = FutureProvider<List<StudentSummaryModel>>((
 });
 
 // Provider para el horario de hoy
-final todayScheduleProvider = FutureProvider<List<ClassScheduleModel>>((
-  ref,
-) async {
-  final service = ref.read(professorServiceProvider);
-  return await service.getTodaySchedule();
-});
+final todayScheduleProvider =
+    FutureProvider.autoDispose<List<ClassScheduleModel>>((ref) async {
+      final service = ref.read(professorServiceProvider);
+      return await service.getTodaySchedule();
+    });
 
 // Provider para el horario de una fecha específica
-final scheduleByDateProvider =
-    FutureProvider.family<List<ClassScheduleModel>, DateTime>((
-      ref,
-      date,
-    ) async {
+final scheduleByDateProvider = FutureProvider.autoDispose
+    .family<List<ClassScheduleModel>, DateTime>((ref, date) async {
       final service = ref.read(professorServiceProvider);
       return await service.getScheduleByDate(date);
     });
@@ -50,7 +46,7 @@ final weekScheduleProvider = FutureProvider<List<ClassScheduleModel>>((
 });
 
 // Provider para las estadísticas de ganancias
-final earningsStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final earningsStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
   final service = ref.read(professorServiceProvider);
   return await service.getEarningsStats();
 });

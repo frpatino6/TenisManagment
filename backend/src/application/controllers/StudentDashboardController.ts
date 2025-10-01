@@ -302,6 +302,8 @@ export class StudentDashboardController {
 
       const { scheduleId, serviceType, price } = req.body;
       
+      console.log('Request body:', { scheduleId, serviceType, price });
+      
       if (!scheduleId) {
         return res.status(400).json({ error: 'scheduleId es requerido' });
       }
@@ -317,16 +319,21 @@ export class StudentDashboardController {
       // Get student
       const authUser = await AuthUserModel.findOne({ firebaseUid });
       if (!authUser) {
+        console.log('ERROR: AuthUser not found for firebaseUid:', firebaseUid);
         return res.status(404).json({ error: 'Usuario no encontrado' });
       }
 
       const student = await StudentModel.findOne({ authUserId: authUser._id });
       if (!student) {
+        console.log('ERROR: Student not found for authUserId:', authUser._id);
         return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
       }
 
+      console.log('Looking for schedule:', scheduleId);
+      
       // Check if schedule exists and is available
       const schedule = await ScheduleModel.findById(scheduleId);
+      console.log('Schedule found:', !!schedule);
       if (!schedule) {
         return res.status(404).json({ error: 'Horario no encontrado' });
       }

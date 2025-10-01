@@ -9,7 +9,7 @@ final bookingServiceProvider = Provider<BookingService>((ref) {
 });
 
 // Professors list provider
-final professorsProvider = FutureProvider<List<ProfessorBookingModel>>((
+final professorsProvider = FutureProvider.autoDispose<List<ProfessorBookingModel>>((
   ref,
 ) async {
   final service = ref.watch(bookingServiceProvider);
@@ -18,7 +18,7 @@ final professorsProvider = FutureProvider<List<ProfessorBookingModel>>((
 
 // Available schedules provider for a specific professor
 final availableSchedulesProvider =
-    FutureProvider.family<List<AvailableScheduleModel>, String>((
+    FutureProvider.autoDispose.family<List<AvailableScheduleModel>, String>((
       ref,
       professorId,
     ) async {

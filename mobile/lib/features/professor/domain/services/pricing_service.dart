@@ -137,14 +137,26 @@ class PricingService {
         body: json.encode(body),
       );
 
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
-        return PricingResponse.fromJson(data);
+        print('Parsed data: $data');
+
+        try {
+          return PricingResponse.fromJson(data);
+        } catch (e) {
+          print('Error parsing PricingResponse: $e');
+          print('Data keys: ${data.keys}');
+          rethrow;
+        }
       } else {
         final error = json.decode(response.body);
         throw Exception(error['error'] ?? 'Error al actualizar precios');
       }
     } catch (e) {
+      print('Error in updateMyPricing: $e');
       rethrow;
     }
   }

@@ -461,4 +461,63 @@ class ProfessorService {
       rethrow;
     }
   }
+
+  /// Mark a class as completed
+  Future<void> completeClass(String scheduleId) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final idToken = await user.getIdToken(true);
+
+      final response = await http.put(
+        Uri.parse(
+          '$_baseUrl/professor-dashboard/schedules/$scheduleId/complete',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      if (response.statusCode != 200) {
+        final error = json.decode(response.body);
+        throw Exception(error['error'] ?? 'Error al completar clase');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Cancel a booking
+  Future<void> cancelBooking(String scheduleId, {String? reason}) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final idToken = await user.getIdToken(true);
+
+      final response = await http.put(
+        Uri.parse(
+          '$_baseUrl/professor-dashboard/schedules/$scheduleId/cancel-booking',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+        body: json.encode({'reason': reason}),
+      );
+
+      if (response.statusCode != 200) {
+        final error = json.decode(response.body);
+        throw Exception(error['error'] ?? 'Error al cancelar reserva');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

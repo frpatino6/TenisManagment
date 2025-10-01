@@ -179,6 +179,44 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
+  // Completar una clase
+  Future<void> completeClass(String scheduleId) async {
+    state = const AsyncValue.loading();
+
+    try {
+      final service = ref.read(professorServiceProvider);
+      await service.completeClass(scheduleId);
+
+      // Invalidar providers para refrescar datos
+      ref.invalidate(professorSchedulesProvider);
+      ref.invalidate(todayScheduleProvider);
+      ref.invalidate(scheduleByDateProvider);
+
+      state = const AsyncValue.data(null);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+    }
+  }
+
+  // Cancelar una reserva
+  Future<void> cancelBooking(String scheduleId, {String? reason}) async {
+    state = const AsyncValue.loading();
+
+    try {
+      final service = ref.read(professorServiceProvider);
+      await service.cancelBooking(scheduleId, reason: reason);
+
+      // Invalidar providers para refrescar datos
+      ref.invalidate(professorSchedulesProvider);
+      ref.invalidate(todayScheduleProvider);
+      ref.invalidate(scheduleByDateProvider);
+
+      state = const AsyncValue.data(null);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+    }
+  }
+
   // Refrescar todos los datos
   Future<void> refreshAll() async {
     ref.invalidate(professorInfoProvider);

@@ -1,5 +1,11 @@
 import { Schema, model, Types } from 'mongoose';
 
+export interface PricingConfig {
+  individualClass?: number;
+  groupClass?: number;
+  courtRental?: number;
+}
+
 export interface ProfessorDocument {
   _id: Types.ObjectId;
   authUserId: Types.ObjectId; // Reference to AuthUser
@@ -8,6 +14,7 @@ export interface ProfessorDocument {
   phone: string;
   specialties: string[];
   hourlyRate: number;
+  pricing?: PricingConfig; // Custom pricing (overrides base pricing)
 }
 
 const ProfessorSchema = new Schema<ProfessorDocument>(
@@ -18,6 +25,14 @@ const ProfessorSchema = new Schema<ProfessorDocument>(
     phone: { type: String, required: true },
     specialties: { type: [String], default: [] },
     hourlyRate: { type: Number, required: true },
+    pricing: {
+      type: {
+        individualClass: { type: Number },
+        groupClass: { type: Number },
+        courtRental: { type: Number },
+      },
+      required: false,
+    },
   },
   { timestamps: true },
 );

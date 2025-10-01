@@ -6,7 +6,10 @@ class PublishSchedule {
         this.schedules = schedules;
     }
     async execute(input) {
-        const toCreate = { ...input, isAvailable: input.isAvailable ?? true };
+        const toCreate = {
+            ...input,
+            isAvailable: input.isAvailable ?? true,
+        };
         return this.schedules.publish(toCreate);
     }
 }

@@ -1,4 +1,7 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FirebaseAuthController = void 0;
 const AuthUserModel_1 = require("../../infrastructure/database/models/AuthUserModel");
@@ -7,6 +10,7 @@ const ProfessorModel_1 = require("../../infrastructure/database/models/Professor
 const JwtService_1 = require("../../infrastructure/services/JwtService");
 const config_1 = require("../../infrastructure/config");
 const Logger_1 = require("../../infrastructure/services/Logger");
+const firebase_1 = __importDefault(require("../../infrastructure/auth/firebase"));
 class FirebaseAuthController {
     constructor() {
         this.jwtService = new JwtService_1.JwtService(config_1.config.jwtSecret);
@@ -14,21 +18,21 @@ class FirebaseAuthController {
         // Verificar token de Firebase y crear/actualizar usuario
         this.verifyToken = async (req, res) => {
             try {
+                if (!config_1.config.firebase.enabled) {
+                    return res.status(503).json({ error: 'Firebase auth disabled' });
+                }
                 const { idToken } = req.body;
                 if (!idToken) {
                     return res.status(400).json({ error: 'ID token is required' });
                 }
                 // Verificar token con Firebase Admin SDK
-                const admin = require('../../infrastructure/auth/firebase').default;
-                const decodedToken = await admin.auth().verifyIdToken(idToken);
+                const decodedToken = await firebase_1.default.auth().verifyIdToken(idToken);
                 // Buscar usuario existente por Firebase UID
                 let user = await AuthUserModel_1.AuthUserModel.findOne({ firebaseUid: decodedToken.uid });
-                this.logger.debug('User lookup by Firebase UID', { found: Boolean(user) });
                 if (user) {
                     // Verificar si ya tiene un registro en students o professors según su rol
                     if (user.role === 'student') {
                         const existingStudent = await StudentModel_1.StudentModel.findOne({ authUserId: user._id });
-                        this.logger.debug('Student profile exists', { found: Boolean(existingStudent) });
                         if (!existingStudent) {
                             this.logger.info('Creating missing Student profile for existing user');
                             await StudentModel_1.StudentModel.create({
@@ -36,14 +40,13 @@ class FirebaseAuthController {
                                 name: user.name || decodedToken.name || 'Usuario',
                                 email: user.email,
                                 membershipType: 'basic',
-                                balance: 0
+                                balance: 0,
                             });
                             this.logger.info('Student profile created');
                         }
                     }
                     else if (user.role === 'professor') {
                         const existingProfessor = await ProfessorModel_1.ProfessorModel.findOne({ authUserId: user._id });
-                        this.logger.debug('Professor profile exists', { found: Boolean(existingProfessor) });
                         if (!existingProfessor) {
                             this.logger.info('Creating missing Professor profile for existing user');
                             await ProfessorModel_1.ProfessorModel.create({
@@ -52,7 +55,7 @@ class FirebaseAuthController {
                                 email: user.email,
                                 phone: '',
                                 specialties: [],
-                                hourlyRate: 0
+                                hourlyRate: 0,
                             });
                             this.logger.info('Professor profile created');
                         }
@@ -61,7 +64,6 @@ class FirebaseAuthController {
                 else if (!user) {
                     // Buscar por email si no existe Firebase UID
                     user = await AuthUserModel_1.AuthUserModel.findOne({ email: decodedToken.email });
-                    this.logger.debug('User lookup by email', { found: Boolean(user) });
                     if (user) {
                         // Vincular Firebase UID a usuario existente
                         this.logger.info('Linking Firebase UID to existing user');
@@ -75,7 +77,7 @@ class FirebaseAuthController {
                             firebaseUid: decodedToken.uid,
                             email: decodedToken.email,
                             name: decodedToken.name || 'Usuario',
-                            role: 'student' // Por defecto
+                            role: 'student', // Por defecto
                         });
                         this.logger.info('AuthUser created');
                         // Crear perfil de estudiante por defecto
@@ -86,14 +88,17 @@ class FirebaseAuthController {
                             email: decodedToken.email,
                             // phone is optional for Google Sign-In users
                             membershipType: 'basic',
-                            balance: 0
+                            balance: 0,
                         });
                         this.logger.info('Student created');
                     }
                 }
                 // Generar tokens JWT propios
                 const accessToken = this.jwtService.signAccess({ sub: user._id.toString(), role: user.role });
-                const refreshToken = this.jwtService.signRefresh({ sub: user._id.toString(), role: user.role });
+                const refreshToken = this.jwtService.signRefresh({
+                    sub: user._id.toString(),
+                    role: user.role,
+                });
                 res.json({
                     accessToken,
                     refreshToken,
@@ -101,8 +106,8 @@ class FirebaseAuthController {
                         id: user._id,
                         email: user.email,
                         name: user.name,
-                        role: user.role
-                    }
+                        role: user.role,
+                    },
                 });
             }
             catch (error) {
@@ -120,10 +125,7 @@ class FirebaseAuthController {
                 }
                 // Verificar si el usuario ya existe
                 let user = await AuthUserModel_1.AuthUserModel.findOne({
-                    $or: [
-                        { firebaseUid: firebaseUid },
-                        { email: email }
-                    ]
+                    $or: [{ firebaseUid: firebaseUid }, { email: email }],
                 });
                 if (user) {
                     return res.status(409).json({ error: 'User already exists' });
@@ -134,7 +136,7 @@ class FirebaseAuthController {
                     firebaseUid: firebaseUid,
                     email: email,
                     name: name,
-                    role: role
+                    role: role,
                 });
                 this.logger.info('AuthUser created');
                 // Crear perfil según el rol
@@ -146,7 +148,7 @@ class FirebaseAuthController {
                         email: email,
                         phone: phone,
                         membershipType: 'basic',
-                        balance: 0
+                        balance: 0,
                     });
                     this.logger.info('Student created');
                 }
@@ -158,13 +160,16 @@ class FirebaseAuthController {
                         email: email,
                         phone: phone,
                         specialties: [],
-                        hourlyRate: 0
+                        hourlyRate: 0,
                     });
                     this.logger.info('Professor created');
                 }
                 // Generar tokens JWT
                 const accessToken = this.jwtService.signAccess({ sub: user._id.toString(), role: user.role });
-                const refreshToken = this.jwtService.signRefresh({ sub: user._id.toString(), role: user.role });
+                const refreshToken = this.jwtService.signRefresh({
+                    sub: user._id.toString(),
+                    role: user.role,
+                });
                 res.status(201).json({
                     accessToken,
                     refreshToken,
@@ -172,8 +177,8 @@ class FirebaseAuthController {
                         id: user._id,
                         email: user.email,
                         name: user.name,
-                        role: user.role
-                    }
+                        role: user.role,
+                    },
                 });
             }
             catch (error) {
@@ -193,7 +198,7 @@ class FirebaseAuthController {
                     id: user._id,
                     email: user.email,
                     name: user.name,
-                    role: user.role
+                    role: user.role,
                 });
             }
             catch (error) {

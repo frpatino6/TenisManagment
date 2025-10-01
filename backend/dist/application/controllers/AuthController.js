@@ -26,7 +26,7 @@ class AuthController {
                     email,
                     phone: profile.phone,
                     specialties: profile.specialties ?? [],
-                    hourlyRate: profile.hourlyRate ?? 0
+                    hourlyRate: profile.hourlyRate ?? 0,
                 });
                 linkedId = prof._id;
             }
@@ -36,7 +36,7 @@ class AuthController {
                     email,
                     phone: profile.phone,
                     membershipType: profile.membershipType ?? 'basic',
-                    balance: 0
+                    balance: 0,
                 });
                 linkedId = student._id;
             }

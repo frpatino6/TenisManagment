@@ -5,6 +5,7 @@ const AuthUserModel_1 = require("../../infrastructure/database/models/AuthUserMo
 const ProfessorModel_1 = require("../../infrastructure/database/models/ProfessorModel");
 const StudentModel_1 = require("../../infrastructure/database/models/StudentModel");
 const ScheduleModel_1 = require("../../infrastructure/database/models/ScheduleModel");
+const BookingModel_1 = require("../../infrastructure/database/models/BookingModel");
 const PaymentModel_1 = require("../../infrastructure/database/models/PaymentModel");
 const Logger_1 = require("../../infrastructure/services/Logger");
 const logger = new Logger_1.Logger({ controller: 'ProfessorDashboardController' });
@@ -151,37 +152,36 @@ class ProfessorDashboardController {
                 if (isNaN(targetDate.getTime())) {
                     return res.status(400).json({ error: 'Formato de fecha inválido (use YYYY-MM-DD)' });
                 }
-                // Adjust for Colombia timezone (UTC-5)
-                const colombiaDate = new Date(targetDate.getTime() - (5 * 60 * 60 * 1000));
-                colombiaDate.setHours(0, 0, 0, 0);
-                const nextDay = new Date(colombiaDate);
-                nextDay.setDate(nextDay.getDate() + 1);
-                console.log(`Getting schedules for date ${date}:`, {
-                    targetDate: targetDate.toISOString(),
-                    colombiaDate: colombiaDate.toISOString(),
-                    nextDay: nextDay.toISOString()
-                });
+                // Create date range for the target date (handle timezone properly)
+                const startOfDay = new Date(targetDate);
+                startOfDay.setUTCHours(0, 0, 0, 0);
+                const endOfDay = new Date(targetDate);
+                endOfDay.setUTCHours(23, 59, 59, 999);
                 const schedules = await ScheduleModel_1.ScheduleModel.find({
                     professorId: professor._id,
                     startTime: {
-                        $gte: colombiaDate,
-                        $lt: nextDay
+                        $gte: startOfDay,
+                        $lte: endOfDay
                     },
-                    studentId: { $exists: true, $ne: null }
+                    studentId: { $exists: true, $ne: null }, // Only reserved schedules
+                    status: 'confirmed' // Only confirmed classes (not completed or cancelled)
                 })
                     .populate('studentId', 'name email')
                     .sort({ startTime: 1 });
-                console.log(`Found ${schedules.length} classes for date ${date}`);
-                const classesData = schedules.map(schedule => ({
-                    id: schedule._id.toString(),
-                    studentName: schedule.studentId ? schedule.studentId.name : 'Estudiante',
-                    studentId: schedule.studentId ? schedule.studentId._id.toString() : '',
-                    startTime: schedule.startTime,
-                    endTime: schedule.endTime,
-                    type: schedule.type,
-                    status: schedule.status || 'pending',
-                    notes: schedule.notes,
-                    price: schedule.price || 0,
+                // Get booking info for each schedule to include price and service type
+                const classesData = await Promise.all(schedules.map(async (schedule) => {
+                    const booking = await BookingModel_1.BookingModel.findOne({ scheduleId: schedule._id });
+                    return {
+                        id: schedule._id.toString(),
+                        studentName: schedule.studentId.name,
+                        studentId: schedule.studentId._id.toString(),
+                        startTime: schedule.startTime,
+                        endTime: schedule.endTime,
+                        status: schedule.status || 'confirmed',
+                        notes: schedule.notes,
+                        serviceType: booking?.serviceType,
+                        price: booking?.price,
+                    };
                 }));
                 res.json({ items: classesData });
             }
@@ -237,7 +237,8 @@ class ProfessorDashboardController {
                         $gte: today,
                         $lt: tomorrow
                     },
-                    studentId: { $exists: true, $ne: null } // Solo horarios reservados
+                    studentId: { $exists: true, $ne: null }, // Solo horarios reservados
+                    status: 'confirmed' // Solo clases confirmadas (no completadas ni canceladas)
                 })
                     .populate('studentId', 'name email')
                     .sort({ startTime: 1 });
@@ -248,17 +249,20 @@ class ProfessorDashboardController {
                         studentName: todayClasses[0].studentId?.name
                     });
                 }
-                // Transformar los datos para que coincidan con el formato esperado
-                const classesData = todayClasses.map(schedule => ({
-                    id: schedule._id.toString(),
-                    studentName: schedule.studentId ? schedule.studentId.name : 'Estudiante',
-                    studentId: schedule.studentId ? schedule.studentId._id.toString() : '',
-                    startTime: schedule.startTime,
-                    endTime: schedule.endTime,
-                    type: schedule.type,
-                    status: schedule.status || 'pending',
-                    notes: schedule.notes,
-                    price: schedule.price || 0,
+                // Get booking info for each schedule to include price and service type
+                const classesData = await Promise.all(todayClasses.map(async (schedule) => {
+                    const booking = await BookingModel_1.BookingModel.findOne({ scheduleId: schedule._id });
+                    return {
+                        id: schedule._id.toString(),
+                        studentName: schedule.studentId ? schedule.studentId.name : 'Estudiante',
+                        studentId: schedule.studentId ? schedule.studentId._id.toString() : '',
+                        startTime: schedule.startTime,
+                        endTime: schedule.endTime,
+                        status: schedule.status || 'pending',
+                        notes: schedule.notes,
+                        serviceType: booking?.serviceType,
+                        price: booking?.price,
+                    };
                 }));
                 res.json({ items: classesData });
             }
@@ -302,10 +306,8 @@ class ProfessorDashboardController {
                     studentId: schedule.studentId ? schedule.studentId._id.toString() : '',
                     startTime: schedule.startTime,
                     endTime: schedule.endTime,
-                    type: schedule.type,
                     status: schedule.status || 'pending',
                     notes: schedule.notes,
-                    price: schedule.price || 0,
                 }));
                 res.json({ items: classesData });
             }
@@ -426,9 +428,9 @@ class ProfessorDashboardController {
                 if (!firebaseUid) {
                     return res.status(401).json({ error: 'Usuario no autenticado' });
                 }
-                const { date, startTime, endTime, type, price } = req.body;
-                if (!date || !startTime || !endTime || !type) {
-                    return res.status(400).json({ error: 'Faltan campos requeridos' });
+                const { date, startTime, endTime } = req.body;
+                if (!date || !startTime || !endTime) {
+                    return res.status(400).json({ error: 'Faltan campos requeridos: date, startTime, endTime' });
                 }
                 // Get professor
                 const authUser = await AuthUserModel_1.AuthUserModel.findOne({ firebaseUid });
@@ -461,10 +463,8 @@ class ProfessorDashboardController {
                     date: parsedDate,
                     startTime: parsedStartTime,
                     endTime: parsedEndTime,
-                    type,
                     isAvailable: true,
-                    status: 'pending',
-                    price: price || professor.hourlyRate
+                    status: 'pending'
                 });
                 console.log(`Schedule created: ${schedule._id}`);
                 res.status(201).json({
@@ -473,10 +473,8 @@ class ProfessorDashboardController {
                     date: schedule.date,
                     startTime: schedule.startTime,
                     endTime: schedule.endTime,
-                    type: schedule.type,
                     isAvailable: schedule.isAvailable,
-                    status: schedule.status,
-                    price: schedule.price
+                    status: schedule.status
                 });
             }
             catch (error) {
@@ -488,10 +486,16 @@ class ProfessorDashboardController {
          * Get all schedules for the professor
          */
         this.getMySchedules = async (req, res) => {
-            console.log('=== ProfessorDashboardController.getMySchedules called ===');
+            console.log('');
+            console.log('========================================');
+            console.log('=== GET MY SCHEDULES CALLED ===');
+            console.log('========================================');
+            console.log('');
             try {
                 const firebaseUid = req.user?.uid;
+                console.log('Firebase UID:', firebaseUid);
                 if (!firebaseUid) {
+                    console.log('ERROR: No firebaseUid');
                     return res.status(401).json({ error: 'Usuario no autenticado' });
                 }
                 const authUser = await AuthUserModel_1.AuthUserModel.findOne({ firebaseUid });
@@ -510,21 +514,34 @@ class ProfessorDashboardController {
                     .populate('studentId', 'name email')
                     .sort({ startTime: 1 })
                     .limit(100);
-                const schedulesData = schedules.map(schedule => ({
-                    id: schedule._id.toString(),
-                    date: schedule.date,
-                    startTime: schedule.startTime,
-                    endTime: schedule.endTime,
-                    type: schedule.type,
-                    isAvailable: schedule.isAvailable,
-                    isBlocked: schedule.isBlocked || false,
-                    blockReason: schedule.blockReason || null,
-                    status: schedule.status,
-                    price: schedule.price,
-                    studentName: schedule.studentId ? schedule.studentId.name : null,
-                    studentEmail: schedule.studentId ? schedule.studentId.email : null
-                }));
-                console.log(`Found ${schedulesData.length} schedules for professor ${professor._id}`);
+                const schedulesData = schedules.map(schedule => {
+                    const hasStudent = !!schedule.studentId;
+                    // Debug: Log raw studentId
+                    if (hasStudent) {
+                        console.log('Schedule with studentId:', {
+                            scheduleId: schedule._id.toString(),
+                            studentIdRaw: schedule.studentId,
+                            studentIdType: typeof schedule.studentId,
+                            studentIdName: schedule.studentId?.name,
+                            isAvailable: schedule.isAvailable
+                        });
+                    }
+                    return {
+                        id: schedule._id.toString(),
+                        date: schedule.date,
+                        startTime: schedule.startTime,
+                        endTime: schedule.endTime,
+                        isAvailable: schedule.isAvailable,
+                        isBlocked: schedule.isBlocked || false,
+                        blockReason: schedule.blockReason || null,
+                        status: schedule.status,
+                        studentName: hasStudent ? schedule.studentId.name : null,
+                        studentEmail: hasStudent ? schedule.studentId.email : null
+                    };
+                });
+                // Log booked schedules for debugging
+                const bookedSchedules = schedulesData.filter(s => s.studentName);
+                console.log(`Found ${schedulesData.length} total schedules, ${bookedSchedules.length} booked`);
                 res.json({ items: schedulesData });
             }
             catch (error) {
@@ -625,6 +642,141 @@ class ProfessorDashboardController {
             }
             catch (error) {
                 console.error('Error unblocking schedule:', error);
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
+        /**
+         * Mark a class as completed
+         */
+        this.completeClass = async (req, res) => {
+            try {
+                const firebaseUid = req.user?.uid;
+                if (!firebaseUid) {
+                    return res.status(401).json({ error: 'Usuario no autenticado' });
+                }
+                const { scheduleId } = req.params;
+                const { paymentAmount } = req.body;
+                if (!scheduleId) {
+                    return res.status(400).json({ error: 'scheduleId es requerido' });
+                }
+                const authUser = await AuthUserModel_1.AuthUserModel.findOne({ firebaseUid });
+                if (!authUser) {
+                    return res.status(404).json({ error: 'Usuario no encontrado' });
+                }
+                const professor = await ProfessorModel_1.ProfessorModel.findOne({ authUserId: authUser._id });
+                if (!professor) {
+                    return res.status(404).json({ error: 'Perfil de profesor no encontrado' });
+                }
+                // Find schedule and verify it belongs to this professor
+                const schedule = await ScheduleModel_1.ScheduleModel.findById(scheduleId);
+                if (!schedule) {
+                    return res.status(404).json({ error: 'Horario no encontrado' });
+                }
+                if (schedule.professorId.toString() !== professor._id.toString()) {
+                    return res.status(403).json({ error: 'No autorizado para completar esta clase' });
+                }
+                if (!schedule.studentId) {
+                    return res.status(400).json({ error: 'Este horario no tiene una reserva' });
+                }
+                // Update schedule status
+                schedule.status = 'completed';
+                await schedule.save();
+                // Update booking status
+                const booking = await BookingModel_1.BookingModel.findOne({ scheduleId: schedule._id });
+                if (booking) {
+                    booking.status = 'completed';
+                    await booking.save();
+                }
+                // Create payment record if amount provided
+                let payment = null;
+                if (paymentAmount && paymentAmount > 0 && schedule.studentId && booking) {
+                    payment = await PaymentModel_1.PaymentModel.create({
+                        studentId: schedule.studentId,
+                        professorId: professor._id,
+                        bookingId: booking._id,
+                        amount: paymentAmount,
+                        date: new Date(),
+                        status: 'paid',
+                        method: 'cash', // Default to cash, can be updated later
+                        description: `Pago por ${booking.serviceType} - ${schedule.startTime.toLocaleDateString()}`
+                    });
+                }
+                res.json({
+                    message: 'Clase marcada como completada' + (payment ? ' y pago registrado' : ''),
+                    scheduleId: schedule._id,
+                    bookingId: booking?._id,
+                    paymentId: payment?._id
+                });
+            }
+            catch (error) {
+                console.error('Error completing class:', error);
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
+        /**
+         * Cancel a booking
+         */
+        this.cancelBooking = async (req, res) => {
+            try {
+                const firebaseUid = req.user?.uid;
+                if (!firebaseUid) {
+                    return res.status(401).json({ error: 'Usuario no autenticado' });
+                }
+                const { scheduleId } = req.params;
+                const { reason, penaltyAmount } = req.body;
+                if (!scheduleId) {
+                    return res.status(400).json({ error: 'scheduleId es requerido' });
+                }
+                const authUser = await AuthUserModel_1.AuthUserModel.findOne({ firebaseUid });
+                if (!authUser) {
+                    return res.status(404).json({ error: 'Usuario no encontrado' });
+                }
+                const professor = await ProfessorModel_1.ProfessorModel.findOne({ authUserId: authUser._id });
+                if (!professor) {
+                    return res.status(404).json({ error: 'Perfil de profesor no encontrado' });
+                }
+                // Find schedule
+                const schedule = await ScheduleModel_1.ScheduleModel.findById(scheduleId);
+                if (!schedule) {
+                    return res.status(404).json({ error: 'Horario no encontrado' });
+                }
+                if (schedule.professorId.toString() !== professor._id.toString()) {
+                    return res.status(403).json({ error: 'No autorizado para cancelar esta reserva' });
+                }
+                // Update booking
+                const booking = await BookingModel_1.BookingModel.findOne({ scheduleId: schedule._id });
+                if (booking) {
+                    booking.status = 'cancelled';
+                    booking.notes = reason || 'Cancelado por el profesor';
+                    await booking.save();
+                }
+                // Create penalty payment if amount provided
+                let payment = null;
+                if (penaltyAmount && penaltyAmount > 0 && schedule.studentId && booking) {
+                    payment = await PaymentModel_1.PaymentModel.create({
+                        studentId: schedule.studentId,
+                        professorId: professor._id,
+                        bookingId: booking._id,
+                        amount: penaltyAmount,
+                        date: new Date(),
+                        status: 'paid',
+                        method: 'cash',
+                        description: `Penalización por cancelación - ${reason || 'Sin motivo especificado'}`
+                    });
+                }
+                // Free up the schedule
+                schedule.studentId = undefined;
+                schedule.isAvailable = true;
+                schedule.status = 'cancelled';
+                await schedule.save();
+                res.json({
+                    message: 'Reserva cancelada exitosamente' + (payment ? ' con penalización registrada' : ''),
+                    scheduleId: schedule._id,
+                    paymentId: payment?._id
+                });
+            }
+            catch (error) {
+                console.error('Error cancelling booking:', error);
                 res.status(500).json({ error: 'Error interno del servidor' });
             }
         };

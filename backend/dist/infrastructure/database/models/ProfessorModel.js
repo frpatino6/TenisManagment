@@ -8,7 +8,12 @@ const ProfessorSchema = new mongoose_1.Schema({
     email: { type: String, required: true, unique: true, index: true },
     phone: { type: String, required: true },
     specialties: { type: [String], default: [] },
-    hourlyRate: { type: Number, required: true }
+    hourlyRate: { type: Number, required: true },
+    pricing: {
+        individualClass: { type: Number },
+        groupClass: { type: Number },
+        courtRental: { type: Number },
+    },
 }, { timestamps: true });
 exports.ProfessorModel = (0, mongoose_1.model)('Professor', ProfessorSchema);
 //# sourceMappingURL=ProfessorModel.js.map

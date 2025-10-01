@@ -8,6 +8,13 @@ const PaymentModel_1 = require("../../infrastructure/database/models/PaymentMode
 const ServiceRequestModel_1 = require("../../infrastructure/database/models/ServiceRequestModel");
 const ScheduleModel_1 = require("../../infrastructure/database/models/ScheduleModel");
 const ProfessorModel_1 = require("../../infrastructure/database/models/ProfessorModel");
+const SystemConfigModel_1 = require("../../infrastructure/database/models/SystemConfigModel");
+// Default base pricing
+const DEFAULT_BASE_PRICING = {
+    individualClass: 50000,
+    groupClass: 35000,
+    courtRental: 25000,
+};
 class StudentDashboardController {
     constructor() {
         /**
@@ -177,22 +184,32 @@ class StudentDashboardController {
          * Get list of all professors
          */
         this.getProfessors = async (req, res) => {
-            console.log('=== StudentDashboardController.getProfessors called ===');
             try {
+                // Get base pricing
+                const baseConfig = await SystemConfigModel_1.SystemConfigModel.findOne({ key: 'base_pricing' });
+                const basePricing = baseConfig?.value || DEFAULT_BASE_PRICING;
                 const professors = await ProfessorModel_1.ProfessorModel.find()
-                    .select('name email phone specialties hourlyRate experienceYears rating')
+                    .select('name email phone specialties hourlyRate pricing experienceYears rating')
                     .limit(50);
-                const professorsData = professors.map(prof => ({
-                    id: prof._id.toString(),
-                    name: prof.name,
-                    email: prof.email,
-                    phone: prof.phone || '',
-                    specialties: prof.specialties || [],
-                    hourlyRate: prof.hourlyRate || 0,
-                    experienceYears: 0, // Can be added to model later
-                    rating: 0 // Can be added to model later
-                }));
-                console.log(`Found ${professorsData.length} professors`);
+                const professorsData = professors.map((prof) => {
+                    // Calculate effective pricing for this professor
+                    const effectivePricing = {
+                        individualClass: prof.pricing?.individualClass ?? basePricing.individualClass,
+                        groupClass: prof.pricing?.groupClass ?? basePricing.groupClass,
+                        courtRental: prof.pricing?.courtRental ?? basePricing.courtRental,
+                    };
+                    return {
+                        id: prof._id.toString(),
+                        name: prof.name,
+                        email: prof.email,
+                        phone: prof.phone || '',
+                        specialties: prof.specialties || [],
+                        hourlyRate: prof.hourlyRate || 0,
+                        pricing: effectivePricing,
+                        experienceYears: 0, // Can be added to model later
+                        rating: 0, // Can be added to model later
+                    };
+                });
                 res.json({ items: professorsData });
             }
             catch (error) {
@@ -249,34 +266,52 @@ class StudentDashboardController {
                 if (!firebaseUid) {
                     return res.status(401).json({ error: 'Usuario no autenticado' });
                 }
-                const { scheduleId } = req.body;
+                const { scheduleId, serviceType, price } = req.body;
+                console.log('Request body:', { scheduleId, serviceType, price });
                 if (!scheduleId) {
                     return res.status(400).json({ error: 'scheduleId es requerido' });
+                }
+                if (!serviceType) {
+                    return res.status(400).json({ error: 'serviceType es requerido' });
+                }
+                if (!price || price <= 0) {
+                    return res.status(400).json({ error: 'price es requerido y debe ser mayor a 0' });
                 }
                 // Get student
                 const authUser = await AuthUserModel_1.AuthUserModel.findOne({ firebaseUid });
                 if (!authUser) {
+                    console.log('ERROR: AuthUser not found for firebaseUid:', firebaseUid);
                     return res.status(404).json({ error: 'Usuario no encontrado' });
                 }
                 const student = await StudentModel_1.StudentModel.findOne({ authUserId: authUser._id });
                 if (!student) {
+                    console.log('ERROR: Student not found for authUserId:', authUser._id);
                     return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
                 }
+                console.log('Looking for schedule:', scheduleId);
                 // Check if schedule exists and is available
                 const schedule = await ScheduleModel_1.ScheduleModel.findById(scheduleId);
+                console.log('Schedule found:', !!schedule);
                 if (!schedule) {
                     return res.status(404).json({ error: 'Horario no encontrado' });
                 }
                 if (!schedule.isAvailable) {
                     return res.status(400).json({ error: 'Este horario ya no está disponible' });
                 }
+                // Get professor from schedule
+                const professor = await ProfessorModel_1.ProfessorModel.findById(schedule.professorId);
+                if (!professor) {
+                    return res.status(404).json({ error: 'Profesor no encontrado' });
+                }
                 // Create booking
                 const booking = await BookingModel_1.BookingModel.create({
-                    studentId: student._id,
                     scheduleId: schedule._id,
-                    type: schedule.type === 'individual' ? 'lesson' : 'court_rental',
+                    studentId: student._id,
+                    professorId: professor._id,
+                    serviceType: serviceType,
+                    price: price,
                     status: 'confirmed',
-                    paymentStatus: 'pending'
+                    notes: `Reserva de ${serviceType}`
                 });
                 // Update schedule availability
                 schedule.isAvailable = false;

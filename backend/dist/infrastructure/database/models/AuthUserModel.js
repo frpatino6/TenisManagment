@@ -9,7 +9,7 @@ const AuthUserSchema = new mongoose_1.Schema({
     linkedId: { type: mongoose_1.Schema.Types.ObjectId },
     refreshToken: { type: String },
     firebaseUid: { type: String, unique: true, sparse: true },
-    name: { type: String }
+    name: { type: String },
 }, { timestamps: true });
 exports.AuthUserModel = (0, mongoose_1.model)('AuthUser', AuthUserSchema);
 //# sourceMappingURL=AuthUserModel.js.map

@@ -12,7 +12,11 @@ class StudentController {
         this.bookings = container_1.container.get(container_1.TYPES.BookingRepository);
         this.availableSchedules = async (req, res) => {
             try {
-                const result = await this.availability.execute({ professorId: String(req.query.professorId), dateFrom: req.query.from ? new Date(String(req.query.from)) : undefined, dateTo: req.query.to ? new Date(String(req.query.to)) : undefined });
+                const result = await this.availability.execute({
+                    professorId: String(req.query.professorId),
+                    dateFrom: req.query.from ? new Date(String(req.query.from)) : undefined,
+                    dateTo: req.query.to ? new Date(String(req.query.to)) : undefined,
+                });
                 return res.json(result);
             }
             catch (e) {

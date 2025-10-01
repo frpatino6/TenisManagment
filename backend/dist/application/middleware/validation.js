@@ -5,7 +5,20 @@ function validateBody(schema) {
     return (req, res, next) => {
         try {
             // zod-like interface expected
-            req.body = schema.parse(req.body);
+            if (typeof schema.safeParse === 'function') {
+                const result = schema.safeParse(req.body);
+                if (!result.success) {
+                    const details = (result.error?.issues || []).map((i) => ({
+                        path: i.path.join('.'),
+                        message: i.message,
+                    }));
+                    return res.status(400).json({ error: 'Invalid request body', details });
+                }
+                req.body = result.data;
+            }
+            else {
+                req.body = schema.parse(req.body);
+            }
             next();
         }
         catch (error) {

@@ -1,5 +1,6 @@
 import 'dart:convert';
- 
+
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/professor_model.dart';
@@ -18,9 +19,9 @@ class ProfessorService {
       if (user == null) {
         throw Exception('Usuario no autenticado');
       }
-      
+
       final idToken = await user.getIdToken(true); // Force refresh
-      
+
       final url = '$_baseUrl/professor-dashboard/me';
 
       final response = await http.get(
@@ -30,8 +31,6 @@ class ProfessorService {
           'Authorization': 'Bearer $idToken',
         },
       );
-
-      
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
@@ -325,8 +324,6 @@ class ProfessorService {
         }),
       );
 
-      
-
       if (response.statusCode == 201) {
         return json.decode(response.body) as Map<String, dynamic>;
       } else {
@@ -347,6 +344,8 @@ class ProfessorService {
 
       final idToken = await user.getIdToken(true);
 
+      debugPrint('📅 Calling getMySchedules...');
+
       final response = await http.get(
         Uri.parse('$_baseUrl/professor-dashboard/schedules'),
         headers: {
@@ -355,11 +354,22 @@ class ProfessorService {
         },
       );
 
-      
+      debugPrint('Response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
-        return data['items'] as List<dynamic>;
+        final items = data['items'] as List<dynamic>;
+        debugPrint('Received ${items.length} schedules from backend');
+
+        // Log a booked schedule if exists
+        final bookedSchedules = items
+            .where((s) => s['studentName'] != null)
+            .toList();
+        if (bookedSchedules.isNotEmpty) {
+          debugPrint('Example booked schedule: ${bookedSchedules.first}');
+        }
+
+        return items;
       } else {
         throw Exception('Error al obtener horarios: ${response.statusCode}');
       }
@@ -385,8 +395,6 @@ class ProfessorService {
           'Authorization': 'Bearer $idToken',
         },
       );
-
-      
 
       if (response.statusCode != 200) {
         final error = json.decode(response.body);
@@ -416,8 +424,6 @@ class ProfessorService {
         body: json.encode({'reason': reason}),
       );
 
-      
-
       if (response.statusCode != 200) {
         final error = json.decode(response.body);
         throw Exception(error['error'] ?? 'Error al bloquear horario');
@@ -446,8 +452,6 @@ class ProfessorService {
           'Authorization': 'Bearer $idToken',
         },
       );
-
-      
 
       if (response.statusCode != 200) {
         final error = json.decode(response.body);

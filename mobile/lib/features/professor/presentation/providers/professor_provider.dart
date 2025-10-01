@@ -56,7 +56,9 @@ final earningsStatsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
 });
 
 // Provider para todos los horarios del profesor
-final professorSchedulesProvider = FutureProvider<List<dynamic>>((ref) async {
+final professorSchedulesProvider = FutureProvider.autoDispose<List<dynamic>>((
+  ref,
+) async {
   final service = ref.read(professorServiceProvider);
   return await service.getMySchedules();
 });

@@ -541,11 +541,18 @@ export class ProfessorDashboardController {
    * Get all schedules for the professor
    */
   getMySchedules = async (req: Request, res: Response) => {
-    console.log('=== ProfessorDashboardController.getMySchedules called ===');
+    console.log('');
+    console.log('========================================');
+    console.log('=== GET MY SCHEDULES CALLED ===');
+    console.log('========================================');
+    console.log('');
     
     try {
       const firebaseUid = req.user?.uid;
+      console.log('Firebase UID:', firebaseUid);
+      
       if (!firebaseUid) {
+        console.log('ERROR: No firebaseUid');
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
@@ -568,20 +575,38 @@ export class ProfessorDashboardController {
         .sort({ startTime: 1 })
         .limit(100);
 
-      const schedulesData = schedules.map(schedule => ({
-        id: schedule._id.toString(),
-        date: schedule.date,
-        startTime: schedule.startTime,
-        endTime: schedule.endTime,
-        isAvailable: schedule.isAvailable,
-        isBlocked: schedule.isBlocked || false,
-        blockReason: schedule.blockReason || null,
-        status: schedule.status,
-        studentName: schedule.studentId ? (schedule.studentId as any).name : null,
-        studentEmail: schedule.studentId ? (schedule.studentId as any).email : null
-      }));
+      const schedulesData = schedules.map(schedule => {
+        const hasStudent = !!schedule.studentId;
+        
+        // Debug: Log raw studentId
+        if (hasStudent) {
+          console.log('Schedule with studentId:', {
+            scheduleId: schedule._id.toString(),
+            studentIdRaw: schedule.studentId,
+            studentIdType: typeof schedule.studentId,
+            studentIdName: (schedule.studentId as any)?.name,
+            isAvailable: schedule.isAvailable
+          });
+        }
+        
+        return {
+          id: schedule._id.toString(),
+          date: schedule.date,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime,
+          isAvailable: schedule.isAvailable,
+          isBlocked: schedule.isBlocked || false,
+          blockReason: schedule.blockReason || null,
+          status: schedule.status,
+          studentName: hasStudent ? (schedule.studentId as any).name : null,
+          studentEmail: hasStudent ? (schedule.studentId as any).email : null
+        };
+      });
 
-      console.log(`Found ${schedulesData.length} schedules for professor ${professor._id}`);
+      // Log booked schedules for debugging
+      const bookedSchedules = schedulesData.filter(s => s.studentName);
+      console.log(`Found ${schedulesData.length} total schedules, ${bookedSchedules.length} booked`);
+
       res.json({ items: schedulesData });
     } catch (error) {
       console.error('Error getting schedules:', error);

@@ -19,8 +19,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _startTime = TimeOfDay.now();
   TimeOfDay _endTime = TimeOfDay.now();
-  String _selectedType = 'individual';
-  final _priceController = TextEditingController();
 
   bool _isCreating = false;
   bool _generateMultipleSlots = false;
@@ -28,7 +26,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
 
   @override
   void dispose() {
-    _priceController.dispose();
     super.dispose();
   }
 
@@ -319,62 +316,35 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
 
               const Gap(24),
 
-              // Tipo de clase
-              Text(
-                'Tipo de clase',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Gap(12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _buildTypeChip('individual', 'Individual', Icons.person),
-                  _buildTypeChip('group', 'Grupal', Icons.group),
-                  _buildTypeChip(
-                    'court_rental',
-                    'Alquiler cancha',
-                    Icons.sports_tennis,
-                  ),
-                ],
-              ),
-
-              const Gap(24),
-
-              // Precio (opcional)
-              Text(
-                'Precio (opcional)',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Gap(8),
-              Text(
-                'Dejar vacío para usar tu tarifa por hora',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const Gap(12),
-              TextFormField(
-                controller: _priceController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: 'Precio personalizado',
-                  prefixIcon: Icon(
-                    Icons.attach_money,
-                    color: colorScheme.primary,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              // Información sobre el horario
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: colorScheme.primary.withValues(alpha: 0.3),
                   ),
                 ),
-                style: GoogleFonts.inter(fontSize: 16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: colorScheme.primary,
+                      size: 20,
+                    ),
+                    const Gap(12),
+                    Expanded(
+                      child: Text(
+                        'Los estudiantes podrán elegir el tipo de servicio (clase individual, grupal o alquiler de cancha) al reservar este horario.',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
 
               const Gap(32),
@@ -413,40 +383,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTypeChip(String value, String label, IconData icon) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final isSelected = _selectedType == value;
-
-    return ChoiceChip(
-      label: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 18,
-            color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
-          ),
-          const Gap(8),
-          Text(label),
-        ],
-      ),
-      selected: isSelected,
-      onSelected: (selected) {
-        if (selected) {
-          setState(() {
-            _selectedType = value;
-          });
-        }
-      },
-      selectedColor: colorScheme.primary,
-      labelStyle: GoogleFonts.inter(
-        fontWeight: FontWeight.w500,
-        color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
       ),
     );
   }
@@ -578,9 +514,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
 
     try {
       final notifier = ref.read(professorNotifierProvider.notifier);
-      final price = _priceController.text.isNotEmpty
-          ? double.tryParse(_priceController.text)
-          : null;
 
       if (_generateMultipleSlots) {
         // Generar múltiples slots
@@ -598,8 +531,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
             date: _selectedDate,
             startTime: slot['start']!,
             endTime: slot['end']!,
-            type: _selectedType,
-            price: price,
           );
         }
 
@@ -620,8 +551,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           date: _selectedDate,
           startTime: startDateTime,
           endTime: endDateTime,
-          type: _selectedType,
-          price: price,
         );
 
         if (!mounted) return;

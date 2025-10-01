@@ -3,8 +3,6 @@ class AvailableScheduleModel {
   final String professorId;
   final DateTime startTime;
   final DateTime endTime;
-  final String type;
-  final double price;
   final String status;
 
   AvailableScheduleModel({
@@ -12,8 +10,6 @@ class AvailableScheduleModel {
     required this.professorId,
     required this.startTime,
     required this.endTime,
-    required this.type,
-    required this.price,
     required this.status,
   });
 
@@ -23,8 +19,6 @@ class AvailableScheduleModel {
       professorId: json['professorId'] as String,
       startTime: DateTime.parse(json['startTime'] as String),
       endTime: DateTime.parse(json['endTime'] as String),
-      type: json['type'] as String? ?? 'lesson',
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] as String? ?? 'available',
     );
   }
@@ -35,8 +29,6 @@ class AvailableScheduleModel {
       'professorId': professorId,
       'startTime': startTime.toIso8601String(),
       'endTime': endTime.toIso8601String(),
-      'type': type,
-      'price': price,
       'status': status,
     };
   }

@@ -136,8 +136,6 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     required DateTime date,
     required DateTime startTime,
     required DateTime endTime,
-    required String type,
-    double? price,
   }) async {
     state = const AsyncValue.loading();
 
@@ -147,8 +145,6 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
         date: date,
         startTime: startTime,
         endTime: endTime,
-        type: type,
-        price: price,
       );
 
       // Invalidar providers para refrescar datos

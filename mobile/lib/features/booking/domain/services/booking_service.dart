@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
- 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/professor_model.dart';
 import '../models/available_schedule_model.dart';
@@ -22,7 +22,7 @@ class BookingService {
         throw Exception('No se pudo obtener el token de autenticación');
       }
 
-      
+      debugPrint('Getting professors list');
 
       final response = await http.get(
         Uri.parse('$_baseUrl/student-dashboard/professors'),
@@ -32,7 +32,7 @@ class BookingService {
         },
       );
 
-      
+      debugPrint('Response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
@@ -48,6 +48,7 @@ class BookingService {
         throw Exception('Error al obtener profesores: ${response.statusCode}');
       }
     } catch (e) {
+      debugPrint('Error in getProfessors: $e');
       rethrow;
     }
   }
@@ -67,7 +68,7 @@ class BookingService {
         throw Exception('No se pudo obtener el token de autenticación');
       }
 
-      
+      debugPrint('Getting available schedules for professor: $professorId');
 
       final response = await http.get(
         Uri.parse(
@@ -79,13 +80,14 @@ class BookingService {
         },
       );
 
-      
+      debugPrint('Response status: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         final items = data['items'] as List<dynamic>;
 
-        
+        debugPrint('Found ${items.length} available schedules');
 
         return items
             .map(
@@ -99,12 +101,17 @@ class BookingService {
         );
       }
     } catch (e) {
+      debugPrint('Error in getAvailableSchedules: $e');
       rethrow;
     }
   }
 
   /// Book a lesson
-  Future<Map<String, dynamic>> bookLesson(String scheduleId) async {
+  Future<Map<String, dynamic>> bookLesson(
+    String scheduleId, {
+    required String serviceType,
+    required double price,
+  }) async {
     try {
       final user = _auth.currentUser;
       if (user == null) {
@@ -116,7 +123,9 @@ class BookingService {
         throw Exception('No se pudo obtener el token de autenticación');
       }
 
-      
+      debugPrint(
+        'Booking lesson with scheduleId: $scheduleId, serviceType: $serviceType, price: $price',
+      );
 
       final response = await http.post(
         Uri.parse('$_baseUrl/student-dashboard/book-lesson'),
@@ -124,10 +133,15 @@ class BookingService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',
         },
-        body: json.encode({'scheduleId': scheduleId}),
+        body: json.encode({
+          'scheduleId': scheduleId,
+          'serviceType': serviceType,
+          'price': price,
+        }),
       );
 
-      
+      debugPrint('Response status: ${response.statusCode}');
+      debugPrint('Response body: ${response.body}');
 
       if (response.statusCode == 201) {
         return json.decode(response.body) as Map<String, dynamic>;
@@ -136,6 +150,7 @@ class BookingService {
         throw Exception(error['error'] ?? 'Error al reservar clase');
       }
     } catch (e) {
+      debugPrint('Error in bookLesson: $e');
       rethrow;
     }
   }

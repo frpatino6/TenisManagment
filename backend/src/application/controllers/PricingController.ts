@@ -187,35 +187,43 @@ export class PricingController {
         return res.status(404).json({ error: 'Perfil de profesor no encontrado' });
       }
 
-      // Update pricing (only update provided values)
-      const updatedPricing: any = professor.pricing || {};
+      // Build update object
+      const updateData: any = {};
       
       if (individualClass !== undefined) {
         if (individualClass === null) {
-          delete updatedPricing.individualClass;
+          updateData['pricing.individualClass'] = null;
         } else {
-          updatedPricing.individualClass = individualClass;
+          updateData['pricing.individualClass'] = individualClass;
         }
       }
       
       if (groupClass !== undefined) {
         if (groupClass === null) {
-          delete updatedPricing.groupClass;
+          updateData['pricing.groupClass'] = null;
         } else {
-          updatedPricing.groupClass = groupClass;
+          updateData['pricing.groupClass'] = groupClass;
         }
       }
       
       if (courtRental !== undefined) {
         if (courtRental === null) {
-          delete updatedPricing.courtRental;
+          updateData['pricing.courtRental'] = null;
         } else {
-          updatedPricing.courtRental = courtRental;
+          updateData['pricing.courtRental'] = courtRental;
         }
       }
 
-      professor.pricing = updatedPricing;
-      await professor.save();
+      // Update using findOneAndUpdate
+      const updatedProfessor = await ProfessorModel.findOneAndUpdate(
+        { authUserId: authUser._id },
+        { $set: updateData },
+        { new: true }
+      );
+
+      if (!updatedProfessor) {
+        return res.status(404).json({ error: 'Error al actualizar precios' });
+      }
 
       // Get base pricing for response
       const baseConfig = await SystemConfigModel.findOne({ key: 'base_pricing' });
@@ -223,15 +231,15 @@ export class PricingController {
 
       // Calculate effective pricing
       const effectivePricing = {
-        individualClass: updatedPricing.individualClass ?? basePricing.individualClass,
-        groupClass: updatedPricing.groupClass ?? basePricing.groupClass,
-        courtRental: updatedPricing.courtRental ?? basePricing.courtRental,
+        individualClass: updatedProfessor.pricing?.individualClass ?? basePricing.individualClass,
+        groupClass: updatedProfessor.pricing?.groupClass ?? basePricing.groupClass,
+        courtRental: updatedProfessor.pricing?.courtRental ?? basePricing.courtRental,
       };
 
       res.json({
         message: 'Precios actualizados exitosamente',
         pricing: effectivePricing,
-        customPricing: updatedPricing,
+        customPricing: updatedProfessor.pricing || {},
         basePricing,
       });
     } catch (error) {

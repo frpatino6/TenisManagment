@@ -493,7 +493,11 @@ class ProfessorService {
   }
 
   /// Cancel a booking
-  Future<void> cancelBooking(String scheduleId, {String? reason}) async {
+  Future<void> cancelBooking(
+    String scheduleId, {
+    String? reason,
+    double? penaltyAmount,
+  }) async {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
@@ -510,7 +514,10 @@ class ProfessorService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',
         },
-        body: json.encode({'reason': reason}),
+        body: json.encode({
+          'reason': reason,
+          'penaltyAmount': penaltyAmount,
+        }),
       );
 
       if (response.statusCode != 200) {

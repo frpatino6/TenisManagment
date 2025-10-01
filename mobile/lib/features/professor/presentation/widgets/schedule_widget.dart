@@ -501,7 +501,10 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
   }
 
   Future<void> _showCompleteDialog(BuildContext context, classData) async {
-    final paymentController = TextEditingController();
+    // Pre-fill with booking price if available
+    final paymentController = TextEditingController(
+      text: classData.price > 0 ? classData.price.toStringAsFixed(0) : '',
+    );
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -518,18 +521,28 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
               'Estudiante: ${classData.studentName}',
               style: GoogleFonts.inter(fontWeight: FontWeight.w500),
             ),
+            if (classData.type != null) ...[
+              const Gap(4),
+              Text(
+                'Servicio: ${classData.type}',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
             const Gap(16),
             TextField(
               controller: paymentController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: 'Monto pagado (opcional)',
+                labelText: 'Monto pagado',
                 hintText: 'Ej: 50000',
                 prefixText: '\$ ',
                 border: const OutlineInputBorder(),
                 labelStyle: GoogleFonts.inter(),
                 hintStyle: GoogleFonts.inter(),
-                helperText: 'Ingresa el monto si el estudiante pagó',
+                helperText: 'Valor sugerido según el servicio reservado',
                 helperStyle: GoogleFonts.inter(fontSize: 12),
               ),
             ),
@@ -591,6 +604,7 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
 
   Future<void> _showCancelDialog(BuildContext context, classData) async {
     final reasonController = TextEditingController();
+    final paymentController = TextEditingController();
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -619,6 +633,21 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
               ),
               maxLines: 2,
             ),
+            const Gap(16),
+            TextField(
+              controller: paymentController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'Monto de penalización (opcional)',
+                hintText: 'Ej: 25000',
+                prefixText: '\$ ',
+                border: const OutlineInputBorder(),
+                labelStyle: GoogleFonts.inter(),
+                hintStyle: GoogleFonts.inter(),
+                helperText: 'Si aplica cargo por cancelación tardía',
+                helperStyle: GoogleFonts.inter(fontSize: 12),
+              ),
+            ),
           ],
         ),
         actions: [
@@ -638,16 +667,23 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
     if (confirmed == true && context.mounted) {
       try {
         final notifier = ref.read(professorNotifierProvider.notifier);
+        final penaltyAmount = paymentController.text.isNotEmpty
+            ? double.tryParse(paymentController.text)
+            : null;
+        
         await notifier.cancelBooking(
           classData.id,
           reason: reasonController.text,
+          penaltyAmount: penaltyAmount,
         );
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Reserva cancelada. El horario queda disponible nuevamente.',
+                penaltyAmount != null
+                    ? 'Reserva cancelada. Penalización de \$${penaltyAmount.toStringAsFixed(0)} registrada.'
+                    : 'Reserva cancelada. El horario queda disponible nuevamente.',
                 style: GoogleFonts.inter(),
               ),
               backgroundColor: Colors.orange,
@@ -667,5 +703,6 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
     }
 
     reasonController.dispose();
+    paymentController.dispose();
   }
 }

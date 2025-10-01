@@ -193,17 +193,24 @@ export class ProfessorDashboardController {
         .populate('studentId', 'name email')
         .sort({ startTime: 1 });
 
-
-
-      const classesData = schedules.map(schedule => ({
-        id: schedule._id.toString(),
-        studentName: (schedule.studentId as any).name,
-        studentId: (schedule.studentId as any)._id.toString(),
-        startTime: schedule.startTime,
-        endTime: schedule.endTime,
-        status: schedule.status || 'confirmed',
-        notes: schedule.notes,
-      }));
+      // Get booking info for each schedule to include price and service type
+      const classesData = await Promise.all(
+        schedules.map(async (schedule) => {
+          const booking = await BookingModel.findOne({ scheduleId: schedule._id });
+          
+          return {
+            id: schedule._id.toString(),
+            studentName: (schedule.studentId as any).name,
+            studentId: (schedule.studentId as any)._id.toString(),
+            startTime: schedule.startTime,
+            endTime: schedule.endTime,
+            status: schedule.status || 'confirmed',
+            notes: schedule.notes,
+            serviceType: booking?.serviceType,
+            price: booking?.price,
+          };
+        })
+      );
 
       res.json({ items: classesData });
     } catch (error) {
@@ -279,16 +286,24 @@ export class ProfessorDashboardController {
         });
       }
 
-      // Transformar los datos para que coincidan con el formato esperado
-      const classesData = todayClasses.map(schedule => ({
-        id: schedule._id.toString(),
-        studentName: schedule.studentId ? (schedule.studentId as any).name : 'Estudiante',
-        studentId: schedule.studentId ? (schedule.studentId as any)._id.toString() : '',
-        startTime: schedule.startTime,
-        endTime: schedule.endTime,
-        status: schedule.status || 'pending',
-        notes: schedule.notes,
-      }));
+      // Get booking info for each schedule to include price and service type
+      const classesData = await Promise.all(
+        todayClasses.map(async (schedule) => {
+          const booking = await BookingModel.findOne({ scheduleId: schedule._id });
+          
+          return {
+            id: schedule._id.toString(),
+            studentName: schedule.studentId ? (schedule.studentId as any).name : 'Estudiante',
+            studentId: schedule.studentId ? (schedule.studentId as any)._id.toString() : '',
+            startTime: schedule.startTime,
+            endTime: schedule.endTime,
+            status: schedule.status || 'pending',
+            notes: schedule.notes,
+            serviceType: booking?.serviceType,
+            price: booking?.price,
+          };
+        })
+      );
 
       res.json({ items: classesData });
     } catch (error) {
@@ -823,7 +838,7 @@ export class ProfessorDashboardController {
       }
 
       const { scheduleId } = req.params;
-      const { reason } = req.body;
+      const { reason, penaltyAmount } = req.body;
       
       if (!scheduleId) {
         return res.status(400).json({ error: 'scheduleId es requerido' });
@@ -857,6 +872,21 @@ export class ProfessorDashboardController {
         await booking.save();
       }
 
+      // Create penalty payment if amount provided
+      let payment = null;
+      if (penaltyAmount && penaltyAmount > 0 && schedule.studentId && booking) {
+        payment = await PaymentModel.create({
+          studentId: schedule.studentId,
+          professorId: professor._id,
+          bookingId: booking._id,
+          amount: penaltyAmount,
+          date: new Date(),
+          status: 'paid',
+          method: 'cash',
+          description: `Penalización por cancelación - ${reason || 'Sin motivo especificado'}`
+        });
+      }
+
       // Free up the schedule
       schedule.studentId = undefined;
       schedule.isAvailable = true;
@@ -864,8 +894,9 @@ export class ProfessorDashboardController {
       await schedule.save();
 
       res.json({ 
-        message: 'Reserva cancelada exitosamente',
-        scheduleId: schedule._id
+        message: 'Reserva cancelada exitosamente' + (payment ? ' con penalización registrada' : ''),
+        scheduleId: schedule._id,
+        paymentId: payment?._id
       });
     } catch (error) {
       console.error('Error cancelling booking:', error);

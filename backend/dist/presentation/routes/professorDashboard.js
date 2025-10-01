@@ -35,5 +35,9 @@ router.delete('/schedules/:scheduleId', professorDashboardController.deleteSched
 router.put('/schedules/:scheduleId/block', professorDashboardController.blockSchedule);
 // Unblock a schedule
 router.put('/schedules/:scheduleId/unblock', professorDashboardController.unblockSchedule);
+// Complete a class
+router.put('/schedules/:scheduleId/complete', professorDashboardController.completeClass);
+// Cancel a booking
+router.put('/schedules/:scheduleId/cancel-booking', professorDashboardController.cancelBooking);
 exports.default = router;
 //# sourceMappingURL=professorDashboard.js.map

@@ -93,7 +93,14 @@ class ProfessorController {
                 if (!studentId || !professorId || !amount || !date || !method || !concept) {
                     return res.status(400).json({ error: 'Missing required fields' });
                 }
-                const payment = await this.payments.create({ studentId, professorId, amount, date: new Date(date), method, concept });
+                const payment = await this.payments.create({
+                    studentId,
+                    professorId,
+                    amount,
+                    date: new Date(date),
+                    method,
+                    concept,
+                });
                 await this.students.updateBalance(studentId, -Math.abs(amount));
                 return res.status(201).json(payment);
             }

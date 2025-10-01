@@ -38,7 +38,12 @@ class RequestService {
         this.serviceRequests = serviceRequests;
     }
     async execute(args) {
-        await this.serviceRequests.create({ studentId: args.studentId, serviceId: args.serviceId, notes: args.notes, status: 'requested' });
+        await this.serviceRequests.create({
+            studentId: args.studentId,
+            serviceId: args.serviceId,
+            notes: args.notes,
+            status: 'requested',
+        });
         return { status: 'requested' };
     }
 }
@@ -52,7 +57,13 @@ class BookLesson {
         const schedule = await this.schedules.findById(args.scheduleId);
         if (!schedule || !schedule.isAvailable)
             throw new Error('Schedule not available');
-        const booking = await this.bookings.create({ studentId: args.studentId, scheduleId: args.scheduleId, type: args.type, status: 'confirmed', paymentStatus: 'pending' });
+        const booking = await this.bookings.create({
+            studentId: args.studentId,
+            scheduleId: args.scheduleId,
+            type: args.type,
+            status: 'confirmed',
+            paymentStatus: 'pending',
+        });
         await this.schedules.update(args.scheduleId, { isAvailable: false });
         return booking;
     }

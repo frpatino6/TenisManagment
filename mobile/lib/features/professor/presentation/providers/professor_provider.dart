@@ -46,7 +46,9 @@ final weekScheduleProvider = FutureProvider<List<ClassScheduleModel>>((
 });
 
 // Provider para las estadísticas de ganancias
-final earningsStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
+final earningsStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
+  ref,
+) async {
   final service = ref.read(professorServiceProvider);
   return await service.getEarningsStats();
 });

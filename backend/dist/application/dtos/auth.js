@@ -11,48 +11,54 @@ exports.RegisterSchema = zod_1.z.object({
         phone: zod_1.z.string().min(5),
         specialties: zod_1.z.array(zod_1.z.string()).optional(),
         hourlyRate: zod_1.z.number().optional(),
-        membershipType: zod_1.z.enum(['basic', 'premium']).optional()
-    })
+        membershipType: zod_1.z.enum(['basic', 'premium']).optional(),
+    }),
 });
 exports.LoginSchema = zod_1.z.object({
     email: zod_1.z.string().email(),
-    password: zod_1.z.string().min(6)
+    password: zod_1.z.string().min(6),
 });
 exports.PublishScheduleSchema = zod_1.z.object({
     professorId: zod_1.z.string().min(1),
-    date: zod_1.z.string().refine(v => !Number.isNaN(Date.parse(v)), { message: 'Invalid date' }).transform(v => new Date(v)),
+    date: zod_1.z
+        .string()
+        .refine((v) => !Number.isNaN(Date.parse(v)), { message: 'Invalid date' })
+        .transform((v) => new Date(v)),
     startTime: zod_1.z.string().min(1),
     endTime: zod_1.z.string().min(1),
     type: zod_1.z.enum(['individual', 'group', 'court_rental']),
     isAvailable: zod_1.z.boolean().optional(),
-    maxStudents: zod_1.z.number().int().positive().optional()
+    maxStudents: zod_1.z.number().int().positive().optional(),
 });
 exports.UpdateAvailabilitySchema = zod_1.z.object({
-    isAvailable: zod_1.z.boolean()
+    isAvailable: zod_1.z.boolean(),
 });
 exports.BookLessonSchema = zod_1.z.object({
     studentId: zod_1.z.string().min(1),
     scheduleId: zod_1.z.string().min(1),
-    type: zod_1.z.enum(['lesson', 'court_rental'])
+    type: zod_1.z.enum(['lesson', 'court_rental']),
 });
 exports.ServiceCreateSchema = zod_1.z.object({
     name: zod_1.z.string().min(2),
     description: zod_1.z.string().min(2),
     price: zod_1.z.number().positive(),
-    category: zod_1.z.enum(['stringing', 'grip', 'other'])
+    category: zod_1.z.enum(['stringing', 'grip', 'other']),
 });
 exports.ServiceUpdateSchema = exports.ServiceCreateSchema.partial();
 exports.PaymentCreateSchema = zod_1.z.object({
     studentId: zod_1.z.string().min(1),
     professorId: zod_1.z.string().min(1),
     amount: zod_1.z.number().positive(),
-    date: zod_1.z.string().refine(v => !Number.isNaN(Date.parse(v)), { message: 'Invalid date' }).transform(v => new Date(v)),
+    date: zod_1.z
+        .string()
+        .refine((v) => !Number.isNaN(Date.parse(v)), { message: 'Invalid date' })
+        .transform((v) => new Date(v)),
     method: zod_1.z.enum(['cash', 'card', 'transfer']),
-    concept: zod_1.z.string().min(2)
+    concept: zod_1.z.string().min(2),
 });
 exports.RequestServiceSchema = zod_1.z.object({
     studentId: zod_1.z.string().min(1),
     serviceId: zod_1.z.string().min(1),
-    notes: zod_1.z.string().min(1).optional()
+    notes: zod_1.z.string().min(1).optional(),
 });
 //# sourceMappingURL=auth.js.map

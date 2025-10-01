@@ -14,7 +14,10 @@ const router = (0, express_1.Router)();
 const jwt = new JwtService_1.JwtService(config_1.config.jwtSecret);
 const controller = new AuthController_1.AuthController(jwt);
 // Stricter rate limit for auth endpoints
-const authLimiter = (0, express_rate_limit_1.default)({ windowMs: config_1.config.http.rateLimit.windowMs, max: config_1.config.http.rateLimit.authMax });
+const authLimiter = (0, express_rate_limit_1.default)({
+    windowMs: config_1.config.http.rateLimit.windowMs,
+    max: config_1.config.http.rateLimit.authMax,
+});
 router.use(authLimiter);
 router.post('/login', (0, validation_1.validateBody)(auth_1.LoginSchema), controller.login);
 router.post('/register', (0, validation_1.validateBody)(auth_1.RegisterSchema), controller.register);

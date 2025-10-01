@@ -12,13 +12,17 @@ const EnvSchema = zod_1.z.object({
     FIREBASE_CLIENT_EMAIL: zod_1.z.string().optional(),
     CORS_ORIGINS: zod_1.z.string().optional(), // comma-separated
     JSON_LIMIT: zod_1.z.string().default('1mb'),
-    RATE_LIMIT_WINDOW_MS: zod_1.z.coerce.number().int().positive().default(15 * 60 * 1000),
+    RATE_LIMIT_WINDOW_MS: zod_1.z.coerce
+        .number()
+        .int()
+        .positive()
+        .default(15 * 60 * 1000),
     RATE_LIMIT_MAX: zod_1.z.coerce.number().int().positive().default(100),
-    RATE_LIMIT_AUTH_MAX: zod_1.z.coerce.number().int().positive().default(20)
+    RATE_LIMIT_AUTH_MAX: zod_1.z.coerce.number().int().positive().default(20),
 });
 const parsed = EnvSchema.safeParse(process.env);
 if (!parsed.success) {
-    const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+    const issues = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
     throw new Error(`Invalid environment configuration: ${issues}`);
 }
 const env = parsed.data;
@@ -29,19 +33,21 @@ exports.config = {
     mongoUri: env.MONGO_URI,
     jwtSecret: env.JWT_SECRET,
     http: {
-        corsOrigins: env.CORS_ORIGINS?.split(',').map(o => o.trim()).filter(Boolean) ?? [],
+        corsOrigins: env.CORS_ORIGINS?.split(',')
+            .map((o) => o.trim())
+            .filter(Boolean) ?? [],
         jsonLimit: env.JSON_LIMIT,
         rateLimit: {
             windowMs: env.RATE_LIMIT_WINDOW_MS,
             max: env.RATE_LIMIT_MAX,
-            authMax: env.RATE_LIMIT_AUTH_MAX
-        }
+            authMax: env.RATE_LIMIT_AUTH_MAX,
+        },
     },
     firebase: {
         enabled: firebaseEnabled,
         projectId: env.FIREBASE_PROJECT_ID,
         privateKey: env.FIREBASE_PRIVATE_KEY,
-        clientEmail: env.FIREBASE_CLIENT_EMAIL
-    }
+        clientEmail: env.FIREBASE_CLIENT_EMAIL,
+    },
 };
 //# sourceMappingURL=index.js.map

@@ -197,9 +197,9 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            '\$${professor.hourlyRate.toStringAsFixed(0)}',
+                            'Desde \$${professor.pricing.courtRental.toStringAsFixed(0)}',
                             style: GoogleFonts.inter(
-                              fontSize: 20,
+                              fontSize: 18,
                               fontWeight: FontWeight.w700,
                               color: colorScheme.primary,
                             ),
@@ -257,9 +257,12 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    if (_selectedProfessor == null) return const SizedBox.shrink();
+
     return Column(
       children: ServiceType.values.map((serviceType) {
         final isSelected = _selectedServiceType == serviceType;
+        final price = serviceType.getPrice(_selectedProfessor!.pricing);
 
         return Card(
           elevation: isSelected ? 4 : 1,
@@ -330,7 +333,7 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '\$${serviceType.defaultPrice.toStringAsFixed(0)}',
+                        '\$${price.toStringAsFixed(0)}',
                         style: GoogleFonts.inter(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -525,7 +528,7 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '\$${_selectedServiceType.defaultPrice.toStringAsFixed(0)}',
+                          '\$${_selectedServiceType.getPrice(_selectedProfessor!.pricing).toStringAsFixed(0)}',
                           style: GoogleFonts.inter(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -596,10 +599,12 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
 
     try {
       final service = ref.read(bookingServiceProvider);
+      final price = _selectedServiceType.getPrice(_selectedProfessor!.pricing);
+
       await service.bookLesson(
         schedule.id,
         serviceType: _selectedServiceType.value,
-        price: _selectedServiceType.defaultPrice,
+        price: price,
       );
 
       if (!mounted) return;

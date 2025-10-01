@@ -1,3 +1,23 @@
+class PricingConfig {
+  final double individualClass;
+  final double groupClass;
+  final double courtRental;
+
+  PricingConfig({
+    required this.individualClass,
+    required this.groupClass,
+    required this.courtRental,
+  });
+
+  factory PricingConfig.fromJson(Map<String, dynamic> json) {
+    return PricingConfig(
+      individualClass: (json['individualClass'] as num).toDouble(),
+      groupClass: (json['groupClass'] as num).toDouble(),
+      courtRental: (json['courtRental'] as num).toDouble(),
+    );
+  }
+}
+
 class ProfessorBookingModel {
   final String id;
   final String name;
@@ -5,6 +25,7 @@ class ProfessorBookingModel {
   final String phone;
   final List<String> specialties;
   final double hourlyRate;
+  final PricingConfig pricing;
   final int experienceYears;
   final double rating;
 
@@ -15,6 +36,7 @@ class ProfessorBookingModel {
     required this.phone,
     required this.specialties,
     required this.hourlyRate,
+    required this.pricing,
     required this.experienceYears,
     required this.rating,
   });
@@ -31,6 +53,7 @@ class ProfessorBookingModel {
               .toList() ??
           [],
       hourlyRate: (json['hourlyRate'] as num?)?.toDouble() ?? 0.0,
+      pricing: PricingConfig.fromJson(json['pricing'] as Map<String, dynamic>),
       experienceYears: (json['experienceYears'] as num?)?.toInt() ?? 0,
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
     );

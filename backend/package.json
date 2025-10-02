@@ -13,6 +13,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/presentation/server.ts",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "type-check": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,js,json,md}\"",
     "postinstall": "npm run build",
     "render-postbuild": "npm run build"

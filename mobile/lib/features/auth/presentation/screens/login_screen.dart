@@ -281,17 +281,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _buildGoogleButton(BuildContext context, bool isLoading) {
     return OutlinedButton.icon(
           onPressed: isLoading ? null : _handleGoogleLogin,
-          icon: Image.asset(
-            'assets/images/google_logo.png',
-            width: 20,
-            height: 20,
-            errorBuilder: (context, error, stackTrace) {
-              return Icon(
-                Icons.login,
-                size: 20,
-                color: Theme.of(context).colorScheme.primary,
-              );
-            },
+          icon: Icon(
+            Icons.login,
+            size: 20,
+            color: Theme.of(context).colorScheme.primary,
           ),
           label: const Text('Continuar con Google'),
           style: OutlinedButton.styleFrom(

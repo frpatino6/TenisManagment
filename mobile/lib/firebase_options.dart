@@ -44,7 +44,7 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyC...', // Reemplazar con tu API key
+    apiKey: 'AIzaSyCpTj2lrD-ew7oB-FlByrv9JVbb9FTwfQQ',
     appId: '1:147485418255:web:666307bde5041b33ae147a',
     messagingSenderId: '147485418255',
     projectId: 'tennis-management-fcd54',
@@ -53,8 +53,8 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyC...', // Reemplazar con tu API key de Android
-    appId: '1:147485418255:android:...', // Reemplazar con tu App ID de Android
+    apiKey: 'AIzaSyCpTj2lrD-ew7oB-FlByrv9JVbb9FTwfQQ',
+    appId: '1:147485418255:android:391210836c25854eae147a',
     messagingSenderId: '147485418255',
     projectId: 'tennis-management-fcd54',
     storageBucket: 'tennis-management-fcd54.appspot.com',

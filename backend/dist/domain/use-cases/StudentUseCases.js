@@ -60,9 +60,10 @@ class BookLesson {
         const booking = await this.bookings.create({
             studentId: args.studentId,
             scheduleId: args.scheduleId,
-            type: args.type,
+            serviceType: args.serviceType,
             status: 'confirmed',
-            paymentStatus: 'pending',
+            price: args.price,
+            notes: args.notes,
         });
         await this.schedules.update(args.scheduleId, { isAvailable: false });
         return booking;

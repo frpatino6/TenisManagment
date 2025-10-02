@@ -275,8 +275,8 @@ export class StudentDashboardController {
         professorId: schedule.professorId.toString(),
         startTime: schedule.startTime,
         endTime: schedule.endTime,
-        type: schedule.type,
-        price: schedule.price || 0,
+        type: 'individual_class', // Default type since we removed it from schedule
+        price: 0, // Price is now set during booking
         status: schedule.status
       }));
 
@@ -371,9 +371,9 @@ export class StudentDashboardController {
         id: booking._id,
         studentId: booking.studentId,
         scheduleId: booking.scheduleId,
-        type: booking.type,
+        serviceType: booking.serviceType,
         status: booking.status,
-        paymentStatus: booking.paymentStatus,
+        price: booking.price,
         createdAt: booking.createdAt
       });
     } catch (error) {

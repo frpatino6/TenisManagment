@@ -65,16 +65,19 @@ export class BookLesson implements BookLessonUseCase {
   async execute(args: {
     studentId: string;
     scheduleId: string;
-    type: 'lesson' | 'court_rental';
+    serviceType: 'individual_class' | 'group_class' | 'court_rental';
+    price: number;
+    notes?: string;
   }): Promise<Booking> {
     const schedule = await this.schedules.findById(args.scheduleId);
     if (!schedule || !schedule.isAvailable) throw new Error('Schedule not available');
     const booking = await this.bookings.create({
       studentId: args.studentId,
       scheduleId: args.scheduleId,
-      type: args.type,
+      serviceType: args.serviceType,
       status: 'confirmed',
-      paymentStatus: 'pending',
+      price: args.price,
+      notes: args.notes,
     });
     await this.schedules.update(args.scheduleId, { isAvailable: false });
     return booking;

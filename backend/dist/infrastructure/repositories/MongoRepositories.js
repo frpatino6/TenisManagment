@@ -147,9 +147,9 @@ class MongoScheduleRepository {
             date: created.date,
             startTime: created.startTime.toISOString(),
             endTime: created.endTime.toISOString(),
-            type: created.type,
             isAvailable: created.isAvailable,
-            maxStudents: created.maxStudents,
+            notes: created.notes,
+            status: created.status,
         };
     }
     async findAvailableByProfessor(professorId, dateFrom, dateTo) {
@@ -168,9 +168,9 @@ class MongoScheduleRepository {
             date: d.date,
             startTime: d.startTime.toISOString(),
             endTime: d.endTime.toISOString(),
-            type: d.type,
             isAvailable: d.isAvailable,
-            maxStudents: d.maxStudents,
+            notes: d.notes,
+            status: d.status,
         }));
     }
     async findById(id) {
@@ -182,9 +182,9 @@ class MongoScheduleRepository {
                 date: d.date,
                 startTime: d.startTime.toISOString(),
                 endTime: d.endTime.toISOString(),
-                type: d.type,
                 isAvailable: d.isAvailable,
-                maxStudents: d.maxStudents,
+                notes: d.notes,
+                status: d.status,
             }
             : null;
     }
@@ -197,9 +197,9 @@ class MongoScheduleRepository {
                 date: d.date,
                 startTime: d.startTime.toISOString(),
                 endTime: d.endTime.toISOString(),
-                type: d.type,
                 isAvailable: d.isAvailable,
-                maxStudents: d.maxStudents,
+                notes: d.notes,
+                status: d.status,
             }
             : null;
     }
@@ -219,9 +219,11 @@ class MongoBookingRepository {
             id: created._id.toString(),
             studentId: created.studentId.toString(),
             scheduleId: created.scheduleId.toString(),
-            type: created.type,
+            serviceType: created.serviceType,
             status: created.status,
-            paymentStatus: created.paymentStatus,
+            price: created.price,
+            notes: created.notes,
+            bookingDate: created.bookingDate,
             createdAt: created.createdAt,
         };
     }
@@ -231,9 +233,11 @@ class MongoBookingRepository {
             id: d._id.toString(),
             studentId: d.studentId.toString(),
             scheduleId: d.scheduleId.toString(),
-            type: d.type,
+            serviceType: d.serviceType,
             status: d.status,
-            paymentStatus: d.paymentStatus,
+            price: d.price,
+            notes: d.notes,
+            bookingDate: d.bookingDate,
             createdAt: d.createdAt,
         }));
     }
@@ -243,9 +247,11 @@ class MongoBookingRepository {
             id: d._id.toString(),
             studentId: d.studentId.toString(),
             scheduleId: d.scheduleId.toString(),
-            type: d.type,
+            serviceType: d.serviceType,
             status: d.status,
-            paymentStatus: d.paymentStatus,
+            price: d.price,
+            notes: d.notes,
+            bookingDate: d.bookingDate,
             createdAt: d.createdAt,
         }));
     }
@@ -256,9 +262,11 @@ class MongoBookingRepository {
                 id: d._id.toString(),
                 studentId: d.studentId.toString(),
                 scheduleId: d.scheduleId.toString(),
-                type: d.type,
+                serviceType: d.serviceType,
                 status: d.status,
-                paymentStatus: d.paymentStatus,
+                price: d.price,
+                notes: d.notes,
+                bookingDate: d.bookingDate,
                 createdAt: d.createdAt,
             }
             : null;

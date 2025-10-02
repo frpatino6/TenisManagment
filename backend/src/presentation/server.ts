@@ -29,7 +29,7 @@ if (config.nodeEnv !== 'development') {
 const allowedOrigins = new Set(config.http.corsOrigins);
 const isProd = config.nodeEnv === 'production';
 const corsOptions: cors.CorsOptions = {
-  origin: (origin, callback) => {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     if (!origin) return callback(null, true);
     if (allowedOrigins.has(origin)) return callback(null, true);
     if (!isProd && allowedOrigins.size === 0) return callback(null, true);

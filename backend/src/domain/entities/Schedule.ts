@@ -6,7 +6,7 @@ export interface Schedule {
   date: Date;
   startTime: string;
   endTime: string;
-  type: ScheduleType;
   isAvailable: boolean;
-  maxStudents?: number;
+  notes?: string;
+  status?: string;
 }

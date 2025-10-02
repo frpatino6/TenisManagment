@@ -39,6 +39,7 @@ export class MongoProfessorRepository implements ProfessorRepository {
           phone: doc.phone,
           specialties: doc.specialties,
           hourlyRate: doc.hourlyRate,
+          experienceYears: doc.experienceYears,
         }
       : null;
   }
@@ -52,6 +53,7 @@ export class MongoProfessorRepository implements ProfessorRepository {
           phone: doc.phone,
           specialties: doc.specialties,
           hourlyRate: doc.hourlyRate,
+          experienceYears: doc.experienceYears,
         }
       : null;
   }
@@ -99,6 +101,7 @@ export class MongoProfessorRepository implements ProfessorRepository {
           phone: doc.phone,
           specialties: doc.specialties,
           hourlyRate: doc.hourlyRate,
+          experienceYears: doc.experienceYears,
         }
       : null;
   }

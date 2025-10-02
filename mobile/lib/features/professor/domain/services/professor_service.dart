@@ -3,12 +3,13 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../../core/config/app_config.dart';
 import '../models/professor_model.dart';
 import '../models/student_summary_model.dart';
 import '../models/class_schedule_model.dart';
 
 class ProfessorService {
-  static const String _baseUrl = 'http://192.168.18.6:3000/api';
+  String get _baseUrl => AppConfig.apiBaseUrl;
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
@@ -213,6 +214,7 @@ class ProfessorService {
     required String phone,
     required List<String> specialties,
     required double hourlyRate,
+    required int experienceYears,
   }) async {
     try {
       final user = _firebaseAuth.currentUser;
@@ -232,6 +234,7 @@ class ProfessorService {
           'phone': phone,
           'specialties': specialties,
           'hourlyRate': hourlyRate,
+          'experienceYears': experienceYears,
         }),
       );
 

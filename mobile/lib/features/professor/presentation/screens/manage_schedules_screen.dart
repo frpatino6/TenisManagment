@@ -220,7 +220,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
           Text('$label ($count)'),
         ],
       ),
-      backgroundColor: color.withOpacity(0.1),
+      backgroundColor: color.withValues(alpha: 0.1),
       selectedColor: color,
       checkmarkColor: Colors.white,
       labelStyle: GoogleFonts.inter(

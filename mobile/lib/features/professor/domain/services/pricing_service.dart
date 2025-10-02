@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
+import '../../../../core/config/app_config.dart';
 
 class PricingConfig {
   final double individualClass;
@@ -71,7 +72,7 @@ class PricingResponse {
 }
 
 class PricingService {
-  final String _baseUrl = 'http://192.168.18.6:3000/api';
+  String get _baseUrl => AppConfig.apiBaseUrl;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   /// Get professor's current pricing

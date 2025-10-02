@@ -24,6 +24,7 @@ class MongoProfessorRepository {
                 phone: doc.phone,
                 specialties: doc.specialties,
                 hourlyRate: doc.hourlyRate,
+                experienceYears: doc.experienceYears,
             }
             : null;
     }
@@ -37,6 +38,7 @@ class MongoProfessorRepository {
                 phone: doc.phone,
                 specialties: doc.specialties,
                 hourlyRate: doc.hourlyRate,
+                experienceYears: doc.experienceYears,
             }
             : null;
     }
@@ -84,6 +86,7 @@ class MongoProfessorRepository {
                 phone: doc.phone,
                 specialties: doc.specialties,
                 hourlyRate: doc.hourlyRate,
+                experienceYears: doc.experienceYears,
             }
             : null;
     }

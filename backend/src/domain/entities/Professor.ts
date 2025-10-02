@@ -5,4 +5,5 @@ export interface Professor {
   phone: string;
   specialties: string[];
   hourlyRate: number;
+  experienceYears: number;
 }

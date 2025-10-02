@@ -10,7 +10,9 @@ final professorServiceProvider = Provider<ProfessorService>((ref) {
 });
 
 // Provider para la información del profesor
-final professorInfoProvider = FutureProvider<ProfessorModel>((ref) async {
+final professorInfoProvider = FutureProvider.autoDispose<ProfessorModel>((
+  ref,
+) async {
   final service = ref.read(professorServiceProvider);
   return await service.getProfessorInfo();
 });
@@ -74,6 +76,7 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     required String phone,
     required List<String> specialties,
     required double hourlyRate,
+    required int experienceYears,
   }) async {
     state = const AsyncValue.loading();
 
@@ -84,6 +87,7 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
         phone: phone,
         specialties: specialties,
         hourlyRate: hourlyRate,
+        experienceYears: experienceYears,
       );
 
       // Invalidar providers para refrescar datos

@@ -531,7 +531,7 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
               title: const Text('Perfil'),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Navegar a perfil
+                context.push('/edit-profile');
               },
             ),
             ListTile(

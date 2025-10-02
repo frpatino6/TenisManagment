@@ -2,11 +2,12 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../../../../core/config/app_config.dart';
 import '../models/professor_model.dart';
 import '../models/available_schedule_model.dart';
 
 class BookingService {
-  final String _baseUrl = 'http://192.168.18.6:3000/api';
+  String get _baseUrl => AppConfig.apiBaseUrl;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   /// Get list of all professors

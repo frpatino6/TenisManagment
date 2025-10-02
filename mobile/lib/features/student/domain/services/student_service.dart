@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
- 
+
 import 'package:http/http.dart' as http;
+import '../../../../core/config/app_config.dart';
 import '../models/recent_activity_model.dart';
 
 class StudentService {
-  final String _baseUrl = 'http://192.168.18.6:3000/api';
+  String get _baseUrl => AppConfig.apiBaseUrl;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   /// Get recent activities for the current student
@@ -22,8 +23,6 @@ class StudentService {
         throw Exception('No se pudo obtener el token de autenticación');
       }
 
-      
-
       final response = await http.get(
         Uri.parse('$_baseUrl/student-dashboard/activities'),
         headers: {
@@ -31,8 +30,6 @@ class StudentService {
           'Authorization': 'Bearer $idToken',
         },
       );
-
-      
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;

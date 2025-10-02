@@ -8,6 +8,7 @@ import '../../features/professor/presentation/screens/professor_home_screen.dart
 import '../../features/professor/presentation/screens/create_schedule_screen.dart';
 import '../../features/professor/presentation/screens/manage_schedules_screen.dart';
 import '../../features/professor/presentation/screens/pricing_config_screen.dart';
+import '../../features/professor/presentation/screens/edit_profile_screen.dart';
 import '../../features/booking/presentation/screens/book_class_screen.dart';
 import '../../features/settings/presentation/screens/theme_settings_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
@@ -82,6 +83,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/pricing-config',
         name: 'pricing-config',
         builder: (context, state) => const PricingConfigScreen(),
+      ),
+      GoRoute(
+        path: '/edit-profile',
+        name: 'edit-profile',
+        builder: (context, state) => const EditProfileScreen(),
       ),
       GoRoute(
         path: '/theme-settings',

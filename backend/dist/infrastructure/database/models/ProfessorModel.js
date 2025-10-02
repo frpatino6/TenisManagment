@@ -9,6 +9,7 @@ const ProfessorSchema = new mongoose_1.Schema({
     phone: { type: String, required: true },
     specialties: { type: [String], default: [] },
     hourlyRate: { type: Number, required: true },
+    experienceYears: { type: Number, required: true, default: 0 },
     pricing: {
         individualClass: { type: Number },
         groupClass: { type: Number },

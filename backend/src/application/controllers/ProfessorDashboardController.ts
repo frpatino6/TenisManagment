@@ -44,7 +44,8 @@ export class ProfessorDashboardController {
           email: authUser.email,
           phone: '',
           specialties: [],
-          hourlyRate: 0
+          hourlyRate: 0,
+          experienceYears: 0
         });
         
         logger.info('Professor created');
@@ -66,7 +67,7 @@ export class ProfessorDashboardController {
       
       // Calcular años de experiencia basado en la fecha de creación del profesor
       const createdAt = (professor as any).createdAt || new Date();
-      const experienceYears = Math.max(1, Math.floor((new Date().getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24 * 365)));
+      const experienceYears = professor.experienceYears || 0;
 
       const professorInfo = {
         id: professor._id.toString(),
@@ -427,7 +428,7 @@ export class ProfessorDashboardController {
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
-      const { name, phone, specialties, hourlyRate } = req.body;
+      const { name, phone, specialties, hourlyRate, experienceYears } = req.body;
 
       const professor = await ProfessorModel.findOneAndUpdate(
         { authUserId: professorId },
@@ -436,6 +437,7 @@ export class ProfessorDashboardController {
           phone,
           specialties,
           hourlyRate,
+          experienceYears,
         },
         { new: true }
       );

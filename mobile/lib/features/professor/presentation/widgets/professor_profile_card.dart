@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import '../providers/professor_provider.dart';
 
 class ProfessorProfileCard extends ConsumerWidget {
@@ -101,7 +102,7 @@ class ProfessorProfileCard extends ConsumerWidget {
                   // Botón de editar
                   IconButton(
                     onPressed: () {
-                      // TODO: Navegar a editar perfil
+                      context.push('/edit-profile');
                     },
                     icon: Icon(
                       Icons.edit_outlined,
@@ -132,9 +133,9 @@ class ProfessorProfileCard extends ConsumerWidget {
                   Expanded(
                     child: _buildStatItem(
                       context,
-                      'Tarifa/Hora',
-                      '\$${professor.hourlyRate.toInt()}',
-                      Icons.attach_money,
+                      'Experiencia',
+                      '${professor.experienceYears} años',
+                      Icons.calendar_today,
                     ),
                   ),
                   Container(

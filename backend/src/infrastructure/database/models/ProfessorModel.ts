@@ -14,6 +14,7 @@ export interface ProfessorDocument {
   phone: string;
   specialties: string[];
   hourlyRate: number;
+  experienceYears: number;
   pricing?: PricingConfig; // Custom pricing (overrides base pricing)
 }
 
@@ -25,6 +26,7 @@ const ProfessorSchema = new Schema<ProfessorDocument>(
     phone: { type: String, required: true },
     specialties: { type: [String], default: [] },
     hourlyRate: { type: Number, required: true },
+    experienceYears: { type: Number, required: true, default: 0 },
     pricing: {
       individualClass: { type: Number },
       groupClass: { type: Number },

@@ -1,13 +1,14 @@
 import 'dart:convert';
- 
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import '../../../../core/config/app_config.dart';
 import '../models/user_model.dart';
 
 class AuthService {
-  static const String _baseUrl = 'http://192.168.18.6:3000/api/auth';
+  String get _baseUrl => AppConfig.authBaseUrl;
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
@@ -29,11 +30,9 @@ class AuthService {
       if (kIsWeb) {
         // Web: usar popup con Firebase Auth directamente
         final provider = GoogleAuthProvider();
-        provider.setCustomParameters({
-          'prompt': 'select_account',
-        });
-        final UserCredential userCredential =
-            await _firebaseAuth.signInWithPopup(provider);
+        provider.setCustomParameters({'prompt': 'select_account'});
+        final UserCredential userCredential = await _firebaseAuth
+            .signInWithPopup(provider);
         user = userCredential.user;
       } else {
         // Mobile/Desktop: usar flujo de google_sign_in + credenciales
@@ -50,8 +49,8 @@ class AuthService {
           idToken: googleAuth.idToken,
         );
 
-        final UserCredential userCredential =
-            await _firebaseAuth.signInWithCredential(credential);
+        final UserCredential userCredential = await _firebaseAuth
+            .signInWithCredential(credential);
         user = userCredential.user;
       }
 
@@ -150,10 +149,7 @@ class AuthService {
         // En web solo es necesario cerrar sesión en Firebase
         await _firebaseAuth.signOut();
       } else {
-        await Future.wait([
-          _firebaseAuth.signOut(),
-          _googleSignIn.signOut(),
-        ]);
+        await Future.wait([_firebaseAuth.signOut(), _googleSignIn.signOut()]);
       }
     } catch (e) {
       rethrow;
@@ -167,9 +163,8 @@ class AuthService {
       if (user == null) {
         throw Exception('No user is currently signed in');
       }
-      
+
       final idToken = await user.getIdToken(true); // Force refresh
-      
 
       final response = await http.get(
         Uri.parse('$_baseUrl/firebase/me'),
@@ -178,8 +173,6 @@ class AuthService {
           'Authorization': 'Bearer $idToken',
         },
       );
-
-      
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);

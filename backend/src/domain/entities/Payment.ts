@@ -7,5 +7,5 @@ export interface Payment {
   amount: number;
   date: Date;
   method: PaymentMethod;
-  concept: string;
+  concept?: string;
 }

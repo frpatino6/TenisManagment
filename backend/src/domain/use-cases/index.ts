@@ -31,7 +31,9 @@ export interface BookLessonUseCase {
   execute(args: {
     studentId: string;
     scheduleId: string;
-    type: 'lesson' | 'court_rental';
+    serviceType: 'individual_class' | 'group_class' | 'court_rental';
+    price: number;
+    notes?: string;
   }): Promise<Booking>;
 }
 

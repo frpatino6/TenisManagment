@@ -8,7 +8,9 @@
     "dev": "ts-node-dev --respawn --transpile-only src/presentation/server.ts",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
-    "format": "prettier --write \"src/**/*.{ts,js,json,md}\""
+    "format": "prettier --write \"src/**/*.{ts,js,json,md}\"",
+    "postinstall": "npm run build",
+    "render-postbuild": "npm run build"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -25,8 +27,8 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.2",
-    "@types/cors": "^2.8.17",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
     "@types/helmet": "^4.0.0",
     "@types/jsonwebtoken": "^9.0.5",

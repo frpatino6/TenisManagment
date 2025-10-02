@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:flutter/foundation.dart';
 import '../widgets/professor_profile_card.dart';
 import '../widgets/schedule_widget.dart';
 import '../widgets/earnings_widget.dart';
@@ -98,9 +99,69 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
             const Gap(24),
 
             // Versión de la aplicación
-            FutureBuilder<PackageInfo>(
-                  future: PackageInfo.fromPlatform(),
+            FutureBuilder<PackageInfo?>(
+                  future: _getPackageInfo(),
                   builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.1),
+                                Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.05),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Cargando versión...',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
                     if (snapshot.hasData) {
                       final packageInfo = snapshot.data!;
                       return Center(
@@ -197,6 +258,49 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
                         ),
                       );
                     }
+
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.error,
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Error cargando versión',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
                     return const SizedBox.shrink();
                   },
                 )
@@ -699,6 +803,35 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
           ).showSnackBar(SnackBar(content: Text('Error al cerrar sesión: $e')));
         }
       }
+    }
+  }
+
+  Future<PackageInfo?> _getPackageInfo() async {
+    try {
+      if (kIsWeb) {
+        // Para web, retornamos información hardcodeada ya que PackageInfo no funciona bien en web
+        return PackageInfo(
+          appName: 'Tennis Management',
+          packageName: 'com.tennis.management',
+          version: '1.3.0',
+          buildNumber: '14',
+          buildSignature: '',
+          installerStore: '',
+        );
+      } else {
+        // Para móvil, usamos PackageInfo.fromPlatform()
+        return await PackageInfo.fromPlatform();
+      }
+    } catch (e) {
+      // Si hay error, retornamos información por defecto
+      return PackageInfo(
+        appName: 'Tennis Management',
+        packageName: 'com.tennis.management',
+        version: '1.3.0',
+        buildNumber: '14',
+        buildSignature: '',
+        installerStore: '',
+      );
     }
   }
 }

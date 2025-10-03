@@ -377,7 +377,6 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
     }
   }
 
-
   Widget _buildBreakdownSection() {
     final breakdown = _detailData!['breakdown'] as List<dynamic>?;
     if (breakdown == null || breakdown.isEmpty) {
@@ -509,9 +508,7 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const Gap(16),
-            ...recent.map(
-              (student) => _buildStudentItem(student),
-            ),
+            ...recent.map((student) => _buildStudentItem(student)),
           ],
         ),
       ),

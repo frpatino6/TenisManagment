@@ -7,16 +7,13 @@ import '../../domain/models/student_model.dart';
 class StudentProfileScreen extends ConsumerWidget {
   final String studentId;
 
-  const StudentProfileScreen({
-    super.key,
-    required this.studentId,
-  });
+  const StudentProfileScreen({super.key, required this.studentId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     final studentAsync = ref.watch(studentProfileProvider(studentId));
 
     return Scaffold(
@@ -56,7 +53,7 @@ class StudentProfileScreen extends ConsumerWidget {
                 children: [
                   CircleAvatar(
                     radius: 40,
-                    backgroundColor: colorScheme.primary.withOpacity(0.1),
+                    backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
                     child: Text(
                       student.initials,
                       style: TextStyle(
@@ -79,17 +76,23 @@ class StudentProfileScreen extends ConsumerWidget {
                         ),
                         const Gap(4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            color: student.membershipType == MembershipType.premium
-                                ? Colors.amber.withOpacity(0.2)
-                                : Colors.blue.withOpacity(0.2),
+                            color:
+                                student.membershipType == MembershipType.premium
+                                ? Colors.amber.withValues(alpha: 0.2)
+                                : Colors.blue.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Text(
                             student.membershipTypeDisplayName,
                             style: TextStyle(
-                              color: student.membershipType == MembershipType.premium
+                              color:
+                                  student.membershipType ==
+                                      MembershipType.premium
                                   ? Colors.amber.shade800
                                   : Colors.blue.shade800,
                               fontSize: 14,
@@ -104,9 +107,9 @@ class StudentProfileScreen extends ConsumerWidget {
               ),
             ),
           ),
-          
+
           const Gap(16),
-          
+
           // Información de contacto
           Card(
             child: Padding(
@@ -121,12 +124,7 @@ class StudentProfileScreen extends ConsumerWidget {
                     ),
                   ),
                   const Gap(16),
-                  _buildInfoRow(
-                    context,
-                    Icons.email,
-                    'Email',
-                    student.email,
-                  ),
+                  _buildInfoRow(context, Icons.email, 'Email', student.email),
                   if (student.phone != null) ...[
                     const Gap(12),
                     _buildInfoRow(
@@ -140,9 +138,9 @@ class StudentProfileScreen extends ConsumerWidget {
               ),
             ),
           ),
-          
+
           const Gap(16),
-          
+
           // Información financiera
           Card(
             child: Padding(
@@ -162,17 +160,17 @@ class StudentProfileScreen extends ConsumerWidget {
                     Icons.account_balance_wallet,
                     'Balance Actual',
                     '\$${student.balance.toStringAsFixed(2)}',
-                    valueColor: student.balance >= 0 
-                        ? Colors.green 
+                    valueColor: student.balance >= 0
+                        ? Colors.green
                         : Colors.red,
                   ),
                 ],
               ),
             ),
           ),
-          
+
           const Gap(16),
-          
+
           // Información de cuenta
           Card(
             child: Padding(
@@ -208,9 +206,9 @@ class StudentProfileScreen extends ConsumerWidget {
               ),
             ),
           ),
-          
+
           const Gap(32),
-          
+
           // Botones de acción
           Row(
             children: [
@@ -262,11 +260,7 @@ class StudentProfileScreen extends ConsumerWidget {
 
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: colorScheme.primary,
-        ),
+        Icon(icon, size: 20, color: colorScheme.primary),
         const Gap(12),
         Expanded(
           child: Column(
@@ -295,19 +289,14 @@ class StudentProfileScreen extends ConsumerWidget {
 
   Widget _buildLoadingState(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
-            color: theme.colorScheme.primary,
-          ),
+          CircularProgressIndicator(color: theme.colorScheme.primary),
           const Gap(16),
-          Text(
-            'Cargando perfil...',
-            style: theme.textTheme.bodyLarge,
-          ),
+          Text('Cargando perfil...', style: theme.textTheme.bodyLarge),
         ],
       ),
     );
@@ -315,18 +304,14 @@ class StudentProfileScreen extends ConsumerWidget {
 
   Widget _buildErrorState(BuildContext context, Object error) {
     final theme = Theme.of(context);
-    
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: theme.colorScheme.error,
-            ),
+            Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
             const Gap(16),
             Text(
               'Error al cargar perfil',
@@ -355,7 +340,7 @@ class StudentProfileScreen extends ConsumerWidget {
 
   Widget _buildNotFoundState(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),

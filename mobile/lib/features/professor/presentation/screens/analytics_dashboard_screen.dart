@@ -5,6 +5,7 @@ import '../../data/providers/analytics_provider.dart';
 import '../widgets/analytics_metric_card.dart';
 import '../widgets/analytics_chart_widget.dart';
 import '../widgets/analytics_filter_bar.dart';
+import 'metric_detail_screen.dart';
 
 class AnalyticsDashboardScreen extends ConsumerStatefulWidget {
   const AnalyticsDashboardScreen({super.key});
@@ -32,10 +33,10 @@ class _AnalyticsDashboardScreenState
   }
 
   void _refreshAnalytics() {
-    ref.invalidate(analyticsOverviewProvider);
-    ref.invalidate(analyticsRevenueProvider);
-    ref.invalidate(analyticsBookingsProvider);
-    ref.invalidate(analyticsStudentsProvider);
+    ref.invalidate(analyticsOverviewProvider(_filters));
+    ref.invalidate(analyticsRevenueProvider(_filters['period'] ?? 'month'));
+    ref.invalidate(analyticsBookingsProvider(_filters['period'] ?? 'month'));
+    ref.invalidate(analyticsStudentsProvider(_filters['period'] ?? 'month'));
   }
 
   void _updateFilters(Map<String, String?> newFilters) {
@@ -178,10 +179,11 @@ class _AnalyticsDashboardScreenState
             return AnalyticsMetricCard(
               metric: metrics[index],
               onTap: () {
-                // TODO: Navigate to detailed view
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Ver detalles de ${metrics[index].title}'),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        MetricDetailScreen(metric: metrics[index]),
                   ),
                 );
               },

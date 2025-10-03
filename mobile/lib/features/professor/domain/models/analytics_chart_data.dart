@@ -7,20 +7,25 @@ class ChartDataPoint extends Equatable {
   final double value;
   final String? color;
   final DateTime? date;
+  final String? serviceType;
 
   const ChartDataPoint({
     required this.label,
     required this.value,
     this.color,
     this.date,
+    this.serviceType,
   });
 
   factory ChartDataPoint.fromJson(Map<String, dynamic> json) {
     return ChartDataPoint(
       label: json['label'] as String,
-      value: (json['value'] as num).toDouble(),
+      value: (json['value'] as num? ?? 0).toDouble(),
       color: json['color'] as String?,
-      date: json['date'] != null ? DateTime.parse(json['date'] as String) : null,
+      date: json['date'] != null
+          ? DateTime.parse(json['date'] as String)
+          : null,
+      serviceType: json['serviceType'] as String?,
     );
   }
 
@@ -30,11 +35,12 @@ class ChartDataPoint extends Equatable {
       'value': value,
       'color': color,
       'date': date?.toIso8601String(),
+      'serviceType': serviceType,
     };
   }
 
   @override
-  List<Object?> get props => [label, value, color, date];
+  List<Object?> get props => [label, value, color, date, serviceType];
 }
 
 class AnalyticsChartData extends Equatable {
@@ -83,11 +89,11 @@ class AnalyticsChartData extends Equatable {
 
   @override
   List<Object?> get props => [
-        title,
-        type,
-        data,
-        xAxisLabel,
-        yAxisLabel,
-        description,
-      ];
+    title,
+    type,
+    data,
+    xAxisLabel,
+    yAxisLabel,
+    description,
+  ];
 }

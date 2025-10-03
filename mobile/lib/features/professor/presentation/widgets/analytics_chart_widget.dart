@@ -54,11 +54,9 @@ class AnalyticsChartWidget extends StatelessWidget {
               ),
             ],
             const Gap(16),
-            SizedBox(
-              height: height,
-              child: _buildChart(context),
-            ),
-            if (chartData.xAxisLabel != null || chartData.yAxisLabel != null) ...[
+            SizedBox(height: height, child: _buildChart(context)),
+            if (chartData.xAxisLabel != null ||
+                chartData.yAxisLabel != null) ...[
               const Gap(8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -124,7 +122,9 @@ class AnalyticsChartWidget extends StatelessWidget {
       return _buildEmptyChart(context, 'No hay datos para mostrar');
     }
 
-    final maxValue = chartData.data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+    final maxValue = chartData.data
+        .map((e) => e.value)
+        .reduce((a, b) => a > b ? a : b);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -200,7 +200,7 @@ class AnalyticsChartWidget extends StatelessWidget {
                 colorScheme.primaryContainer,
                 colorScheme.secondaryContainer,
               ];
-              
+
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Row(
@@ -259,7 +259,7 @@ class AnalyticsChartWidget extends StatelessWidget {
           Icon(
             Icons.bar_chart_outlined,
             size: 48,
-            color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
           ),
           const Gap(8),
           Text(
@@ -298,18 +298,32 @@ class LineChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
 
+    // Filter out invalid data points
+    final validData = data
+        .where((e) => e.value.isFinite && !e.value.isNaN)
+        .toList();
+    if (validData.isEmpty) return;
+
     final paint = Paint()
       ..color = color
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
 
     final path = Path();
-    final maxValue = data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-    final stepX = size.width / (data.length - 1);
+    final maxValue = validData
+        .map((e) => e.value)
+        .reduce((a, b) => a > b ? a : b);
 
-    for (int i = 0; i < data.length; i++) {
-      final x = i * stepX;
-      final y = size.height - (data[i].value / maxValue) * size.height;
+    // Handle single data point case
+    final stepX = validData.length > 1
+        ? size.width / (validData.length - 1)
+        : 0.0;
+
+    for (int i = 0; i < validData.length; i++) {
+      final x = validData.length > 1 ? i * stepX : size.width / 2;
+      final y = maxValue > 0
+          ? size.height - (validData[i].value / maxValue) * size.height
+          : size.height / 2;
 
       if (i == 0) {
         path.moveTo(x, y);
@@ -325,9 +339,11 @@ class LineChartPainter extends CustomPainter {
       ..color = color
       ..style = PaintingStyle.fill;
 
-    for (int i = 0; i < data.length; i++) {
-      final x = i * stepX;
-      final y = size.height - (data[i].value / maxValue) * size.height;
+    for (int i = 0; i < validData.length; i++) {
+      final x = validData.length > 1 ? i * stepX : size.width / 2;
+      final y = maxValue > 0
+          ? size.height - (validData[i].value / maxValue) * size.height
+          : size.height / 2;
       canvas.drawCircle(Offset(x, y), 4, pointPaint);
     }
   }
@@ -346,15 +362,24 @@ class PieChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
 
-    final total = data.map((e) => e.value).reduce((a, b) => a + b);
+    // Filter out invalid data points
+    final validData = data
+        .where((e) => e.value.isFinite && !e.value.isNaN && e.value > 0)
+        .toList();
+    if (validData.isEmpty) return;
+
+    final total = validData.map((e) => e.value).reduce((a, b) => a + b);
+    if (total <= 0) return;
+
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width < size.height ? size.width : size.height) / 2 - 20;
+    final radius =
+        (size.width < size.height ? size.width : size.height) / 2 - 20;
 
     double startAngle = -90 * (3.14159 / 180); // Start from top
 
-    for (int i = 0; i < data.length; i++) {
-      final sweepAngle = (data[i].value / total) * 2 * 3.14159;
-      
+    for (int i = 0; i < validData.length; i++) {
+      final sweepAngle = (validData[i].value / total) * 2 * 3.14159;
+
       final paint = Paint()
         ..color = colors[i % colors.length]
         ..style = PaintingStyle.fill;
@@ -410,7 +435,7 @@ class AreaChartPainter extends CustomPainter {
 
     // Fill area
     final fillPaint = Paint()
-      ..color = color.withOpacity(0.3)
+      ..color = color.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
 
     canvas.drawPath(fillPath, fillPaint);

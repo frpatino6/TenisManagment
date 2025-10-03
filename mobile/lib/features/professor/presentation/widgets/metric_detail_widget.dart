@@ -90,12 +90,11 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
       final trendData = await _analyticsService.getRevenueTrend();
 
       // Validate and provide safe defaults
-      final breakdown =
-          breakdownData != null && breakdownData['breakdown'] is List
+      final breakdown = breakdownData['breakdown'] is List
           ? breakdownData['breakdown'] as List
           : <Map<String, dynamic>>[];
 
-      final trend = trendData != null && trendData['trend'] is List
+      final trend = trendData['trend'] is List
           ? trendData['trend'] as List
           : <Map<String, dynamic>>[];
 
@@ -103,11 +102,11 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
         'type': 'revenue',
         'chartData': revenueData,
         'breakdown': breakdown,
-        'totalRevenue': breakdownData?['totalRevenue'] ?? 0,
+        'totalRevenue': breakdownData['totalRevenue'] ?? 0,
         'trend': trend,
       };
     } catch (e) {
-      print('Error loading revenue details: $e');
+      // print('Error loading revenue details: $e');
       return {
         'type': 'revenue',
         'chartData': null,
@@ -126,12 +125,11 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
       final trendData = await _analyticsService.getBookingsTrend();
 
       // Validate and provide safe defaults
-      final breakdown =
-          breakdownData != null && breakdownData['breakdown'] is List
+      final breakdown = breakdownData['breakdown'] is List
           ? breakdownData['breakdown'] as List
           : <Map<String, dynamic>>[];
 
-      final trend = trendData != null && trendData['trend'] is List
+      final trend = trendData['trend'] is List
           ? trendData['trend'] as List
           : <Map<String, dynamic>>[];
 
@@ -139,11 +137,11 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
         'type': 'bookings',
         'chartData': bookingsData,
         'breakdown': breakdown,
-        'totalBookings': breakdownData?['totalBookings'] ?? 0,
+        'totalBookings': breakdownData['totalBookings'] ?? 0,
         'trend': trend,
       };
     } catch (e) {
-      print('Error loading bookings details: $e');
+      // print('Error loading bookings details: $e');
       return {
         'type': 'bookings',
         'chartData': null,
@@ -162,17 +160,15 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
       final trendData = await _analyticsService.getStudentsTrend();
 
       // Validate and provide safe defaults
-      final breakdown =
-          breakdownData != null && breakdownData['breakdown'] is List
+      final breakdown = breakdownData['breakdown'] is List
           ? breakdownData['breakdown'] as List
           : <Map<String, dynamic>>[];
 
-      final recentStudents =
-          breakdownData != null && breakdownData['recentStudents'] is List
+      final recentStudents = breakdownData['recentStudents'] is List
           ? breakdownData['recentStudents'] as List
           : <Map<String, dynamic>>[];
 
-      final trend = trendData != null && trendData['trend'] is List
+      final trend = trendData['trend'] is List
           ? trendData['trend'] as List
           : <Map<String, dynamic>>[];
 
@@ -180,12 +176,12 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
         'type': 'students',
         'chartData': studentsData,
         'breakdown': breakdown,
-        'totalStudents': breakdownData?['totalStudents'] ?? 0,
+        'totalStudents': breakdownData['totalStudents'] ?? 0,
         'recent': recentStudents,
         'trend': trend,
       };
     } catch (e) {
-      print('Error loading students details: $e');
+      // print('Error loading students details: $e');
       return {
         'type': 'students',
         'chartData': null,
@@ -219,7 +215,7 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
         'averageOccupancy': occupancyData['averageOccupancy'] ?? 0,
       };
     } catch (e) {
-      print('Error loading occupancy details: $e');
+      // print('Error loading occupancy details: $e');
       return {
         'type': 'occupancy',
         'breakdown': <Map<String, dynamic>>[],
@@ -381,12 +377,6 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
     }
   }
 
-  Widget _buildSimpleLineChart(List<dynamic> data) {
-    return CustomPaint(
-      size: const Size(double.infinity, 200),
-      painter: SimpleLineChartPainter(data: data),
-    );
-  }
 
   Widget _buildBreakdownSection() {
     final breakdown = _detailData!['breakdown'] as List<dynamic>?;
@@ -407,7 +397,7 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const Gap(16),
-            ...(breakdown ?? []).map((item) => _buildBreakdownItem(item ?? {})),
+            ...breakdown.map((item) => _buildBreakdownItem(item)),
           ],
         ),
       ),
@@ -519,8 +509,8 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const Gap(16),
-            ...(recent ?? []).map(
-              (student) => _buildStudentItem(student ?? {}),
+            ...recent.map(
+              (student) => _buildStudentItem(student),
             ),
           ],
         ),

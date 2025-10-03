@@ -43,7 +43,7 @@ class _AnalyticsDashboardScreenState
   }
 
   void _updateFilters(Map<String, String?> newFilters) {
-    print('🔍 Updating filters: $newFilters');
+    // print('🔍 Updating filters: $newFilters');
     setState(() {
       _filters = newFilters;
     });

@@ -123,7 +123,7 @@ class AnalyticsFilterBar extends StatelessWidget {
                     label: const Text('Todos'),
                     selected: false,
                     onSelected: (_) => onChanged(null),
-                    backgroundColor: colorScheme.surfaceVariant,
+                    backgroundColor: colorScheme.surfaceContainerHighest,
                     selectedColor: colorScheme.primaryContainer,
                     labelStyle: theme.textTheme.bodySmall,
                   ),
@@ -136,7 +136,7 @@ class AnalyticsFilterBar extends StatelessWidget {
                     label: Text(option.label),
                     selected: selectedValue == option.value,
                     onSelected: (_) => onChanged(option.value),
-                    backgroundColor: colorScheme.surfaceVariant,
+                    backgroundColor: colorScheme.surfaceContainerHighest,
                     selectedColor: colorScheme.primaryContainer,
                     labelStyle: theme.textTheme.bodySmall?.copyWith(
                       color: selectedValue == option.value

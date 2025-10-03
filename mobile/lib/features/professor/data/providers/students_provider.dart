@@ -36,6 +36,6 @@ final filteredStudentsProvider = Provider.family<List<StudentModel>, String>((
       }).toList();
     },
     loading: () => [],
-    error: (_, __) => [],
+    error: (_, _) => [],
   );
 });

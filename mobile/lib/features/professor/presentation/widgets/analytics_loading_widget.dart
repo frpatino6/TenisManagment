@@ -325,7 +325,7 @@ class _AnalyticsLoadingWidgetState extends State<AnalyticsLoadingWidget>
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -345,7 +345,7 @@ class _AnalyticsLoadingWidgetState extends State<AnalyticsLoadingWidget>
           builder: (context, child) {
             return LinearProgressIndicator(
               value: _progressAnimation.value,
-              backgroundColor: colorScheme.surfaceVariant,
+              backgroundColor: colorScheme.surfaceContainerHighest,
               valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
               minHeight: 6,
             );

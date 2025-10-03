@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: tennis-management-backend
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: MONGO_URI
+        value: mongodb+srv://frpatino6Coffe:s4ntiago@mycoffecluster.yerjpro.mongodb.net/tenisManagment
+      - key: JWT_SECRET
+        value: tennis_management_jwt_secret_key_2024_production
+      - key: FIREBASE_PROJECT_ID
+        value: tennis-management-fcd54
+      - key: FIREBASE_PRIVATE_KEY
+        value: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...\n-----END PRIVATE KEY-----\n"
+      - key: FIREBASE_CLIENT_EMAIL
+        value: firebase-adminsdk-xxxxx@tennis-management-fcd54.iam.gserviceaccount.com
+      - key: CORS_ORIGINS
+        value: https://tennis-management-fcd54.web.app
+      - key: JSON_LIMIT
+        value: 1mb
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX
+        value: 100
+      - key: RATE_LIMIT_AUTH_MAX
+        value: 20

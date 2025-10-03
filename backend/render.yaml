@@ -12,14 +12,22 @@ services:
       - key: PORT
         value: 3000
       - key: MONGO_URI
-        sync: false
+        value: mongodb+srv://frpatino6Coffe:s4ntiago@mycoffecluster.yerjpro.mongodb.net/tenis_mgmt
       - key: JWT_SECRET
-        sync: false
+        value: tennis_management_secret_key_2024
       - key: FIREBASE_PROJECT_ID
         value: tennis-management-fcd54
       - key: FIREBASE_PRIVATE_KEY
-        sync: false
+        value: "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDm6CQsvwFcM/VD\nzGgoVhZqrVndHYDk6yPdGyKbNXyf96GrJDgBAKLWaNwQT/Xb3Ft2+QjBcl1kBt8B\nyCIn198t+qQrfXnlVTGGcLvks8LYnv/t9Mp+SG3VrUu64IpKSDo0pi/a4FHGYQC7\nCR2K63t/6aZJhlg1HYRNeoYgGVR7kmdQxuPPqiJ6CyQqQUeuRpMVtyTbwa/ca/Z/\nHHLPcJtnkRoat1BbX+G/DPU0zA8XGJ7ORULmTh8ZK2hUH54yjolS1kpIPAeM3EM5\n6mnBuAPATXbpUGjDvZeRIYg6PlSXW+1ynv8Eeke6iCEQ5iVmpSRaXw9H06gGnDFD\naCqnUhePAgMBAAECggEAERzZOXu6ZRPwtGKcwYiHxsYsJ8f8+no2wTc2nFwdbVmT\n4LQhdmmOp+dDj+3tIas2GB4iuPt50mTz+BTV+y/zeVve+N4mv4lNz1HhivSLlzRJ\ncWA39Z32jeR2/VWQyiqKLca3Ozhutw4PWM03JEmJcJRnX4GWXfFfEcLn188oxLOT\n6rzwVL2uNuc8o+8WstGNKG5QPk4dNcuj2WPSBlFlFZ5dqxNOtpdDPpugrtHKP1Zv\nMR0Q8PHqivUGGQWUJUj1XIErUrg8t8cER0ppAbIdFFVQcGGPZXBlcCrIG3eUly07\nsmLS8/IGpFv/rHAvwAvUD/dujjrhcviYaUZY6RLOcQKBgQD4hBwXRm8GRkXTNONy\nKC3lCXA0jGkG625pVtEi9yQeExj1NdgvTrBgjsXagXXVVhKfAIk6dqzPt6zJw3QX\nkjn54RNkjFz6BUpseptiK5iYi5MefxNtzL+GZG57B4+GMiN4VbgPFOnUgnoX3+mM\n9n6IDMMeBao6LPGBTsRgXqloaQKBgQDt3Ea0M70kSdTWFqOjWeoWdloxr/CxlxRW\n+Pr2wxaZ8wrQU/rqxClR+DQqwLMXssGpmR5vUgQcXeFxZHctt04mDs0vNsFogHfZ\n5L9VYINPq0yD3KqEovzcfX0DEKZ5tRTi+aqEREQmxdtUYb+aYEFhVZg5sj9fT5Io\ngR4qxNpBNwKBgQCejQqu/szOn/7kZRXHO0MsoPzpSbuoIoRqyGzddfehCGYf655l\ncDqvH+ezJG1dEnEG6HykxBo02+ZtQznJ4A0FE0ggGj0ndkCpPP/tfgr5J/NQvZpT\nrxFyWJjz/TrgTxS6LVYkqR8V6bijisOin5DSk/HYMZ0NSKc77Fj1cu96IQKBgFWc\nRsZtKNJ60GQN2e/dWOekyWnAzXzdx7BWBN3z8ZqPY4D/+PuuhsC9+Oi6WrtY12NX\nfSDMADbFg3LwmgSWSUZhZXBs4MfgFUMTldoA1sJCAVQkhCshDqm9cNU9lO2RQ2c+\nPSVF/NGHvR1t4SyLIH0L9bIueaiwVwbFEjqKh5OZAoGBAIQY9G4j5cqF9B8TcUlK\n7AKE+t+nAVzFSClicKh+gP7acnL5NiEYj/Q6XMbeHRyPAcqOj3SOoR2dcyB22VQq\nU6b4wdhTqfst1seIImox1reds5nQUKHv+zc48/358sk9JgoU12/cGp5pVqY8Pmq5\nxPPr6mMdq9CGwHILjQd8Kv12\n-----END PRIVATE KEY-----\n"
       - key: FIREBASE_CLIENT_EMAIL
-        sync: false
+        value: firebase-adminsdk-fbsvc@tennis-management-fcd54.iam.gserviceaccount.com
       - key: CORS_ORIGINS
         value: https://tennis-management-fcd54.web.app
+      - key: JSON_LIMIT
+        value: 1mb
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX
+        value: 100
+      - key: RATE_LIMIT_AUTH_MAX
+        value: 20

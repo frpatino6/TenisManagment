@@ -235,6 +235,31 @@ class AnalyticsController {
                 return res.status(400).json({ error: e.message });
             }
         };
+        this.getOccupancyDetails = async (req, res) => {
+            try {
+                console.log('📊 Occupancy details requested');
+                const professorId = req.user?.id;
+                if (!professorId) {
+                    console.log('❌ No professor ID found');
+                    return res.status(401).json({ error: 'Usuario no autenticado' });
+                }
+                const ProfessorModel = require('../../infrastructure/database/models/ProfessorModel').ProfessorModel;
+                const professor = await ProfessorModel.findOne({ authUserId: professorId });
+                if (!professor) {
+                    console.log('❌ Professor not found in database');
+                    return res.status(404).json({ error: 'Profesor no encontrado' });
+                }
+                const { period = 'month' } = req.query;
+                const actualProfessorId = professor._id.toString();
+                console.log('📊 Getting occupancy details for professor:', actualProfessorId, 'period:', period);
+                const occupancyData = await this.getOccupancyDetailsData(actualProfessorId, period);
+                return res.json(occupancyData);
+            }
+            catch (e) {
+                console.error('❌ Error in getOccupancyDetails:', e);
+                return res.status(400).json({ error: e.message });
+            }
+        };
         this.professors = new MongoRepositories_1.MongoProfessorRepository();
         this.bookings = new MongoRepositories_2.MongoBookingRepository();
         this.payments = new MongoRepositories_3.MongoPaymentRepository();
@@ -865,6 +890,255 @@ class AnalyticsController {
             });
         }
         return { trend: trendData };
+    }
+    async getOccupancyDetailsData(professorId, period) {
+        try {
+            console.log('📊 Getting occupancy details data for professor:', professorId, 'period:', period);
+            const ScheduleModel = require('../../infrastructure/database/models/ScheduleModel').ScheduleModel;
+            const BookingModel = require('../../infrastructure/database/models/BookingModel').BookingModel;
+            const dateRange = this.getDateRange(period);
+            console.log('📊 Date range:', dateRange);
+            // Get all schedules for the period
+            const allSchedules = await ScheduleModel.find({
+                professorId: professorId,
+                startTime: { $gte: dateRange.start, $lte: dateRange.end }
+            }).lean();
+            console.log('📊 Total schedules found:', allSchedules.length);
+            // Group schedules by time slots (2-hour intervals)
+            const timeSlots = [
+                { start: 6, end: 8, label: '6:00 - 8:00' },
+                { start: 8, end: 10, label: '8:00 - 10:00' },
+                { start: 10, end: 12, label: '10:00 - 12:00' },
+                { start: 12, end: 14, label: '12:00 - 14:00' },
+                { start: 14, end: 16, label: '14:00 - 16:00' },
+                { start: 16, end: 18, label: '16:00 - 18:00' },
+                { start: 18, end: 20, label: '18:00 - 20:00' },
+                { start: 20, end: 22, label: '20:00 - 22:00' },
+            ];
+            const breakdown = [];
+            const trend = [];
+            for (const slot of timeSlots) {
+                // Count schedules in this time slot
+                const slotSchedules = allSchedules.filter((schedule) => {
+                    const hour = new Date(schedule.startTime).getHours();
+                    return hour >= slot.start && hour < slot.end;
+                });
+                // Count occupied schedules (with confirmed bookings)
+                let occupiedCount = 0;
+                for (const schedule of slotSchedules) {
+                    const booking = await BookingModel.findOne({
+                        scheduleId: schedule._id,
+                        status: 'confirmed'
+                    });
+                    if (booking) {
+                        occupiedCount++;
+                    }
+                }
+                const totalSlots = slotSchedules.length;
+                const occupancy = totalSlots > 0 ? Math.round((occupiedCount / totalSlots) * 100) : 0;
+                let status = 'Bajo';
+                if (occupancy >= 80)
+                    status = 'Alto';
+                else if (occupancy >= 60)
+                    status = 'Medio';
+                breakdown.push({
+                    timeSlot: slot.label,
+                    occupancy: occupancy,
+                    status: status,
+                    totalSlots: totalSlots,
+                    occupiedSlots: occupiedCount,
+                });
+            }
+            // Calculate trend data (monthly occupancy over the period)
+            const months = this.getMonthsInRange(dateRange.start, dateRange.end);
+            for (const month of months) {
+                const monthStart = new Date(month.year, month.month, 1);
+                const monthEnd = new Date(month.year, month.month + 1, 0, 23, 59, 59);
+                const monthSchedules = await ScheduleModel.find({
+                    professorId: professorId,
+                    startTime: { $gte: monthStart, $lte: monthEnd }
+                }).lean();
+                let monthOccupiedCount = 0;
+                for (const schedule of monthSchedules) {
+                    const booking = await BookingModel.findOne({
+                        scheduleId: schedule._id,
+                        status: 'confirmed'
+                    });
+                    if (booking) {
+                        monthOccupiedCount++;
+                    }
+                }
+                const monthOccupancy = monthSchedules.length > 0
+                    ? Math.round((monthOccupiedCount / monthSchedules.length) * 100)
+                    : 0;
+                trend.push({
+                    period: month.name,
+                    value: monthOccupancy,
+                });
+            }
+            console.log('📊 Occupancy breakdown calculated:', breakdown.length, 'time slots');
+            console.log('📊 Occupancy trend calculated:', trend.length, 'months');
+            return {
+                type: 'occupancy',
+                breakdown: breakdown,
+                trend: trend,
+                totalSchedules: allSchedules.length,
+                averageOccupancy: breakdown.length > 0
+                    ? Math.round(breakdown.reduce((sum, slot) => sum + slot.occupancy, 0) / breakdown.length)
+                    : 0,
+            };
+        }
+        catch (error) {
+            console.error('❌ Error in getOccupancyDetailsData:', error);
+            throw error;
+        }
+    }
+    getMonthsInRange(startDate, endDate) {
+        const months = [];
+        const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+        while (current <= endDate) {
+            months.push({
+                year: current.getFullYear(),
+                month: current.getMonth(),
+                name: current.toLocaleDateString('es-ES', { month: 'short' })
+            });
+            current.setMonth(current.getMonth() + 1);
+        }
+        return months;
+    }
+    /**
+     * Validates if professor has any data for analytics
+     */
+    async validateProfessorHasData(professorId) {
+        try {
+            const BookingModel = require('../../infrastructure/database/models/BookingModel').BookingModel;
+            const PaymentModel = require('../../infrastructure/database/models/PaymentModel').PaymentModel;
+            const ScheduleModel = require('../../infrastructure/database/models/ScheduleModel').ScheduleModel;
+            // Check if professor has any bookings, payments, or schedules
+            const [bookingsCount, paymentsCount, schedulesCount] = await Promise.all([
+                BookingModel.countDocuments({ professorId }),
+                PaymentModel.countDocuments({ professorId }),
+                ScheduleModel.countDocuments({ professorId }),
+            ]);
+            return bookingsCount > 0 || paymentsCount > 0 || schedulesCount > 0;
+        }
+        catch (error) {
+            console.error('Error validating professor data:', error);
+            return false;
+        }
+    }
+    /**
+     * Validates metrics data structure and content
+     */
+    validateMetricsData(metrics) {
+        if (!Array.isArray(metrics)) {
+            return [];
+        }
+        return metrics.map(metric => {
+            // Ensure required fields exist
+            const validatedMetric = {
+                title: metric.title || 'Métrica',
+                value: metric.value || '0',
+                change: metric.change || null,
+                icon: metric.icon || 'analytics',
+                color: metric.color || '#2196F3',
+                isPositive: Boolean(metric.isPositive),
+                subtitle: metric.subtitle || null,
+            };
+            // Validate color format
+            if (!/^#[0-9A-F]{6}$/i.test(validatedMetric.color)) {
+                validatedMetric.color = '#2196F3';
+            }
+            // Validate numeric values
+            if (typeof validatedMetric.value === 'string') {
+                const numericValue = parseFloat(validatedMetric.value.replace(/[^0-9.-]/g, ''));
+                if (isNaN(numericValue)) {
+                    validatedMetric.value = '0';
+                }
+            }
+            return validatedMetric;
+        });
+    }
+    /**
+     * Validates charts data structure and content
+     */
+    validateChartsData(charts) {
+        if (!Array.isArray(charts)) {
+            return [];
+        }
+        return charts.map(chart => {
+            const validatedChart = {
+                title: chart.title || 'Gráfico',
+                type: chart.type || 'line',
+                data: Array.isArray(chart.data) ? chart.data : [],
+                xAxisLabel: chart.xAxisLabel || 'Eje X',
+                yAxisLabel: chart.yAxisLabel || 'Eje Y',
+                description: chart.description || null,
+            };
+            // Validate chart type
+            const validTypes = ['line', 'bar', 'pie'];
+            if (!validTypes.includes(validatedChart.type)) {
+                validatedChart.type = 'line';
+            }
+            // Validate data points
+            validatedChart.data = validatedChart.data.map((point) => {
+                return {
+                    label: point.label || 'Punto',
+                    value: typeof point.value === 'number' ? point.value : 0,
+                    color: point.color || '#2196F3',
+                    date: point.date || null,
+                    serviceType: point.serviceType || null,
+                };
+            });
+            return validatedChart;
+        });
+    }
+    /**
+     * Validates date range parameters
+     */
+    validateDateRange(start, end) {
+        const now = new Date();
+        const twoYearsAgo = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate());
+        // Ensure start date is not too far in the past
+        const validatedStart = start < twoYearsAgo ? twoYearsAgo : start;
+        // Ensure end date is not in the future
+        const validatedEnd = end > now ? now : end;
+        // Ensure start is before end
+        if (validatedStart >= validatedEnd) {
+            return {
+                start: new Date(validatedEnd.getTime() - 30 * 24 * 60 * 60 * 1000), // 30 days before end
+                end: validatedEnd,
+            };
+        }
+        return {
+            start: validatedStart,
+            end: validatedEnd,
+        };
+    }
+    /**
+     * Sanitizes string input to prevent injection
+     */
+    sanitizeString(input) {
+        return input.replace(/[<>\"'%;()&+]/g, '').trim();
+    }
+    /**
+     * Validates and sanitizes query parameters
+     */
+    validateQueryParams(params) {
+        const sanitized = {};
+        if (params.period && typeof params.period === 'string') {
+            const validPeriods = ['week', 'month', 'quarter', 'year'];
+            sanitized.period = validPeriods.includes(params.period) ? params.period : 'month';
+        }
+        if (params.serviceType && typeof params.serviceType === 'string') {
+            const validServiceTypes = ['individual_class', 'group_class', 'court_rental'];
+            sanitized.serviceType = validServiceTypes.includes(params.serviceType) ? params.serviceType : null;
+        }
+        if (params.status && typeof params.status === 'string') {
+            const validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
+            sanitized.status = validStatuses.includes(params.status) ? params.status : null;
+        }
+        return sanitized;
     }
 }
 exports.AnalyticsController = AnalyticsController;

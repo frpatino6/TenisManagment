@@ -181,6 +181,44 @@ Una vez configurado, puedes usar comandos como:
 - El archivo `.env` está en `.gitignore`
 - Los scripts usan variables de entorno para API keys
 
+## 🚀 Uso de Scripts
+
+### **Gestionar Sprint 1**
+```bash
+# Iniciar Sprint 1
+node scripts/sprint-management/start-sprint-1.js
+
+# Actualizar progreso
+node scripts/sprint-management/update-sprint-progress.js
+
+# Eliminar duplicados
+node scripts/sprint-management/remove-duplicates-sprint1.js
+```
+
+### **Scripts de Linear**
+```bash
+# Verificar issues
+node scripts/linear/check-issue-identifiers.js
+
+# Asociar issues a projects
+node scripts/linear/associate-issues-correct.js
+
+# Verificar configuración
+node scripts/linear/verify-linear-setup.js
+
+# Configurar milestones
+node scripts/linear/setup-sprint-milestones.js
+```
+
+### **Organización General**
+```bash
+# Organizar sprints
+node organize-sprints.js
+
+# Verificar configuración
+node linear-backlog-manager.js
+```
+
 ## 🚨 Troubleshooting
 
 ### Error: "LINEAR_API_KEY environment variable is required"

@@ -73,13 +73,4 @@ class AppConfig {
       return kDebugMode ? 'development' : 'production';
     }
   }
-
-  /// Debug info
-  static Map<String, String> get debugInfo => {
-    'environment': environment,
-    'apiBaseUrl': apiBaseUrl,
-    'authBaseUrl': authBaseUrl,
-    'hostname': kIsWeb ? Uri.base.host : 'mobile',
-    'port': kIsWeb ? Uri.base.port.toString() : 'N/A',
-  };
 }

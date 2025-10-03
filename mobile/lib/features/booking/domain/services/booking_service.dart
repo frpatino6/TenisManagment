@@ -23,8 +23,6 @@ class BookingService {
         throw Exception('No se pudo obtener el token de autenticación');
       }
 
-      debugPrint('Getting professors list');
-
       final response = await http.get(
         Uri.parse('$_baseUrl/student-dashboard/professors'),
         headers: {
@@ -32,8 +30,6 @@ class BookingService {
           'Authorization': 'Bearer $idToken',
         },
       );
-
-      debugPrint('Response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
@@ -49,7 +45,6 @@ class BookingService {
         throw Exception('Error al obtener profesores: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('Error in getProfessors: $e');
       rethrow;
     }
   }
@@ -69,8 +64,6 @@ class BookingService {
         throw Exception('No se pudo obtener el token de autenticación');
       }
 
-      debugPrint('Getting available schedules for professor: $professorId');
-
       final response = await http.get(
         Uri.parse(
           '$_baseUrl/student-dashboard/available-schedules?professorId=$professorId',
@@ -81,14 +74,9 @@ class BookingService {
         },
       );
 
-      debugPrint('Response status: ${response.statusCode}');
-      debugPrint('Response body: ${response.body}');
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         final items = data['items'] as List<dynamic>;
-
-        debugPrint('Found ${items.length} available schedules');
 
         return items
             .map(
@@ -102,7 +90,6 @@ class BookingService {
         );
       }
     } catch (e) {
-      debugPrint('Error in getAvailableSchedules: $e');
       rethrow;
     }
   }
@@ -124,10 +111,6 @@ class BookingService {
         throw Exception('No se pudo obtener el token de autenticación');
       }
 
-      debugPrint(
-        'Booking lesson with scheduleId: $scheduleId, serviceType: $serviceType, price: $price',
-      );
-
       final response = await http.post(
         Uri.parse('$_baseUrl/student-dashboard/book-lesson'),
         headers: {
@@ -141,9 +124,6 @@ class BookingService {
         }),
       );
 
-      debugPrint('Response status: ${response.statusCode}');
-      debugPrint('Response body: ${response.body}');
-
       if (response.statusCode == 201) {
         return json.decode(response.body) as Map<String, dynamic>;
       } else {
@@ -151,7 +131,6 @@ class BookingService {
         throw Exception(error['error'] ?? 'Error al reservar clase');
       }
     } catch (e) {
-      debugPrint('Error in bookLesson: $e');
       rethrow;
     }
   }

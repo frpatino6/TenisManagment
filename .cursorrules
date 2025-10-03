@@ -53,6 +53,9 @@ This is a tennis management system with:
 - Use consistent response formats
 - Add proper request/response validation
 - Implement rate limiting and security headers
+- **NEVER create debug APIs or endpoints** - Use proper logging instead
+- **NO temporary debug routes** in production code
+- Use environment variables for debug configurations
 
 #### Authentication & Security
 - Use Firebase Auth for authentication
@@ -93,6 +96,8 @@ This is a tennis management system with:
 - Implement offline support where appropriate
 - Handle authentication state properly
 - Use proper error handling for Firebase operations
+- **NO debug API calls** - Use proper error handling and logging instead
+- **NO temporary debug endpoints** in API calls
 
 ### Testing
 - Write unit tests for business logic
@@ -122,6 +127,13 @@ This is a tennis management system with:
   - NO comments inside UI/widget code - use meaningful variable and method names
   - ONLY add header comments for business logic methods and classes
   - Focus on clear, self-documenting code with proper naming conventions
+
+### Debug and Development Rules
+- **NEVER create debug APIs or endpoints** - Use proper logging and development tools instead
+- **NO debug routes or debug controllers** in production code
+- **NO temporary debug endpoints** - Use environment-based configuration for debugging
+- **NO debug-specific API routes** - Implement proper error handling and logging mechanisms
+- Use proper development environments and tools for debugging instead of creating debug APIs
 
 ### Git & Version Control
 - Use conventional commit messages

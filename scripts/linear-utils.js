@@ -6,7 +6,7 @@ const path = require('path');
 
 // Load environment variables from linear-config.env if it exists
 function loadLinearConfig() {
-  const envPath = path.join(__dirname, 'linear-config.env');
+  const envPath = path.join(__dirname, '..', 'config', 'linear-config.env');
   if (fs.existsSync(envPath)) {
     const envContent = fs.readFileSync(envPath, 'utf8');
     const lines = envContent.split('\n');

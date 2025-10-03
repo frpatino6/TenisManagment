@@ -33,6 +33,8 @@ class AnalyticsService {
       if (serviceType != null) queryParams['serviceType'] = serviceType;
       if (status != null) queryParams['status'] = status;
 
+      print('🌐 Analytics API call with filters: $queryParams');
+
       final uri = Uri.parse(
         '$_baseUrl/professor-dashboard/analytics/overview',
       ).replace(queryParameters: queryParams);

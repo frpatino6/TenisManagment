@@ -35,6 +35,8 @@ export class AnalyticsController {
       const { period = 'month', serviceType, status } = req.query;
       const actualProfessorId = professor._id.toString();
 
+      console.log('🔍 Analytics filters received:', { period, serviceType, status });
+
       // Get date range based on period
       const dateRange = this.getDateRange(period as string);
       

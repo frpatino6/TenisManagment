@@ -39,6 +39,7 @@ class _AnalyticsDashboardScreenState
   }
 
   void _updateFilters(Map<String, String?> newFilters) {
+    print('🔍 Updating filters: $newFilters');
     setState(() {
       _filters = newFilters;
     });
@@ -130,7 +131,7 @@ class _AnalyticsDashboardScreenState
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant.withOpacity(0.5),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -348,7 +349,7 @@ class _AnalyticsDashboardScreenState
             Icon(
               Icons.bar_chart_outlined,
               size: 64,
-              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const Gap(16),
             Text(

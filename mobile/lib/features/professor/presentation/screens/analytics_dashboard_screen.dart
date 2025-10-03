@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import '../../data/providers/analytics_provider.dart';
+import '../../domain/models/analytics_error.dart';
 import '../widgets/analytics_metric_card.dart';
 import '../widgets/analytics_chart_widget.dart';
 import '../widgets/analytics_filter_bar.dart';
+import '../widgets/analytics_loading_widget.dart';
+import '../widgets/analytics_error_widget.dart';
 import 'metric_detail_screen.dart';
 
 class AnalyticsDashboardScreen extends ConsumerStatefulWidget {
@@ -165,31 +168,37 @@ class _AnalyticsDashboardScreenState
           ),
         ),
         const Gap(12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 1.2,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
+        if (metrics.isEmpty)
+          const AnalyticsSkeletonLoading(
+            itemCount: 4,
+            type: SkeletonType.metric,
+          )
+        else
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 1.2,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            itemCount: metrics.length,
+            itemBuilder: (context, index) {
+              return AnalyticsMetricCard(
+                metric: metrics[index],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          MetricDetailScreen(metric: metrics[index]),
+                    ),
+                  );
+                },
+              );
+            },
           ),
-          itemCount: metrics.length,
-          itemBuilder: (context, index) {
-            return AnalyticsMetricCard(
-              metric: metrics[index],
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        MetricDetailScreen(metric: metrics[index]),
-                  ),
-                );
-              },
-            );
-          },
-        ),
       ],
     );
   }
@@ -284,57 +293,50 @@ class _AnalyticsDashboardScreenState
   }
 
   Widget _buildLoadingState(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(color: colorScheme.primary),
-          const Gap(16),
-          Text(
-            'Cargando analytics...',
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
+    return AnalyticsLoadingWidget(
+      type: LoadingType.overview,
+      title: 'Cargando Dashboard de Analytics',
+      subtitle: 'Obteniendo métricas y gráficos actualizados',
+      steps: [
+        'Conectando con el servidor',
+        'Obteniendo datos de métricas',
+        'Generando gráficos',
+        'Finalizando carga',
+      ],
+      currentStep: 2,
     );
   }
 
   Widget _buildErrorState(BuildContext context, Object error) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    // Try to parse as AnalyticsError, fallback to generic error
+    AnalyticsError? analyticsError;
+    try {
+      if (error is AnalyticsError) {
+        analyticsError = error;
+      } else {
+        // Create a generic error from the exception
+        analyticsError = AnalyticsError(
+          type: AnalyticsErrorType.unknownError,
+          message: 'Error al cargar analytics',
+          details: error.toString(),
+          endpoint: 'analytics-overview',
+          timestamp: DateTime.now(),
+        );
+      }
+    } catch (e) {
+      analyticsError = AnalyticsError(
+        type: AnalyticsErrorType.unknownError,
+        message: 'Error inesperado',
+        details: error.toString(),
+        endpoint: 'analytics-overview',
+        timestamp: DateTime.now(),
+      );
+    }
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: colorScheme.error),
-            const Gap(16),
-            Text(
-              'Error al cargar analytics',
-              style: theme.textTheme.headlineSmall,
-              textAlign: TextAlign.center,
-            ),
-            const Gap(8),
-            Text(
-              error.toString(),
-              style: theme.textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            const Gap(24),
-            ElevatedButton(
-              onPressed: _refreshAnalytics,
-              child: const Text('Reintentar'),
-            ),
-          ],
-        ),
-      ),
+    return AnalyticsErrorWidget(
+      error: analyticsError,
+      onRetry: _refreshAnalytics,
+      showDetails: true,
     );
   }
 

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import '../../domain/models/analytics_metric.dart';
+import '../../domain/models/analytics_error.dart';
 import '../../domain/services/analytics_service.dart';
+import 'analytics_error_widget.dart';
+import 'interactive_chart_widget.dart';
 
 class MetricDetailWidget extends StatefulWidget {
   final AnalyticsMetric metric;
@@ -16,6 +19,7 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
   final AnalyticsService _analyticsService = AnalyticsService();
   bool _isLoading = true;
   Map<String, dynamic>? _detailData;
+  AnalyticsError? _error;
 
   @override
   void initState() {
@@ -27,6 +31,7 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
     try {
       setState(() {
         _isLoading = true;
+        _error = null;
       });
 
       Map<String, dynamic> data = {};
@@ -45,16 +50,34 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
           data = await _loadOccupancyDetails();
           break;
         default:
-          data = {'error': 'Tipo de métrica no soportado'};
+          throw AnalyticsError(
+            type: AnalyticsErrorType.dataValidationError,
+            message: 'Tipo de métrica no soportado.',
+            details:
+                'Métrica con icono "${widget.metric.icon}" no está implementada',
+            endpoint: 'metric-detail',
+            timestamp: DateTime.now(),
+          );
       }
 
       setState(() {
         _detailData = data;
         _isLoading = false;
       });
+    } on AnalyticsError catch (e) {
+      setState(() {
+        _error = e;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
-        _detailData = {'error': 'Error al cargar datos: $e'};
+        _error = AnalyticsError(
+          type: AnalyticsErrorType.unknownError,
+          message: 'Error inesperado al cargar datos de la métrica.',
+          details: e.toString(),
+          endpoint: 'metric-detail',
+          timestamp: DateTime.now(),
+        );
         _isLoading = false;
       });
     }
@@ -176,37 +199,54 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
   }
 
   Future<Map<String, dynamic>> _loadOccupancyDetails() async {
-    return {
-      'type': 'occupancy',
-      'breakdown': [
-        {'timeSlot': '6:00 - 8:00', 'occupancy': 85, 'status': 'Alto'},
-        {'timeSlot': '8:00 - 10:00', 'occupancy': 92, 'status': 'Alto'},
-        {'timeSlot': '10:00 - 12:00', 'occupancy': 78, 'status': 'Medio'},
-        {'timeSlot': '12:00 - 14:00', 'occupancy': 45, 'status': 'Bajo'},
-        {'timeSlot': '14:00 - 16:00', 'occupancy': 65, 'status': 'Medio'},
-        {'timeSlot': '16:00 - 18:00', 'occupancy': 88, 'status': 'Alto'},
-        {'timeSlot': '18:00 - 20:00', 'occupancy': 95, 'status': 'Alto'},
-        {'timeSlot': '20:00 - 22:00', 'occupancy': 72, 'status': 'Medio'},
-      ],
-      'trend': [
-        {'period': 'Ene', 'value': 68},
-        {'period': 'Feb', 'value': 72},
-        {'period': 'Mar', 'value': 75},
-        {'period': 'Abr', 'value': 78},
-        {'period': 'May', 'value': 82},
-        {'period': 'Jun', 'value': 85},
-      ],
-    };
+    try {
+      final occupancyData = await _analyticsService.getOccupancyDetails();
+
+      // Validate and provide safe defaults
+      final breakdown = occupancyData['breakdown'] is List
+          ? occupancyData['breakdown'] as List
+          : <Map<String, dynamic>>[];
+
+      final trend = occupancyData['trend'] is List
+          ? occupancyData['trend'] as List
+          : <Map<String, dynamic>>[];
+
+      return {
+        'type': 'occupancy',
+        'breakdown': breakdown,
+        'trend': trend,
+        'totalSchedules': occupancyData['totalSchedules'] ?? 0,
+        'averageOccupancy': occupancyData['averageOccupancy'] ?? 0,
+      };
+    } catch (e) {
+      print('Error loading occupancy details: $e');
+      return {
+        'type': 'occupancy',
+        'breakdown': <Map<String, dynamic>>[],
+        'trend': <Map<String, dynamic>>[],
+        'totalSchedules': 0,
+        'averageOccupancy': 0,
+        'error': 'Error al cargar datos de ocupación: $e',
+      };
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return _buildLoadingState();
     }
 
-    if (_detailData == null || _detailData!['error'] != null) {
-      return _buildErrorWidget(_detailData?['error'] ?? 'Error desconocido');
+    if (_error != null) {
+      return AnalyticsErrorWidget(
+        error: _error!,
+        onRetry: _loadDetailData,
+        showDetails: true,
+      );
+    }
+
+    if (_detailData == null) {
+      return _buildErrorWidget('No hay datos disponibles');
     }
 
     return SingleChildScrollView(
@@ -219,6 +259,34 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
           _buildBreakdownSection(),
           const Gap(24),
           _buildAdditionalDetails(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(color: colorScheme.primary, strokeWidth: 3),
+          const Gap(16),
+          Text(
+            'Cargando datos de ${widget.metric.title}...',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+          const Gap(8),
+          Text(
+            'Obteniendo información detallada',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
         ],
       ),
     );
@@ -264,24 +332,53 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
       return const SizedBox.shrink();
     }
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Tendencia',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const Gap(16),
-            SizedBox(height: 200, child: _buildSimpleLineChart(trend)),
-          ],
-        ),
-      ),
+    // Convert trend data to ChartDataPoint format
+    final chartData = trend.map((item) {
+      return ChartDataPoint(
+        label: item['period'] ?? item['timeSlot'] ?? 'N/A',
+        value: (item['value'] ?? item['occupancy'] ?? 0).toDouble(),
+        date: item['date'] != null ? DateTime.parse(item['date']) : null,
+      );
+    }).toList();
+
+    return InteractiveChartWidget(
+      title: 'Tendencia de ${widget.metric.title}',
+      data: chartData,
+      xAxisLabel: 'Período',
+      yAxisLabel: _getYAxisLabel(),
+      description: 'Evolución temporal de la métrica seleccionada',
+      type: _getChartType(),
+      height: 250,
     );
+  }
+
+  String _getYAxisLabel() {
+    switch (widget.metric.icon) {
+      case 'money':
+        return 'Ingresos (\$)';
+      case 'bookings':
+        return 'Número de Clases';
+      case 'students':
+        return 'Número de Estudiantes';
+      case 'occupancy':
+        return 'Ocupación (%)';
+      default:
+        return 'Valor';
+    }
+  }
+
+  ChartType _getChartType() {
+    switch (widget.metric.icon) {
+      case 'money':
+      case 'students':
+        return ChartType.line;
+      case 'bookings':
+        return ChartType.bar;
+      case 'occupancy':
+        return ChartType.pie;
+      default:
+        return ChartType.line;
+    }
   }
 
   Widget _buildSimpleLineChart(List<dynamic> data) {

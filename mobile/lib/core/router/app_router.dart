@@ -11,6 +11,7 @@ import '../../features/professor/presentation/screens/pricing_config_screen.dart
 import '../../features/professor/presentation/screens/edit_profile_screen.dart';
 import '../../features/professor/presentation/screens/students_list_screen.dart';
 import '../../features/professor/presentation/screens/student_profile_screen.dart';
+import '../../features/professor/presentation/screens/analytics_dashboard_screen.dart';
 import '../../features/booking/presentation/screens/book_class_screen.dart';
 import '../../features/settings/presentation/screens/theme_settings_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
@@ -103,6 +104,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final studentId = state.pathParameters['studentId']!;
           return StudentProfileScreen(studentId: studentId);
         },
+      ),
+      GoRoute(
+        path: '/analytics-dashboard',
+        name: 'analytics-dashboard',
+        builder: (context, state) => const AnalyticsDashboardScreen(),
       ),
       GoRoute(
         path: '/theme-settings',

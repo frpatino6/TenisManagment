@@ -2,6 +2,7 @@ import { Router } from 'express';
 import auth from './auth';
 import professor from './professor';
 import professorDashboard from './professor-dashboard';
+import analytics from './analytics';
 import student from './student';
 import pricing from './pricing';
 
@@ -15,6 +16,7 @@ router.get('/', (_req, res) => {
 router.use('/auth', auth);
 router.use('/professor', professor);
 router.use('/professor-dashboard', professorDashboard);
+router.use('/professor-dashboard/analytics', analytics);
 router.use('/student', student);
 router.use('/pricing', pricing);
 

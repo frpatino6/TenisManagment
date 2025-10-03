@@ -17,4 +17,16 @@ router.get('/revenue', controller.getRevenueData);
 router.get('/bookings', controller.getBookingsData);
 router.get('/students', controller.getStudentsData);
 
+// Breakdown data endpoints
+router.get('/revenue/breakdown', controller.getRevenueBreakdown);
+router.get('/bookings/breakdown', controller.getBookingsBreakdown);
+
+// Trend data endpoints
+router.get('/revenue/trend', controller.getRevenueTrend);
+router.get('/bookings/trend', controller.getBookingsTrend);
+
+// Students data endpoints
+router.get('/students/breakdown', controller.getStudentsBreakdown);
+router.get('/students/trend', controller.getStudentsTrend);
+
 export default router;

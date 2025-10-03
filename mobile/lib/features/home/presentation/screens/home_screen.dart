@@ -7,7 +7,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../widgets/user_profile_card.dart';
-import '../widgets/quick_actions_grid.dart';
 import '../widgets/recent_activity_list.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -159,23 +158,7 @@ class HomeScreen extends ConsumerWidget {
 
                 const Gap(24),
 
-                // Acciones rápidas
-                Text(
-                      'Acciones Rápidas',
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    )
-                    .animate()
-                    .fadeIn(duration: 400.ms, delay: 400.ms)
-                    .slideX(begin: -0.2, end: 0),
-                const Gap(16),
-
-                QuickActionsGrid(user: user)
-                    .animate()
-                    .fadeIn(duration: 400.ms, delay: 600.ms)
-                    .slideY(begin: 0.2, end: 0),
-
-                const Gap(24),
+                // Acciones rápidas eliminadas - se manejan en el panel específico del profesor
 
                 // Actividad reciente
                 Text(

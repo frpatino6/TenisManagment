@@ -168,7 +168,6 @@ class HomeScreen extends ConsumerWidget {
                     .animate()
                     .fadeIn(duration: 400.ms, delay: 400.ms)
                     .slideX(begin: -0.2, end: 0),
-
                 const Gap(16),
 
                 QuickActionsGrid(user: user)

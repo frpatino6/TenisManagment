@@ -71,7 +71,7 @@ class _StudentsListScreenState extends ConsumerState<StudentsListScreen> {
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: colorScheme.surfaceVariant.withOpacity(0.5),
+                fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
               ),
               onChanged: (value) {
                 setState(() {

@@ -15,43 +15,20 @@ class QuickActionsGrid extends StatelessWidget {
         ? _getProfessorActions(context)
         : _getStudentActions(context);
 
-    return Column(
-      children: [
-        // Test button
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.all(16),
-          child: ElevatedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('TEST BUTTON WORKS!'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            child: const Text('TEST BUTTON - Mis Estudiantes'),
-          ),
-        ),
-        // Original grid
-        Expanded(
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.2,
-            ),
-            itemCount: actions.length,
-            itemBuilder: (context, index) {
-              final action = actions[index];
-              return _buildActionCard(context, action, index);
-            },
-          ),
-        ),
-      ],
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 1.2,
+      ),
+      itemCount: actions.length,
+      itemBuilder: (context, index) {
+        final action = actions[index];
+        return _buildActionCard(context, action, index);
+      },
     );
   }
 
@@ -62,28 +39,10 @@ class QuickActionsGrid extends StatelessWidget {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: ElevatedButton(
-        onPressed: action.onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
+      child: GestureDetector(
+        onTap: action.onTap,
         child: Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                action.color.withValues(alpha: 0.1),
-                action.color.withValues(alpha: 0.05),
-              ],
-            ),
-          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -161,13 +120,7 @@ class QuickActionsGrid extends StatelessWidget {
         icon: Icons.people,
         color: Colors.green,
         onTap: () {
-          // Test simple - mostrar snackbar
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Botón presionado - Test'),
-              duration: Duration(seconds: 2),
-            ),
-          );
+          context.push('/students-list');
         },
       ),
       QuickAction(

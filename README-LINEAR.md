@@ -54,6 +54,34 @@ Utilidades compartidas para interactuar con la API de Linear.
 - `makeLinearRequest(query, variables)`: Hace requests a la API de Linear
 - `loadLinearConfig()`: Carga configuración desde archivo .env
 
+### `organize-sprints.js`
+Script para organizar y visualizar el backlog por sprints.
+
+**Uso:**
+```bash
+node organize-sprints.js
+```
+
+**Funcionalidades:**
+- Organizar issues por sprints
+- Mostrar roadmap visual
+- Calcular métricas por sprint
+- Mostrar dependencias entre sprints
+
+### `setup-sprint-milestones.js`
+Script para configurar milestones en Linear.
+
+**Uso:**
+```bash
+node setup-sprint-milestones.js
+```
+
+**Funcionalidades:**
+- Crear milestones para cada sprint
+- Asignar issues a milestones
+- Configurar fechas objetivo
+- Organizar timeline del proyecto
+
 ## 🔧 Configuración del MCP Server
 
 ### Para Cursor/Claude Desktop
@@ -92,17 +120,49 @@ LINEAR_API_KEY=tu_api_key_aqui npx -y linear-mcp-server
 - Mobile App Features
 - Go-to-Market
 
-### User Stories (10):
-- **Sprint 1:** Multi-Tenancy Foundation (16 pts)
-- **Sprint 2:** Authentication & Authorization (18 pts)
-- **Sprint 3:** Onboarding & Signup (16 pts)
-- **Sprint 6:** Subscription & Billing (21 pts)
-- **Sprint 8:** Admin Dashboard (8 pts)
-- **Sprint 9:** Analytics & Reporting (8 pts)
-- **Sprint 10:** Mobile App Features (5 pts)
-- **Sprint 11:** Go-to-Market (21 pts)
+### Sprint Planning (11 Sprints):
 
-**Total:** 32 issues, 169 story points
+#### **Sprint 1 - Multi-Tenancy Foundation** (Semanas 1-2)
+- US-MT-001: Crear Modelo de Tenant (3 pts)
+- US-MT-002: Implementar TenantService (5 pts)
+- US-MT-003: Middleware de Extracción de Tenant (8 pts)
+- **Total:** 16 pts
+
+#### **Sprint 2 - Authentication & Authorization** (Semanas 3-4)
+- US-AUTH-001: Implementar JWT Authentication (5 pts)
+- US-AUTH-002: Sistema de Roles y Permisos (8 pts)
+- US-AUTH-003: Password Reset Flow (5 pts)
+- **Total:** 18 pts
+
+#### **Sprint 3 - Onboarding & Signup** (Semanas 5-6)
+- US-ONB-001: Wizard de Registro de Club (13 pts)
+- US-ONB-002: Email de Bienvenida (3 pts)
+- **Total:** 16 pts
+
+#### **Sprint 6 - Subscription & Billing** (Semanas 11-12)
+- US-BILL-001: Integración con Stripe (Setup) (5 pts)
+- US-BILL-003: Checkout Flow - Upgrade a Pro (8 pts)
+- US-BILL-004: Webhook - checkout.session.completed (8 pts)
+- **Total:** 21 pts
+
+#### **Sprint 8 - Admin Dashboard** (Semanas 15-16)
+- US-ADMIN-001: Dashboard de Super Admin (8 pts)
+- **Total:** 8 pts
+
+#### **Sprint 9 - Analytics & Reporting** (Semanas 17-18)
+- US-ANALYTICS-001: Dashboard de Métricas (8 pts)
+- **Total:** 8 pts
+
+#### **Sprint 10 - Mobile Features** (Semanas 19-20)
+- US-MOBILE-001: Notificaciones Push (5 pts)
+- **Total:** 5 pts
+
+#### **Sprint 11 - Go-to-Market** (Semanas 21-22)
+- US-GTM-001: Landing Page (8 pts)
+- US-GTM-002: Help Center (13 pts)
+- **Total:** 21 pts
+
+**Total:** 32 issues, 113 story points, 22 semanas
 
 ## 🎯 Funcionalidades del MCP Server
 

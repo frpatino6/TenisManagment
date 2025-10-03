@@ -13,7 +13,6 @@ class LoadingScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Logo o icono animado
             Container(
                   width: 80,
                   height: 80,
@@ -37,7 +36,6 @@ class LoadingScreen extends StatelessWidget {
 
             const SizedBox(height: 32),
 
-            // Indicador de progreso
             SizedBox(
                   width: 40,
                   height: 40,
@@ -53,7 +51,6 @@ class LoadingScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Mensaje
             if (message != null) ...[
               Text(
                     message!,

@@ -6,11 +6,7 @@ class StudentCard extends StatelessWidget {
   final StudentModel student;
   final VoidCallback? onTap;
 
-  const StudentCard({
-    super.key,
-    required this.student,
-    this.onTap,
-  });
+  const StudentCard({super.key, required this.student, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +23,6 @@ class StudentCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Avatar
               CircleAvatar(
                 radius: 24,
                 backgroundColor: colorScheme.primary.withOpacity(0.1),
@@ -41,8 +36,7 @@ class StudentCard extends StatelessWidget {
                 ),
               ),
               const Gap(16),
-              
-              // Información del estudiante
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,13 +66,15 @@ class StudentCard extends StatelessWidget {
                   ],
                 ),
               ),
-              
-              // Badge de membresía y botón
+
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: student.membershipType == MembershipType.premium
                           ? Colors.amber.withOpacity(0.2)

@@ -8,12 +8,17 @@ import '../models/professor_model.dart';
 import '../models/student_summary_model.dart';
 import '../models/class_schedule_model.dart';
 
+/// Service responsible for professor-related operations
+/// Handles professor dashboard data, schedules, and student management
+/// Manages API communication for professor-specific endpoints
 class ProfessorService {
   String get _baseUrl => AppConfig.apiBaseUrl;
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-  // Obtener información del profesor
+  /// Retrieves professor information and dashboard data
+  /// Returns [ProfessorModel] with complete professor details
+  /// Throws [Exception] if authentication fails or API request fails
   Future<ProfessorModel> getProfessorInfo() async {
     try {
       final user = _firebaseAuth.currentUser;

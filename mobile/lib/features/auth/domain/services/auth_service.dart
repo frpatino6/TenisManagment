@@ -7,35 +7,35 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../../../core/config/app_config.dart';
 import '../models/user_model.dart';
 
+/// Service responsible for user authentication operations
+/// Handles Firebase Auth, Google Sign-In, and backend API communication
+/// Manages user session state and authentication flows
 class AuthService {
   String get _baseUrl => AppConfig.authBaseUrl;
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
-  // Stream del usuario actual de Firebase
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
-  // Usuario actual de Firebase
   User? get currentFirebaseUser => _firebaseAuth.currentUser;
 
-  // Verificar si hay un usuario autenticado
   bool get isAuthenticated => currentFirebaseUser != null;
 
-  // Iniciar sesión con Google
+  /// Initiates Google Sign-In authentication flow
+  /// Returns [UserModel] with user data from backend
+  /// Throws [Exception] if authentication fails or is cancelled
   Future<UserModel> signInWithGoogle() async {
     try {
       User? user;
 
       if (kIsWeb) {
-        // Web: usar popup con Firebase Auth directamente
         final provider = GoogleAuthProvider();
         provider.setCustomParameters({'prompt': 'select_account'});
         final UserCredential userCredential = await _firebaseAuth
             .signInWithPopup(provider);
         user = userCredential.user;
       } else {
-        // Mobile/Desktop: usar flujo de google_sign_in + credenciales
         final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
         if (googleUser == null) {
           throw Exception('Google Sign-In was cancelled');

@@ -58,7 +58,6 @@ class QuickActionsGrid extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Icono
               Container(
                     width: 36,
                     height: 36,
@@ -78,7 +77,6 @@ class QuickActionsGrid extends StatelessWidget {
 
               const Gap(6),
 
-              // Título
               Flexible(
                 child:
                     Text(
@@ -98,7 +96,6 @@ class QuickActionsGrid extends StatelessWidget {
 
               const Gap(4),
 
-              // Subtítulo
               Text(
                     action.subtitle,
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -126,7 +123,7 @@ class QuickActionsGrid extends StatelessWidget {
         icon: Icons.schedule,
         color: Colors.blue,
         onTap: () {
-          // TODO: Implementar publicación de horario
+          // TODO: Implement schedule publishing
         },
       ),
       QuickAction(
@@ -144,7 +141,7 @@ class QuickActionsGrid extends StatelessWidget {
         icon: Icons.attach_money,
         color: Colors.orange,
         onTap: () {
-          // TODO: Implementar seguimiento de ingresos
+          // TODO: Implement earnings tracking
         },
       ),
       QuickAction(
@@ -153,7 +150,7 @@ class QuickActionsGrid extends StatelessWidget {
         icon: Icons.sports_tennis,
         color: Colors.purple,
         onTap: () {
-          // TODO: Implementar gestión de servicios
+          // TODO: Implement service management
         },
       ),
     ];
@@ -176,7 +173,7 @@ class QuickActionsGrid extends StatelessWidget {
         icon: Icons.calendar_today,
         color: Colors.green,
         onTap: () {
-          // TODO: Implementar lista de reservas
+          // TODO: Implement bookings list
         },
       ),
       QuickAction(
@@ -185,7 +182,7 @@ class QuickActionsGrid extends StatelessWidget {
         icon: Icons.account_balance_wallet,
         color: Colors.orange,
         onTap: () {
-          // TODO: Implementar consulta de balance
+          // TODO: Implement balance inquiry
         },
       ),
       QuickAction(
@@ -194,7 +191,7 @@ class QuickActionsGrid extends StatelessWidget {
         icon: Icons.support_agent,
         color: Colors.purple,
         onTap: () {
-          // TODO: Implementar solicitud de servicios
+          // TODO: Implement service request
         },
       ),
     ];

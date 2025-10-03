@@ -825,8 +825,8 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
         return PackageInfo(
           appName: 'Tennis Management',
           packageName: 'com.tennis.management',
-          version: '1.3.0',
-          buildNumber: '14',
+          version: '1.3.2',
+          buildNumber: '15',
           buildSignature: '',
           installerStore: '',
         );
@@ -839,8 +839,8 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
       return PackageInfo(
         appName: 'Tennis Management',
         packageName: 'com.tennis.management',
-        version: '1.3.0',
-        buildNumber: '14',
+        version: '1.3.2',
+        buildNumber: '15',
         buildSignature: '',
         installerStore: '',
       );

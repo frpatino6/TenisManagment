@@ -195,7 +195,7 @@ async function setupSprintMilestones() {
     `;
 
     const finalResponse = await makeLinearRequest(finalMilestonesQuery);
-    const milestones = finalResponse.data.milestones.nodes;
+    const existingMilestones = finalResponse.data.milestones.nodes;
 
     milestones.forEach(milestone => {
       const totalPoints = milestone.issues.nodes.reduce((sum, issue) => sum + (issue.estimate || 0), 0);

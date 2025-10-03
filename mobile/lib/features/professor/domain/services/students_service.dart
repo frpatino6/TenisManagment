@@ -8,7 +8,7 @@ import '../models/student_model.dart';
 /// Handles API communication for fetching student data and profiles
 class StudentsService {
   String get _baseUrl => AppConfig.apiBaseUrl;
-  
+
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   /// Retrieves the complete list of students from the professor's endpoint
@@ -24,7 +24,7 @@ class StudentsService {
       final idToken = await user.getIdToken(true); // Force refresh
 
       final response = await http.get(
-        Uri.parse('$_baseUrl/professor/students'),
+        Uri.parse('$_baseUrl/professor-dashboard/students'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',

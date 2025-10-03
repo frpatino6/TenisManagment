@@ -1,0 +1,53 @@
+{
+  "mcpServers": {
+    "render-deploy": {
+      "command": "node",
+      "args": ["mcp-deploy-server-enhanced.js"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  },
+  "tools": {
+    "deploy_to_render": {
+      "description": "Despliega el backend a Render",
+      "category": "deployment"
+    },
+    "check_deployment_status": {
+      "description": "Verifica el estado del despliegue",
+      "category": "monitoring"
+    },
+    "get_deployment_logs": {
+      "description": "Obtiene logs del servicio",
+      "category": "debugging"
+    },
+    "get_deployment_history": {
+      "description": "Muestra historial de despliegues",
+      "category": "monitoring"
+    },
+    "rollback_deployment": {
+      "description": "Hace rollback a versión anterior",
+      "category": "deployment"
+    },
+    "update_environment_variables": {
+      "description": "Actualiza variables de entorno",
+      "category": "configuration"
+    },
+    "validate_build": {
+      "description": "Valida build local",
+      "category": "validation"
+    },
+    "monitor_deployment": {
+      "description": "Monitorea despliegue en tiempo real",
+      "category": "monitoring"
+    }
+  },
+  "settings": {
+    "defaultServiceName": "tennis-management-backend",
+    "defaultEnvironment": "production",
+    "defaultLogLines": 100,
+    "defaultTimeoutMinutes": 10,
+    "autoValidateBuild": true,
+    "autoRunTests": true
+  }
+}

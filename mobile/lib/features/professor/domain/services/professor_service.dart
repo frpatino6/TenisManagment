@@ -352,8 +352,6 @@ class ProfessorService {
 
       final idToken = await user.getIdToken(true);
 
-      debugPrint('📅 Calling getMySchedules...');
-
       final response = await http.get(
         Uri.parse('$_baseUrl/professor-dashboard/schedules'),
         headers: {
@@ -362,20 +360,9 @@ class ProfessorService {
         },
       );
 
-      debugPrint('Response status: ${response.statusCode}');
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         final items = data['items'] as List<dynamic>;
-        debugPrint('Received ${items.length} schedules from backend');
-
-        // Log a booked schedule if exists
-        final bookedSchedules = items
-            .where((s) => s['studentName'] != null)
-            .toList();
-        if (bookedSchedules.isNotEmpty) {
-          debugPrint('Example booked schedule: ${bookedSchedules.first}');
-        }
 
         return items;
       } else {

@@ -21,7 +21,7 @@ class StudentsService {
         throw Exception('Usuario no autenticado');
       }
 
-      final idToken = await user.getIdToken(true); // Force refresh
+      final idToken = await user.getIdToken(true);
 
       final response = await http.get(
         Uri.parse('$_baseUrl/professor-dashboard/students'),

@@ -1,9 +1,6 @@
 import 'package:flutter/foundation.dart';
 
 class AppConfig {
-  static const String _defaultApiUrl = 'http://localhost:3000/api';
-  static const String _defaultAuthUrl = 'http://localhost:3000/api/auth';
-
   // URLs de producción
   static const String _productionApiUrl =
       'https://tenismanagment.onrender.com/api';

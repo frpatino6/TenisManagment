@@ -16,7 +16,11 @@ class AnalyticsDashboardScreen extends ConsumerStatefulWidget {
 
 class _AnalyticsDashboardScreenState
     extends ConsumerState<AnalyticsDashboardScreen> {
-  Map<String, String?> _filters = {'period': 'month', 'serviceType': null, 'status': null};
+  Map<String, String?> _filters = {
+    'period': 'month',
+    'serviceType': null,
+    'status': null,
+  };
 
   @override
   void initState() {
@@ -131,11 +135,7 @@ class _AnalyticsDashboardScreenState
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.update,
-            size: 16,
-            color: colorScheme.onSurfaceVariant,
-          ),
+          Icon(Icons.update, size: 16, color: colorScheme.onSurfaceVariant),
           const Gap(8),
           Text(
             'Última actualización: ${_formatDateTime(lastUpdated)}',
@@ -168,7 +168,7 @@ class _AnalyticsDashboardScreenState
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 1.5,
+            childAspectRatio: 1.2,
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
           ),
@@ -210,13 +210,12 @@ class _AnalyticsDashboardScreenState
           ),
         ),
         const Gap(12),
-        ...charts.map((chart) => Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: AnalyticsChartWidget(
-                chartData: chart,
-                height: 250,
-              ),
-            )),
+        ...charts.map(
+          (chart) => Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: AnalyticsChartWidget(chartData: chart, height: 250),
+          ),
+        ),
       ],
     );
   }
@@ -289,9 +288,7 @@ class _AnalyticsDashboardScreenState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
-            color: colorScheme.primary,
-          ),
+          CircularProgressIndicator(color: colorScheme.primary),
           const Gap(16),
           Text(
             'Cargando analytics...',
@@ -314,11 +311,7 @@ class _AnalyticsDashboardScreenState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: colorScheme.error,
-            ),
+            Icon(Icons.error_outline, size: 64, color: colorScheme.error),
             const Gap(16),
             Text(
               'Error al cargar analytics',

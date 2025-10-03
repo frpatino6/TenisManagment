@@ -158,27 +158,44 @@ class ProfessorDashboardController {
                 startOfDay.setUTCHours(0, 0, 0, 0);
                 const endOfDay = new Date(targetDate);
                 endOfDay.setUTCHours(23, 59, 59, 999);
-                const schedules = await ScheduleModel_1.ScheduleModel.find({
+                // First, find all schedules for the date
+                const allSchedules = await ScheduleModel_1.ScheduleModel.find({
                     professorId: professor._id,
                     startTime: {
                         $gte: startOfDay,
                         $lte: endOfDay
-                    },
-                    studentId: { $exists: true, $ne: null }, // Only reserved schedules
-                    status: 'confirmed' // Only confirmed classes (not completed or cancelled)
-                })
-                    .populate('studentId', 'name email')
-                    .sort({ startTime: 1 });
+                    }
+                }).sort({ startTime: 1 });
+                // Then filter to only include schedules that have bookings
+                const schedulesWithBookings = [];
+                for (const schedule of allSchedules) {
+                    const booking = await BookingModel_1.BookingModel.findOne({
+                        scheduleId: schedule._id,
+                        status: 'confirmed' // Only confirmed bookings
+                    });
+                    if (booking) {
+                        // Populate student info from the booking
+                        const student = await StudentModel_1.StudentModel.findById(booking.studentId);
+                        if (student) {
+                            schedulesWithBookings.push({
+                                ...schedule.toObject(),
+                                studentId: student._id,
+                                studentInfo: student
+                            });
+                        }
+                    }
+                }
+                const schedules = schedulesWithBookings;
                 // Get booking info for each schedule to include price and service type
                 const classesData = await Promise.all(schedules.map(async (schedule) => {
                     const booking = await BookingModel_1.BookingModel.findOne({ scheduleId: schedule._id });
                     return {
                         id: schedule._id.toString(),
-                        studentName: schedule.studentId.name,
-                        studentId: schedule.studentId._id.toString(),
+                        studentName: schedule.studentInfo?.name || 'Estudiante',
+                        studentId: schedule.studentId?.toString() || '',
                         startTime: schedule.startTime,
                         endTime: schedule.endTime,
-                        status: schedule.status || 'confirmed',
+                        status: booking?.status || 'confirmed',
                         notes: schedule.notes,
                         serviceType: booking?.serviceType,
                         price: booking?.price,
@@ -232,17 +249,34 @@ class ProfessorDashboardController {
                         status: s.status
                     });
                 });
-                const todayClasses = await ScheduleModel_1.ScheduleModel.find({
+                // First, find all schedules for today
+                const allTodaySchedules = await ScheduleModel_1.ScheduleModel.find({
                     professorId: professor._id,
                     startTime: {
                         $gte: today,
                         $lt: tomorrow
-                    },
-                    studentId: { $exists: true, $ne: null }, // Solo horarios reservados
-                    status: 'confirmed' // Solo clases confirmadas (no completadas ni canceladas)
-                })
-                    .populate('studentId', 'name email')
-                    .sort({ startTime: 1 });
+                    }
+                }).sort({ startTime: 1 });
+                // Then filter to only include schedules that have bookings
+                const todaySchedulesWithBookings = [];
+                for (const schedule of allTodaySchedules) {
+                    const booking = await BookingModel_1.BookingModel.findOne({
+                        scheduleId: schedule._id,
+                        status: 'confirmed' // Only confirmed bookings
+                    });
+                    if (booking) {
+                        // Populate student info from the booking
+                        const student = await StudentModel_1.StudentModel.findById(booking.studentId);
+                        if (student) {
+                            todaySchedulesWithBookings.push({
+                                ...schedule.toObject(),
+                                studentId: student._id,
+                                studentInfo: student
+                            });
+                        }
+                    }
+                }
+                const todayClasses = todaySchedulesWithBookings;
                 console.log(`Found ${todayClasses.length} classes for today (between ${today.toISOString()} and ${tomorrow.toISOString()})`);
                 if (todayClasses.length > 0) {
                     console.log('First class:', {
@@ -255,11 +289,11 @@ class ProfessorDashboardController {
                     const booking = await BookingModel_1.BookingModel.findOne({ scheduleId: schedule._id });
                     return {
                         id: schedule._id.toString(),
-                        studentName: schedule.studentId ? schedule.studentId.name : 'Estudiante',
-                        studentId: schedule.studentId ? schedule.studentId._id.toString() : '',
+                        studentName: schedule.studentInfo?.name || 'Estudiante',
+                        studentId: schedule.studentId?.toString() || '',
                         startTime: schedule.startTime,
                         endTime: schedule.endTime,
-                        status: schedule.status || 'pending',
+                        status: booking?.status || 'confirmed',
                         notes: schedule.notes,
                         serviceType: booking?.serviceType,
                         price: booking?.price,

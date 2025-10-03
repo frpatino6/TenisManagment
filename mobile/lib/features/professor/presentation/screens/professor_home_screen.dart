@@ -558,6 +558,16 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
             context.push('/pricing-config');
           },
         ),
+        _buildQuickActionCard(
+          context: context,
+          icon: Icons.analytics,
+          title: 'Analytics',
+          subtitle: 'Dashboard de métricas',
+          color: Colors.teal,
+          onTap: () {
+            context.push('/analytics-dashboard');
+          },
+        ),
       ],
     ).animate().fadeIn(duration: 400.ms, delay: 400.ms);
   }

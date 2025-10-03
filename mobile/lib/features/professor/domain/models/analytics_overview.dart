@@ -21,7 +21,9 @@ class AnalyticsOverview extends Equatable {
           .map((item) => AnalyticsMetric.fromJson(item as Map<String, dynamic>))
           .toList(),
       charts: (json['charts'] as List<dynamic>)
-          .map((item) => AnalyticsChartData.fromJson(item as Map<String, dynamic>))
+          .map(
+            (item) => AnalyticsChartData.fromJson(item as Map<String, dynamic>),
+          )
           .toList(),
       lastUpdated: DateTime.parse(json['lastUpdated'] as String),
       period: json['period'] as String,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import '../data/providers/analytics_provider.dart';
+import '../../data/providers/analytics_provider.dart';
 import '../widgets/analytics_metric_card.dart';
 import '../widgets/analytics_chart_widget.dart';
 import '../widgets/analytics_filter_bar.dart';
@@ -16,22 +16,37 @@ class AnalyticsDashboardScreen extends ConsumerStatefulWidget {
 
 class _AnalyticsDashboardScreenState
     extends ConsumerState<AnalyticsDashboardScreen> {
+  Map<String, String?> _filters = {'period': 'month', 'serviceType': null, 'status': null};
+
   @override
   void initState() {
     super.initState();
     // Refresh data when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      refreshAnalytics(ref);
+      _refreshAnalytics();
     });
+  }
+
+  void _refreshAnalytics() {
+    ref.invalidate(analyticsOverviewProvider);
+    ref.invalidate(analyticsRevenueProvider);
+    ref.invalidate(analyticsBookingsProvider);
+    ref.invalidate(analyticsStudentsProvider);
+  }
+
+  void _updateFilters(Map<String, String?> newFilters) {
+    setState(() {
+      _filters = newFilters;
+    });
+    _refreshAnalytics();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final filters = ref.watch(analyticsFiltersProvider);
 
-    final analyticsAsync = ref.watch(analyticsOverviewProvider(filters));
+    final analyticsAsync = ref.watch(analyticsOverviewProvider(_filters));
 
     return Scaffold(
       appBar: AppBar(
@@ -41,7 +56,7 @@ class _AnalyticsDashboardScreenState
         elevation: 0,
         actions: [
           IconButton(
-            onPressed: () => refreshAnalytics(ref),
+            onPressed: _refreshAnalytics,
             icon: const Icon(Icons.refresh),
             tooltip: 'Actualizar datos',
           ),
@@ -56,12 +71,9 @@ class _AnalyticsDashboardScreenState
   }
 
   Widget _buildDashboard(BuildContext context, analytics) {
-    final theme = Theme.of(context);
-    final filters = ref.watch(analyticsFiltersProvider);
-
     return RefreshIndicator(
       onRefresh: () async {
-        refreshAnalytics(ref);
+        _refreshAnalytics();
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -71,31 +83,19 @@ class _AnalyticsDashboardScreenState
           children: [
             // Filter bar
             AnalyticsFilterBar(
-              selectedPeriod: filters['period'] ?? 'month',
-              selectedServiceType: filters['serviceType'],
-              selectedStatus: filters['status'],
+              selectedPeriod: _filters['period'] ?? 'month',
+              selectedServiceType: _filters['serviceType'],
+              selectedStatus: _filters['status'],
               onPeriodChanged: (period) {
-                ref.read(analyticsFiltersProvider.notifier).updateFilters({
-                  ...filters,
-                  'period': period,
-                });
-                refreshAnalytics(ref);
+                _updateFilters({..._filters, 'period': period});
               },
               onServiceTypeChanged: (serviceType) {
-                ref.read(analyticsFiltersProvider.notifier).updateFilters({
-                  ...filters,
-                  'serviceType': serviceType,
-                });
-                refreshAnalytics(ref);
+                _updateFilters({..._filters, 'serviceType': serviceType});
               },
               onStatusChanged: (status) {
-                ref.read(analyticsFiltersProvider.notifier).updateFilters({
-                  ...filters,
-                  'status': status,
-                });
-                refreshAnalytics(ref);
+                _updateFilters({..._filters, 'status': status});
               },
-              onRefresh: () => refreshAnalytics(ref),
+              onRefresh: _refreshAnalytics,
             ),
             const Gap(16),
 
@@ -131,7 +131,11 @@ class _AnalyticsDashboardScreenState
       ),
       child: Row(
         children: [
-          Icon(Icons.update, size: 16, color: colorScheme.onSurfaceVariant),
+          Icon(
+            Icons.update,
+            size: 16,
+            color: colorScheme.onSurfaceVariant,
+          ),
           const Gap(8),
           Text(
             'Última actualización: ${_formatDateTime(lastUpdated)}',
@@ -206,12 +210,13 @@ class _AnalyticsDashboardScreenState
           ),
         ),
         const Gap(12),
-        ...charts.map(
-          (chart) => Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: AnalyticsChartWidget(chartData: chart, height: 250),
-          ),
-        ),
+        ...charts.map((chart) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: AnalyticsChartWidget(
+                chartData: chart,
+                height: 250,
+              ),
+            )),
       ],
     );
   }
@@ -284,7 +289,9 @@ class _AnalyticsDashboardScreenState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: colorScheme.primary),
+          CircularProgressIndicator(
+            color: colorScheme.primary,
+          ),
           const Gap(16),
           Text(
             'Cargando analytics...',
@@ -307,7 +314,11 @@ class _AnalyticsDashboardScreenState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: colorScheme.error),
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: colorScheme.error,
+            ),
             const Gap(16),
             Text(
               'Error al cargar analytics',
@@ -322,7 +333,7 @@ class _AnalyticsDashboardScreenState
             ),
             const Gap(24),
             ElevatedButton(
-              onPressed: () => refreshAnalytics(ref),
+              onPressed: _refreshAnalytics,
               child: const Text('Reintentar'),
             ),
           ],

@@ -9,6 +9,8 @@ import '../../features/professor/presentation/screens/create_schedule_screen.dar
 import '../../features/professor/presentation/screens/manage_schedules_screen.dart';
 import '../../features/professor/presentation/screens/pricing_config_screen.dart';
 import '../../features/professor/presentation/screens/edit_profile_screen.dart';
+import '../../features/professor/presentation/screens/students_list_screen.dart';
+import '../../features/professor/presentation/screens/student_profile_screen.dart';
 import '../../features/booking/presentation/screens/book_class_screen.dart';
 import '../../features/settings/presentation/screens/theme_settings_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
@@ -88,6 +90,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/edit-profile',
         name: 'edit-profile',
         builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/students-list',
+        name: 'students-list',
+        builder: (context, state) => const StudentsListScreen(),
+      ),
+      GoRoute(
+        path: '/student-profile/:studentId',
+        name: 'student-profile',
+        builder: (context, state) {
+          final studentId = state.pathParameters['studentId']!;
+          return StudentProfileScreen(studentId: studentId);
+        },
       ),
       GoRoute(
         path: '/theme-settings',

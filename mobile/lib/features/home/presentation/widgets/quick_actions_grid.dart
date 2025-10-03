@@ -12,7 +12,7 @@ class QuickActionsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final actions = user.isProfessor
-        ? _getProfessorActions()
+        ? _getProfessorActions(context)
         : _getStudentActions(context);
 
     return GridView.builder(
@@ -118,7 +118,7 @@ class QuickActionsGrid extends StatelessWidget {
     );
   }
 
-  List<QuickAction> _getProfessorActions() {
+  List<QuickAction> _getProfessorActions(BuildContext context) {
     return [
       QuickAction(
         title: 'Publicar Horario',
@@ -135,7 +135,7 @@ class QuickActionsGrid extends StatelessWidget {
         icon: Icons.people,
         color: Colors.green,
         onTap: () {
-          // TODO: Implementar lista de estudiantes
+          context.push('/students-list');
         },
       ),
       QuickAction(

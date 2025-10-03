@@ -97,9 +97,20 @@ export class ProfessorController {
 
   listStudents = async (req: Request, res: Response) => {
     try {
-      const professorId = String(req.query.professorId);
-      if (!professorId) return res.status(400).json({ error: 'professorId is required' });
-      const items = await this.professors.listStudents(professorId);
+      const professorId = req.user?.id;
+      if (!professorId) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+      
+      // Buscar el profesor por authUserId para obtener el ID del profesor
+      const ProfessorModel = require('../../infrastructure/database/models/ProfessorModel').ProfessorModel;
+      const professor = await ProfessorModel.findOne({ authUserId: professorId });
+      
+      if (!professor) {
+        return res.status(404).json({ error: 'Profesor no encontrado' });
+      }
+      
+      const items = await this.professors.listStudents(professor._id.toString());
       return res.json({ items });
     } catch (e) {
       return res.status(400).json({ error: (e as Error).message });

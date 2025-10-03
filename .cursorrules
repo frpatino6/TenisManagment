@@ -179,12 +179,84 @@ This is a tennis management system with:
 - **ALWAYS search existing queries with MCP** - Verify if similar database operations already exist in the codebase
 - **ALWAYS reuse existing queries when appropriate** - Avoid duplicating database logic, extend existing queries instead
 
+### Version Management & Deployment Rules
+
+#### Version Control & Updates
+- **ALWAYS update version in pubspec.yaml FIRST** - Update version before any code changes
+- **ALWAYS update version in package.json for backend** - Keep backend and frontend versions synchronized
+- **NEVER hardcode version numbers in Dart/TypeScript code** - Use package_info_plus or environment variables
+- **ALWAYS use semantic versioning (SemVer)** - Follow MAJOR.MINOR.PATCH format
+- **ALWAYS increment build number** - Increment build number with each version update
+- **ALWAYS verify version consistency** - Ensure all version references are updated
+
+#### Version Update Process
+**BEFORE updating version:**
+1. **Check current version** - Verify current version in pubspec.yaml and package.json
+2. **Determine version increment** - Decide if it's patch, minor, or major update
+3. **Update pubspec.yaml** - Change version field (e.g., 1.3.0 → 1.3.1)
+4. **Update package.json** - Change version field in backend
+5. **Search for hardcoded versions** - Find and update any hardcoded version strings in code
+6. **Update build numbers** - Increment build numbers in hardcoded PackageInfo objects
+
+**MANDATORY version update checklist:**
+- [ ] pubspec.yaml version updated
+- [ ] package.json version updated  
+- [ ] All hardcoded version strings updated in Dart files
+- [ ] All hardcoded build numbers updated
+- [ ] No remaining old version references in codebase
+- [ ] Version consistency verified across all files
+
+#### Deployment Process
+**BEFORE deploying to Firebase:**
+1. **Clean build completely** - Run `flutter clean` and `rm -rf build/`
+2. **Verify version in source** - Check pubspec.yaml has correct version
+3. **Search for hardcoded versions** - Use `grep -r "1\.3\.[0-9]" lib/` to find hardcoded versions
+4. **Update any hardcoded versions found** - Replace with current version
+5. **Build with verbose output** - Run `flutter build web --release --verbose`
+6. **Verify build contains correct version** - Check `grep -o "1\.3\.[0-9]" build/web/main.dart.js`
+7. **Deploy to Firebase** - Run `firebase deploy --only hosting`
+8. **Verify deployed version** - Check `curl -s https://tennis-management-fcd54.web.app/main.dart.js | grep -o "1\.3\.[0-9]"`
+
+**NEVER deploy if:**
+- Build contains old version numbers
+- Hardcoded versions don't match pubspec.yaml
+- Version verification fails
+- Build process has errors
+
+#### Version Hardcoding Prevention
+- **NEVER hardcode versions in PackageInfo objects** - Use dynamic version retrieval
+- **ALWAYS use package_info_plus for version display** - Avoid hardcoded version strings
+- **ALWAYS search codebase for version strings** - Use grep to find hardcoded versions
+- **ALWAYS update all version references** - Don't leave any old version strings
+- **ALWAYS verify version consistency** - Ensure all files have same version
+
+#### Common Version Update Commands
+```bash
+# Search for hardcoded versions
+grep -r "1\.3\.[0-9]" lib/
+grep -r "version.*1\.3\.[0-9]" lib/
+
+# Clean and rebuild
+flutter clean
+rm -rf build/
+flutter build web --release
+
+# Verify version in build
+grep -o "1\.3\.[0-9]" build/web/main.dart.js
+
+# Deploy and verify
+firebase deploy --only hosting
+curl -s https://tennis-management-fcd54.web.app/main.dart.js | grep -o "1\.3\.[0-9]"
+```
+
 ### Git & Version Control
 - Use conventional commit messages
 - Create feature branches for new development
 - Keep commits atomic and focused
 - Write meaningful pull request descriptions
 - Use proper branch naming conventions
+- **ALWAYS commit version updates separately** - Version updates should be isolated commits
+- **ALWAYS include version in commit message** - Use format "chore: bump version to 1.3.2"
 
 ### Pre-Commit and Pre-Deployment Checklist
 **BEFORE marking any task as complete or making commits:**
@@ -205,6 +277,16 @@ This is a tennis management system with:
 13. **Use MCP to analyze existing queries** - Search for similar database operations before creating new ones
 14. **Verify no duplicate queries exist** - Use MCP to check for existing similar functionality
 
+**BEFORE deploying to Firebase (MANDATORY):**
+15. **Check version consistency** - Verify pubspec.yaml and package.json have same version
+16. **Search for hardcoded versions** - Run `grep -r "1\.3\.[0-9]" lib/` to find hardcoded versions
+17. **Update hardcoded versions** - Replace any hardcoded version strings with current version
+18. **Clean build completely** - Run `flutter clean` and `rm -rf build/`
+19. **Build with verification** - Run `flutter build web --release --verbose`
+20. **Verify build version** - Check `grep -o "1\.3\.[0-9]" build/web/main.dart.js` shows correct version
+21. **Deploy to Firebase** - Run `firebase deploy --only hosting`
+22. **Verify deployed version** - Check `curl -s https://tennis-management-fcd54.web.app/main.dart.js | grep -o "1\.3\.[0-9]"` shows correct version
+
 **NEVER commit code that:**
 - Has syntax errors
 - Fails compilation
@@ -213,6 +295,9 @@ This is a tennis management system with:
 - Has unused imports
 - Breaks existing functionality
 - Has unresolved database questions (always consult MCP first)
+- Has hardcoded version numbers that don't match pubspec.yaml
+- Has inconsistent version numbers across files
+- Has old version references in PackageInfo objects
 
 ### MCP Usage Guidelines
 **ALWAYS use MCP when:**

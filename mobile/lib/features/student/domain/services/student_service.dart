@@ -5,11 +5,16 @@ import 'package:http/http.dart' as http;
 import '../../../../core/config/app_config.dart';
 import '../models/recent_activity_model.dart';
 
+/// Service responsible for student-related operations
+/// Handles student dashboard data and activity tracking
+/// Manages API communication for student-specific endpoints
 class StudentService {
   String get _baseUrl => AppConfig.apiBaseUrl;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// Get recent activities for the current student
+  /// Retrieves recent activities for the authenticated student
+  /// Returns a list of [RecentActivityModel] objects
+  /// Throws [Exception] if authentication fails or API request fails
   Future<List<RecentActivityModel>> getRecentActivities() async {
     try {
       final user = _auth.currentUser;
@@ -17,7 +22,6 @@ class StudentService {
         throw Exception('Usuario no autenticado');
       }
 
-      // Force refresh token to ensure it's valid
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
         throw Exception('No se pudo obtener el token de autenticación');

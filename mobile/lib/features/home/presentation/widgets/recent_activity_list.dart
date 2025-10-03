@@ -13,7 +13,6 @@ class RecentActivityList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // For students, load from backend
     if (!user.isProfessor) {
       final activitiesAsync = ref.watch(recentActivitiesProvider);
 
@@ -34,7 +33,6 @@ class RecentActivityList extends ConsumerWidget {
       );
     }
 
-    // For professors, show hardcoded data (for now)
     final activities = _getProfessorActivities();
     if (activities.isEmpty) {
       return _buildEmptyState(context);
@@ -218,7 +216,7 @@ class RecentActivityList extends ConsumerWidget {
               ),
             ),
             onTap: () {
-              // TODO: Navigate to activity detail
+              // TODO: Implement activity detail navigation
             },
           ),
         )

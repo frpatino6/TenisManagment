@@ -550,22 +550,22 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
         ),
         _buildQuickActionCard(
           context: context,
-          icon: Icons.price_change,
-          title: 'Precios',
-          subtitle: 'Configurar tarifas',
-          color: Colors.purple,
-          onTap: () {
-            context.push('/pricing-config');
-          },
-        ),
-        _buildQuickActionCard(
-          context: context,
           icon: Icons.analytics,
           title: 'Analytics',
           subtitle: 'Dashboard de métricas',
           color: Colors.teal,
           onTap: () {
             context.push('/analytics-dashboard');
+          },
+        ),
+        _buildQuickActionCard(
+          context: context,
+          icon: Icons.price_change,
+          title: 'Precios',
+          subtitle: 'Configurar tarifas',
+          color: Colors.purple,
+          onTap: () {
+            context.push('/pricing-config');
           },
         ),
       ],

@@ -6,11 +6,7 @@ class AnalyticsMetricCard extends StatelessWidget {
   final AnalyticsMetric metric;
   final VoidCallback? onTap;
 
-  const AnalyticsMetricCard({
-    super.key,
-    required this.metric,
-    this.onTap,
-  });
+  const AnalyticsMetricCard({super.key, required this.metric, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +39,7 @@ class AnalyticsMetricCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: cardColor.withOpacity(0.1),
+                      color: cardColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Icon(
@@ -67,7 +63,7 @@ class AnalyticsMetricCard extends StatelessWidget {
                 ],
               ),
               const Gap(8),
-              
+
               // Value
               Text(
                 metric.value,
@@ -79,7 +75,7 @@ class AnalyticsMetricCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              
+
               // Subtitle and change indicator
               if (metric.subtitle != null || metric.change != null) ...[
                 const Gap(4),
@@ -90,7 +86,9 @@ class AnalyticsMetricCard extends StatelessWidget {
                         child: Text(
                           metric.subtitle!,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.7,
+                            ),
                             fontSize: 10,
                           ),
                           maxLines: 1,
@@ -100,26 +98,35 @@ class AnalyticsMetricCard extends StatelessWidget {
                     ],
                     if (metric.change != null) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: metric.isPositive
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.red.withOpacity(0.1),
+                              ? Colors.green.withValues(alpha: 0.1)
+                              : Colors.red.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              metric.isPositive ? Icons.trending_up : Icons.trending_down,
+                              metric.isPositive
+                                  ? Icons.trending_up
+                                  : Icons.trending_down,
                               size: 10,
-                              color: metric.isPositive ? Colors.green : Colors.red,
+                              color: metric.isPositive
+                                  ? Colors.green
+                                  : Colors.red,
                             ),
                             const Gap(2),
                             Text(
                               metric.change!,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: metric.isPositive ? Colors.green : Colors.red,
+                                color: metric.isPositive
+                                    ? Colors.green
+                                    : Colors.red,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 10,
                               ),

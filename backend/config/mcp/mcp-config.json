@@ -2,7 +2,7 @@
   "mcpServers": {
     "render-deploy": {
       "command": "node",
-      "args": ["mcp-deploy-server-enhanced.js"],
+      "args": ["tools/mcp/mcp-deploy-server-enhanced.js"],
       "env": {
         "NODE_ENV": "production"
       }

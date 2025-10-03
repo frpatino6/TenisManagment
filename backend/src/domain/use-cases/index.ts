@@ -3,6 +3,7 @@ import { Schedule } from '../entities/Schedule';
 import { Booking } from '../entities/Booking';
 import { Payment } from '../entities/Payment';
 import { Service } from '../entities/Service';
+import { Message, Conversation } from '../entities/Message';
 
 export interface PublishScheduleUseCase {
   execute(
@@ -55,4 +56,52 @@ export interface RequestServiceUseCase {
     serviceId: string;
     notes?: string;
   }): Promise<{ status: 'requested' }>;
+}
+
+// Message-related use cases
+export interface SendMessageUseCase {
+  execute(args: {
+    senderId: string;
+    receiverId: string;
+    content: string;
+    type?: 'text' | 'image' | 'file' | 'system';
+    parentMessageId?: string;
+    attachments?: Message['attachments'];
+  }): Promise<Message>;
+}
+
+export interface GetConversationUseCase {
+  execute(args: {
+    userId1: string;
+    userId2: string;
+  }): Promise<Conversation | null>;
+}
+
+export interface GetConversationsUseCase {
+  execute(userId: string): Promise<Conversation[]>;
+}
+
+export interface GetMessagesUseCase {
+  execute(args: {
+    conversationId: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<Message[]>;
+}
+
+export interface MarkMessageAsReadUseCase {
+  execute(messageId: string): Promise<Message | null>;
+}
+
+export interface GetUnreadCountUseCase {
+  execute(userId: string): Promise<number>;
+}
+
+export interface CreateConversationUseCase {
+  execute(args: {
+    participants: Array<{
+      userId: string;
+      userType: 'professor' | 'student';
+    }>;
+  }): Promise<Conversation>;
 }

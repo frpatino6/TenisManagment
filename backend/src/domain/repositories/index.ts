@@ -5,6 +5,7 @@ import { Booking } from '../entities/Booking';
 import { Payment } from '../entities/Payment';
 import { Service } from '../entities/Service';
 import { ServiceRequest } from '../entities/ServiceRequest';
+import { Message, Conversation } from '../entities/Message';
 
 export interface ProfessorRepository {
   create(professor: Omit<Professor, 'id'>): Promise<Professor>;
@@ -63,4 +64,24 @@ export interface ReportRepository {
 
 export interface ServiceRequestRepository {
   create(request: Omit<ServiceRequest, 'id' | 'createdAt'>): Promise<ServiceRequest>;
+}
+
+export interface MessageRepository {
+  create(message: Omit<Message, 'id' | 'createdAt' | 'updatedAt'>): Promise<Message>;
+  findById(id: string): Promise<Message | null>;
+  findByConversation(conversationId: string, limit?: number, offset?: number): Promise<Message[]>;
+  markAsRead(messageId: string): Promise<Message | null>;
+  markAsDelivered(messageId: string): Promise<Message | null>;
+  getUnreadCount(userId: string): Promise<number>;
+  delete(id: string): Promise<void>;
+}
+
+export interface ConversationRepository {
+  create(conversation: Omit<Conversation, 'id' | 'createdAt' | 'updatedAt'>): Promise<Conversation>;
+  findById(id: string): Promise<Conversation | null>;
+  findByParticipant(userId: string): Promise<Conversation[]>;
+  findByParticipants(userId1: string, userId2: string): Promise<Conversation | null>;
+  updateLastMessage(conversationId: string, message: Message): Promise<Conversation | null>;
+  addParticipant(conversationId: string, participant: Conversation['participants'][0]): Promise<Conversation | null>;
+  removeParticipant(conversationId: string, userId: string): Promise<Conversation | null>;
 }

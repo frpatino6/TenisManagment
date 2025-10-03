@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MongoServiceRequestRepository = exports.MongoReportRepository = exports.MongoServiceRepository = exports.MongoPaymentRepository = exports.MongoBookingRepository = exports.MongoScheduleRepository = exports.MongoStudentRepository = exports.MongoProfessorRepository = void 0;
+exports.MongoConversationRepository = exports.MongoMessageRepository = exports.MongoServiceRequestRepository = exports.MongoReportRepository = exports.MongoServiceRepository = exports.MongoPaymentRepository = exports.MongoBookingRepository = exports.MongoScheduleRepository = exports.MongoStudentRepository = exports.MongoProfessorRepository = void 0;
 const mongoose_1 = require("mongoose");
 const ProfessorModel_1 = require("../database/models/ProfessorModel");
 const StudentModel_1 = require("../database/models/StudentModel");
@@ -9,6 +9,8 @@ const BookingModel_1 = require("../database/models/BookingModel");
 const PaymentModel_1 = require("../database/models/PaymentModel");
 const ServiceModel_1 = require("../database/models/ServiceModel");
 const ServiceRequestModel_1 = require("../database/models/ServiceRequestModel");
+const MessageModel_1 = require("../database/models/MessageModel");
+const ConversationModel_1 = require("../database/models/ConversationModel");
 class MongoProfessorRepository {
     async create(professor) {
         const created = await ProfessorModel_1.ProfessorModel.create(professor);
@@ -390,4 +392,185 @@ class MongoServiceRequestRepository {
     }
 }
 exports.MongoServiceRequestRepository = MongoServiceRequestRepository;
+class MongoMessageRepository {
+    async create(message) {
+        const created = await MessageModel_1.MessageModel.create({
+            ...message,
+            senderId: new mongoose_1.Types.ObjectId(message.senderId),
+            receiverId: new mongoose_1.Types.ObjectId(message.receiverId),
+            conversationId: new mongoose_1.Types.ObjectId(message.conversationId),
+            parentMessageId: message.parentMessageId ? new mongoose_1.Types.ObjectId(message.parentMessageId) : undefined,
+        });
+        return {
+            id: created._id.toString(),
+            senderId: created.senderId.toString(),
+            receiverId: created.receiverId.toString(),
+            content: created.content,
+            type: created.type,
+            status: created.status,
+            conversationId: created.conversationId.toString(),
+            parentMessageId: created.parentMessageId?.toString(),
+            attachments: created.attachments?.map(att => ({
+                id: att._id.toString(),
+                fileName: att.fileName,
+                fileUrl: att.fileUrl,
+                fileType: att.fileType,
+                fileSize: att.fileSize,
+            })),
+            createdAt: created.createdAt,
+            updatedAt: created.updatedAt,
+            readAt: created.readAt,
+        };
+    }
+    async findById(id) {
+        const doc = await MessageModel_1.MessageModel.findById(id).lean();
+        return doc ? this.mapToMessage(doc) : null;
+    }
+    async findByConversation(conversationId, limit = 50, offset = 0) {
+        const docs = await MessageModel_1.MessageModel
+            .find({ conversationId: new mongoose_1.Types.ObjectId(conversationId) })
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .skip(offset)
+            .lean();
+        return docs.map(doc => this.mapToMessage(doc));
+    }
+    async markAsRead(messageId) {
+        const doc = await MessageModel_1.MessageModel.findByIdAndUpdate(messageId, {
+            status: 'read',
+            readAt: new Date()
+        }, { new: true }).lean();
+        return doc ? this.mapToMessage(doc) : null;
+    }
+    async markAsDelivered(messageId) {
+        const doc = await MessageModel_1.MessageModel.findByIdAndUpdate(messageId, { status: 'delivered' }, { new: true }).lean();
+        return doc ? this.mapToMessage(doc) : null;
+    }
+    async getUnreadCount(userId) {
+        return await MessageModel_1.MessageModel.countDocuments({
+            receiverId: new mongoose_1.Types.ObjectId(userId),
+            status: { $in: ['sent', 'delivered'] }
+        });
+    }
+    async delete(id) {
+        await MessageModel_1.MessageModel.findByIdAndDelete(id);
+    }
+    mapToMessage(doc) {
+        return {
+            id: doc._id.toString(),
+            senderId: doc.senderId.toString(),
+            receiverId: doc.receiverId.toString(),
+            content: doc.content,
+            type: doc.type,
+            status: doc.status,
+            conversationId: doc.conversationId.toString(),
+            parentMessageId: doc.parentMessageId?.toString(),
+            attachments: doc.attachments?.map((att) => ({
+                id: att._id.toString(),
+                fileName: att.fileName,
+                fileUrl: att.fileUrl,
+                fileType: att.fileType,
+                fileSize: att.fileSize,
+            })),
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt,
+            readAt: doc.readAt,
+        };
+    }
+}
+exports.MongoMessageRepository = MongoMessageRepository;
+class MongoConversationRepository {
+    async create(conversation) {
+        const created = await ConversationModel_1.ConversationModel.create({
+            ...conversation,
+            participants: conversation.participants.map((p) => ({
+                ...p,
+                userId: new mongoose_1.Types.ObjectId(p.userId),
+                joinedAt: new Date(),
+            })),
+        });
+        return this.mapToConversation(created);
+    }
+    async findById(id) {
+        const doc = await ConversationModel_1.ConversationModel.findById(id).lean();
+        return doc ? this.mapToConversation(doc) : null;
+    }
+    async findByParticipant(userId) {
+        const docs = await ConversationModel_1.ConversationModel
+            .find({
+            'participants.userId': new mongoose_1.Types.ObjectId(userId),
+            'participants.isActive': true
+        })
+            .sort({ lastMessageAt: -1 })
+            .lean();
+        return docs.map(doc => this.mapToConversation(doc));
+    }
+    async findByParticipants(userId1, userId2) {
+        const doc = await ConversationModel_1.ConversationModel.findOne({
+            'participants.userId': {
+                $all: [new mongoose_1.Types.ObjectId(userId1), new mongoose_1.Types.ObjectId(userId2)]
+            },
+            'participants.isActive': true
+        }).lean();
+        return doc ? this.mapToConversation(doc) : null;
+    }
+    async updateLastMessage(conversationId, message) {
+        const doc = await ConversationModel_1.ConversationModel.findByIdAndUpdate(conversationId, {
+            lastMessage: new mongoose_1.Types.ObjectId(message.id),
+            lastMessageAt: message.createdAt
+        }, { new: true }).lean();
+        return doc ? this.mapToConversation(doc) : null;
+    }
+    async addParticipant(conversationId, participant) {
+        const doc = await ConversationModel_1.ConversationModel.findByIdAndUpdate(conversationId, {
+            $push: {
+                participants: {
+                    ...participant,
+                    userId: new mongoose_1.Types.ObjectId(participant.userId),
+                    joinedAt: new Date(),
+                    isActive: true
+                }
+            }
+        }, { new: true }).lean();
+        return doc ? this.mapToConversation(doc) : null;
+    }
+    async removeParticipant(conversationId, userId) {
+        const doc = await ConversationModel_1.ConversationModel.findByIdAndUpdate(conversationId, {
+            $set: {
+                'participants.$[elem].isActive': false,
+                'participants.$[elem].leftAt': new Date()
+            }
+        }, {
+            arrayFilters: [{ 'elem.userId': new mongoose_1.Types.ObjectId(userId) }],
+            new: true
+        }).lean();
+        return doc ? this.mapToConversation(doc) : null;
+    }
+    mapToConversation(doc) {
+        return {
+            id: doc._id.toString(),
+            participants: doc.participants.map((p) => ({
+                userId: p.userId.toString(),
+                userType: p.userType,
+                joinedAt: p.joinedAt,
+                leftAt: p.leftAt,
+                isActive: p.isActive,
+            })),
+            lastMessage: doc.lastMessage ? {
+                id: doc.lastMessage.toString(),
+                senderId: '',
+                receiverId: '',
+                content: '',
+                type: 'text',
+                status: 'sent',
+                conversationId: doc._id.toString(),
+                createdAt: new Date(),
+            } : undefined,
+            lastMessageAt: doc.lastMessageAt,
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt,
+        };
+    }
+}
+exports.MongoConversationRepository = MongoConversationRepository;
 //# sourceMappingURL=MongoRepositories.js.map

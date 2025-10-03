@@ -40,6 +40,9 @@ This is a tennis management system with:
 - Prefer type safety over any
 - Use enums for constants
 - Implement proper error handling with custom error classes
+- **ALWAYS run `tsc --noEmit` before committing** - Check TypeScript compilation
+- **ALWAYS fix TypeScript errors** - No commits with type errors
+- **ALWAYS validate imports and exports** - Ensure module resolution works
 
 #### Database & Models
 - Use Mongoose schemas with proper validation
@@ -84,6 +87,10 @@ This is a tennis management system with:
 - Prefer final over var when possible
 - Use proper type annotations
 - Implement proper async/await patterns
+- **ALWAYS run `flutter analyze` before committing** - Check Dart static analysis
+- **ALWAYS run `dart format` before committing** - Ensure consistent code formatting
+- **ALWAYS fix Dart analyzer warnings** - No commits with analyzer issues
+- **ALWAYS validate pubspec.yaml dependencies** - Ensure all packages are properly declared
 
 #### State Management
 - Keep UI state separate from business logic
@@ -135,12 +142,44 @@ This is a tennis management system with:
 - **NO debug-specific API routes** - Implement proper error handling and logging mechanisms
 - Use proper development environments and tools for debugging instead of creating debug APIs
 
+### Code Quality and Syntax Rules
+- **ALWAYS check syntax errors before committing** - Run linter and fix all errors
+- **ALWAYS compile and test before marking tasks as complete** - Ensure code compiles without errors
+- **ALWAYS run type checking** - Fix TypeScript/Dart type errors before committing
+- **ALWAYS validate imports and dependencies** - Ensure all imports are correct and available
+- **ALWAYS check for unused imports** - Remove unused imports to keep code clean
+- **NEVER commit code with syntax errors** - Fix all compilation errors first
+- **ALWAYS run tests before deployment** - Ensure functionality works as expected
+
 ### Git & Version Control
 - Use conventional commit messages
 - Create feature branches for new development
 - Keep commits atomic and focused
 - Write meaningful pull request descriptions
 - Use proper branch naming conventions
+
+### Pre-Commit and Pre-Deployment Checklist
+**BEFORE marking any task as complete or making commits:**
+1. **Run syntax/type checking**:
+   - Backend: `npm run build` or `tsc --noEmit`
+   - Frontend: `flutter analyze` and `dart format`
+2. **Fix all compilation errors** - No exceptions
+3. **Remove unused imports** - Clean up dependencies
+4. **Validate all imports** - Ensure modules resolve correctly
+5. **Run linter** - Fix all linting warnings
+6. **Test functionality** - Ensure features work as expected
+7. **Check for debug code** - Remove any debug statements
+8. **Verify environment variables** - Ensure configuration is correct
+9. **Review code quality** - Follow established patterns
+10. **Document changes** - Update relevant documentation if needed
+
+**NEVER commit code that:**
+- Has syntax errors
+- Fails compilation
+- Has linting warnings (unless explicitly documented)
+- Contains debug code
+- Has unused imports
+- Breaks existing functionality
 
 ### Security Considerations
 - Never commit secrets or API keys

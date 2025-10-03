@@ -157,10 +157,6 @@ class HomeScreen extends ConsumerWidget {
                     .slideY(begin: 0.2, end: 0),
 
                 const Gap(24),
-
-                // Acciones rápidas eliminadas - se manejan en el panel específico del profesor
-
-                // Actividad reciente
                 Text(
                       'Actividad Reciente',
                       style: Theme.of(context).textTheme.headlineSmall

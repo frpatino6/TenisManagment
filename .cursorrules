@@ -1,0 +1,261 @@
+# Tennis Management Project - Cursor Rules
+
+## Project Overview
+This is a tennis management system with:
+- Backend: TypeScript/Node.js with Express, MongoDB, Firebase Auth
+- Mobile: Flutter/Dart with Firebase integration
+- Architecture: Clean Architecture with Domain-Driven Design
+
+## General Rules
+
+### Code Style & Standards
+- Use TypeScript strict mode for backend
+- Follow Dart/Flutter conventions for mobile
+- Use meaningful variable and function names
+- Write self-documenting code with clear intent
+- Prefer composition over inheritance
+- Use async/await over Promises where possible
+- Handle errors explicitly with proper error messages
+
+### File Organization
+- Keep related files together
+- Use barrel exports (index.ts) for clean imports
+- Separate concerns into appropriate layers (domain, application, infrastructure, presentation)
+- Follow the existing folder structure
+
+### Backend Specific Rules
+
+#### Architecture
+- Follow Clean Architecture principles
+- Domain entities should be pure business logic
+- Use cases contain application logic
+- Controllers handle HTTP concerns
+- Repositories abstract data access
+- Use dependency injection for loose coupling
+
+#### TypeScript
+- Use strict TypeScript configuration
+- Define proper interfaces and types
+- Use generics for reusable components
+- Prefer type safety over any
+- Use enums for constants
+- Implement proper error handling with custom error classes
+
+#### Database & Models
+- Use Mongoose schemas with proper validation
+- Implement proper indexing for performance
+- Use transactions for data consistency
+- Validate data at both schema and application level
+
+#### API Design
+- Use RESTful conventions
+- Implement proper HTTP status codes
+- Use consistent response formats
+- Add proper request/response validation
+- Implement rate limiting and security headers
+
+#### Authentication & Security
+- Use Firebase Auth for authentication
+- Implement proper middleware for route protection
+- Validate all inputs
+- Use environment variables for sensitive data
+- Implement proper CORS configuration
+
+### Mobile Specific Rules (Flutter/Dart)
+
+#### Architecture
+- Follow Clean Architecture with feature-based organization
+- Use Provider or Riverpod for state management
+- Separate UI, business logic, and data layers
+- Use repositories for data access abstraction
+
+#### Flutter Best Practices
+- Use const constructors where possible
+- Implement proper widget composition
+- Use proper keys for widget identification
+- Follow Material Design guidelines
+- Implement responsive design
+- Use proper error handling and loading states
+- Follow Dart's official style guide and lint rules
+- Use proper null safety patterns
+- Prefer final over var when possible
+- Use proper type annotations
+- Implement proper async/await patterns
+
+#### State Management
+- Keep UI state separate from business logic
+- Use immutable state objects
+- Implement proper state validation
+- Handle async operations with proper loading states
+
+#### Firebase Integration
+- Use proper Firebase security rules
+- Implement offline support where appropriate
+- Handle authentication state properly
+- Use proper error handling for Firebase operations
+
+### Testing
+- Write unit tests for business logic
+- Write integration tests for API endpoints
+- Write widget tests for Flutter components
+- Aim for high test coverage
+- Use proper mocking for external dependencies
+
+### Performance
+- Optimize database queries
+- Implement proper caching strategies
+- Use pagination for large datasets
+- Optimize Flutter app performance
+- Minimize API calls
+- Use proper image optimization
+
+### Documentation
+- Write clear README files
+- Document API endpoints
+- Keep documentation up to date
+- Use proper commit messages
+
+### Code Comments Guidelines
+- **Backend (TypeScript)**: Add comments only for complex business logic in headers
+- **Mobile (Dart)**: 
+  - NO comments inside widget methods - code should be self-explanatory
+  - NO comments inside UI/widget code - use meaningful variable and method names
+  - ONLY add header comments for business logic methods and classes
+  - Focus on clear, self-documenting code with proper naming conventions
+
+### Git & Version Control
+- Use conventional commit messages
+- Create feature branches for new development
+- Keep commits atomic and focused
+- Write meaningful pull request descriptions
+- Use proper branch naming conventions
+
+### Security Considerations
+- Never commit secrets or API keys
+- Use environment variables for configuration
+- Implement proper input validation
+- Use HTTPS for all communications
+- Implement proper authentication and authorization
+- Regular dependency updates for security patches
+
+### Code Review Guidelines
+- Review for security vulnerabilities
+- Check for performance implications
+- Ensure proper error handling
+- Verify test coverage
+- Check for code duplication
+- Ensure proper documentation
+
+## Common Patterns
+
+### Error Handling
+```typescript
+// Backend
+try {
+  const result = await someOperation();
+  return res.status(200).json({ success: true, data: result });
+} catch (error) {
+  console.error('Operation failed:', error);
+  return res.status(500).json({ 
+    success: false, 
+    message: 'Internal server error' 
+  });
+}
+```
+
+### API Response Format
+```typescript
+// Success response
+{
+  success: true,
+  data: T,
+  message?: string
+}
+
+// Error response
+{
+  success: false,
+  message: string,
+  errors?: any[]
+}
+```
+
+### Flutter Widget Structure
+```dart
+class FeatureWidget extends StatelessWidget {
+  const FeatureWidget({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    return Column(
+      children: [
+        _buildHeader(),
+        _buildContent(),
+      ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return AppBar(title: Text('Feature'));
+  }
+
+  Widget _buildContent() {
+    return Expanded(
+      child: ListView.builder(
+        itemBuilder: (context, index) => _buildListItem(index),
+      ),
+    );
+  }
+
+  Widget _buildListItem(int index) {
+    return ListTile(
+      title: Text('Item $index'),
+    );
+  }
+}
+```
+
+### Business Logic Structure
+```dart
+/// Handles user authentication and session management
+class AuthService {
+  /// Authenticates user with email and password
+  /// Returns [AuthResult] with success status and user data
+  Future<AuthResult> authenticateUser(String email, String password) async {
+    try {
+      final credential = await _firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      
+      if (credential.user != null) {
+        return AuthResult.success(credential.user!);
+      }
+      
+      return AuthResult.failure('Authentication failed');
+    } catch (e) {
+      return AuthResult.failure(e.toString());
+    }
+  }
+}
+```
+
+## Tools & Dependencies
+- Backend: Express, MongoDB, Firebase, TypeScript, ESLint
+- Mobile: Flutter, Firebase, Provider/Riverpod
+- Development: VS Code, Cursor, Git
+
+## Environment Setup
+- Use Node.js 18+ for backend
+- Use Flutter 3.0+ for mobile
+- Configure Firebase properly for both projects
+- Set up proper environment variables
+- Use proper linting and formatting tools
+
+Remember: Always prioritize code quality, security, and maintainability over speed of development.

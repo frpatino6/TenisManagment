@@ -52,6 +52,9 @@ This is a tennis management system with:
 - **ALWAYS use MCP to verify database schema** - Consult MCP before creating or modifying schemas
 - **ALWAYS use MCP to validate data relationships** - Confirm foreign keys and references with MCP
 - **ALWAYS use MCP for MongoDB queries** - Verify query syntax and aggregation pipelines with MCP
+- **ALWAYS use MCP to search existing repository methods** - Check if similar database operations already exist
+- **ALWAYS use MCP to analyze existing queries** - Verify query patterns and reuse existing repository methods
+- **ALWAYS use MCP to check for duplicate database logic** - Avoid creating redundant database operations
 
 #### API Design
 - Use RESTful conventions
@@ -112,6 +115,9 @@ This is a tennis management system with:
 - **NO temporary debug endpoints** in API calls
 - **ALWAYS use MCP to verify Firebase data structure** - Consult MCP for Firestore schema and rules
 - **ALWAYS use MCP to validate API responses** - Confirm data format and types with MCP
+- **ALWAYS use MCP to search existing service methods** - Check if similar API calls already exist
+- **ALWAYS use MCP to analyze existing API patterns** - Verify service patterns and reuse existing methods
+- **ALWAYS use MCP to check for duplicate API calls** - Avoid creating redundant service operations
 
 ### Testing
 - Write unit tests for business logic
@@ -169,6 +175,9 @@ This is a tennis management system with:
 - **ALWAYS use MCP for database queries** - Verify query syntax and performance with MCP tools
 - **NEVER make assumptions about database structure** - Always consult MCP for accurate information
 - **ALWAYS use MCP to resolve data inconsistencies** - Consult MCP when encountering data-related issues
+- **ALWAYS analyze if query already exists before creating new ones** - Use MCP to check for existing similar queries and reuse when possible
+- **ALWAYS search existing queries with MCP** - Verify if similar database operations already exist in the codebase
+- **ALWAYS reuse existing queries when appropriate** - Avoid duplicating database logic, extend existing queries instead
 
 ### Git & Version Control
 - Use conventional commit messages
@@ -193,6 +202,8 @@ This is a tennis management system with:
 10. **Document changes** - Update relevant documentation if needed
 11. **Consult MCP for database questions** - Use MCP tools to clarify any data-related doubts
 12. **Verify data models with MCP** - Confirm database schema and relationships using MCP
+13. **Use MCP to analyze existing queries** - Search for similar database operations before creating new ones
+14. **Verify no duplicate queries exist** - Use MCP to check for existing similar functionality
 
 **NEVER commit code that:**
 - Has syntax errors
@@ -213,6 +224,9 @@ This is a tennis management system with:
 - Debugging data inconsistencies
 - Implementing business logic with data constraints
 - Working with Firebase/Firestore data structures
+- **BEFORE creating new queries** - Use MCP to search for existing similar queries
+- **BEFORE implementing new API calls** - Use MCP to check for existing service methods
+- **BEFORE adding new repository methods** - Use MCP to analyze existing database operations
 
 **MCP provides accurate information about:**
 - Database schema and field types
@@ -220,6 +234,16 @@ This is a tennis management system with:
 - Query syntax and performance optimization
 - API response formats and data structures
 - Business logic rules and validation requirements
+- **Existing queries and database operations** - Search for similar functionality
+- **Existing service methods and API calls** - Check for duplicate operations
+- **Query patterns and best practices** - Analyze existing code patterns
+
+**Query Analysis Process with MCP:**
+1. **Search existing queries** - Use MCP to find similar database operations
+2. **Analyze query patterns** - Review existing query structures and logic
+3. **Check for reusability** - Determine if existing queries can be extended
+4. **Verify performance** - Compare with existing optimized queries
+5. **Avoid duplication** - Reuse or extend existing queries when appropriate
 
 ### Security Considerations
 - Never commit secrets or API keys

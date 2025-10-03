@@ -27,7 +27,7 @@ Este directorio contiene scripts para integrar Linear con el proyecto Tennis Man
 
 Ejecuta el script de configuración para obtener tu Team ID:
 ```bash
-node linear-backlog-manager.js
+node scripts/linear-backlog-manager.js
 ```
 
 ## 📋 Scripts Disponibles
@@ -37,7 +37,7 @@ Script principal para gestionar el backlog de Linear.
 
 **Uso:**
 ```bash
-node linear-backlog-manager.js
+node scripts/linear-backlog-manager.js
 ```
 
 **Funcionalidades:**
@@ -213,27 +213,27 @@ node scripts/linear/setup-sprint-milestones.js
 ### **Organización General**
 ```bash
 # Organizar sprints
-node organize-sprints.js
+node scripts/organize-sprints.js
 
 # Verificar configuración
-node linear-backlog-manager.js
+node scripts/linear-backlog-manager.js
 ```
 
 ## 🚨 Troubleshooting
 
 ### Error: "LINEAR_API_KEY environment variable is required"
-- Verifica que `linear-config.env` existe
+- Verifica que `config/linear-config.env` existe
 - Verifica que contiene `LINEAR_API_KEY=tu_api_key`
 - Verifica que la API key es válida
 
 ### Error: "Team ID not found"
-- Ejecuta `node linear-backlog-manager.js` para obtener el Team ID
-- Agrega el Team ID a `linear-config.env`
+- Ejecuta `node scripts/linear-backlog-manager.js` para obtener el Team ID
+- Agrega el Team ID a `config/linear-config.env`
 
 ### Error: "Push blocked due to secrets"
 - GitHub detectó una API key en el código
 - Usa variables de entorno en lugar de hardcodear API keys
-- Verifica que `linear-config.env` no esté en el commit
+- Verifica que `config/linear-config.env` no esté en el commit
 
 ## 📚 Recursos
 

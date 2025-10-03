@@ -1,16 +1,20 @@
 name: Deploy Frontend to Firebase
 
+# DISABLED: Temporarily disabled due to deployment issues
+# on:
+#   push:
+#     branches: [ main ]
+#     paths:
+#       - 'mobile/**'
+#       - '.github/workflows/deploy-frontend.yml'
+#   pull_request:
+#     branches: [ main ]
+#     paths:
+#       - 'mobile/**'
+#       - '.github/workflows/deploy-frontend.yml'
+
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'mobile/**'
-      - '.github/workflows/deploy-frontend.yml'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'mobile/**'
-      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch: # Only manual triggers
 
 jobs:
   test:

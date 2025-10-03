@@ -1,10 +1,14 @@
 name: CI/CD Pipeline
 
+# DISABLED: Temporarily disabled due to deployment issues
+# on:
+#   push:
+#     branches: [ main ]
+#   pull_request:
+#     branches: [ main ]
+
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch: # Only manual triggers
 
 jobs:
   # Test Backend

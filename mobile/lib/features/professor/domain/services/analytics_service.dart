@@ -33,8 +33,6 @@ class AnalyticsService {
       if (serviceType != null) queryParams['serviceType'] = serviceType;
       if (status != null) queryParams['status'] = status;
 
-      print('🌐 Analytics API call with filters: $queryParams');
-
       final uri = Uri.parse(
         '$_baseUrl/professor-dashboard/analytics/overview',
       ).replace(queryParameters: queryParams);
@@ -159,6 +157,264 @@ class AnalyticsService {
       } else {
         throw Exception(
           'Error al cargar datos de estudiantes: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  /// Retrieves revenue breakdown data
+  /// Returns breakdown data with real values from database
+  Future<Map<String, dynamic>> getRevenueBreakdown({
+    String period = 'month',
+    String? serviceType,
+    String? status,
+  }) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final idToken = await user.getIdToken(true);
+
+      final queryParams = <String, String>{'period': period};
+      if (serviceType != null) queryParams['serviceType'] = serviceType;
+      if (status != null) queryParams['status'] = status;
+
+      final uri = Uri.parse(
+        '$_baseUrl/professor-dashboard/analytics/revenue/breakdown',
+      ).replace(queryParameters: queryParams);
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception(
+          'Error al cargar desglose de ingresos: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  /// Retrieves bookings breakdown data
+  /// Returns breakdown data with real values from database
+  Future<Map<String, dynamic>> getBookingsBreakdown({
+    String period = 'month',
+    String? serviceType,
+    String? status,
+  }) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final idToken = await user.getIdToken(true);
+
+      final queryParams = <String, String>{'period': period};
+      if (serviceType != null) queryParams['serviceType'] = serviceType;
+      if (status != null) queryParams['status'] = status;
+
+      final uri = Uri.parse(
+        '$_baseUrl/professor-dashboard/analytics/bookings/breakdown',
+      ).replace(queryParameters: queryParams);
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception(
+          'Error al cargar desglose de clases: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  /// Retrieves revenue trend data
+  /// Returns trend data with real values from database
+  Future<Map<String, dynamic>> getRevenueTrend({
+    String period = 'month',
+    String? serviceType,
+    String? status,
+  }) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final idToken = await user.getIdToken(true);
+
+      final queryParams = <String, String>{'period': period};
+      if (serviceType != null) queryParams['serviceType'] = serviceType;
+      if (status != null) queryParams['status'] = status;
+
+      final uri = Uri.parse(
+        '$_baseUrl/professor-dashboard/analytics/revenue/trend',
+      ).replace(queryParameters: queryParams);
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception(
+          'Error al cargar tendencia de ingresos: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  /// Retrieves bookings trend data
+  /// Returns trend data with real values from database
+  Future<Map<String, dynamic>> getBookingsTrend({
+    String period = 'month',
+    String? serviceType,
+    String? status,
+  }) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final idToken = await user.getIdToken(true);
+
+      final queryParams = <String, String>{'period': period};
+      if (serviceType != null) queryParams['serviceType'] = serviceType;
+      if (status != null) queryParams['status'] = status;
+
+      final uri = Uri.parse(
+        '$_baseUrl/professor-dashboard/analytics/bookings/trend',
+      ).replace(queryParameters: queryParams);
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception(
+          'Error al cargar tendencia de clases: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  /// Retrieves students breakdown data
+  /// Returns breakdown data with real values from database
+  Future<Map<String, dynamic>> getStudentsBreakdown({
+    String period = 'month',
+    String? serviceType,
+    String? status,
+  }) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final idToken = await user.getIdToken(true);
+
+      final queryParams = <String, String>{'period': period};
+      if (serviceType != null) queryParams['serviceType'] = serviceType;
+      if (status != null) queryParams['status'] = status;
+
+      final uri = Uri.parse(
+        '$_baseUrl/professor-dashboard/analytics/students/breakdown',
+      ).replace(queryParameters: queryParams);
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception(
+          'Error al cargar desglose de estudiantes: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  /// Retrieves students trend data
+  /// Returns trend data with real values from database
+  Future<Map<String, dynamic>> getStudentsTrend({
+    String period = 'month',
+    String? serviceType,
+    String? status,
+  }) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final idToken = await user.getIdToken(true);
+
+      final queryParams = <String, String>{'period': period};
+      if (serviceType != null) queryParams['serviceType'] = serviceType;
+      if (status != null) queryParams['status'] = status;
+
+      final uri = Uri.parse(
+        '$_baseUrl/professor-dashboard/analytics/students/trend',
+      ).replace(queryParameters: queryParams);
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception(
+          'Error al cargar tendencia de estudiantes: ${response.statusCode}',
         );
       }
     } catch (e) {

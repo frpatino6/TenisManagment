@@ -25,7 +25,7 @@ class StudentCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: colorScheme.primary.withOpacity(0.1),
+                backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
                 child: Text(
                   student.initials,
                   style: TextStyle(
@@ -77,8 +77,8 @@ class StudentCard extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: student.membershipType == MembershipType.premium
-                          ? Colors.amber.withOpacity(0.2)
-                          : Colors.blue.withOpacity(0.2),
+                          ? Colors.amber.withValues(alpha: 0.2)
+                          : Colors.blue.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(

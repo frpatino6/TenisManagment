@@ -513,4 +513,105 @@ class AuthService {
 - Set up proper environment variables
 - Use proper linting and formatting tools
 
+## MCP Servers & External Integrations
+
+### Linear Project Management (ALREADY CONFIGURED)
+**IMPORTANT:** Linear MCP server is already set up and configured. When working with Linear:
+
+#### Configuration Files:
+- **Config Location:** `config/linear-config.env`
+- **API Key:** Available in `config/linear-config.env` (LINEAR_API_KEY)
+- **Team ID:** Available in `config/linear-config.env` (LINEAR_TEAM_ID)
+- **Cursor Config:** `config/cursor_linear_config.json`
+
+#### Available Scripts:
+```bash
+# Main Linear management
+node scripts/linear-backlog-manager.js
+
+# Sprint organization
+node scripts/organize-sprints.js
+
+# Sprint management
+node scripts/sprint-management/start-sprint-1.js
+node scripts/sprint-management/update-sprint-progress.js
+
+# Linear utilities
+node scripts/linear/check-issue-identifiers.js
+node scripts/linear/associate-issues-correct.js
+```
+
+#### Working Directory:
+- **Always work from:** `/home/fernando/Documentos/TenisManagment`
+- **Scripts are in:** `scripts/` directory
+- **Config is in:** `config/` directory
+
+#### Linear Commands for AI Agents:
+When asked to interact with Linear:
+1. **Verify connection first:** `node scripts/linear-backlog-manager.js`
+2. **Use existing scripts** instead of creating new ones
+3. **Follow the established patterns** in the scripts directory
+4. **Reference the correct file paths** (scripts/ and config/ directories)
+
+### Render Deployment (ALREADY CONFIGURED)
+**IMPORTANT:** Render deployment is already configured:
+
+#### Configuration Files:
+- **Render Config:** `config/render.yaml`
+- **Environment Variables:** Set in Render dashboard
+- **Build Commands:** Already configured in render.yaml
+
+#### Deployment Commands:
+```bash
+# Deploy to Render (automatic via Git push)
+git push origin main
+
+# Check deployment status
+# Use Render dashboard or CLI
+```
+
+#### Render Integration:
+- **Auto-deploy:** Enabled on main branch push
+- **Environment:** Production environment configured
+- **Database:** MongoDB Atlas connected
+- **Domain:** Custom domain configured
+
+### MCP Server Usage Guidelines
+
+#### For Linear Operations:
+- **DO NOT** create new Linear API integrations
+- **DO USE** existing scripts in `scripts/` directory
+- **DO VERIFY** connection with `linear-backlog-manager.js` first
+- **DO FOLLOW** established patterns and file structure
+
+#### For Render Operations:
+- **DO NOT** reconfigure deployment settings
+- **DO USE** existing `render.yaml` configuration
+- **DO PUSH** to main branch for automatic deployment
+- **DO CHECK** Render dashboard for deployment status
+
+#### File Structure Awareness:
+```
+TenisManagment/
+├── config/                    # All configuration files
+│   ├── linear-config.env     # Linear API configuration
+│   ├── cursor_linear_config.json # Cursor Linear integration
+│   └── render.yaml           # Render deployment config
+├── scripts/                   # All automation scripts
+│   ├── linear/               # Linear-specific scripts
+│   ├── sprint-management/    # Sprint management scripts
+│   └── [main scripts]        # Primary management scripts
+└── docs/                     # Documentation
+    ├── analysis/             # Technical analysis
+    ├── deployment/           # Deployment docs
+    └── sprints/              # Sprint documentation
+```
+
+#### When Working with External Services:
+1. **Check existing configuration** before creating new integrations
+2. **Use established scripts** and patterns
+3. **Follow the organized file structure**
+4. **Reference correct paths** (config/ and scripts/ directories)
+5. **Verify connections** before performing operations
+
 Remember: Always prioritize code quality, security, and maintainability over speed of development.

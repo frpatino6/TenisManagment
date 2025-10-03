@@ -9,7 +9,7 @@ import '../../features/professor/presentation/screens/create_schedule_screen.dar
 import '../../features/professor/presentation/screens/manage_schedules_screen.dart';
 import '../../features/professor/presentation/screens/pricing_config_screen.dart';
 import '../../features/professor/presentation/screens/edit_profile_screen.dart';
-import '../../features/professor/presentation/screens/students_list_screen_simple.dart';
+import '../../features/professor/presentation/screens/students_list_screen.dart';
 import '../../features/professor/presentation/screens/student_profile_screen.dart';
 import '../../features/booking/presentation/screens/book_class_screen.dart';
 import '../../features/settings/presentation/screens/theme_settings_screen.dart';
@@ -94,7 +94,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/students-list',
         name: 'students-list',
-        builder: (context, state) => const StudentsListScreenSimple(),
+        builder: (context, state) => const StudentsListScreen(),
       ),
       GoRoute(
         path: '/student-profile/:studentId',

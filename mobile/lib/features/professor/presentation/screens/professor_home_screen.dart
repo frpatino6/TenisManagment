@@ -524,7 +524,9 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
           title: 'Mis Estudiantes',
           subtitle: 'Ver lista completa',
           color: Colors.blue,
-          onTap: () {},
+          onTap: () {
+            context.push('/students-list');
+          },
         ),
         _buildQuickActionCard(
           context: context,

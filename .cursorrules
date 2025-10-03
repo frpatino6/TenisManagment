@@ -189,6 +189,14 @@ This is a tennis management system with:
 - **ALWAYS increment build number** - Increment build number with each version update
 - **ALWAYS verify version consistency** - Ensure all version references are updated
 
+#### Render Deployment Rules
+- **ALWAYS increment backend version before deploying to Render** - When deploying backend changes to Render, MUST increment version in package.json
+- **ALWAYS check for backend changes before Render deployment** - If there are any changes in the backend code, increment version
+- **ALWAYS commit version increment separately** - Version bump should be a separate commit before deployment
+- **ALWAYS use semantic versioning for Render deployments** - Follow MAJOR.MINOR.PATCH format for backend version updates
+- **ALWAYS verify version increment in package.json** - Ensure version is properly updated before Render deployment
+- **NEVER deploy to Render without version increment** - If backend has changes, version MUST be incremented first
+
 #### Version Update Process
 **BEFORE updating version:**
 1. **Check current version** - Verify current version in pubspec.yaml and package.json
@@ -207,7 +215,17 @@ This is a tennis management system with:
 - [ ] Version consistency verified across all files
 
 #### Deployment Process
-**BEFORE deploying to Firebase:**
+
+**BEFORE deploying to Render (Backend):**
+1. **Check for backend changes** - Verify if there are any changes in backend code
+2. **Increment version in package.json** - If changes exist, increment version (e.g., 1.3.2 → 1.3.3)
+3. **Commit version increment** - Make separate commit for version bump
+4. **Verify build works** - Run `npm run build` to ensure code compiles
+5. **Push to trigger Render deployment** - Push changes to trigger automatic deployment
+6. **Monitor deployment** - Check Render dashboard for deployment status
+7. **Verify deployment** - Test endpoints after deployment completes
+
+**BEFORE deploying to Firebase (Frontend):**
 1. **Clean build completely** - Run `flutter clean` and `rm -rf build/`
 2. **Verify version in source** - Check pubspec.yaml has correct version
 3. **Search for hardcoded versions** - Use `grep -r "1\.3\.[0-9]" lib/` to find hardcoded versions
@@ -218,6 +236,7 @@ This is a tennis management system with:
 8. **Verify deployed version** - Check `curl -s https://tennis-management-fcd54.web.app/main.dart.js | grep -o "1\.3\.[0-9]"`
 
 **NEVER deploy if:**
+- Backend has changes but version not incremented (for Render)
 - Build contains old version numbers
 - Hardcoded versions don't match pubspec.yaml
 - Version verification fails
@@ -231,6 +250,33 @@ This is a tennis management system with:
 - **ALWAYS verify version consistency** - Ensure all files have same version
 
 #### Common Version Update Commands
+
+**Backend (Render Deployment):**
+```bash
+# Check current version
+grep '"version"' package.json
+
+# Increment version (patch)
+npm version patch
+
+# Or increment manually in package.json
+# 1.3.2 → 1.3.3
+
+# Build and verify
+npm run build
+
+# Commit version increment
+git add package.json package-lock.json
+git commit -m "chore: bump version to 1.3.3"
+
+# Push to trigger Render deployment
+git push origin main
+
+# Verify deployment
+curl https://tennis-management-backend.onrender.com/health
+```
+
+**Frontend (Firebase Deployment):**
 ```bash
 # Search for hardcoded versions
 grep -r "1\.3\.[0-9]" lib/
@@ -277,15 +323,24 @@ curl -s https://tennis-management-fcd54.web.app/main.dart.js | grep -o "1\.3\.[0
 13. **Use MCP to analyze existing queries** - Search for similar database operations before creating new ones
 14. **Verify no duplicate queries exist** - Use MCP to check for existing similar functionality
 
-**BEFORE deploying to Firebase (MANDATORY):**
-15. **Check version consistency** - Verify pubspec.yaml and package.json have same version
-16. **Search for hardcoded versions** - Run `grep -r "1\.3\.[0-9]" lib/` to find hardcoded versions
-17. **Update hardcoded versions** - Replace any hardcoded version strings with current version
-18. **Clean build completely** - Run `flutter clean` and `rm -rf build/`
-19. **Build with verification** - Run `flutter build web --release --verbose`
-20. **Verify build version** - Check `grep -o "1\.3\.[0-9]" build/web/main.dart.js` shows correct version
-21. **Deploy to Firebase** - Run `firebase deploy --only hosting`
-22. **Verify deployed version** - Check `curl -s https://tennis-management-fcd54.web.app/main.dart.js | grep -o "1\.3\.[0-9]"` shows correct version
+**BEFORE deploying to Render (Backend - MANDATORY):**
+15. **Check for backend changes** - Verify if there are any changes in backend code
+16. **Increment version in package.json** - If changes exist, increment version (e.g., 1.3.2 → 1.3.3)
+17. **Commit version increment separately** - Make separate commit for version bump
+18. **Verify build works** - Run `npm run build` to ensure code compiles
+19. **Push to trigger deployment** - Push changes to trigger automatic Render deployment
+20. **Monitor deployment status** - Check Render dashboard for deployment progress
+21. **Verify deployment** - Test endpoints after deployment completes
+
+**BEFORE deploying to Firebase (Frontend - MANDATORY):**
+22. **Check version consistency** - Verify pubspec.yaml and package.json have same version
+23. **Search for hardcoded versions** - Run `grep -r "1\.3\.[0-9]" lib/` to find hardcoded versions
+24. **Update hardcoded versions** - Replace any hardcoded version strings with current version
+25. **Clean build completely** - Run `flutter clean` and `rm -rf build/`
+26. **Build with verification** - Run `flutter build web --release --verbose`
+27. **Verify build version** - Check `grep -o "1\.3\.[0-9]" build/web/main.dart.js` shows correct version
+28. **Deploy to Firebase** - Run `firebase deploy --only hosting`
+29. **Verify deployed version** - Check `curl -s https://tennis-management-fcd54.web.app/main.dart.js | grep -o "1\.3\.[0-9]"` shows correct version
 
 **NEVER commit code that:**
 - Has syntax errors

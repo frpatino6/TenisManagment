@@ -39,14 +39,9 @@ jobs:
       working-directory: ./backend
       run: npm run build
       
-    - name: Run unit tests
+    - name: Run tests (unit + e2e)
       working-directory: ./backend
-      run: npm run test:unit
-      
-    - name: Run integration tests
-      working-directory: ./backend
-      run: npm run test:integration
-      continue-on-error: true
+      run: npm run test:ci-safe
       
     - name: Generate coverage report
       working-directory: ./backend

@@ -1,0 +1,163 @@
+{
+  "users": [
+    {
+      "id": "user-1",
+      "email": "student1@example.com",
+      "password": "password123",
+      "role": "student",
+      "profile": {
+        "name": "Juan Pérez",
+        "phone": "1234567890",
+        "membershipType": "basic"
+      }
+    },
+    {
+      "id": "user-2",
+      "email": "professor1@example.com",
+      "password": "password123",
+      "role": "professor",
+      "profile": {
+        "name": "María García",
+        "phone": "0987654321",
+        "specialties": ["tennis", "padel"],
+        "hourlyRate": 60
+      }
+    }
+  ],
+  "professors": [
+    {
+      "id": "prof-1",
+      "name": "Carlos López",
+      "email": "carlos@example.com",
+      "phone": "1111111111",
+      "specialties": ["tennis"],
+      "hourlyRate": 50,
+      "experienceYears": 8
+    },
+    {
+      "id": "prof-2",
+      "name": "Ana Martínez",
+      "email": "ana@example.com",
+      "phone": "2222222222",
+      "specialties": ["tennis", "squash"],
+      "hourlyRate": 65,
+      "experienceYears": 12
+    }
+  ],
+  "students": [
+    {
+      "id": "student-1",
+      "name": "Luis Rodríguez",
+      "email": "luis@example.com",
+      "phone": "3333333333",
+      "membershipType": "premium",
+      "balance": 200
+    },
+    {
+      "id": "student-2",
+      "name": "Sofia Herrera",
+      "email": "sofia@example.com",
+      "phone": "4444444444",
+      "membershipType": "basic",
+      "balance": 50
+    }
+  ],
+  "schedules": [
+    {
+      "id": "schedule-1",
+      "professorId": "prof-1",
+      "date": "2024-12-15T00:00:00.000Z",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "type": "individual",
+      "isAvailable": true
+    },
+    {
+      "id": "schedule-2",
+      "professorId": "prof-2",
+      "date": "2024-12-15T00:00:00.000Z",
+      "startTime": "14:00",
+      "endTime": "15:00",
+      "type": "group",
+      "isAvailable": false
+    }
+  ],
+  "bookings": [
+    {
+      "id": "booking-1",
+      "studentId": "student-1",
+      "scheduleId": "schedule-1",
+      "type": "lesson",
+      "status": "confirmed"
+    },
+    {
+      "id": "booking-2",
+      "studentId": "student-2",
+      "scheduleId": "schedule-2",
+      "type": "court_rental",
+      "status": "pending"
+    }
+  ],
+  "payments": [
+    {
+      "id": "payment-1",
+      "studentId": "student-1",
+      "professorId": "prof-1",
+      "amount": 50,
+      "date": "2024-12-01T00:00:00.000Z",
+      "method": "card",
+      "concept": "Individual tennis lesson"
+    },
+    {
+      "id": "payment-2",
+      "studentId": "student-2",
+      "professorId": "prof-2",
+      "amount": 65,
+      "date": "2024-12-02T00:00:00.000Z",
+      "method": "cash",
+      "concept": "Group tennis lesson"
+    }
+  ],
+  "services": [
+    {
+      "id": "service-1",
+      "name": "Racket Stringing",
+      "description": "Professional racket stringing service",
+      "price": 25,
+      "category": "stringing"
+    },
+    {
+      "id": "service-2",
+      "name": "Grip Replacement",
+      "description": "Replace racket grip with new one",
+      "price": 15,
+      "category": "grip"
+    }
+  ],
+  "messages": [
+    {
+      "id": "message-1",
+      "conversationId": "conv-1",
+      "senderId": "student-1",
+      "content": "Hello, I would like to book a lesson",
+      "isRead": false,
+      "createdAt": "2024-12-01T10:00:00.000Z"
+    },
+    {
+      "id": "message-2",
+      "conversationId": "conv-1",
+      "senderId": "prof-1",
+      "content": "Sure! What time works for you?",
+      "isRead": true,
+      "createdAt": "2024-12-01T10:05:00.000Z"
+    }
+  ],
+  "conversations": [
+    {
+      "id": "conv-1",
+      "participants": ["student-1", "prof-1"],
+      "lastMessageAt": "2024-12-01T10:05:00.000Z",
+      "createdAt": "2024-12-01T10:00:00.000Z"
+    }
+  ]
+}

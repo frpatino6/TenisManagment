@@ -158,13 +158,32 @@ CORS_ORIGINS=https://your-frontend-url
 
 ## 🧪 Testing
 
+### Comandos de Testing
 ```bash
-# Ejecutar tests (cuando estén implementados)
+# Ejecutar todos los tests
 npm test
 
 # Tests con cobertura
 npm run test:coverage
+
+# Tests unitarios
+npm run test:unit
+
+# Tests de integración
+npm run test:integration
+
+# Tests E2E
+npm run test:e2e
+
+# Tests en modo watch
+npm run test:watch
 ```
+
+### Configuración
+- **Framework**: Jest con TypeScript
+- **Cobertura**: 80% mínimo
+- **Tipos**: Unit, Integration, E2E
+- **Documentación**: Ver [TESTING.md](TESTING.md)
 
 ## 📊 Monitoreo
 

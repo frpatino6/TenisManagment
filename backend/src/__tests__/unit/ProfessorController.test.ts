@@ -19,14 +19,14 @@ describe('ProfessorController', () => {
     mockNext = MockHelper.createMockNextFunction();
   });
 
-  describe('String', () => {
-    it('should execute method successfully', async () => {
+  describe('getSchedule', () => {
+    it('should get schedule successfully', async () => {
       // Arrange
-      const testData = TestDataFactory.createProfessor();
-      mockRequest.body = testData;
+      const testData = TestDataFactory.createUser();
+      mockRequest.query = { professorId: 'test-professor-id' };
 
       // Act
-      await controller.String(mockRequest, mockResponse, mockNext);
+      await controller.getSchedule(mockRequest, mockResponse);
 
       // Assert
       expect(mockResponse.status).toHaveBeenCalledWith(200);
@@ -35,13 +35,13 @@ describe('ProfessorController', () => {
 
     it('should handle errors gracefully', async () => {
       // Arrange
-      mockRequest.body = {};
+      mockRequest.query = {};
 
       // Act
-      await controller.String(mockRequest, mockResponse, mockNext);
+      await controller.getSchedule(mockRequest, mockResponse);
 
       // Assert
-      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
     });
   });
 });

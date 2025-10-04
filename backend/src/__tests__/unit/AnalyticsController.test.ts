@@ -19,14 +19,15 @@ describe('AnalyticsController', () => {
     mockNext = MockHelper.createMockNextFunction();
   });
 
-  describe('getMetrics', () => {
-    it('should get record data', async () => {
+  describe('getOverview', () => {
+    it('should get overview data successfully', async () => {
       // Arrange
       const testData = TestDataFactory.createUser();
-      mockRequest.body = testData;
+      mockRequest.user = { id: 'test-user-id' };
+      mockRequest.query = { period: 'month' };
 
       // Act
-      await controller.getMetrics(mockRequest, mockResponse, mockNext);
+      await controller.getOverview(mockRequest, mockResponse);
 
       // Assert
       expect(mockResponse.status).toHaveBeenCalledWith(200);
@@ -35,13 +36,13 @@ describe('AnalyticsController', () => {
 
     it('should handle errors gracefully', async () => {
       // Arrange
-      mockRequest.body = {};
+      mockRequest.user = null;
 
       // Act
-      await controller.getMetrics(mockRequest, mockResponse, mockNext);
+      await controller.getOverview(mockRequest, mockResponse);
 
       // Assert
-      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
     });
   });
 });

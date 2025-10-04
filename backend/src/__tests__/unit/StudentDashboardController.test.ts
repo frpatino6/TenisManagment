@@ -19,14 +19,14 @@ describe('StudentDashboardController', () => {
     mockNext = MockHelper.createMockNextFunction();
   });
 
-  describe('log', () => {
-    it('should execute method successfully', async () => {
+  describe('getRecentActivities', () => {
+    it('should get recent activities successfully', async () => {
       // Arrange
-      const testData = TestDataFactory.createStudent();
-      mockRequest.body = testData;
+      const testData = TestDataFactory.createUser();
+      mockRequest.user = { uid: 'test-firebase-uid' };
 
       // Act
-      await controller.log(mockRequest, mockResponse, mockNext);
+      await controller.getRecentActivities(mockRequest, mockResponse);
 
       // Assert
       expect(mockResponse.status).toHaveBeenCalledWith(200);
@@ -35,13 +35,13 @@ describe('StudentDashboardController', () => {
 
     it('should handle errors gracefully', async () => {
       // Arrange
-      mockRequest.body = {};
+      mockRequest.user = null;
 
       // Act
-      await controller.log(mockRequest, mockResponse, mockNext);
+      await controller.getRecentActivities(mockRequest, mockResponse);
 
       // Assert
-      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
     });
   });
 });

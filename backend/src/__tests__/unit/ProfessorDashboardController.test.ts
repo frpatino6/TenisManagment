@@ -19,14 +19,14 @@ describe('ProfessorDashboardController', () => {
     mockNext = MockHelper.createMockNextFunction();
   });
 
-  describe('Logger', () => {
-    it('should execute method successfully', async () => {
+  describe('getProfessorInfo', () => {
+    it('should get professor info successfully', async () => {
       // Arrange
-      const testData = TestDataFactory.createProfessor();
-      mockRequest.body = testData;
+      const testData = TestDataFactory.createUser();
+      mockRequest.user = { id: 'test-user-id' };
 
       // Act
-      await controller.Logger(mockRequest, mockResponse, mockNext);
+      await controller.getProfessorInfo(mockRequest, mockResponse);
 
       // Assert
       expect(mockResponse.status).toHaveBeenCalledWith(200);
@@ -35,13 +35,13 @@ describe('ProfessorDashboardController', () => {
 
     it('should handle errors gracefully', async () => {
       // Arrange
-      mockRequest.body = {};
+      mockRequest.user = null;
 
       // Act
-      await controller.Logger(mockRequest, mockResponse, mockNext);
+      await controller.getProfessorInfo(mockRequest, mockResponse);
 
       // Assert
-      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
     });
   });
 });

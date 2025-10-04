@@ -5,6 +5,7 @@
 
 import { AuthController } from '../../application/controllers/AuthController';
 import { MockHelper, TestDataFactory } from '../utils/test-helpers';
+import { JwtService } from '../../infrastructure/services/JwtService';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -13,20 +14,21 @@ describe('AuthController', () => {
   let mockNext: any;
 
   beforeEach(() => {
-    controller = new AuthController();
+    const mockJwtService = {} as JwtService;
+    controller = new AuthController(mockJwtService);
     mockRequest = MockHelper.createMockRequest();
     mockResponse = MockHelper.createMockResponse();
     mockNext = MockHelper.createMockNextFunction();
   });
 
-  describe('constructor', () => {
-    it('should execute method successfully', async () => {
+  describe('login', () => {
+    it('should login user successfully', async () => {
       // Arrange
       const testData = TestDataFactory.createUser();
-      mockRequest.body = testData;
+      mockRequest.body = { email: 'test@example.com', password: 'password123' };
 
       // Act
-      await controller.constructor(mockRequest, mockResponse, mockNext);
+      await controller.login(mockRequest, mockResponse);
 
       // Assert
       expect(mockResponse.status).toHaveBeenCalledWith(200);
@@ -38,10 +40,10 @@ describe('AuthController', () => {
       mockRequest.body = {};
 
       // Act
-      await controller.constructor(mockRequest, mockResponse, mockNext);
+      await controller.login(mockRequest, mockResponse);
 
       // Assert
-      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
     });
   });
 });

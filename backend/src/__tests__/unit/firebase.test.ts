@@ -46,14 +46,8 @@ describe('Firebase Admin SDK Integration', () => {
       expect(admin.initializeApp).toHaveBeenCalledWith({
         credential: admin.credential.cert({
           projectId: 'test-project',
-          privateKeyId: 'key_id',
           privateKey: 'test-private-key',
           clientEmail: 'test@test-project.iam.gserviceaccount.com',
-          clientId: 'client_id',
-          authUri: 'https://accounts.google.com/o/oauth2/auth',
-          tokenUri: 'https://oauth2.googleapis.com/token',
-          authProviderX509CertUrl: 'https://www.googleapis.com/oauth2/v1/certs',
-          clientX509CertUrl: 'https://www.googleapis.com/robot/v1/metadata/x509/test@test-project.iam.gserviceaccount.com',
         }),
         projectId: 'test-project',
       });
@@ -108,14 +102,8 @@ describe('Firebase Admin SDK Integration', () => {
       expect(admin.initializeApp).toHaveBeenCalledWith({
         credential: admin.credential.cert({
           projectId: 'test-project',
-          privateKeyId: 'key_id',
           privateKey: '-----BEGIN PRIVATE KEY-----\nMOCK_KEY\n-----END PRIVATE KEY-----',
           clientEmail: 'test@test-project.iam.gserviceaccount.com',
-          clientId: 'client_id',
-          authUri: 'https://accounts.google.com/o/oauth2/auth',
-          tokenUri: 'https://oauth2.googleapis.com/token',
-          authProviderX509CertUrl: 'https://www.googleapis.com/oauth2/v1/certs',
-          clientX509CertUrl: 'https://www.googleapis.com/robot/v1/metadata/x509/test@test-project.iam.gserviceaccount.com',
         }),
         projectId: 'test-project',
       });

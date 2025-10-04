@@ -1,3 +1,6 @@
 linear-mcp-server/
 linear-config.env
 .linear-config.env
+
+# Dependency directories
+**/node_modules/

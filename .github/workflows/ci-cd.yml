@@ -99,7 +99,7 @@ jobs:
   deploy-frontend:
     needs: [test-backend, test-frontend]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: false  # Temporarily disabled - requires FIREBASE_SERVICE_ACCOUNT secret
     
     steps:
     - name: Checkout code

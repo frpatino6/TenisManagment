@@ -6,6 +6,13 @@
 import { PricingController } from '../../application/controllers/PricingController';
 import { MockHelper, TestDataFactory } from '../utils/test-helpers';
 
+// Mock de dependencias
+jest.mock('../../infrastructure/database/models/ServiceModel', () => ({
+  ServiceModel: {
+    find: jest.fn(),
+  },
+}));
+
 describe('PricingController', () => {
   let controller: PricingController;
   let mockRequest: any;
@@ -19,17 +26,20 @@ describe('PricingController', () => {
     mockNext = MockHelper.createMockNextFunction();
   });
 
-  describe('findOne', () => {
-    it('should find record by criteria', async () => {
+  describe('getBasePricing', () => {
+    it('should get base pricing successfully', async () => {
       // Arrange
       const testData = TestDataFactory.createUser();
       mockRequest.body = testData;
 
-      // Act
-      await controller.findOne(mockRequest, mockResponse, mockNext);
+      // Mock database responses
+      const { ServiceModel } = require('../../infrastructure/database/models/ServiceModel');
+      ServiceModel.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
 
-      // Assert
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      // Act
+      await controller.getBasePricing(mockRequest, mockResponse);
+
+      // Assert - El controlador debería llamar a response.json con los datos
       expect(mockResponse.json).toHaveBeenCalled();
     });
 
@@ -38,10 +48,10 @@ describe('PricingController', () => {
       mockRequest.body = {};
 
       // Act
-      await controller.findOne(mockRequest, mockResponse, mockNext);
+      await controller.getBasePricing(mockRequest, mockResponse);
 
       // Assert
-      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
     });
   });
 });

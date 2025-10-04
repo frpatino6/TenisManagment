@@ -56,6 +56,16 @@ export class MockHelper {
 
 // Test data factories
 export class TestDataFactory {
+  static createUser(overrides: any = {}) {
+    return {
+      id: 'test-user-id',
+      email: 'user@example.com',
+      role: 'student',
+      name: 'Test User',
+      ...overrides
+    };
+  }
+
   static createProfessor(overrides: any = {}) {
     return {
       id: 'test-professor-id',

@@ -6,6 +6,19 @@
 import { StudentDashboardController } from '../../application/controllers/StudentDashboardController';
 import { MockHelper, TestDataFactory } from '../utils/test-helpers';
 
+// Mock de dependencias
+jest.mock('../../infrastructure/database/models/AuthUserModel', () => ({
+  AuthUserModel: {
+    findOne: jest.fn(),
+  },
+}));
+
+jest.mock('../../infrastructure/database/models/BookingModel', () => ({
+  BookingModel: {
+    find: jest.fn(),
+  },
+}));
+
 describe('StudentDashboardController', () => {
   let controller: StudentDashboardController;
   let mockRequest: any;
@@ -19,29 +32,35 @@ describe('StudentDashboardController', () => {
     mockNext = MockHelper.createMockNextFunction();
   });
 
-  describe('log', () => {
-    it('should execute method successfully', async () => {
+  describe('getRecentActivities', () => {
+    it('should get recent activities successfully', async () => {
       // Arrange
-      const testData = TestDataFactory.createStudent();
-      mockRequest.body = testData;
+      const testData = TestDataFactory.createUser();
+      mockRequest.user = { uid: 'test-firebase-uid' };
+
+      // Mock database responses
+      const { AuthUserModel } = require('../../infrastructure/database/models/AuthUserModel');
+      const { BookingModel } = require('../../infrastructure/database/models/BookingModel');
+      
+      AuthUserModel.findOne.mockResolvedValue({ _id: 'user-id', firebaseUid: 'test-firebase-uid' });
+      BookingModel.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
 
       // Act
-      await controller.log(mockRequest, mockResponse, mockNext);
+      await controller.getRecentActivities(mockRequest, mockResponse);
 
-      // Assert
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      // Assert - El controlador debería llamar a response.json con los datos
       expect(mockResponse.json).toHaveBeenCalled();
     });
 
     it('should handle errors gracefully', async () => {
       // Arrange
-      mockRequest.body = {};
+      mockRequest.user = null;
 
       // Act
-      await controller.log(mockRequest, mockResponse, mockNext);
+      await controller.getRecentActivities(mockRequest, mockResponse);
 
       // Assert
-      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
     });
   });
 });

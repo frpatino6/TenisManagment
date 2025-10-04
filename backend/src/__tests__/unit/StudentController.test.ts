@@ -19,29 +19,28 @@ describe('StudentController', () => {
     mockNext = MockHelper.createMockNextFunction();
   });
 
-  describe('execute', () => {
-    it('should execute operation successfully', async () => {
+  describe('availableSchedules', () => {
+    it('should get available schedules successfully', async () => {
       // Arrange
-      const testData = TestDataFactory.createStudent();
-      mockRequest.body = testData;
+      const testData = TestDataFactory.createUser();
+      mockRequest.query = { professorId: 'test-professor-id' };
 
       // Act
-      await controller.execute(mockRequest, mockResponse, mockNext);
+      await controller.availableSchedules(mockRequest, mockResponse);
 
-      // Assert
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      // Assert - El controlador debería llamar a response.json con los datos
       expect(mockResponse.json).toHaveBeenCalled();
     });
 
     it('should handle errors gracefully', async () => {
       // Arrange
-      mockRequest.body = {};
+      mockRequest.query = {};
 
       // Act
-      await controller.execute(mockRequest, mockResponse, mockNext);
+      await controller.availableSchedules(mockRequest, mockResponse);
 
       // Assert
-      expect(mockNext).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
     });
   });
 });

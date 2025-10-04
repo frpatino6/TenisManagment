@@ -36,13 +36,13 @@ describe('StudentDashboardController', () => {
     it('should get recent activities successfully', async () => {
       // Arrange
       const testData = TestDataFactory.createUser();
-      mockRequest.user = { uid: 'test-firebase-uid' };
+      mockRequest.user = { id: 'test-user-id' };
 
       // Mock database responses
       const { AuthUserModel } = require('../../infrastructure/database/models/AuthUserModel');
       const { BookingModel } = require('../../infrastructure/database/models/BookingModel');
       
-      AuthUserModel.findOne.mockResolvedValue({ _id: 'user-id', firebaseUid: 'test-firebase-uid' });
+      AuthUserModel.findOne.mockResolvedValue({ _id: 'user-id', email: 'test@example.com' });
       BookingModel.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
 
       // Act

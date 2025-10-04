@@ -151,6 +151,16 @@ export class TestDataFactory {
       ...overrides
     };
   }
+
+  static createUser(overrides: any = {}) {
+    return {
+      id: 'test-user-id',
+      email: 'user@example.com',
+      role: 'student',
+      name: 'Test User',
+      ...overrides
+    };
+  }
 }
 
 // Assertion helpers

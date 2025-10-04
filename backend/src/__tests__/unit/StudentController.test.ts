@@ -23,7 +23,7 @@ describe('StudentController', () => {
     it('should get available schedules successfully', async () => {
       // Arrange
       const testData = TestDataFactory.createUser();
-      mockRequest.query = { professorId: 'test-professor-id' };
+      mockRequest.query = { date: '2025-01-01' };
 
       // Act
       await controller.availableSchedules(mockRequest, mockResponse);

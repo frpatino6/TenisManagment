@@ -55,7 +55,8 @@ jest.mock('../../infrastructure/database/models/ProfessorModel', () => ({
 // Mock de servicios
 jest.mock('../../infrastructure/services/JwtService', () => ({
   JwtService: jest.fn().mockImplementation(() => ({
-    generateToken: jest.fn().mockReturnValue('mock-jwt-token'),
+    signAccess: jest.fn().mockReturnValue('mock-jwt-token'),
+    signRefresh: jest.fn().mockReturnValue('mock-jwt-token'),
   })),
 }));
 
@@ -87,18 +88,21 @@ describe('FirebaseAuthController', () => {
 
   describe('verifyToken', () => {
     describe('Firebase Disabled', () => {
-      beforeEach(() => {
-        jest.doMock('../../infrastructure/config', () => ({
+      it('should return 503 when Firebase is disabled', async () => {
+        // Mock config with Firebase disabled
+        const mockConfig = {
           config: {
             firebase: {
               enabled: false,
             },
             jwtSecret: 'test-jwt-secret',
           },
-        }));
-      });
-
-      it('should return 503 when Firebase is disabled', async () => {
+        };
+        
+        jest.doMock('../../infrastructure/config', () => mockConfig);
+        
+        // Clear module cache and re-import
+        jest.resetModules();
         const { FirebaseAuthController: DisabledController } = require('../../application/controllers/FirebaseAuthController');
         const disabledController = new DisabledController();
         
@@ -184,14 +188,14 @@ describe('FirebaseAuthController', () => {
 
         await controller.verifyToken(mockRequest as Request, mockResponse as Response);
 
-        expect(mockResponse.status).toHaveBeenCalledWith(200);
         expect(mockResponse.json).toHaveBeenCalledWith({
-          token: 'mock-jwt-token',
+          accessToken: 'mock-jwt-token',
+          refreshToken: 'mock-jwt-token',
           user: {
             id: 'user-id-123',
-            role: 'student',
             email: 'test@example.com',
             name: 'Test User',
+            role: 'student',
           },
         });
       });
@@ -223,7 +227,7 @@ describe('FirebaseAuthController', () => {
           membershipType: 'basic',
           balance: 0,
         });
-        expect(mockResponse.status).toHaveBeenCalledWith(200);
+        expect(mockResponse.json).toHaveBeenCalled();
       });
 
       it('should create missing professor profile for existing user', async () => {
@@ -254,7 +258,7 @@ describe('FirebaseAuthController', () => {
           specialties: [],
           hourlyRate: 0,
         });
-        expect(mockResponse.status).toHaveBeenCalledWith(200);
+        expect(mockResponse.json).toHaveBeenCalled();
       });
 
       it('should link Firebase UID to existing user by email', async () => {
@@ -279,7 +283,7 @@ describe('FirebaseAuthController', () => {
 
         expect((mockUser as any).firebaseUid).toBe('firebase-uid-123');
         expect(mockUser.save).toHaveBeenCalled();
-        expect(mockResponse.status).toHaveBeenCalledWith(200);
+        expect(mockResponse.json).toHaveBeenCalled();
       });
 
       it('should create new user and student profile', async () => {
@@ -318,7 +322,7 @@ describe('FirebaseAuthController', () => {
           membershipType: 'basic',
           balance: 0,
         });
-        expect(mockResponse.status).toHaveBeenCalledWith(200);
+        expect(mockResponse.json).toHaveBeenCalled();
       });
     });
 

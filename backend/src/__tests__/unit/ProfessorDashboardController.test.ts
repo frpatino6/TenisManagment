@@ -10,6 +10,25 @@ import { MockHelper, TestDataFactory } from '../utils/test-helpers';
 jest.mock('../../infrastructure/database/models/ProfessorModel', () => ({
   ProfessorModel: {
     findOne: jest.fn(),
+    create: jest.fn(),
+  },
+}));
+
+jest.mock('../../infrastructure/database/models/AuthUserModel', () => ({
+  AuthUserModel: {
+    findById: jest.fn(),
+  },
+}));
+
+jest.mock('../../infrastructure/database/models/StudentModel', () => ({
+  StudentModel: {
+    countDocuments: jest.fn(),
+  },
+}));
+
+jest.mock('../../infrastructure/database/models/ScheduleModel', () => ({
+  ScheduleModel: {
+    countDocuments: jest.fn(),
   },
 }));
 
@@ -34,7 +53,14 @@ describe('ProfessorDashboardController', () => {
 
       // Mock database responses
       const { ProfessorModel } = require('../../infrastructure/database/models/ProfessorModel');
+      const { AuthUserModel } = require('../../infrastructure/database/models/AuthUserModel');
+      const { StudentModel } = require('../../infrastructure/database/models/StudentModel');
+      const { ScheduleModel } = require('../../infrastructure/database/models/ScheduleModel');
+      
       ProfessorModel.findOne.mockResolvedValue({ _id: 'prof-id', name: 'Test Professor' });
+      AuthUserModel.findById.mockResolvedValue({ _id: 'test-user-id', name: 'Test User', email: 'test@example.com' });
+      StudentModel.countDocuments.mockResolvedValue(10);
+      ScheduleModel.countDocuments.mockResolvedValue(5);
 
       // Act
       await controller.getProfessorInfo(mockRequest, mockResponse);

@@ -64,17 +64,20 @@ describe('Firebase Auth Middleware', () => {
   });
 
   describe('Firebase Disabled', () => {
-    beforeEach(() => {
-      jest.doMock('../../infrastructure/config', () => ({
+    it('should return 503 when Firebase is disabled', async () => {
+      // Mock config with Firebase disabled
+      const mockConfig = {
         config: {
           firebase: {
             enabled: false,
           },
         },
-      }));
-    });
-
-    it('should return 503 when Firebase is disabled', async () => {
+      };
+      
+      jest.doMock('../../infrastructure/config', () => mockConfig);
+      
+      // Clear module cache and re-import
+      jest.resetModules();
       const { firebaseAuthMiddleware: disabledMiddleware } = require('../../application/middleware/firebaseAuth');
       
       await disabledMiddleware(mockRequest as Request, mockResponse as Response, mockNext);

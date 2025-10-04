@@ -13,6 +13,12 @@ jest.mock('../../infrastructure/database/models/ServiceModel', () => ({
   },
 }));
 
+jest.mock('../../infrastructure/database/models/SystemConfigModel', () => ({
+  SystemConfigModel: {
+    findOne: jest.fn(),
+  },
+}));
+
 describe('PricingController', () => {
   let controller: PricingController;
   let mockRequest: any;
@@ -33,8 +39,8 @@ describe('PricingController', () => {
       mockRequest.body = testData;
 
       // Mock database responses
-      const { ServiceModel } = require('../../infrastructure/database/models/ServiceModel');
-      ServiceModel.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
+      const { SystemConfigModel } = require('../../infrastructure/database/models/SystemConfigModel');
+      SystemConfigModel.findOne.mockResolvedValue(null); // No config found, should return defaults
 
       // Act
       await controller.getBasePricing(mockRequest, mockResponse);
@@ -45,13 +51,14 @@ describe('PricingController', () => {
 
     it('should handle errors gracefully', async () => {
       // Arrange
-      mockRequest.body = {};
+      const { SystemConfigModel } = require('../../infrastructure/database/models/SystemConfigModel');
+      SystemConfigModel.findOne.mockRejectedValue(new Error('Database error'));
 
       // Act
       await controller.getBasePricing(mockRequest, mockResponse);
 
       // Assert
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
     });
   });
 });

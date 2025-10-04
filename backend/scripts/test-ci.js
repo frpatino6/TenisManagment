@@ -15,7 +15,7 @@ console.log('🧪 Running CI-friendly tests...\n');
 try {
   // Run unit tests only (excluding integration tests)
   console.log('📋 Running unit tests...');
-  execSync('jest --config jest.config.js --testPathIgnorePatterns="integration"', { 
+  execSync('npx jest --config jest.config.js --testPathIgnorePatterns="integration"', { 
     stdio: 'inherit',
     cwd: path.join(__dirname, '..')
   });
@@ -23,7 +23,7 @@ try {
 
   // Run E2E tests only
   console.log('🌐 Running E2E tests...');
-  execSync('jest --config jest.e2e.config.js', { 
+  execSync('npx jest --config config/jest/jest.e2e.config.js', { 
     stdio: 'inherit',
     cwd: path.join(__dirname, '..')
   });

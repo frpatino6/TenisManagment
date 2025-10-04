@@ -1,0 +1,51 @@
+🚨 INSTRUCCIONES CRÍTICAS PARA CONECTARSE A LINEAR
+
+El agente anterior no pudo conectarse a Linear. Sigue estos pasos EXACTOS:
+
+1️⃣ VERIFICAR DIRECTORIO:
+```bash
+cd /home/fernando/Documentos/TenisManagment
+pwd
+```
+
+2️⃣ VERIFICAR ARCHIVOS DE CONFIGURACIÓN:
+```bash
+ls -la config/linear-config.env
+ls -la config/cursor_linear_config.json
+```
+
+3️⃣ PROBAR CONEXIÓN:
+```bash
+node scripts/test-linear-connection.js
+```
+
+4️⃣ SI FALLA, VERIFICAR NODE.JS:
+```bash
+node --version
+npm list
+```
+
+5️⃣ USAR SCRIPTS EXISTENTES (NO crear nuevos):
+```bash
+node scripts/linear-backlog-manager.js
+node scripts/analyze-backlog-stories.js
+```
+
+🚫 NO HAGAS:
+- NO crear nuevos scripts
+- NO modificar configuraciones
+- NO trabajar en directorios incorrectos
+
+✅ CRITERIO DE ÉXITO:
+El comando `node scripts/test-linear-connection.js` debe mostrar:
+- Usuario de Linear conectado
+- Lista de proyectos disponibles
+- Sin errores
+
+📋 SI SIGUE FALLANDO, reporta:
+1. Mensaje de error completo
+2. Comando que ejecutaste
+3. Directorio donde estás (`pwd`)
+4. Lista de archivos en config/ (`ls -la config/`)
+
+¡Sigue estos pasos en orden y reporta el resultado!

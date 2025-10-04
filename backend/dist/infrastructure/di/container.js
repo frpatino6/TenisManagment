@@ -5,6 +5,7 @@ const inversify_1 = require("inversify");
 const MongoRepositories_1 = require("../repositories/MongoRepositories");
 const ProfessorUseCases_1 = require("../../domain/use-cases/ProfessorUseCases");
 const StudentUseCases_1 = require("../../domain/use-cases/StudentUseCases");
+const MessageUseCases_1 = require("../../domain/use-cases/MessageUseCases");
 const JwtService_1 = require("../services/JwtService");
 const config_1 = require("../config");
 exports.TYPES = {
@@ -16,6 +17,8 @@ exports.TYPES = {
     ServiceRepository: Symbol.for('ServiceRepository'),
     ReportRepository: Symbol.for('ReportRepository'),
     ServiceRequestRepository: Symbol.for('ServiceRequestRepository'),
+    MessageRepository: Symbol.for('MessageRepository'),
+    ConversationRepository: Symbol.for('ConversationRepository'),
     // Use cases
     PublishScheduleUseCase: Symbol.for('PublishScheduleUseCase'),
     ManageCourtAvailabilityUseCase: Symbol.for('ManageCourtAvailabilityUseCase'),
@@ -26,6 +29,13 @@ exports.TYPES = {
     ViewBalanceUseCase: Symbol.for('ViewBalanceUseCase'),
     ViewPaymentHistoryUseCase: Symbol.for('ViewPaymentHistoryUseCase'),
     RequestServiceUseCase: Symbol.for('RequestServiceUseCase'),
+    SendMessageUseCase: Symbol.for('SendMessageUseCase'),
+    GetConversationUseCase: Symbol.for('GetConversationUseCase'),
+    GetConversationsUseCase: Symbol.for('GetConversationsUseCase'),
+    GetMessagesUseCase: Symbol.for('GetMessagesUseCase'),
+    MarkMessageAsReadUseCase: Symbol.for('MarkMessageAsReadUseCase'),
+    GetUnreadCountUseCase: Symbol.for('GetUnreadCountUseCase'),
+    CreateConversationUseCase: Symbol.for('CreateConversationUseCase'),
     JwtService: Symbol.for('JwtService'),
 };
 exports.container = new inversify_1.Container({ defaultScope: 'Singleton' });
@@ -54,6 +64,12 @@ exports.container
 exports.container
     .bind(exports.TYPES.ServiceRequestRepository)
     .toConstantValue(new MongoRepositories_1.MongoServiceRequestRepository());
+exports.container
+    .bind(exports.TYPES.MessageRepository)
+    .toConstantValue(new MongoRepositories_1.MongoMessageRepository());
+exports.container
+    .bind(exports.TYPES.ConversationRepository)
+    .toConstantValue(new MongoRepositories_1.MongoConversationRepository());
 // services
 exports.container.bind(exports.TYPES.JwtService).toConstantValue(new JwtService_1.JwtService(config_1.config.jwtSecret));
 // use cases
@@ -84,4 +100,26 @@ exports.container
 exports.container
     .bind(exports.TYPES.RequestServiceUseCase)
     .toDynamicValue((ctx) => new StudentUseCases_1.RequestService(ctx.container.get(exports.TYPES.ServiceRequestRepository)));
+// Message use cases
+exports.container
+    .bind(exports.TYPES.SendMessageUseCase)
+    .toDynamicValue((ctx) => new MessageUseCases_1.SendMessageUseCaseImpl(ctx.container.get(exports.TYPES.MessageRepository), ctx.container.get(exports.TYPES.ConversationRepository)));
+exports.container
+    .bind(exports.TYPES.GetConversationUseCase)
+    .toDynamicValue((ctx) => new MessageUseCases_1.GetConversationUseCaseImpl(ctx.container.get(exports.TYPES.ConversationRepository)));
+exports.container
+    .bind(exports.TYPES.GetConversationsUseCase)
+    .toDynamicValue((ctx) => new MessageUseCases_1.GetConversationsUseCaseImpl(ctx.container.get(exports.TYPES.ConversationRepository)));
+exports.container
+    .bind(exports.TYPES.GetMessagesUseCase)
+    .toDynamicValue((ctx) => new MessageUseCases_1.GetMessagesUseCaseImpl(ctx.container.get(exports.TYPES.MessageRepository)));
+exports.container
+    .bind(exports.TYPES.MarkMessageAsReadUseCase)
+    .toDynamicValue((ctx) => new MessageUseCases_1.MarkMessageAsReadUseCaseImpl(ctx.container.get(exports.TYPES.MessageRepository)));
+exports.container
+    .bind(exports.TYPES.GetUnreadCountUseCase)
+    .toDynamicValue((ctx) => new MessageUseCases_1.GetUnreadCountUseCaseImpl(ctx.container.get(exports.TYPES.MessageRepository)));
+exports.container
+    .bind(exports.TYPES.CreateConversationUseCase)
+    .toDynamicValue((ctx) => new MessageUseCases_1.CreateConversationUseCaseImpl(ctx.container.get(exports.TYPES.ConversationRepository)));
 //# sourceMappingURL=container.js.map

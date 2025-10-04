@@ -1,14 +1,11 @@
 name: CI/CD Pipeline
 
-# DISABLED: Temporarily disabled due to deployment issues
-# on:
-#   push:
-#     branches: [ main ]
-#   pull_request:
-#     branches: [ main ]
-
 on:
-  workflow_dispatch: # Only manual triggers
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch: # Manual triggers also available
 
 jobs:
   # Test Backend
@@ -41,6 +38,19 @@ jobs:
     - name: Build project
       working-directory: ./backend
       run: npm run build
+      
+    - name: Run unit tests
+      working-directory: ./backend
+      run: npm run test:unit
+      
+    - name: Run integration tests
+      working-directory: ./backend
+      run: npm run test:integration
+      continue-on-error: true
+      
+    - name: Generate coverage report
+      working-directory: ./backend
+      run: npm run test:coverage
 
   # Test Frontend
   test-frontend:
@@ -53,7 +63,7 @@ jobs:
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.24.0'
+        flutter-version: '3.35.4'
         channel: 'stable'
         cache: true
         
@@ -103,7 +113,7 @@ jobs:
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.24.0'
+        flutter-version: '3.35.4'
         channel: 'stable'
         cache: true
         

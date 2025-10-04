@@ -6,6 +6,19 @@
 import { PricingController } from '../../application/controllers/PricingController';
 import { MockHelper, TestDataFactory } from '../utils/test-helpers';
 
+// Mock de dependencias
+jest.mock('../../infrastructure/database/models/ServiceModel', () => ({
+  ServiceModel: {
+    find: jest.fn(),
+  },
+}));
+
+jest.mock('../../infrastructure/database/models/SystemConfigModel', () => ({
+  SystemConfigModel: {
+    findOne: jest.fn(),
+  },
+}));
+
 describe('PricingController', () => {
   let controller: PricingController;
   let mockRequest: any;
@@ -25,23 +38,27 @@ describe('PricingController', () => {
       const testData = TestDataFactory.createUser();
       mockRequest.body = testData;
 
+      // Mock database responses
+      const { SystemConfigModel } = require('../../infrastructure/database/models/SystemConfigModel');
+      SystemConfigModel.findOne.mockResolvedValue(null); // No config found, should return defaults
+
       // Act
       await controller.getBasePricing(mockRequest, mockResponse);
 
-      // Assert
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      // Assert - El controlador debería llamar a response.json con los datos
       expect(mockResponse.json).toHaveBeenCalled();
     });
 
     it('should handle errors gracefully', async () => {
       // Arrange
-      mockRequest.body = {};
+      const { SystemConfigModel } = require('../../infrastructure/database/models/SystemConfigModel');
+      SystemConfigModel.findOne.mockRejectedValue(new Error('Database error'));
 
       // Act
       await controller.getBasePricing(mockRequest, mockResponse);
 
       // Assert
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
     });
   });
 });

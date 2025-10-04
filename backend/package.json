@@ -4,7 +4,7 @@
   "description": "Backend API para el sistema de gestión de clases de tenis",
   "private": true,
   "engines": {
-    "node": ">=18.0.0",
+    "node": ">=20.0.0",
     "npm": ">=8.0.0"
   },
   "scripts": {

@@ -19,7 +19,7 @@ void main() {
 
     // Verify that the app loads without crashing
     expect(find.byType(MaterialApp), findsOneWidget);
-    
+
     // The app should be running and responsive
     expect(tester.takeException(), isNull);
   });

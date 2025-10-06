@@ -22,9 +22,9 @@ class VersionWidget extends StatefulWidget {
 }
 
 class _VersionWidgetState extends State<VersionWidget> {
-  String _version = 'v1.3.3';
-  String _buildNumber = '1';
-  bool _isInitialized = true;
+  final String _version = 'v1.3.3';
+  final String _buildNumber = '1';
+  final bool _isInitialized = true;
 
   @override
   void initState() {

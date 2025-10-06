@@ -1,14 +1,10 @@
 // ESLint v9 flat config for TypeScript (Node)
-import tsParser from "@typescript-eslint/parser";
-import tsPlugin from "@typescript-eslint/eslint-plugin";
-import eslintConfigPrettier from "eslint-config-prettier";
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+/* eslint-disable @typescript-eslint/no-require-imports */
+const tsParser = require("@typescript-eslint/parser");
+const tsPlugin = require("@typescript-eslint/eslint-plugin");
+const eslintConfigPrettier = require("eslint-config-prettier");
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-export default [
+module.exports = [
   {
     ignores: ["dist", "node_modules"]
   },

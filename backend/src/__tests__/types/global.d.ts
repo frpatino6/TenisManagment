@@ -1,4 +1,6 @@
 // Global type definitions for testing
+import '@jest/globals';
+
 declare global {
   namespace NodeJS {
     interface Global {

@@ -2,5 +2,11 @@ linear-mcp-server/
 linear-config.env
 .linear-config.env
 
+# Backup directories with sensitive data
+backups/
+scripts/backup-agents.sh
+scripts/restore-agents.sh
+docs/AGENTES_BACKUP_README.md
+
 # Dependency directories
 **/node_modules/

@@ -3,7 +3,8 @@ services:
     name: tennis-management-backend
     env: node
     plan: free
-    buildCommand: npm run build:render
+    runtime: node-20
+    buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /health
     envVars:

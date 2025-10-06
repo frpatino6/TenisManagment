@@ -12,6 +12,13 @@
         "destination": "/index.html"
       }
     ],
+    "redirects": [
+      {
+        "source": "/version",
+        "destination": "/version.txt",
+        "type": 301
+      }
+    ],
     "headers": [
       {
         "source": "**/*.@(js|css)",

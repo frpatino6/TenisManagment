@@ -127,3 +127,4 @@ jobs:
         firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
         channelId: live
         projectId: tennis-management-fcd54
+        entryPoint: mobile

@@ -56,8 +56,8 @@ jest.mock('../../infrastructure/database/models/ProfessorModel', () => ({
 // Mock de servicios
 jest.mock('../../infrastructure/services/JwtService', () => ({
   JwtService: jest.fn().mockImplementation(() => ({
-    signAccess: jest.fn().mockReturnValue('mock-jwt-token'),
-    signRefresh: jest.fn().mockReturnValue('mock-jwt-token'),
+    signAccess: jest.fn().mockReturnValue('mock-jwt-token' as any as any),
+    signRefresh: jest.fn().mockReturnValue('mock-jwt-token' as any as any),
   })),
 }));
 
@@ -82,8 +82,8 @@ describe('FirebaseAuthController', () => {
     };
     
     mockResponse = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
+      status: jest.fn().mockReturnThis() as any,
+      json: jest.fn().mockReturnThis() as any,
     };
     
     // Reset mockVerifyIdToken
@@ -254,7 +254,7 @@ describe('FirebaseAuthController', () => {
           role: 'student',
           email: 'test@example.com',
           name: 'Test User',
-          save: jest.fn().mockResolvedValue(true),
+          save: jest.fn().mockResolvedValue(true as any as any),
         };
 
         (AuthUserModel.findOne as jest.Mock)

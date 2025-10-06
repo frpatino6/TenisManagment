@@ -62,9 +62,9 @@ describe('AnalyticsController', () => {
       const { ScheduleModel } = require('../../infrastructure/database/models/ScheduleModel');
 
       ProfessorModel.findOne.mockResolvedValue({ _id: 'prof-id', name: 'Test Professor' });
-      BookingModel.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
-      PaymentModel.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
-      ScheduleModel.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
+      BookingModel.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([] as any as any) });
+      PaymentModel.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([] as any as any) });
+      ScheduleModel.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([] as any as any) });
       BookingModel.aggregate.mockResolvedValue([]);
       PaymentModel.aggregate.mockResolvedValue([]);
       ScheduleModel.aggregate.mockResolvedValue([]);

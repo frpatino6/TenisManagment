@@ -57,8 +57,8 @@ describe('Firebase Auth Middleware', () => {
     };
     
     mockResponse = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
+      status: jest.fn().mockReturnThis() as any,
+      json: jest.fn().mockReturnThis() as any,
     };
     
     mockNext = jest.fn();

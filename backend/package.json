@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "build:render": "npm install && tsc -p tsconfig.json",
     "start": "node dist/presentation/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/presentation/server.ts",
     "lint": "eslint \"src/**/*.ts\"",

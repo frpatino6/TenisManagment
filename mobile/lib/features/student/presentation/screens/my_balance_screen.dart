@@ -94,9 +94,9 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
           const Gap(24),
           Text(
             'Error al cargar información',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
           const Gap(8),
           Text(
@@ -130,9 +130,9 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
           const Gap(24),
           Text(
             'No se encontró información',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
           const Gap(8),
           Text(
@@ -151,7 +151,6 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
     final totalSpent = (_studentInfo!['totalSpent'] as num?)?.toDouble() ?? 0.0;
     final totalClasses = _studentInfo!['totalClasses'] as int? ?? 0;
     final totalPayments = _studentInfo!['totalPayments'] as int? ?? 0;
-    final name = _studentInfo!['name'] as String? ?? 'Estudiante';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -168,11 +167,11 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
 
           // Estadísticas detalladas
           Text(
-            'Estadísticas',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          )
+                'Estadísticas',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+              )
               .animate()
               .fadeIn(duration: 400.ms, delay: 400.ms)
               .slideX(begin: -0.2, end: 0),
@@ -188,11 +187,11 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
 
           // Acciones rápidas
           Text(
-            'Acciones',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          )
+                'Acciones',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+              )
               .animate()
               .fadeIn(duration: 400.ms, delay: 800.ms)
               .slideX(begin: -0.2, end: 0),
@@ -208,7 +207,12 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
     );
   }
 
-  Widget _buildBalanceCard(BuildContext context, double totalSpent, int totalClasses, int totalPayments) {
+  Widget _buildBalanceCard(
+    BuildContext context,
+    double totalSpent,
+    int totalClasses,
+    int totalPayments,
+  ) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -256,10 +260,11 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
                       ),
                       Text(
                         '\$${totalSpent.toStringAsFixed(0)}',
-                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.headlineLarge
+                            ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                     ],
                   ),
@@ -294,7 +299,12 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
     );
   }
 
-  Widget _buildStatItem(BuildContext context, String label, String value, IconData icon) {
+  Widget _buildStatItem(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -303,11 +313,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
       ),
       child: Column(
         children: [
-          Icon(
-            icon,
-            color: Colors.white,
-            size: 20,
-          ),
+          Icon(icon, color: Colors.white, size: 20),
           const Gap(8),
           Text(
             value,
@@ -327,7 +333,12 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
     );
   }
 
-  Widget _buildStatsGrid(BuildContext context, double totalSpent, int totalClasses, int totalPayments) {
+  Widget _buildStatsGrid(
+    BuildContext context,
+    double totalSpent,
+    int totalClasses,
+    int totalPayments,
+  ) {
     final averagePerClass = totalClasses > 0 ? totalSpent / totalClasses : 0.0;
 
     return GridView.count(
@@ -370,7 +381,13 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
     );
   }
 
-  Widget _buildStatCard(BuildContext context, String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -397,11 +414,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
                 color: color,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
-                icon,
-                color: Colors.white,
-                size: 20,
-              ),
+              child: Icon(icon, color: Colors.white, size: 20),
             ),
             const Gap(12),
             Text(

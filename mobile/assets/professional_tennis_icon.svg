@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradiente principal profesional -->
+    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E3A8A;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradiente para la raqueta -->
+    <linearGradient id="racketGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F8FAFC;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradiente para el mango -->
+    <linearGradient id="handleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E2E8F0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#CBD5E1;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Sombra suave -->
+    <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.15"/>
+    </filter>
+    
+    <!-- Sombra interna -->
+    <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.1"/>
+    </filter>
+  </defs>
+  
+  <!-- Fondo principal con gradiente -->
+  <circle cx="256" cy="256" r="240" fill="url(#mainGradient)" filter="url(#softShadow)"/>
+  
+  <!-- Círculo interior para profundidad -->
+  <circle cx="256" cy="256" r="220" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
+  
+  <!-- Raqueta de tenis estilizada -->
+  <!-- Cabeza de la raqueta -->
+  <ellipse cx="256" cy="200" rx="75" ry="95" fill="url(#racketGradient)" stroke="rgba(0,0,0,0.1)" stroke-width="1" filter="url(#innerShadow)"/>
+  
+  <!-- Cordaje de la raqueta - líneas más sutiles -->
+  <!-- Líneas verticales -->
+  <line x1="205" y1="125" x2="205" y2="275" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <line x1="220" y1="125" x2="220" y2="275" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <line x1="235" y1="125" x2="235" y2="275" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <line x1="250" y1="125" x2="250" y2="275" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <line x1="265" y1="125" x2="265" y2="275" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <line x1="280" y1="125" x2="280" y2="275" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <line x1="295" y1="125" x2="295" y2="275" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <line x1="310" y1="125" x2="310" y2="275" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  
+  <!-- Líneas horizontales -->
+  <line x1="185" y1="140" x2="330" y2="140" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <line x1="185" y1="155" x2="330" y2="155" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <line x1="185" y1="170" x2="330" y2="170" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <line x1="185" y1="185" x2="330" y2="185" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <line x1="185" y1="200" x2="330" y2="200" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <line x1="185" y1="215" x2="330" y2="215" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <line x1="185" y1="230" x2="330" y2="230" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <line x1="185" y1="245" x2="330" y2="245" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  <line x1="185" y1="260" x2="330" y2="260" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+  
+  <!-- Mango de la raqueta -->
+  <rect x="250" y="295" width="12" height="100" fill="url(#handleGradient)" stroke="rgba(0,0,0,0.1)" stroke-width="1" rx="2"/>
+  
+  <!-- Empuñadura -->
+  <rect x="248" y="380" width="16" height="35" fill="#64748B" stroke="rgba(0,0,0,0.2)" stroke-width="1" rx="3"/>
+  
+  <!-- Pelota de tenis estilizada -->
+  <circle cx="350" cy="350" r="22" fill="#FFFFFF" stroke="rgba(0,0,0,0.1)" stroke-width="1" filter="url(#softShadow)"/>
+  <path d="M 328 350 Q 350 328 372 350 Q 350 372 328 350" fill="none" stroke="rgba(0,0,0,0.2)" stroke-width="2"/>
+  
+  <!-- Elemento decorativo - líneas de movimiento -->
+  <path d="M 120 120 Q 140 100 160 120" stroke="rgba(255,255,255,0.3)" stroke-width="2" fill="none"/>
+  <path d="M 360 120 Q 380 100 400 120" stroke="rgba(255,255,255,0.3)" stroke-width="2" fill="none"/>
+  <path d="M 120 400 Q 140 420 160 400" stroke="rgba(255,255,255,0.3)" stroke-width="2" fill="none"/>
+  <path d="M 360 400 Q 380 420 400 400" stroke="rgba(255,255,255,0.3)" stroke-width="2" fill="none"/>
+  
+  <!-- Texto "TENNIS" con tipografía moderna -->
+  <text x="256" y="470" font-family="Arial, sans-serif" font-size="20" font-weight="600" text-anchor="middle" fill="#FFFFFF" opacity="0.9">TENNIS</text>
+  
+  <!-- Elemento de marca - punto decorativo -->
+  <circle cx="256" cy="450" r="2" fill="#FFFFFF" opacity="0.6"/>
+</svg>

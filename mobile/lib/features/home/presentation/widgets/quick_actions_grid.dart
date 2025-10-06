@@ -173,7 +173,7 @@ class QuickActionsGrid extends StatelessWidget {
         icon: Icons.calendar_today,
         color: Colors.green,
         onTap: () {
-          // TODO: Implement bookings list
+          context.push('/my-bookings');
         },
       ),
       QuickAction(
@@ -182,7 +182,7 @@ class QuickActionsGrid extends StatelessWidget {
         icon: Icons.account_balance_wallet,
         color: Colors.orange,
         onTap: () {
-          // TODO: Implement balance inquiry
+          context.push('/my-balance');
         },
       ),
       QuickAction(
@@ -191,7 +191,7 @@ class QuickActionsGrid extends StatelessWidget {
         icon: Icons.support_agent,
         color: Colors.purple,
         onTap: () {
-          // TODO: Implement service request
+          context.push('/request-service');
         },
       ),
     ];

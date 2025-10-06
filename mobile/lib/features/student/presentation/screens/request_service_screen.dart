@@ -9,7 +9,8 @@ class RequestServiceScreen extends ConsumerStatefulWidget {
   const RequestServiceScreen({super.key});
 
   @override
-  ConsumerState<RequestServiceScreen> createState() => _RequestServiceScreenState();
+  ConsumerState<RequestServiceScreen> createState() =>
+      _RequestServiceScreenState();
 }
 
 class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
@@ -17,7 +18,7 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _notesController = TextEditingController();
-  
+
   String _selectedServiceType = 'lesson';
   String _selectedPriority = 'medium';
   bool _isSubmitting = false;
@@ -162,9 +163,9 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
       children: [
         Text(
           'Detalles del Servicio',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
         const Gap(16),
 
@@ -196,18 +197,19 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
       children: [
         Text(
           'Tipo de Servicio',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const Gap(8),
         DropdownButtonFormField<String>(
-          value: _selectedServiceType,
+          initialValue: _selectedServiceType,
           decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
           items: _serviceTypes.map((type) {
             return DropdownMenuItem<String>(
@@ -231,19 +233,20 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
       children: [
         Text(
           'Título de la Solicitud',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const Gap(8),
         TextFormField(
           controller: _titleController,
           decoration: InputDecoration(
             hintText: 'Ej: Clase de técnica avanzada',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -265,9 +268,9 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
       children: [
         Text(
           'Descripción Detallada',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const Gap(8),
         TextFormField(
@@ -275,10 +278,11 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
           maxLines: 4,
           decoration: InputDecoration(
             hintText: 'Describe en detalle el servicio que necesitas...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
@@ -300,16 +304,16 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
       children: [
         Text(
           'Prioridad',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const Gap(8),
         Row(
           children: _priorities.map((priority) {
             final isSelected = _selectedPriority == priority['value'];
             final color = _getPriorityColor(priority['color']!);
-            
+
             return Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(right: 8),
@@ -321,11 +325,16 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
                   },
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected ? color.withValues(alpha: 0.1) : null,
                       border: Border.all(
-                        color: isSelected ? color : Theme.of(context).colorScheme.outline,
+                        color: isSelected
+                            ? color
+                            : Theme.of(context).colorScheme.outline,
                         width: isSelected ? 2 : 1,
                       ),
                       borderRadius: BorderRadius.circular(12),
@@ -343,10 +352,13 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
                         const Gap(4),
                         Text(
                           priority['label']!,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                            color: isSelected ? color : null,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                                color: isSelected ? color : null,
+                              ),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -367,20 +379,22 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
       children: [
         Text(
           'Notas Adicionales (Opcional)',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const Gap(8),
         TextFormField(
           controller: _notesController,
           maxLines: 3,
           decoration: InputDecoration(
-            hintText: 'Cualquier información adicional que consideres importante...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            hintText:
+                'Cualquier información adicional que consideres importante...',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
         ),
       ],
@@ -392,13 +406,13 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: _isSubmitting ? null : _submitRequest,
-        icon: _isSubmitting 
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.send),
+        icon: _isSubmitting
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.send),
         label: Text(_isSubmitting ? 'Enviando...' : 'Enviar Solicitud'),
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),

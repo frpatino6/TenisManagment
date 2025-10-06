@@ -5,6 +5,7 @@
  * Tests the complete student journey using mocked Express app
  */
 
+import { describe, it, beforeEach, expect, jest } from '@jest/globals';
 import request from 'supertest';
 import express, { Application } from 'express';
 import { MongoMemoryServer } from 'mongodb-memory-server';

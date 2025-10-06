@@ -3,6 +3,7 @@
  * TEN-75: TS-019: Testing E2E - Professor APIs
  */
 
+import { describe, it, beforeEach, expect, jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
 

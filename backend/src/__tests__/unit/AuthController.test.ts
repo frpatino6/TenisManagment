@@ -3,6 +3,7 @@
  * Generado automáticamente el 2025-10-04
  */
 
+import { describe, it, beforeEach, expect, jest } from '@jest/globals';
 import { AuthController } from '../../application/controllers/AuthController';
 import { MockHelper, TestDataFactory } from '../utils/test-helpers';
 import { JwtService } from '../../infrastructure/services/JwtService';

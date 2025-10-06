@@ -3,6 +3,7 @@
  * TS-015: Testing de Autenticación Firebase
  */
 
+import { describe, it, beforeEach, expect, jest } from '@jest/globals';
 import { Request, Response, NextFunction } from 'express';
 import { firebaseAuthMiddleware } from '../../application/middleware/firebaseAuth';
 import { AuthUserModel } from '../../infrastructure/database/models/AuthUserModel';

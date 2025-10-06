@@ -3,6 +3,7 @@
  * Generado automáticamente el 2025-10-04
  */
 
+import { describe, it, beforeEach, expect, jest } from '@jest/globals';
 import { ProfessorDashboardController } from '../../application/controllers/ProfessorDashboardController';
 import { MockHelper, TestDataFactory } from '../utils/test-helpers';
 

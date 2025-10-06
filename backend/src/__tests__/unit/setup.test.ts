@@ -3,6 +3,7 @@
  * TEN-81: TS-025: Configuración de CI/CD
  */
 
+import { describe, it, beforeEach, expect, jest } from '@jest/globals';
 describe('Testing Setup Verification', () => {
   describe('Jest Configuration', () => {
     it('should have Jest configured correctly', () => {

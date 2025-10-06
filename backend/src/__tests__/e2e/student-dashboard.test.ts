@@ -3,6 +3,7 @@
  * TEN-78: TS-022: Testing E2E - Student APIs
  */
 
+import { describe, it, beforeEach, expect, jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
 

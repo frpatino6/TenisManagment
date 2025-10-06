@@ -3,6 +3,7 @@
  * TEN-76: TS-020: Testing E2E - Authentication APIs
  */
 
+import { describe, it, beforeEach, expect, jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
 

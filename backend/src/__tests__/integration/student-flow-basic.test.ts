@@ -5,6 +5,7 @@
  * Tests the core integration points of the student flow
  */
 
+import { describe, it, beforeEach, expect, jest } from '@jest/globals';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import { AuthUserModel } from '../../infrastructure/database/models/AuthUserModel';

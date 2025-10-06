@@ -3,6 +3,7 @@
  * TS-014: Testing de Repositorios - Messaging
  */
 
+import { describe, it, beforeEach, expect, jest } from '@jest/globals';
 import { MongoConversationRepository } from '../../infrastructure/repositories/MongoRepositories';
 import { ConversationModel } from '../../infrastructure/database/models/ConversationModel';
 import { Types } from 'mongoose';

@@ -3,6 +3,7 @@
  * TS-015: Testing de Autenticación Firebase
  */
 
+import { describe, it, beforeEach, expect, jest } from '@jest/globals';
 import admin from 'firebase-admin';
 import { config } from '../../infrastructure/config';
 

@@ -14,6 +14,7 @@ jest.mock('../../infrastructure/auth/firebase', () => ({
   },
 }));
 
+import { describe, it, beforeEach, expect, jest } from '@jest/globals';
 import { Request, Response } from 'express';
 import { FirebaseAuthController } from '../../application/controllers/FirebaseAuthController';
 import { AuthUserModel } from '../../infrastructure/database/models/AuthUserModel';

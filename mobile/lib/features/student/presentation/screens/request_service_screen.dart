@@ -28,6 +28,7 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
     {'value': 'equipment', 'label': 'Alquiler de Equipos'},
     {'value': 'court', 'label': 'Reserva de Cancha'},
     {'value': 'tournament', 'label': 'Organización de Torneo'},
+    {'value': 'Stream', 'label': 'Encordado'},
     {'value': 'other', 'label': 'Otro'},
   ];
 

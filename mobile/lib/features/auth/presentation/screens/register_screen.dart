@@ -322,37 +322,96 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500),
             ),
             const Gap(8),
-            Row(
-              children: [
-                Expanded(
-                  child: RadioListTile<String>(
-                    title: const Text('Estudiante'),
-                    subtitle: const Text('Aprende tenis'),
-                    value: 'student',
-                    groupValue: _selectedRole,
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedRole = value!;
-                      });
-                    },
-                    contentPadding: EdgeInsets.zero,
+            RadioGroup<String>(
+              groupValue: _selectedRole,
+              onChanged: (value) {
+                setState(() {
+                  _selectedRole = value!;
+                });
+              },
+              child: Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _selectedRole = 'student';
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: _selectedRole == 'student'
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.outline,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Radio<String>(value: 'student'),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Estudiante'),
+                                  Text(
+                                    'Aprende tenis',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: RadioListTile<String>(
-                    title: const Text('Profesor'),
-                    subtitle: const Text('Enseña tenis'),
-                    value: 'professor',
-                    groupValue: _selectedRole,
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedRole = value!;
-                      });
-                    },
-                    contentPadding: EdgeInsets.zero,
+                  const Gap(8),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _selectedRole = 'professor';
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: _selectedRole == 'professor'
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.outline,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Radio<String>(value: 'professor'),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Profesor'),
+                                  Text(
+                                    'Enseña tenis',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         )

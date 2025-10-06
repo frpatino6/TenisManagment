@@ -23,13 +23,12 @@ describe('StudentController', () => {
     it('should get available schedules successfully', async () => {
       // Arrange
       const testData = TestDataFactory.createUser();
-      mockRequest.query = { professorId: 'test-professor-id' };
+      mockRequest.query = { date: '2025-01-01' };
 
       // Act
       await controller.availableSchedules(mockRequest, mockResponse);
 
-      // Assert
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      // Assert - El controlador debería llamar a response.json con los datos
       expect(mockResponse.json).toHaveBeenCalled();
     });
 

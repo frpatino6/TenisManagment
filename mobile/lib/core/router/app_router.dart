@@ -13,6 +13,9 @@ import '../../features/professor/presentation/screens/students_list_screen.dart'
 import '../../features/professor/presentation/screens/student_profile_screen.dart';
 import '../../features/professor/presentation/screens/analytics_dashboard_screen.dart';
 import '../../features/booking/presentation/screens/book_class_screen.dart';
+import '../../features/student/presentation/screens/my_bookings_screen.dart';
+import '../../features/student/presentation/screens/my_balance_screen.dart';
+import '../../features/student/presentation/screens/request_service_screen.dart';
 import '../../features/settings/presentation/screens/theme_settings_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 
@@ -71,6 +74,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/book-class',
         name: 'book-class',
         builder: (context, state) => const BookClassScreen(),
+      ),
+      GoRoute(
+        path: '/my-bookings',
+        name: 'my-bookings',
+        builder: (context, state) => const MyBookingsScreen(),
+      ),
+      GoRoute(
+        path: '/my-balance',
+        name: 'my-balance',
+        builder: (context, state) => const MyBalanceScreen(),
+      ),
+      GoRoute(
+        path: '/request-service',
+        name: 'request-service',
+        builder: (context, state) => const RequestServiceScreen(),
       ),
       GoRoute(
         path: '/create-schedule',

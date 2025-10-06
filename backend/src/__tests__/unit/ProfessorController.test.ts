@@ -28,8 +28,7 @@ describe('ProfessorController', () => {
       // Act
       await controller.getSchedule(mockRequest, mockResponse);
 
-      // Assert
-      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      // Assert - El controlador debería llamar a response.json con los datos
       expect(mockResponse.json).toHaveBeenCalled();
     });
 

@@ -140,7 +140,7 @@ describe('MongoConversationRepository', () => {
       };
 
       mockConversationModel.findById.mockReturnValue({
-        lean: jest.fn().mockResolvedValue(mockConversation)
+        lean: jest.fn().mockResolvedValue(mockConversation as any)
       } as any);
 
       // Act
@@ -179,7 +179,7 @@ describe('MongoConversationRepository', () => {
       // Arrange
       const conversationId = '507f1f77bcf86cd799439013';
       mockConversationModel.findById.mockReturnValue({
-        lean: jest.fn().mockResolvedValue(null)
+        lean: jest.fn().mockResolvedValue(null as any)
       } as any);
 
       // Act
@@ -215,7 +215,7 @@ describe('MongoConversationRepository', () => {
 
       const mockQuery = {
         sort: jest.fn().mockReturnThis(),
-        lean: jest.fn().mockResolvedValue(mockConversations)
+        lean: jest.fn().mockResolvedValue(mockConversations as any)
       };
 
       mockConversationModel.find.mockReturnValue(mockQuery as any);
@@ -237,7 +237,7 @@ describe('MongoConversationRepository', () => {
       const userId = '507f1f77bcf86cd799439011';
       const mockQuery = {
         sort: jest.fn().mockReturnThis(),
-        lean: jest.fn().mockResolvedValue([])
+        lean: jest.fn().mockResolvedValue([] as any)
       };
 
       mockConversationModel.find.mockReturnValue(mockQuery as any);
@@ -280,7 +280,7 @@ describe('MongoConversationRepository', () => {
       };
 
       mockConversationModel.findOne.mockReturnValue({
-        lean: jest.fn().mockResolvedValue(mockConversation)
+        lean: jest.fn().mockResolvedValue(mockConversation as any)
       } as any);
 
       // Act
@@ -302,7 +302,7 @@ describe('MongoConversationRepository', () => {
       const userId1 = '507f1f77bcf86cd799439011';
       const userId2 = '507f1f77bcf86cd799439012';
       mockConversationModel.findOne.mockReturnValue({
-        lean: jest.fn().mockResolvedValue(null)
+        lean: jest.fn().mockResolvedValue(null as any)
       } as any);
 
       // Act
@@ -342,7 +342,7 @@ describe('MongoConversationRepository', () => {
       };
 
       mockConversationModel.findByIdAndUpdate.mockReturnValue({
-        lean: jest.fn().mockResolvedValue(mockUpdatedConversation)
+        lean: jest.fn().mockResolvedValue(mockUpdatedConversation as any)
       } as any);
 
       // Act
@@ -391,7 +391,7 @@ describe('MongoConversationRepository', () => {
       };
 
       mockConversationModel.findByIdAndUpdate.mockReturnValue({
-        lean: jest.fn().mockResolvedValue(mockUpdatedConversation)
+        lean: jest.fn().mockResolvedValue(mockUpdatedConversation as any)
       } as any);
 
       // Act
@@ -440,7 +440,7 @@ describe('MongoConversationRepository', () => {
       };
 
       mockConversationModel.findByIdAndUpdate.mockReturnValue({
-        lean: jest.fn().mockResolvedValue(mockUpdatedConversation)
+        lean: jest.fn().mockResolvedValue(mockUpdatedConversation as any)
       } as any);
 
       // Act
@@ -470,7 +470,7 @@ describe('MongoConversationRepository', () => {
       const userId = '507f1f77bcf86cd799439011';
       const mockQuery = {
         sort: jest.fn().mockReturnThis(),
-        lean: jest.fn().mockResolvedValue([])
+        lean: jest.fn().mockResolvedValue([] as any)
       };
 
       mockConversationModel.find.mockReturnValue(mockQuery as any);
@@ -495,7 +495,7 @@ describe('MongoConversationRepository', () => {
       };
 
       mockConversationModel.findById.mockReturnValue({
-        lean: jest.fn().mockResolvedValue(mockConversation)
+        lean: jest.fn().mockResolvedValue(mockConversation as any)
       } as any);
 
       // Act
@@ -509,7 +509,7 @@ describe('MongoConversationRepository', () => {
       // Arrange
       const invalidId = 'invalid-id';
       mockConversationModel.findById.mockReturnValue({
-        lean: jest.fn().mockResolvedValue(null)
+        lean: jest.fn().mockResolvedValue(null as any)
       } as any);
 
       // Act
@@ -543,7 +543,7 @@ describe('MongoConversationRepository', () => {
 
       const mockQuery = {
         sort: jest.fn().mockReturnThis(),
-        lean: jest.fn().mockResolvedValue(largeConversationList)
+        lean: jest.fn().mockResolvedValue(largeConversationList as any)
       };
 
       mockConversationModel.find.mockReturnValue(mockQuery as any);

@@ -44,7 +44,7 @@ describe('StudentDashboardController', () => {
       const { BookingModel } = require('../../infrastructure/database/models/BookingModel');
       
       AuthUserModel.findOne.mockResolvedValue({ _id: 'user-id', email: 'test@example.com' });
-      BookingModel.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
+      BookingModel.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([] as any) });
 
       // Act
       await controller.getRecentActivities(mockRequest, mockResponse);

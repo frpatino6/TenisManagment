@@ -68,12 +68,12 @@ describe('Testing Setup Verification', () => {
     });
 
     it('should be able to mock return values', () => {
-      const mockFn = jest.fn().mockReturnValue('test-value');
+      const mockFn = jest.fn().mockReturnValue('test-value' as any);
       expect(mockFn()).toBe('test-value');
     });
 
     it('should be able to mock resolved promises', async () => {
-      const mockFn = jest.fn().mockResolvedValue('async-test-value');
+      const mockFn = jest.fn().mockResolvedValue('async-test-value' as any);
       const result = await mockFn();
       expect(result).toBe('async-test-value');
     });

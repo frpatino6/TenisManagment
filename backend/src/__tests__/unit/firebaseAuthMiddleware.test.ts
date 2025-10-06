@@ -37,7 +37,7 @@ jest.mock('../../infrastructure/database/models/AuthUserModel', () => ({
 
 // Mock de Logger
 jest.mock('../../infrastructure/services/Logger', () => ({
-  Logger: jest.fn().mockImplementation(() => ({
+  Logger: jest.fn().mockImplementation(( as any) => ({
     warn: jest.fn(),
     info: jest.fn(),
     error: jest.fn(),

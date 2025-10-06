@@ -215,7 +215,7 @@ describe('MongoMessageRepository', () => {
       };
 
       mockMessageModel.findById.mockReturnValue({
-        lean: jest.fn().mockResolvedValue(mockMessage)
+        lean: jest.fn().mockResolvedValue(mockMessage as any)
       } as any);
 
       // Act
@@ -243,7 +243,7 @@ describe('MongoMessageRepository', () => {
       // Arrange
       const messageId = '507f1f77bcf86cd799439014';
       mockMessageModel.findById.mockReturnValue({
-        lean: jest.fn().mockResolvedValue(null)
+        lean: jest.fn().mockResolvedValue(null as any)
       } as any);
 
       // Act
@@ -293,7 +293,7 @@ describe('MongoMessageRepository', () => {
         sort: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
-        lean: jest.fn().mockResolvedValue(mockMessages)
+        lean: jest.fn().mockResolvedValue(mockMessages as any)
       };
 
       mockMessageModel.find.mockReturnValue(mockQuery as any);
@@ -321,7 +321,7 @@ describe('MongoMessageRepository', () => {
         sort: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
-        lean: jest.fn().mockResolvedValue([])
+        lean: jest.fn().mockResolvedValue([] as any)
       };
 
       mockMessageModel.find.mockReturnValue(mockQuery as any);
@@ -355,7 +355,7 @@ describe('MongoMessageRepository', () => {
       };
 
       mockMessageModel.findByIdAndUpdate.mockReturnValue({
-        lean: jest.fn().mockResolvedValue(mockUpdatedMessage)
+        lean: jest.fn().mockResolvedValue(mockUpdatedMessage as any)
       } as any);
 
       // Act
@@ -378,7 +378,7 @@ describe('MongoMessageRepository', () => {
       // Arrange
       const messageId = '507f1f77bcf86cd799439014';
       mockMessageModel.findByIdAndUpdate.mockReturnValue({
-        lean: jest.fn().mockResolvedValue(null)
+        lean: jest.fn().mockResolvedValue(null as any)
       } as any);
 
       // Act
@@ -409,7 +409,7 @@ describe('MongoMessageRepository', () => {
       };
 
       mockMessageModel.findByIdAndUpdate.mockReturnValue({
-        lean: jest.fn().mockResolvedValue(mockUpdatedMessage)
+        lean: jest.fn().mockResolvedValue(mockUpdatedMessage as any)
       } as any);
 
       // Act
@@ -479,7 +479,7 @@ describe('MongoMessageRepository', () => {
         sort: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
-        lean: jest.fn().mockResolvedValue([])
+        lean: jest.fn().mockResolvedValue([] as any)
       };
 
       mockMessageModel.find.mockReturnValue(mockQuery as any);
@@ -495,7 +495,7 @@ describe('MongoMessageRepository', () => {
       // Arrange
       const invalidId = 'invalid-id';
       mockMessageModel.findById.mockReturnValue({
-        lean: jest.fn().mockResolvedValue(null)
+        lean: jest.fn().mockResolvedValue(null as any)
       } as any);
 
       // Act

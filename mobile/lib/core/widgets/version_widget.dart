@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../services/version_service.dart';
 
 class VersionWidget extends StatefulWidget {
   final bool showBuildNumber;
@@ -23,37 +22,14 @@ class VersionWidget extends StatefulWidget {
 }
 
 class _VersionWidgetState extends State<VersionWidget> {
-  final VersionService _versionService = VersionService.instance;
-  String _version = 'Cargando...';
-  String _buildNumber = '';
-  bool _isInitialized = false;
+  final String _version = 'v1.3.3';
+  final String _buildNumber = '1';
+  final bool _isInitialized = true;
 
   @override
   void initState() {
     super.initState();
-    _initializeVersion();
-  }
-
-  Future<void> _initializeVersion() async {
-    try {
-      await _versionService.initialize();
-      if (mounted) {
-        setState(() {
-          _version = _versionService.displayVersion;
-          _buildNumber = _versionService.buildNumber;
-          _isInitialized = true;
-        });
-      }
-    } catch (e) {
-      // Fallback si hay error
-      if (mounted) {
-        setState(() {
-          _version = 'v1.2.1';
-          _buildNumber = '13';
-          _isInitialized = true;
-        });
-      }
-    }
+    // Usar valores hardcodeados para evitar el error de PackageInfo
   }
 
   @override
@@ -94,7 +70,7 @@ class _VersionWidgetState extends State<VersionWidget> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          _versionService.appName,
+          'Tennis Management',
           style: textStyle.copyWith(fontWeight: FontWeight.w600, fontSize: 14),
         ),
         const SizedBox(height: 4),
@@ -114,7 +90,7 @@ class _VersionWidgetState extends State<VersionWidget> {
   }
 }
 
-/// Widget compacto para mostrar solo la versión
+/// Widget compacto para mostrar solo la versión con el diseño original
 class VersionBadge extends StatelessWidget {
   final bool showBuildNumber;
   final EdgeInsets? margin;
@@ -127,17 +103,71 @@ class VersionBadge extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Container(
-      margin: margin ?? const EdgeInsets.all(8.0),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: margin ?? const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
+        gradient: LinearGradient(
+          colors: [
+            colorScheme.primary.withValues(alpha: 0.1),
+            colorScheme.primary.withValues(alpha: 0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: 0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: VersionWidget(
-        showBuildNumber: showBuildNumber,
-        textColor: colorScheme.onSurfaceVariant,
-        textStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w500),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.info_outline, size: 16, color: colorScheme.primary),
+          const SizedBox(width: 8),
+          Text(
+            'Tennis Management',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: colorScheme.primary,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'v1.3.3',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
+              ),
+            ),
+          ),
+          if (showBuildNumber) ...[
+            const SizedBox(width: 4),
+            Text(
+              'Build 1',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

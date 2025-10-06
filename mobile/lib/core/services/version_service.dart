@@ -10,11 +10,16 @@ class VersionService {
 
   /// Inicializa el servicio de versiones
   Future<void> initialize() async {
-    _packageInfo = await PackageInfo.fromPlatform();
+    try {
+      _packageInfo = await PackageInfo.fromPlatform();
+    } catch (e) {
+      // Si hay error, usar valores por defecto
+      _packageInfo = null;
+    }
   }
 
   /// Obtiene la versión de la aplicación
-  String get version => _packageInfo?.version ?? '1.0.0';
+  String get version => _packageInfo?.version ?? '1.3.3';
 
   /// Obtiene el número de build
   String get buildNumber => _packageInfo?.buildNumber ?? '1';

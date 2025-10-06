@@ -19,14 +19,14 @@ describe('Testing Setup Verification', () => {
 
   describe('Test Utilities', () => {
     it('should have global test utilities available', () => {
-      expect(global.testUtils).toBeDefined();
-      expect(global.testUtils.createTestUser).toBeInstanceOf(Function);
-      expect(global.testUtils.createTestProfessor).toBeInstanceOf(Function);
-      expect(global.testUtils.createTestStudent).toBeInstanceOf(Function);
+      expect((global as any).testUtils).toBeDefined();
+      expect((global as any).testUtils.createTestUser).toBeInstanceOf(Function);
+      expect((global as any).testUtils.createTestProfessor).toBeInstanceOf(Function);
+      expect((global as any).testUtils.createTestStudent).toBeInstanceOf(Function);
     });
 
     it('should create test user correctly', () => {
-      const testUser = global.testUtils.createTestUser();
+      const testUser = (global as any).testUtils.createTestUser();
       
       expect(testUser).toHaveProperty('id');
       expect(testUser).toHaveProperty('name');
@@ -36,7 +36,7 @@ describe('Testing Setup Verification', () => {
     });
 
     it('should create test professor correctly', () => {
-      const testProfessor = global.testUtils.createTestProfessor();
+      const testProfessor = (global as any).testUtils.createTestProfessor();
       
       expect(testProfessor).toHaveProperty('id');
       expect(testProfessor).toHaveProperty('name');
@@ -48,7 +48,7 @@ describe('Testing Setup Verification', () => {
     });
 
     it('should create test student correctly', () => {
-      const testStudent = global.testUtils.createTestStudent();
+      const testStudent = (global as any).testUtils.createTestStudent();
       
       expect(testStudent).toHaveProperty('id');
       expect(testStudent).toHaveProperty('name');
@@ -68,12 +68,12 @@ describe('Testing Setup Verification', () => {
     });
 
     it('should be able to mock return values', () => {
-      const mockFn = jest.fn().mockReturnValue('test-value' as any);
+      const mockFn = jest.fn().mockReturnValue('test-value' as any as any);
       expect(mockFn()).toBe('test-value');
     });
 
     it('should be able to mock resolved promises', async () => {
-      const mockFn = jest.fn().mockResolvedValue('async-test-value' as any);
+      const mockFn = jest.fn().mockResolvedValue('async-test-value' as any as any);
       const result = await mockFn();
       expect(result).toBe('async-test-value');
     });
@@ -81,7 +81,7 @@ describe('Testing Setup Verification', () => {
 
   describe('Test Data Validation', () => {
     it('should validate test data structure', () => {
-      const testUser = global.testUtils.createTestUser({
+      const testUser = (global as any).testUtils.createTestUser({
         name: 'Custom User',
         email: 'custom@example.com'
       });
@@ -92,7 +92,7 @@ describe('Testing Setup Verification', () => {
     });
 
     it('should handle date creation correctly', () => {
-      const testSchedule = global.testUtils.createTestSchedule();
+      const testSchedule = (global as any).testUtils.createTestSchedule();
       
       expect(testSchedule).toHaveProperty('date');
       expect(testSchedule.date).toBeInstanceOf(Date);

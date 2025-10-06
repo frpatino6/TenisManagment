@@ -37,7 +37,7 @@ jest.mock('../../infrastructure/database/models/AuthUserModel', () => ({
 
 // Mock de Logger
 jest.mock('../../infrastructure/services/Logger', () => ({
-  Logger: jest.fn().mockImplementation(( as any) => ({
+  Logger: jest.fn().mockImplementation(() => ({
     warn: jest.fn(),
     info: jest.fn(),
     error: jest.fn(),
@@ -57,8 +57,8 @@ describe('Firebase Auth Middleware', () => {
     };
     
     mockResponse = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
+      status: jest.fn().mockReturnThis() as any,
+      json: jest.fn().mockReturnThis() as any,
     };
     
     mockNext = jest.fn();

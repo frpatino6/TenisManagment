@@ -17,7 +17,7 @@ jest.mock('../../infrastructure/database/models/AuthUserModel', () => ({
 }));
 
 jest.mock('../../infrastructure/services/PasswordService', () => ({
-  BcryptPasswordService: jest.fn().mockImplementation(( as any) => ({
+  BcryptPasswordService: jest.fn().mockImplementation(() => ({
     compare: jest.fn(),
     hash: jest.fn(),
   })),

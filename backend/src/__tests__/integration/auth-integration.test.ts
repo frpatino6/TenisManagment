@@ -67,7 +67,7 @@ describe('Authentication Integration Tests', () => {
       _id: 'mock-user-id',
       email: 'test@example.com',
       role: 'student' as const,
-      save: jest.fn().mockResolvedValue(true as any)
+      save: jest.fn().mockResolvedValue(true as any as any)
     });
     
     mockProfessorModel.create.mockResolvedValue({
@@ -204,7 +204,7 @@ describe('Authentication Integration Tests', () => {
           email: 'student@example.com',
           passwordHash: 'hashed-password',
           role: 'student' as const,
-          save: jest.fn().mockResolvedValue(true as any)
+          save: jest.fn().mockResolvedValue(true as any as any)
         });
 
         // Mock password comparison
@@ -289,7 +289,7 @@ describe('Authentication Integration Tests', () => {
           email: 'student@example.com',
           role: 'student' as const,
           refreshToken: 'valid-refresh-token',
-          save: jest.fn().mockResolvedValue(true as any)
+          save: jest.fn().mockResolvedValue(true as any as any)
         });
 
         // Mock JWT signing
@@ -476,7 +476,7 @@ describe('Authentication Integration Tests', () => {
         email: 'flowtest@example.com',
         passwordHash: 'hashed-password',
         role: 'student' as const,
-        save: jest.fn().mockResolvedValue(true as any)
+        save: jest.fn().mockResolvedValue(true as any as any)
       });
 
       jest.spyOn(passwordService, 'compare').mockResolvedValue(true);
@@ -509,7 +509,7 @@ describe('Authentication Integration Tests', () => {
         email: 'flowtest@example.com',
         role: 'student' as const,
         refreshToken: 'login-refresh-token',
-        save: jest.fn().mockResolvedValue(true as any)
+        save: jest.fn().mockResolvedValue(true as any as any)
       });
 
       jest.spyOn(jwtService, 'signAccess').mockReturnValue('refreshed-access-token');

@@ -4,6 +4,18 @@ module.exports = {
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.test.ts'],
   testPathIgnorePatterns: ['/node_modules/', '/integration/'],
+  transform: {
+    '^.+\\.ts$': ['ts-jest', {
+      isolatedModules: true,
+      tsconfig: {
+        strict: false,
+        noImplicitAny: false,
+        skipLibCheck: true,
+        esModuleInterop: true,
+        allowSyntheticDefaultImports: true
+      }
+    }]
+  },
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',

@@ -5,6 +5,7 @@ import professorDashboard from './professor-dashboard';
 import analytics from './analytics';
 import student from './student';
 import pricing from './pricing';
+import messaging from './messaging';
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use('/professor-dashboard', professorDashboard);
 router.use('/professor-dashboard/analytics', analytics);
 router.use('/student', student);
 router.use('/pricing', pricing);
+router.use('/messaging', messaging);
 
 export default router;

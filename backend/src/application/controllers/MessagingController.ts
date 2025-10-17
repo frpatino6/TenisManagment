@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 import {
   SendMessageUseCaseImpl,
   GetConversationUseCaseImpl,
@@ -90,13 +91,19 @@ export class MessagingController {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
+      // Agregar IDs a los adjuntos si existen
+      const attachmentsWithIds = parsed.data.attachments?.map((attachment) => ({
+        id: randomUUID(),
+        ...attachment,
+      }));
+
       const message = await this.sendMessageUseCase.execute({
         senderId: userId,
         receiverId: parsed.data.receiverId,
         content: parsed.data.content,
         type: parsed.data.type,
         parentMessageId: parsed.data.parentMessageId,
-        attachments: parsed.data.attachments,
+        attachments: attachmentsWithIds,
       });
 
       return res.status(201).json({

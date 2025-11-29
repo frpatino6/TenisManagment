@@ -8,8 +8,6 @@ import {
   MongoServiceRepository,
   MongoReportRepository,
   MongoServiceRequestRepository,
-  MongoMessageRepository,
-  MongoConversationRepository,
 } from '../repositories/MongoRepositories';
 import {
   ProfessorRepository,
@@ -20,8 +18,6 @@ import {
   ServiceRepository,
   ReportRepository,
   ServiceRequestRepository,
-  MessageRepository,
-  ConversationRepository,
 } from '../../domain/repositories/index';
 import {
   PublishSchedule,
@@ -37,15 +33,6 @@ import {
   RequestService,
 } from '../../domain/use-cases/StudentUseCases';
 import {
-  SendMessageUseCaseImpl,
-  GetConversationUseCaseImpl,
-  GetConversationsUseCaseImpl,
-  GetMessagesUseCaseImpl,
-  MarkMessageAsReadUseCaseImpl,
-  GetUnreadCountUseCaseImpl,
-  CreateConversationUseCaseImpl,
-} from '../../domain/use-cases/MessageUseCases';
-import {
   PublishScheduleUseCase,
   ManageCourtAvailabilityUseCase,
   TrackIncomeUseCase,
@@ -55,13 +42,6 @@ import {
   ViewBalanceUseCase,
   ViewPaymentHistoryUseCase,
   RequestServiceUseCase,
-  SendMessageUseCase,
-  GetConversationUseCase,
-  GetConversationsUseCase,
-  GetMessagesUseCase,
-  MarkMessageAsReadUseCase,
-  GetUnreadCountUseCase,
-  CreateConversationUseCase,
 } from '../../domain/use-cases/index';
 import { JwtService } from '../services/JwtService';
 import { config } from '../config';
@@ -75,8 +55,6 @@ export const TYPES = {
   ServiceRepository: Symbol.for('ServiceRepository'),
   ReportRepository: Symbol.for('ReportRepository'),
   ServiceRequestRepository: Symbol.for('ServiceRequestRepository'),
-  MessageRepository: Symbol.for('MessageRepository'),
-  ConversationRepository: Symbol.for('ConversationRepository'),
   // Use cases
   PublishScheduleUseCase: Symbol.for('PublishScheduleUseCase'),
   ManageCourtAvailabilityUseCase: Symbol.for('ManageCourtAvailabilityUseCase'),
@@ -87,13 +65,6 @@ export const TYPES = {
   ViewBalanceUseCase: Symbol.for('ViewBalanceUseCase'),
   ViewPaymentHistoryUseCase: Symbol.for('ViewPaymentHistoryUseCase'),
   RequestServiceUseCase: Symbol.for('RequestServiceUseCase'),
-  SendMessageUseCase: Symbol.for('SendMessageUseCase'),
-  GetConversationUseCase: Symbol.for('GetConversationUseCase'),
-  GetConversationsUseCase: Symbol.for('GetConversationsUseCase'),
-  GetMessagesUseCase: Symbol.for('GetMessagesUseCase'),
-  MarkMessageAsReadUseCase: Symbol.for('MarkMessageAsReadUseCase'),
-  GetUnreadCountUseCase: Symbol.for('GetUnreadCountUseCase'),
-  CreateConversationUseCase: Symbol.for('CreateConversationUseCase'),
   JwtService: Symbol.for('JwtService'),
 } as const;
 
@@ -124,12 +95,6 @@ container
 container
   .bind<ServiceRequestRepository>(TYPES.ServiceRequestRepository)
   .toConstantValue(new MongoServiceRequestRepository());
-container
-  .bind<MessageRepository>(TYPES.MessageRepository)
-  .toConstantValue(new MongoMessageRepository());
-container
-  .bind<ConversationRepository>(TYPES.ConversationRepository)
-  .toConstantValue(new MongoConversationRepository());
 
 // services
 container.bind<JwtService>(TYPES.JwtService).toConstantValue(new JwtService(config.jwtSecret));
@@ -170,29 +135,3 @@ container
 container
   .bind<RequestServiceUseCase>(TYPES.RequestServiceUseCase)
   .toDynamicValue((ctx) => new RequestService(ctx.container.get(TYPES.ServiceRequestRepository)));
-
-// Message use cases
-container
-  .bind<SendMessageUseCase>(TYPES.SendMessageUseCase)
-  .toDynamicValue((ctx) => new SendMessageUseCaseImpl(
-    ctx.container.get(TYPES.MessageRepository),
-    ctx.container.get(TYPES.ConversationRepository)
-  ));
-container
-  .bind<GetConversationUseCase>(TYPES.GetConversationUseCase)
-  .toDynamicValue((ctx) => new GetConversationUseCaseImpl(ctx.container.get(TYPES.ConversationRepository)));
-container
-  .bind<GetConversationsUseCase>(TYPES.GetConversationsUseCase)
-  .toDynamicValue((ctx) => new GetConversationsUseCaseImpl(ctx.container.get(TYPES.ConversationRepository)));
-container
-  .bind<GetMessagesUseCase>(TYPES.GetMessagesUseCase)
-  .toDynamicValue((ctx) => new GetMessagesUseCaseImpl(ctx.container.get(TYPES.MessageRepository)));
-container
-  .bind<MarkMessageAsReadUseCase>(TYPES.MarkMessageAsReadUseCase)
-  .toDynamicValue((ctx) => new MarkMessageAsReadUseCaseImpl(ctx.container.get(TYPES.MessageRepository)));
-container
-  .bind<GetUnreadCountUseCase>(TYPES.GetUnreadCountUseCase)
-  .toDynamicValue((ctx) => new GetUnreadCountUseCaseImpl(ctx.container.get(TYPES.MessageRepository)));
-container
-  .bind<CreateConversationUseCase>(TYPES.CreateConversationUseCase)
-  .toDynamicValue((ctx) => new CreateConversationUseCaseImpl(ctx.container.get(TYPES.ConversationRepository)));

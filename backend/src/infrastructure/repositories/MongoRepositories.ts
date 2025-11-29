@@ -8,8 +8,6 @@ import {
   ServiceRepository,
   ReportRepository,
   ServiceRequestRepository,
-  MessageRepository,
-  ConversationRepository,
 } from '../../domain/repositories/index';
 import { Professor } from '../../domain/entities/Professor';
 import { Student } from '../../domain/entities/Student';
@@ -17,7 +15,6 @@ import { Schedule } from '../../domain/entities/Schedule';
 import { Booking } from '../../domain/entities/Booking';
 import { Payment } from '../../domain/entities/Payment';
 import { Service } from '../../domain/entities/Service';
-import { Message, Conversation, MessageAttachment } from '../../domain/entities/Message';
 import { ProfessorModel } from '../database/models/ProfessorModel';
 import { StudentModel } from '../database/models/StudentModel';
 import { ScheduleModel } from '../database/models/ScheduleModel';
@@ -25,8 +22,6 @@ import { BookingModel } from '../database/models/BookingModel';
 import { PaymentModel } from '../database/models/PaymentModel';
 import { ServiceModel } from '../database/models/ServiceModel';
 import { ServiceRequestModel } from '../database/models/ServiceRequestModel';
-import { MessageModel } from '../database/models/MessageModel';
-import { ConversationModel } from '../database/models/ConversationModel';
 import { ServiceRequest } from '../../domain/entities/ServiceRequest';
 
 export class MongoProfessorRepository implements ProfessorRepository {
@@ -414,221 +409,6 @@ export class MongoServiceRequestRepository implements ServiceRequestRepository {
       notes: created.notes,
       status: created.status,
       createdAt: created.createdAt,
-    };
-  }
-}
-
-export class MongoMessageRepository implements MessageRepository {
-  async create(message: Omit<Message, 'id' | 'createdAt' | 'updatedAt'>): Promise<Message> {
-    const created = await MessageModel.create({
-      ...message,
-      senderId: new Types.ObjectId(message.senderId),
-      receiverId: new Types.ObjectId(message.receiverId),
-      conversationId: new Types.ObjectId(message.conversationId),
-      parentMessageId: message.parentMessageId ? new Types.ObjectId(message.parentMessageId) : undefined,
-    });
-    return {
-      id: created._id.toString(),
-      senderId: created.senderId.toString(),
-      receiverId: created.receiverId.toString(),
-      content: created.content,
-      type: created.type,
-      status: created.status,
-      conversationId: created.conversationId.toString(),
-      parentMessageId: created.parentMessageId?.toString(),
-      attachments: created.attachments?.map(att => ({
-        id: att._id.toString(),
-        fileName: att.fileName,
-        fileUrl: att.fileUrl,
-        fileType: att.fileType,
-        fileSize: att.fileSize,
-      })),
-      createdAt: created.createdAt,
-      updatedAt: created.updatedAt,
-      readAt: created.readAt,
-    };
-  }
-
-  async findById(id: string): Promise<Message | null> {
-    const doc = await MessageModel.findById(id).lean();
-    return doc ? this.mapToMessage(doc) : null;
-  }
-
-  async findByConversation(conversationId: string, limit: number = 50, offset: number = 0): Promise<Message[]> {
-    const docs = await MessageModel
-      .find({ conversationId: new Types.ObjectId(conversationId) })
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .skip(offset)
-      .lean();
-    return docs.map(doc => this.mapToMessage(doc));
-  }
-
-  async markAsRead(messageId: string): Promise<Message | null> {
-    const doc = await MessageModel.findByIdAndUpdate(
-      messageId,
-      { 
-        status: 'read' as const,
-        readAt: new Date()
-      },
-      { new: true }
-    ).lean();
-    return doc ? this.mapToMessage(doc) : null;
-  }
-
-  async markAsDelivered(messageId: string): Promise<Message | null> {
-    const doc = await MessageModel.findByIdAndUpdate(
-      messageId,
-      { status: 'delivered' as const },
-      { new: true }
-    ).lean();
-    return doc ? this.mapToMessage(doc) : null;
-  }
-
-  async getUnreadCount(userId: string): Promise<number> {
-    return await MessageModel.countDocuments({
-      receiverId: new Types.ObjectId(userId),
-      status: { $in: ['sent', 'delivered'] }
-    });
-  }
-
-  async delete(id: string): Promise<void> {
-    await MessageModel.findByIdAndDelete(id);
-  }
-
-  private mapToMessage(doc: any): Message {
-    return {
-      id: doc._id.toString(),
-      senderId: doc.senderId.toString(),
-      receiverId: doc.receiverId.toString(),
-      content: doc.content,
-      type: doc.type,
-      status: doc.status,
-      conversationId: doc.conversationId.toString(),
-      parentMessageId: doc.parentMessageId?.toString(),
-      attachments: doc.attachments?.map((att: any) => ({
-        id: att._id.toString(),
-        fileName: att.fileName,
-        fileUrl: att.fileUrl,
-        fileType: att.fileType,
-        fileSize: att.fileSize,
-      })),
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-      readAt: doc.readAt,
-    };
-  }
-}
-
-export class MongoConversationRepository implements ConversationRepository {
-  async create(conversation: Omit<Conversation, 'id' | 'createdAt' | 'updatedAt'>): Promise<Conversation> {
-    const created = await ConversationModel.create({
-      ...conversation,
-      participants: conversation.participants.map((p: any) => ({
-        ...p,
-        userId: new Types.ObjectId(p.userId),
-        joinedAt: new Date(),
-      })),
-    });
-    return this.mapToConversation(created);
-  }
-
-  async findById(id: string): Promise<Conversation | null> {
-    const doc = await ConversationModel.findById(id).lean();
-    return doc ? this.mapToConversation(doc) : null;
-  }
-
-  async findByParticipant(userId: string): Promise<Conversation[]> {
-    const docs = await ConversationModel
-      .find({ 
-        'participants.userId': new Types.ObjectId(userId),
-        'participants.isActive': true 
-      })
-      .sort({ lastMessageAt: -1 })
-      .lean();
-    return docs.map(doc => this.mapToConversation(doc));
-  }
-
-  async findByParticipants(userId1: string, userId2: string): Promise<Conversation | null> {
-    const doc = await ConversationModel.findOne({
-      'participants.userId': { 
-        $all: [new Types.ObjectId(userId1), new Types.ObjectId(userId2)] 
-      },
-      'participants.isActive': true
-    }).lean();
-    return doc ? this.mapToConversation(doc) : null;
-  }
-
-  async updateLastMessage(conversationId: string, message: Message): Promise<Conversation | null> {
-    const doc = await ConversationModel.findByIdAndUpdate(
-      conversationId,
-      { 
-        lastMessage: new Types.ObjectId(message.id),
-        lastMessageAt: message.createdAt
-      },
-      { new: true }
-    ).lean();
-    return doc ? this.mapToConversation(doc) : null;
-  }
-
-  async addParticipant(conversationId: string, participant: Conversation['participants'][0]): Promise<Conversation | null> {
-    const doc = await ConversationModel.findByIdAndUpdate(
-      conversationId,
-      { 
-        $push: { 
-          participants: {
-            ...participant,
-            userId: new Types.ObjectId(participant.userId),
-            joinedAt: new Date(),
-            isActive: true
-          }
-        }
-      },
-      { new: true }
-    ).lean();
-    return doc ? this.mapToConversation(doc) : null;
-  }
-
-  async removeParticipant(conversationId: string, userId: string): Promise<Conversation | null> {
-    const doc = await ConversationModel.findByIdAndUpdate(
-      conversationId,
-      { 
-        $set: { 
-          'participants.$[elem].isActive': false,
-          'participants.$[elem].leftAt': new Date()
-        }
-      },
-      { 
-        arrayFilters: [{ 'elem.userId': new Types.ObjectId(userId) }],
-        new: true 
-      }
-    ).lean();
-    return doc ? this.mapToConversation(doc) : null;
-  }
-
-  private mapToConversation(doc: any): Conversation {
-    return {
-      id: doc._id.toString(),
-      participants: doc.participants.map((p: any) => ({
-        userId: p.userId.toString(),
-        userType: p.userType,
-        joinedAt: p.joinedAt,
-        leftAt: p.leftAt,
-        isActive: p.isActive,
-      })),
-      lastMessage: doc.lastMessage ? {
-        id: doc.lastMessage.toString(),
-        senderId: '',
-        receiverId: '',
-        content: '',
-        type: 'text' as const,
-        status: 'sent' as const,
-        conversationId: doc._id.toString(),
-        createdAt: new Date(),
-      } : undefined,
-      lastMessageAt: doc.lastMessageAt,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
     };
   }
 }

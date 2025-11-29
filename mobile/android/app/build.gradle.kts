@@ -21,14 +21,46 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.tennismanagement.tennis_management"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    // ============================================================================
+    // FLAVORS CONFIGURATION
+    // ============================================================================
+    // Configuración de flavors para soportar múltiples ambientes
+    // - dev: Desarrollo local (backend localhost)
+    // - prod: Producción (backend Render)
+    
+    flavorDimensions += "environment"
+    
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            
+            // Nombre de la app en el dispositivo
+            resValue("string", "app_name", "Tennis DEV")
+            
+            // Configuraciones adicionales para desarrollo
+            buildConfigField("String", "ENVIRONMENT", "\"development\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000/api\"")
+        }
+        
+        create("prod") {
+            dimension = "environment"
+            
+            // Nombre de la app en el dispositivo
+            resValue("string", "app_name", "Tennis Management")
+            
+            // Configuraciones adicionales para producción
+            buildConfigField("String", "ENVIRONMENT", "\"production\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://tenismanagment.onrender.com/api\"")
+        }
     }
 
     buildTypes {

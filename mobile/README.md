@@ -1,117 +1,360 @@
-# Tennis Management Mobile App
+# 📱 Tennis Management Mobile App
 
 Aplicación móvil Flutter para el sistema de gestión de tenis.
 
+---
+
 ## 🚀 Características
 
-- **Autenticación con Google** via Firebase
-- **Autenticación con email/contraseña** via Firebase
-- **Integración completa** con el backend Node.js
-- **UI moderna** y responsive
-- **Manejo de estados** con Provider
-- **Navegación** entre pantallas
+- ✅ **Autenticación con Google** via Firebase
+- ✅ **Autenticación con email/contraseña** via Firebase
+- ✅ **Integración completa** con el backend Node.js
+- ✅ **UI moderna** y responsive con Material Design 3
+- ✅ **Manejo de estados** con Riverpod
+- ✅ **Navegación** con GoRouter
+- ✅ **Múltiples ambientes** (desarrollo y producción)
+- ✅ **Temas claro/oscuro**
 
-## 📱 Pantallas implementadas
+---
 
-- **Login Screen** - Inicio de sesión
-- **Register Screen** - Registro de usuarios
-- **Home Screen** - Pantalla principal con acciones rápidas
+## 🌍 Ambientes
 
-## 🔧 Configuración
+La aplicación soporta dos ambientes completamente separados:
 
-### 1. Dependencias instaladas
+### 🔧 Desarrollo (DEV)
+- **Backend:** `http://10.0.2.2:3000` (localhost en emulador Android)
+- **App Name:** Tennis DEV
+- **Package:** `com.tennismanagement.tennis_management.dev`
+- **Firebase:** tennis-management-fcd54 (por ahora)
+- **Debug logs:** ✅ Habilitados
+- **Uso:** Desarrollo local contra tu backend local
 
-```yaml
-dependencies:
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.15.3
-  google_sign_in: ^6.1.6
-  http: ^1.1.0
-  provider: ^6.1.1
-  flutter_svg: ^2.0.9
-  google_fonts: ^6.1.0
-```
+### 🌐 Producción (PROD)
+- **Backend:** `https://tenismanagment.onrender.com`
+- **App Name:** Tennis Management
+- **Package:** `com.tennismanagement.tennis_management`
+- **Firebase:** tennis-management-fcd54
+- **Debug logs:** ❌ Deshabilitados
+- **Uso:** Testing contra backend en Render o para releases
 
-### 2. Configuración de Firebase
+> 💡 **Nota:** Ambas apps pueden estar instaladas simultáneamente en el mismo dispositivo.
 
-**IMPORTANTE:** Necesitas configurar Firebase para Android/iOS:
+---
 
-1. Ve a [Firebase Console](https://console.firebase.google.com/)
-2. Selecciona tu proyecto "tennis-management-fcd54"
-3. Agrega apps Android/iOS
-4. Descarga los archivos de configuración:
-   - `google-services.json` (Android)
-   - `GoogleService-Info.plist` (iOS)
-5. Actualiza `lib/firebase_options.dart` con las configuraciones reales
+## 🏃‍♂️ Ejecutar la Aplicación
 
-### 3. Backend URL
-
-En `lib/services/auth_service.dart`, actualiza la URL del backend:
-
-```dart
-static const String _backendUrl = 'http://localhost:3000'; // Cambiar por tu URL
-```
-
-## 🏃‍♂️ Ejecutar la app
+### Opción 1: Scripts (Recomendado)
 
 ```bash
-# Instalar dependencias
-flutter pub get
+# Desarrollo (backend local)
+./scripts/run_dev.sh
 
-# Ejecutar en modo debug
-flutter run
-
-# Ejecutar en modo release
-flutter run --release
+# Producción (backend Render)
+./scripts/run_prod.sh
 ```
 
-## 📁 Estructura del proyecto
+### Opción 2: Comandos Flutter directos
+
+```bash
+# Desarrollo
+flutter run --flavor dev -t lib/main_dev.dart
+
+# Producción
+flutter run --flavor prod -t lib/main_prod.dart
+
+# Producción (por defecto)
+flutter run
+```
+
+### Opción 3: Especificar dispositivo
+
+```bash
+# En un dispositivo específico
+./scripts/run_dev.sh android
+./scripts/run_prod.sh ios
+
+# O con Flutter
+flutter run --flavor dev -t lib/main_dev.dart -d <device-id>
+```
+
+---
+
+## 🏗️ Construir APK/AAB
+
+### APK para instalación directa
+
+```bash
+# Desarrollo
+./scripts/build_dev.sh apk
+
+# Producción
+./scripts/build_prod.sh apk
+```
+
+### App Bundle para Google Play
+
+```bash
+# Desarrollo
+./scripts/build_dev.sh appbundle
+
+# Producción
+./scripts/build_prod.sh appbundle
+```
+
+### Ubicaciones de los builds
+
+- **Dev APK:** `build/app/outputs/flutter-apk/app-dev-release.apk`
+- **Prod APK:** `build/app/outputs/flutter-apk/app-prod-release.apk`
+- **Dev AAB:** `build/app/outputs/bundle/devRelease/app-dev-release.aab`
+- **Prod AAB:** `build/app/outputs/bundle/prodRelease/app-prod-release.aab`
+
+---
+
+## 📦 Instalación y Setup
+
+### 1. Instalar dependencias
+
+```bash
+flutter pub get
+```
+
+### 2. Verificar instalación de Flutter
+
+```bash
+flutter doctor
+```
+
+### 3. Configurar Firebase (si no está configurado)
+
+Los archivos de Firebase ya están configurados en:
+- Android: `android/app/google-services.json`
+- iOS: `ios/Runner/GoogleService-Info.plist`
+
+Si necesitas actualizar la configuración de Firebase:
+
+1. Ve a [Firebase Console](https://console.firebase.google.com/)
+2. Selecciona el proyecto `tennis-management-fcd54`
+3. Descarga los archivos de configuración actualizados
+
+---
+
+## 🧪 Testing
+
+```bash
+# Ejecutar tests
+flutter test
+
+# Tests con coverage
+flutter test --coverage
+
+# Análisis de código
+flutter analyze
+```
+
+---
+
+## 📁 Estructura del Proyecto
 
 ```
 lib/
-├── main.dart                 # Punto de entrada
-├── firebase_options.dart     # Configuración de Firebase
-├── models/
-│   └── user_model.dart      # Modelo de usuario
-├── providers/
-│   └── auth_provider.dart   # Provider de autenticación
-├── screens/
-│   ├── login_screen.dart    # Pantalla de login
-│   ├── register_screen.dart # Pantalla de registro
-│   └── home_screen.dart     # Pantalla principal
-├── services/
-│   └── auth_service.dart    # Servicio de autenticación
-└── widgets/
-    ├── custom_button.dart   # Botón personalizado
-    └── custom_text_field.dart # Campo de texto personalizado
+├── main.dart                 # Entrypoint por defecto (prod)
+├── main_dev.dart            # Entrypoint desarrollo
+├── main_prod.dart           # Entrypoint producción
+├── main_common.dart         # Widget principal compartido
+├── firebase_options.dart    # Config Firebase (legacy)
+│
+├── core/                    # Funcionalidad compartida
+│   ├── config/
+│   │   ├── environment.dart      # Enum de ambientes
+│   │   ├── app_config.dart       # Configuración por ambiente
+│   │   └── firebase_config.dart  # Firebase por ambiente
+│   ├── router/
+│   │   └── app_router.dart       # Navegación (GoRouter)
+│   ├── theme/
+│   │   ├── app_theme.dart        # Temas Material 3
+│   │   └── theme_provider.dart   # Provider de tema
+│   ├── services/
+│   │   └── version_service.dart
+│   └── widgets/                  # Widgets compartidos
+│
+└── features/               # Organización por características
+    ├── auth/              # Autenticación
+    │   ├── domain/
+    │   │   ├── models/
+    │   │   └── services/
+    │   └── presentation/
+    │       ├── providers/
+    │       ├── screens/
+    │       └── widgets/
+    │
+    ├── professor/         # Funcionalidad del profesor
+    ├── student/           # Funcionalidad del estudiante
+    ├── booking/           # Sistema de reservas
+    ├── home/              # Pantalla principal
+    └── settings/          # Configuración
 ```
 
-## 🔐 Flujo de autenticación
+---
 
-1. **Usuario inicia sesión** con Google o email/contraseña
-2. **Firebase genera token** de autenticación
-3. **App envía token** al backend via `/api/auth/firebase/verify`
-4. **Backend verifica token** y genera JWT propio
-5. **App usa JWT** para todas las requests posteriores
+## 🔧 Configuración de Ambientes
 
-## 🎯 Próximos pasos
+### Cambiar Backend URL
 
-- [ ] Configurar Firebase para Android/iOS
-- [ ] Implementar pantallas de funcionalidades específicas
-- [ ] Agregar manejo de errores más robusto
-- [ ] Implementar navegación con bottom navigation
-- [ ] Agregar tests unitarios
+Edita `lib/core/config/app_config.dart`:
 
-## 🐛 Solución de problemas
+```dart
+static String get backendUrl {
+  switch (_environment) {
+    case Environment.development:
+      return 'http://10.0.2.2:3000';  // ← Cambiar aquí
+    case Environment.production:
+      return 'https://tenismanagment.onrender.com';
+  }
+}
+```
 
-### Error de Firebase
-Si ves errores de Firebase, asegúrate de:
-1. Configurar correctamente `firebase_options.dart`
-2. Tener los archivos de configuración en las carpetas correctas
-3. Habilitar Authentication en Firebase Console
+### Agregar nuevo ambiente
 
-### Error de conexión al backend
-Si no puedes conectar al backend:
-1. Verifica que el backend esté ejecutándose
-2. Actualiza la URL en `auth_service.dart`
-3. Verifica la configuración de CORS en el backend
+Si necesitas agregar más ambientes (staging, uat, etc.):
+
+1. Agrega el ambiente a `lib/core/config/environment.dart`
+2. Actualiza `app_config.dart` con la nueva configuración
+3. Crea un nuevo entrypoint `main_staging.dart`
+4. Agrega el flavor en `android/app/build.gradle.kts`
+5. Crea un script `scripts/run_staging.sh`
+
+---
+
+## 🍏 iOS Setup
+
+Para configurar iOS con múltiples schemes, sigue la guía:
+
+```bash
+cat IOS_SCHEMES_SETUP.md
+```
+
+> ⚠️ **Nota:** La configuración de iOS requiere Xcode y debe hacerse manualmente.
+
+---
+
+## 🐛 Troubleshooting
+
+### Error: "No se puede conectar al backend"
+
+**En Desarrollo:**
+1. Verifica que el backend esté ejecutándose en `localhost:3000`
+2. En emulador Android, usa `10.0.2.2` en lugar de `localhost`
+3. En dispositivo físico, usa la IP de tu máquina (ej: `192.168.1.100`)
+
+**En Producción:**
+1. Verifica que el backend en Render esté activo
+2. Revisa la URL en `app_config.dart`
+
+### Error: "Firebase ya está inicializado"
+
+Esto es normal y la app maneja este error automáticamente. Puedes ignorarlo.
+
+### Error: "Flavor no encontrado"
+
+Asegúrate de especificar el flavor correcto:
+```bash
+flutter run --flavor dev -t lib/main_dev.dart
+```
+
+### La app muestra el ambiente incorrecto
+
+Verifica en los logs al inicio:
+```
+🌍 Environment set to: Development (dev)
+✅ Firebase initialized for DEVELOPMENT
+```
+
+---
+
+## 📊 Tech Stack
+
+- **Framework:** Flutter 3.35.4
+- **Language:** Dart 3.9.2
+- **State Management:** Riverpod 3.0
+- **Navigation:** GoRouter 16.2
+- **UI:** Material Design 3 + Google Fonts
+- **Animation:** flutter_animate 4.5
+- **Backend:** Node.js + Express (Render)
+- **Auth:** Firebase Auth
+- **Database:** MongoDB (via backend)
+
+---
+
+## 📱 Pantallas Implementadas
+
+### Estudiante (Student)
+- ✅ **Home Screen** - Dashboard con acciones rápidas
+- ✅ **Book Class Screen** - Reservar clases con profesores
+- ✅ **My Bookings Screen** - Ver mis reservas
+- ✅ **My Balance Screen** - Ver balance de pagos
+- ✅ **Request Service Screen** - Solicitar servicios
+
+### Profesor (Professor)
+- ✅ **Professor Home Screen** - Dashboard del profesor
+- ✅ **Create Schedule Screen** - Crear horarios disponibles
+- ✅ **Manage Schedules Screen** - Gestionar horarios
+- ✅ **Pricing Config Screen** - Configurar precios
+- ✅ **Edit Profile Screen** - Editar perfil del profesor
+- ✅ **Students List Screen** - Lista de estudiantes
+- ✅ **Student Profile Screen** - Perfil del estudiante
+- ✅ **Analytics Dashboard Screen** - Métricas y analytics
+
+### Compartido
+- ✅ **Login Screen** - Inicio de sesión
+- ✅ **Register Screen** - Registro de usuarios
+- ✅ **Theme Settings Screen** - Configurar tema
+
+---
+
+## 🔐 Flujo de Autenticación
+
+```
+1. Usuario inicia sesión (Google/Email) 
+   ↓
+2. Firebase genera token
+   ↓
+3. App envía token al backend: POST /api/auth/firebase/verify
+   ↓
+4. Backend verifica token y retorna usuario con rol
+   ↓
+5. GoRouter redirige según rol:
+   - professor → /professor-home
+   - student → /home
+   ↓
+6. App usa Firebase token para todas las requests
+   (Header: Authorization: Bearer <token>)
+```
+
+---
+
+## 🎯 Próximos Pasos
+
+- [ ] Crear proyecto Firebase separado para desarrollo
+- [ ] Configurar iOS schemes en Xcode
+- [ ] Agregar CI/CD para builds nativos (Android/iOS)
+- [ ] Implementar Firebase App Distribution
+- [ ] Configurar signing para releases
+- [ ] Agregar más tests unitarios y de integración
+- [ ] Implementar offline mode
+- [ ] Agregar notificaciones push
+
+---
+
+## 📞 Soporte
+
+Si tienes problemas:
+1. Revisa los logs en la consola
+2. Verifica la configuración de ambientes
+3. Asegúrate de que el backend esté ejecutándose
+4. Consulta la documentación de [Flutter](https://flutter.dev/docs) y [Firebase](https://firebase.google.com/docs)
+
+---
+
+## 📄 Licencia
+
+Privado - Tennis Management © 2025

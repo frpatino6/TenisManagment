@@ -50,7 +50,7 @@ class ProfessorService {
     }
   }
 
-  // Obtener lista de estudiantes del profesor
+
   Future<List<StudentSummaryModel>> getStudents() async {
     try {
       final user = _firebaseAuth.currentUser;
@@ -81,7 +81,7 @@ class ProfessorService {
     }
   }
 
-  // Obtener horarios de hoy
+
   Future<List<ClassScheduleModel>> getTodaySchedule() async {
     try {
       final user = _firebaseAuth.currentUser;
@@ -121,7 +121,7 @@ class ProfessorService {
 
       final idToken = await user.getIdToken(true);
 
-      // Format date as YYYY-MM-DD (use local date, not UTC)
+
       final localDate = DateTime(date.year, date.month, date.day);
       final dateStr =
           '${localDate.year}-${localDate.month.toString().padLeft(2, '0')}-${localDate.day.toString().padLeft(2, '0')}';
@@ -150,7 +150,7 @@ class ProfessorService {
     }
   }
 
-  // Obtener horarios de la semana
+
   Future<List<ClassScheduleModel>> getWeekSchedule() async {
     try {
       final user = _firebaseAuth.currentUser;
@@ -183,7 +183,7 @@ class ProfessorService {
     }
   }
 
-  // Obtener estadísticas de ganancias
+
   Future<Map<String, dynamic>> getEarningsStats() async {
     try {
       final user = _firebaseAuth.currentUser;
@@ -212,7 +212,7 @@ class ProfessorService {
     }
   }
 
-  // Actualizar perfil del profesor
+
   Future<ProfessorModel> updateProfile({
     required String name,
     required String phone,
@@ -253,7 +253,7 @@ class ProfessorService {
     }
   }
 
-  // Confirmar clase
+
   Future<void> confirmClass(String classId) async {
     try {
       final user = _firebaseAuth.currentUser;
@@ -278,7 +278,7 @@ class ProfessorService {
     }
   }
 
-  // Cancelar clase
+
   Future<void> cancelClass(String classId, String reason) async {
     try {
       final user = _firebaseAuth.currentUser;

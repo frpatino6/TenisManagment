@@ -54,7 +54,7 @@ class AvailableScheduleModel {
   }
 
   String get formattedTimeRange {
-    // Convert to local time explicitly
+
     final localStart = startTime.toLocal();
     final localEnd = endTime.toLocal();
 

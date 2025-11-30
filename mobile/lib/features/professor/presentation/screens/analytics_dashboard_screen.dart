@@ -29,18 +29,14 @@ class _AnalyticsDashboardScreenState
   @override
   void initState() {
     super.initState();
-    // Refresh data when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshAnalytics();
     });
   }
 
   void _refreshAnalytics() {
-    // Optimización: Invalidar en batch para evitar múltiples rebuilds
-    // Esto reduce el número de rebuilds innecesarios
     final period = _filters['period'] ?? 'month';
-    
-    // Invalidar todos los providers relacionados en una operación atómica
+
     ref.invalidate(analyticsOverviewProvider(_filters));
     ref.invalidate(analyticsRevenueProvider(period));
     ref.invalidate(analyticsBookingsProvider(period));
@@ -48,7 +44,6 @@ class _AnalyticsDashboardScreenState
   }
 
   void _updateFilters(Map<String, String?> newFilters) {
-    // print('🔍 Updating filters: $newFilters');
     setState(() {
       _filters = newFilters;
     });
@@ -57,11 +52,9 @@ class _AnalyticsDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
-    // Optimización: Memoizar Theme y ColorScheme al inicio
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Optimización: Usar watch solo para el provider necesario
     final analyticsAsync = ref.watch(analyticsOverviewProvider(_filters));
 
     return Scaffold(
@@ -97,7 +90,6 @@ class _AnalyticsDashboardScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Filter bar
             AnalyticsFilterBar(
               selectedPeriod: _filters['period'] ?? 'month',
               selectedServiceType: _filters['serviceType'],
@@ -114,20 +106,12 @@ class _AnalyticsDashboardScreenState
               onRefresh: _refreshAnalytics,
             ),
             const Gap(16),
-
-            // Last updated info
             _buildLastUpdatedInfo(context, analytics.lastUpdated),
             const Gap(16),
-
-            // Metrics cards
             _buildMetricsSection(context, analytics.metrics),
             const Gap(24),
-
-            // Charts section
             _buildChartsSection(context, analytics.charts),
             const Gap(24),
-
-            // Quick actions
             _buildQuickActionsSection(context),
           ],
         ),
@@ -192,7 +176,6 @@ class _AnalyticsDashboardScreenState
             ),
             itemCount: metrics.length,
             itemBuilder: (context, index) {
-              // Optimización: Key única para cada métrica
               final metric = metrics[index];
               return AnalyticsMetricCard(
                 key: ValueKey('metric_${metric.id}_$index'),
@@ -317,13 +300,11 @@ class _AnalyticsDashboardScreenState
   }
 
   Widget _buildErrorState(BuildContext context, Object error) {
-    // Try to parse as AnalyticsError, fallback to generic error
     AnalyticsError? analyticsError;
     try {
       if (error is AnalyticsError) {
         analyticsError = error;
       } else {
-        // Create a generic error from the exception
         analyticsError = AnalyticsError(
           type: AnalyticsErrorType.unknownError,
           message: 'Error al cargar analytics',

@@ -99,7 +99,7 @@ class _StudentsListScreenState extends ConsumerState<StudentsListScreen> {
                     itemBuilder: (context, index) {
                       final student = filteredStudents[index];
                       return StudentCard(
-                        // Optimización: Key única para cada estudiante
+
                         key: ValueKey('student_${student.id}_$index'),
                         student: student,
                         onTap: () {
@@ -107,7 +107,7 @@ class _StudentsListScreenState extends ConsumerState<StudentsListScreen> {
                         },
                       );
                     },
-                    // Optimización: Cache más items para scroll suave
+
                     cacheExtent: 500,
                   ),
                 );

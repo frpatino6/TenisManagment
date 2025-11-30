@@ -49,7 +49,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icono y descripción
+
               Center(
                 child: Column(
                   children: [
@@ -91,7 +91,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
 
               const Gap(32),
 
-              // Fecha
+
               Text(
                 'Fecha',
                 style: GoogleFonts.inter(
@@ -127,7 +127,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
 
               const Gap(24),
 
-              // Hora de inicio y fin
+
               Row(
                 children: [
                   Expanded(
@@ -222,7 +222,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
 
               const Gap(24),
 
-              // Opción de generar múltiples slots
+
               Card(
                 elevation: 0,
                 color: colorScheme.primaryContainer.withValues(alpha: 0.3),
@@ -316,7 +316,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
 
               const Gap(24),
 
-              // Información sobre el horario
+
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -349,7 +349,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
 
               const Gap(32),
 
-              // Botón crear
+
               SizedBox(
                 width: double.infinity,
                 height: 56,
@@ -477,7 +477,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
   Future<void> _handleCreate() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Validar que la hora de fin sea después de la hora de inicio
+
     final startDateTime = DateTime(
       _selectedDate.year,
       _selectedDate.month,
@@ -516,7 +516,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
       final notifier = ref.read(professorNotifierProvider.notifier);
 
       if (_generateMultipleSlots) {
-        // Generar múltiples slots
+
         final slots = _generateTimeSlots(startDateTime, endDateTime);
 
         if (slots.isEmpty) {
@@ -525,7 +525,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           );
         }
 
-        // Crear cada slot
+
         for (final slot in slots) {
           await notifier.createSchedule(
             date: _selectedDate,
@@ -546,7 +546,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           ),
         );
       } else {
-        // Crear un solo horario
+
         await notifier.createSchedule(
           date: _selectedDate,
           startTime: startDateTime,
@@ -590,7 +590,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
     while (currentStart.isBefore(end)) {
       final currentEnd = currentStart.add(Duration(minutes: _slotDuration));
 
-      // No crear slot si excede el tiempo final
+
       if (currentEnd.isAfter(end)) {
         break;
       }

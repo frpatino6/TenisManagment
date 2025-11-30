@@ -115,7 +115,7 @@ class AnalyticsFilterBar extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             shrinkWrap: true,
             children: [
-              // Clear option
+
               if (selectedValue != null)
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
@@ -128,7 +128,7 @@ class AnalyticsFilterBar extends StatelessWidget {
                     labelStyle: theme.textTheme.bodySmall,
                   ),
                 ),
-              // Options
+
               ...options.map(
                 (option) => Padding(
                   padding: const EdgeInsets.only(right: 8),

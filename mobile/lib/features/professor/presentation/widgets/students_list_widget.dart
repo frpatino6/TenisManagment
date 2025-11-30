@@ -57,7 +57,6 @@ class StudentsListWidget extends ConsumerWidget {
             itemBuilder: (context, index) {
               final student = students[index];
               return Container(
-                    // Optimización: Key única para cada estudiante
                     key: ValueKey('student_card_${student.id}_$index'),
                     width: 160,
                     margin: EdgeInsets.only(
@@ -73,7 +72,7 @@ class StudentsListWidget extends ConsumerWidget {
                   )
                   .fadeIn(duration: 400.ms, delay: (index * 100).ms);
             },
-            // Optimización: Cache más items para scroll horizontal suave
+
             cacheExtent: 200,
           ),
         );
@@ -105,7 +104,6 @@ class StudentsListWidget extends ConsumerWidget {
   }
 
   Widget _buildStudentCard(BuildContext context, student) {
-    // Optimización: Memoizar Theme y ColorScheme para evitar múltiples llamadas
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -127,7 +125,6 @@ class StudentsListWidget extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Avatar y nombre
           Row(
             children: [
               Container(
@@ -182,7 +179,6 @@ class StudentsListWidget extends ConsumerWidget {
 
           const Gap(10),
 
-          // Próxima clase
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(8),
@@ -220,7 +216,6 @@ class StudentsListWidget extends ConsumerWidget {
 
           const Gap(8),
 
-          // Botón de ver perfil
           SizedBox(
             width: double.infinity,
             height: 32,

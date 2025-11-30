@@ -106,7 +106,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Sección de información personal
+
                     _buildSection(
                       context,
                       'Información Personal',
@@ -142,13 +142,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                     const Gap(24),
 
-                    // Sección de información profesional
+
                     _buildSection(
                       context,
                       'Información Profesional',
                       Icons.work_outline,
                       [
-                        // Nota sobre precios
+
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(12),
@@ -203,7 +203,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                     const Gap(24),
 
-                    // Sección de especialidades
+
                     _buildSection(
                       context,
                       'Especialidades',
@@ -257,7 +257,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                     const Gap(32),
 
-                    // Botón de guardar
+
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(

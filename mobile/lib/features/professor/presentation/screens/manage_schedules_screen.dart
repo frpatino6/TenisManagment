@@ -37,7 +37,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
             return _buildEmptyState(context);
           }
 
-          // Convert to ProfessorScheduleModel
+
           final schedules = schedulesData
               .map(
                 (data) => ProfessorScheduleModel.fromJson(
@@ -46,7 +46,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
               )
               .toList();
 
-          // Separar por estado
+
           final available = schedules
               .where((s) => s.isAvailable && !s.isBlocked)
               .toList();
@@ -57,7 +57,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
               )
               .toList();
 
-          // Filtrar según selección
+
           List<ProfessorScheduleModel> filteredSchedules;
           switch (_selectedFilter) {
             case ScheduleFilter.available:
@@ -79,7 +79,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Filter buttons
+
                   _buildFilterButtons(
                     context,
                     available.length,
@@ -89,7 +89,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
                   ),
                   const Gap(24),
 
-                  // Filtered schedules
+
                   if (filteredSchedules.isEmpty)
                     _buildNoResultsState(context)
                   else ...[

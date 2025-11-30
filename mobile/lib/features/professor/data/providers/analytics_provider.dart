@@ -38,15 +38,15 @@ final analyticsStudentsProvider =
       return service.getStudentsData(period: period);
     });
 
-// Provider para filtros de analytics
+
 final analyticsFiltersProvider = Provider<Map<String, String?>>((ref) {
   return {'period': 'month', 'serviceType': null, 'status': null};
 });
 
-// Provider para refrescar datos
+
 final analyticsRefreshProvider = Provider<int>((ref) => 0);
 
-// Función helper para refrescar analytics
+
 void refreshAnalytics(WidgetRef ref) {
   ref.invalidate(analyticsOverviewProvider);
   ref.invalidate(analyticsRevenueProvider);

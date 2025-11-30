@@ -13,7 +13,6 @@ class VersionService {
     try {
       _packageInfo = await PackageInfo.fromPlatform();
     } catch (e) {
-      // Si hay error, usar valores por defecto
       _packageInfo = null;
     }
   }

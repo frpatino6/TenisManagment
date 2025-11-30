@@ -157,7 +157,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tarjeta principal de balance
+
           _buildBalanceCard(context, totalSpent, totalClasses, totalPayments)
               .animate()
               .fadeIn(duration: 400.ms, delay: 200.ms)
@@ -165,7 +165,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
 
           const Gap(24),
 
-          // Estadísticas detalladas
+
           Text(
                 'Estadísticas',
                 style: Theme.of(
@@ -185,7 +185,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
 
           const Gap(24),
 
-          // Acciones rápidas
+
           Text(
                 'Acciones',
                 style: Theme.of(

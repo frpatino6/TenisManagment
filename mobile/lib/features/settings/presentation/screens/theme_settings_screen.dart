@@ -23,7 +23,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Info card
+
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -51,7 +51,7 @@ class ThemeSettingsScreen extends ConsumerWidget {
           ),
           const Gap(24),
 
-          // Theme options
+
           ...AppThemeMode.values.map((mode) {
             final isSelected = currentTheme == mode;
 

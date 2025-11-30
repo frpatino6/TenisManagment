@@ -229,6 +229,7 @@ class MetricDetailScreen extends StatelessWidget {
   }
 
   void _exportAsPdf(BuildContext context) {
+    // TODO: Implement PDF export
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Función de exportación PDF en desarrollo'),
@@ -238,6 +239,7 @@ class MetricDetailScreen extends StatelessWidget {
   }
 
   void _exportAsExcel(BuildContext context) {
+    // TODO: Implement Excel export
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Función de exportación Excel en desarrollo'),
@@ -247,6 +249,7 @@ class MetricDetailScreen extends StatelessWidget {
   }
 
   void _shareAsImage(BuildContext context) {
+    // TODO: Implement image sharing
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Función de compartir imagen en desarrollo'),

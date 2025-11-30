@@ -76,33 +76,33 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Saludo personalizado
+
             _buildWelcomeSection(context, professor),
             const Gap(24),
 
-            // Tarjeta de perfil del profesor
+
             const ProfessorProfileCard(),
             const Gap(24),
-            // Horarios de hoy
+
             _buildTodaySchedule(context),
             const Gap(24),
 
-            // Acciones rápidas
+
             _buildQuickActionsGrid(context),
             const Gap(24),
 
-            // Estadísticas rápidas
+
             _buildQuickStats(context),
             const Gap(24),
-            // Ganancias del mes
+
             _buildEarningsSection(context),
             const Gap(24),
 
-            // Versión de la aplicación
+
             FutureBuilder<PackageInfo?>(
                   future: _getPackageInfo(),
                   builder: (context, snapshot) {
-                    // Optimización: Memoizar Theme y ColorScheme para evitar múltiples llamadas
+
                     final theme = Theme.of(context);
                     final colorScheme = theme.colorScheme;
                     final primaryColor = colorScheme.primary;
@@ -160,7 +160,7 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
 
                     if (snapshot.hasData) {
                       final packageInfo = snapshot.data!;
-                      // Optimización: Reutilizar theme y colorScheme ya obtenidos arriba
+
                       return Center(
                         child: Container(
                           margin: const EdgeInsets.symmetric(vertical: 16),
@@ -566,7 +566,7 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
-    // Optimización: Memoizar Theme y ColorScheme para evitar múltiples llamadas
+
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     
@@ -811,7 +811,7 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
   Future<PackageInfo?> _getPackageInfo() async {
     try {
       if (kIsWeb) {
-        // Para web, retornamos información hardcodeada ya que PackageInfo no funciona bien en web
+
         return PackageInfo(
           appName: 'Tennis Management',
           packageName: 'com.tennis.management',
@@ -821,11 +821,11 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
           installerStore: '',
         );
       } else {
-        // Para móvil, usamos PackageInfo.fromPlatform()
+
         return await PackageInfo.fromPlatform();
       }
     } catch (e) {
-      // Si hay error, retornamos información por defecto
+
       return PackageInfo(
         appName: 'Tennis Management',
         packageName: 'com.tennis.management',

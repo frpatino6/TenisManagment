@@ -204,7 +204,7 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Info card
+
                     if (_pricingData != null) ...[
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -239,7 +239,7 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
                       const Gap(24),
                     ],
 
-                    // Clase Individual
+
                     Text(
                       'Clase Individual',
                       style: GoogleFonts.inter(
@@ -274,7 +274,7 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
                     ),
                     const Gap(24),
 
-                    // Clase Grupal
+
                     Text(
                       'Clase Grupal',
                       style: GoogleFonts.inter(
@@ -309,7 +309,7 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
                     ),
                     const Gap(24),
 
-                    // Alquiler de Cancha
+
                     Text(
                       'Alquiler de Cancha',
                       style: GoogleFonts.inter(
@@ -344,7 +344,7 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
                     ),
                     const Gap(32),
 
-                    // Save button
+
                     SizedBox(
                       width: double.infinity,
                       height: 50,

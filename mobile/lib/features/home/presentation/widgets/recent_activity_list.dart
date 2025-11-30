@@ -52,7 +52,7 @@ class RecentActivityList extends ConsumerWidget {
         final activity = activities[index];
         return _buildActivityItem(context, activity, index);
       },
-      // Optimización: Cache más items para scroll suave
+
       cacheExtent: 250,
     );
   }
@@ -156,14 +156,12 @@ class RecentActivityList extends ConsumerWidget {
     RecentActivityModel activity,
     int index,
   ) {
-    // Optimización: Memoizar Theme y ColorScheme para evitar múltiples llamadas
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final activityColor = _getColorFromString(activity.color);
     final activityIcon = _getIconFromString(activity.icon);
 
     return Card(
-          // Optimización: Key única para el item
           key: ValueKey('activity_${activity.title}_$index'),
           elevation: 1,
           margin: const EdgeInsets.only(bottom: 12),
@@ -380,7 +378,6 @@ class RecentActivityList extends ConsumerWidget {
   }
 
   List<ActivityItem> _getProfessorActivities() {
-    // Hardcoded data for professors (for now)
     return [
       ActivityItem(
         title: 'Clase con Juan Pérez',

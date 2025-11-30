@@ -20,7 +20,7 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
   @override
   void initState() {
     super.initState();
-    // Inicializar con la fecha de hoy (sin hora)
+
     final now = DateTime.now();
     _selectedDate = DateTime(now.year, now.month, now.day);
   }
@@ -71,7 +71,7 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    // Use scheduleByDateProvider to filter schedules by selected date
+
     final scheduleAsync = ref.watch(scheduleByDateProvider(_selectedDate));
 
     return scheduleAsync.when(
@@ -94,7 +94,7 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
             ),
             child: Column(
               children: [
-                // Header
+
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
@@ -176,7 +176,7 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
                     ],
                   ),
                 ),
-                // Contenido vacío
+
                 Container(
                   padding: const EdgeInsets.all(32),
                   child: Column(
@@ -220,7 +220,7 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
           ),
           child: Column(
             children: [
-              // Header
+
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
@@ -297,7 +297,7 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
                 ),
               ),
 
-              // Lista de clases (mostrar 3 o todas según _showAll)
+
               ...(_showAll ? todayClasses : todayClasses.take(3).toList())
                   .asMap()
                   .entries
@@ -318,7 +318,7 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
                         .fadeIn(duration: 400.ms, delay: (index * 100).ms);
                   }),
 
-              // Botón "Ver más/menos" si hay más de 3 clases
+
               if (todayClasses.length > 3)
                 Container(
                   width: double.infinity,
@@ -408,7 +408,7 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
       ),
       child: Row(
         children: [
-          // Indicador de tiempo
+
           Container(
             width: 4,
             height: 60,
@@ -419,7 +419,7 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
           ),
           const Gap(16),
 
-          // Información de la clase
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,17 +476,17 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
             ),
           ),
 
-          // Botones de acción
+
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Botón completar
+
               IconButton(
                 onPressed: () => _showCompleteDialog(context, classData),
                 icon: const Icon(Icons.check_circle, color: Colors.green),
                 tooltip: 'Completar clase',
               ),
-              // Botón cancelar
+
               IconButton(
                 onPressed: () => _showCancelDialog(context, classData),
                 icon: const Icon(Icons.cancel, color: Colors.orange),
@@ -500,7 +500,7 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
   }
 
   Future<void> _showCompleteDialog(BuildContext context, classData) async {
-    // Pre-fill with booking price if available
+
     final paymentController = TextEditingController(
       text: classData.price > 0 ? classData.price.toStringAsFixed(0) : '',
     );
@@ -573,9 +573,9 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
           paymentAmount: paymentAmount,
         );
 
-        // Force refresh of the schedule for the current date
+
         ref.invalidate(scheduleByDateProvider(_selectedDate));
-        // Refresh earnings if payment was recorded
+
         if (paymentAmount != null && paymentAmount > 0) {
           ref.invalidate(earningsStatsProvider);
         }
@@ -683,9 +683,9 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
           penaltyAmount: penaltyAmount,
         );
 
-        // Force refresh of the schedule for the current date
+
         ref.invalidate(scheduleByDateProvider(_selectedDate));
-        // Refresh earnings if penalty was charged
+
         if (penaltyAmount != null && penaltyAmount > 0) {
           ref.invalidate(earningsStatsProvider);
         }

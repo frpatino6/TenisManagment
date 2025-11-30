@@ -31,7 +31,7 @@ class AnalyticsService {
 
       final idToken = await user.getIdToken(true);
 
-      // Build query parameters
+
       final queryParams = <String, String>{'period': period};
       if (serviceType != null) queryParams['serviceType'] = serviceType;
       if (status != null) queryParams['status'] = status;

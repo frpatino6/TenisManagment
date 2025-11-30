@@ -245,7 +245,7 @@ class EarningsWidget extends ConsumerWidget {
           ),
         )
         .animate()
-        .scale(duration: 600.ms, curve: Curves.elasticOut)
+        .scale(duration: 400.ms, curve: Curves.easeOut)
         .fadeIn(duration: 400.ms);
   }
 

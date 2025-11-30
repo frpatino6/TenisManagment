@@ -6,7 +6,7 @@ import 'core/theme/theme_provider.dart';
 import 'core/config/app_config.dart';
 
 /// Widget principal de la aplicación
-///
+/// 
 /// Este widget es compartido entre todos los ambientes (dev, prod)
 /// La configuración específica se establece en los entrypoints (main_dev.dart, main_prod.dart)
 class TennisManagementApp extends ConsumerWidget {

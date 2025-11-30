@@ -69,11 +69,11 @@ class QuickActionsGrid extends StatelessWidget {
                   )
                   .animate()
                   .scale(
-                    duration: 600.ms,
-                    curve: Curves.elasticOut,
-                    delay: (index * 100).ms,
+                    duration: 400.ms,
+                    curve: Curves.easeOut,
+                    delay: (index * 50).ms,
                   )
-                  .fadeIn(duration: 400.ms, delay: (index * 100).ms),
+                  .fadeIn(duration: 300.ms, delay: (index * 50).ms),
 
               const Gap(6),
 
@@ -90,8 +90,8 @@ class QuickActionsGrid extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         )
                         .animate()
-                        .fadeIn(duration: 400.ms, delay: (index * 100 + 200).ms)
-                        .slideY(begin: 0.2, end: 0),
+                        .fadeIn(duration: 300.ms, delay: (index * 50 + 100).ms)
+                        .slideY(begin: 0.1, end: 0),
               ),
 
               const Gap(4),
@@ -106,8 +106,8 @@ class QuickActionsGrid extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   )
                   .animate()
-                  .fadeIn(duration: 400.ms, delay: (index * 100 + 400).ms)
-                  .slideY(begin: 0.2, end: 0),
+                  .fadeIn(duration: 300.ms, delay: (index * 50 + 150).ms)
+                  .slideY(begin: 0.1, end: 0),
             ],
           ),
         ),

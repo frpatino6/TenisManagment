@@ -155,11 +155,10 @@ class HomeScreen extends ConsumerWidget {
 
                 UserProfileCard(user: user)
                     .animate()
-                    .fadeIn(duration: 400.ms, delay: 200.ms)
-                    .slideY(begin: 0.2, end: 0),
+                    .fadeIn(duration: 300.ms, delay: 100.ms)
+                    .slideY(begin: 0.1, end: 0),
 
                 const Gap(24),
-
 
                 Text(
                       'Acciones Rápidas',
@@ -167,15 +166,15 @@ class HomeScreen extends ConsumerWidget {
                           ?.copyWith(fontWeight: FontWeight.w600),
                     )
                     .animate()
-                    .fadeIn(duration: 400.ms, delay: 400.ms)
-                    .slideX(begin: -0.2, end: 0),
+                    .fadeIn(duration: 300.ms, delay: 200.ms)
+                    .slideX(begin: -0.1, end: 0),
 
                 const Gap(16),
 
                 QuickActionsGrid(user: user)
                     .animate()
-                    .fadeIn(duration: 400.ms, delay: 600.ms)
-                    .slideY(begin: 0.2, end: 0),
+                    .fadeIn(duration: 300.ms, delay: 300.ms)
+                    .slideY(begin: 0.1, end: 0),
 
                 const Gap(24),
                 Text(
@@ -184,18 +183,17 @@ class HomeScreen extends ConsumerWidget {
                           ?.copyWith(fontWeight: FontWeight.w600),
                     )
                     .animate()
-                    .fadeIn(duration: 400.ms, delay: 800.ms)
-                    .slideX(begin: -0.2, end: 0),
+                    .fadeIn(duration: 300.ms, delay: 400.ms)
+                    .slideX(begin: -0.1, end: 0),
 
                 const Gap(16),
 
                 RecentActivityList(user: user)
                     .animate()
-                    .fadeIn(duration: 400.ms, delay: 1000.ms)
-                    .slideY(begin: 0.2, end: 0),
+                    .fadeIn(duration: 300.ms, delay: 500.ms)
+                    .slideY(begin: 0.1, end: 0),
 
                 const Gap(24),
-
 
                 Center(
                       child: VersionBadge(
@@ -204,8 +202,8 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     )
                     .animate()
-                    .fadeIn(duration: 400.ms, delay: 1200.ms)
-                    .slideY(begin: 0.2, end: 0),
+                    .fadeIn(duration: 300.ms, delay: 600.ms)
+                    .slideY(begin: 0.1, end: 0),
 
                 const Gap(24),
               ],

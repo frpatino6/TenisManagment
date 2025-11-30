@@ -81,8 +81,8 @@ class _StudentsListScreenState extends ConsumerState<StudentsListScreen> {
               onChanged: (value) {
                 _debounceTimer?.cancel();
                 _debounceTimer = Timer(const Duration(milliseconds: 400), () {
-                  setState(() {
-                    _searchQuery = value;
+                setState(() {
+                  _searchQuery = value;
                   });
                 });
               },

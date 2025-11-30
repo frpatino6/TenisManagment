@@ -40,8 +40,14 @@ const firebaseAuthMiddleware = async (req, res, next) => {
     }
     catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        logger.error('Firebase auth error', { error: message });
-        res.status(401).json({ error: 'Invalid token' });
+        const code = error?.code || 'unknown';
+        const stack = error instanceof Error ? error.stack : undefined;
+        logger.error('Firebase auth error', {
+            error: message,
+            code,
+            stack: stack?.split('\n').slice(0, 3).join('\n')
+        });
+        res.status(401).json({ error: 'Invalid token', details: message });
     }
 };
 exports.firebaseAuthMiddleware = firebaseAuthMiddleware;

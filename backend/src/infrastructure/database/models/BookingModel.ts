@@ -2,6 +2,7 @@ import { Schema, model, Types } from 'mongoose';
 
 export interface BookingDocument {
   _id: Types.ObjectId;
+  tenantId: Types.ObjectId; // Reference to Tenant (required for multi-tenancy)
   scheduleId: Types.ObjectId;
   studentId: Types.ObjectId;
   professorId: Types.ObjectId;
@@ -15,6 +16,12 @@ export interface BookingDocument {
 }
 
 const BookingSchema = new Schema<BookingDocument>({
+  tenantId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Tenant',
+    required: true,
+    index: true,
+  },
   scheduleId: { type: Schema.Types.ObjectId, ref: 'Schedule', required: true, index: true },
   studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: true, index: true },
   professorId: { type: Schema.Types.ObjectId, ref: 'Professor', required: true, index: true },
@@ -35,5 +42,8 @@ const BookingSchema = new Schema<BookingDocument>({
 
 BookingSchema.index({ scheduleId: 1, studentId: 1 });
 BookingSchema.index({ professorId: 1, createdAt: 1 });
+BookingSchema.index({ tenantId: 1, studentId: 1 });
+BookingSchema.index({ tenantId: 1, professorId: 1 });
+BookingSchema.index({ tenantId: 1, createdAt: 1 });
 
 export const BookingModel = model<BookingDocument>('Booking', BookingSchema);

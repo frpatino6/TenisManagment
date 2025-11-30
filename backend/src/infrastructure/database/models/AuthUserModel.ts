@@ -1,6 +1,6 @@
 import { Schema, model, Types } from 'mongoose';
 
-export type UserRole = 'professor' | 'student';
+export type UserRole = 'super_admin' | 'tenant_admin' | 'professor' | 'student';
 
 export interface AuthUserDocument {
   _id: Types.ObjectId;
@@ -17,7 +17,11 @@ const AuthUserSchema = new Schema<AuthUserDocument>(
   {
     email: { type: String, required: true, unique: true, index: true },
     passwordHash: { type: String },
-    role: { type: String, enum: ['professor', 'student'], required: true },
+    role: {
+      type: String,
+      enum: ['super_admin', 'tenant_admin', 'professor', 'student'],
+      required: true,
+    },
     linkedId: { type: Schema.Types.ObjectId },
     refreshToken: { type: String },
     firebaseUid: { type: String, unique: true, sparse: true },

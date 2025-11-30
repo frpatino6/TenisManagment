@@ -3,6 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ScheduleModel = void 0;
 const mongoose_1 = require("mongoose");
 const ScheduleSchema = new mongoose_1.Schema({
+    tenantId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Tenant',
+        required: true,
+        index: true,
+    },
     professorId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Professor', required: true, index: true },
     studentId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Student' },
     date: { type: Date, required: true, index: true },
@@ -15,5 +21,8 @@ const ScheduleSchema = new mongoose_1.Schema({
     notes: { type: String }
 }, { timestamps: true });
 ScheduleSchema.index({ date: 1, professorId: 1, isAvailable: 1 });
+ScheduleSchema.index({ tenantId: 1, professorId: 1, date: 1 });
+ScheduleSchema.index({ tenantId: 1, isAvailable: 1 });
+ScheduleSchema.index({ tenantId: 1, date: 1 });
 exports.ScheduleModel = (0, mongoose_1.model)('Schedule', ScheduleSchema);
 //# sourceMappingURL=ScheduleModel.js.map

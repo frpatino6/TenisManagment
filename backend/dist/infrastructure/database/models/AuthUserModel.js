@@ -5,7 +5,11 @@ const mongoose_1 = require("mongoose");
 const AuthUserSchema = new mongoose_1.Schema({
     email: { type: String, required: true, unique: true, index: true },
     passwordHash: { type: String },
-    role: { type: String, enum: ['professor', 'student'], required: true },
+    role: {
+        type: String,
+        enum: ['super_admin', 'tenant_admin', 'professor', 'student'],
+        required: true,
+    },
     linkedId: { type: mongoose_1.Schema.Types.ObjectId },
     refreshToken: { type: String },
     firebaseUid: { type: String, unique: true, sparse: true },

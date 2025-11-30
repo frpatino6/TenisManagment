@@ -2,6 +2,7 @@ import { Schema, model, Types } from 'mongoose';
 
 export interface ScheduleDocument {
   _id: Types.ObjectId;
+  tenantId: Types.ObjectId; // Reference to Tenant (required for multi-tenancy)
   professorId: Types.ObjectId;
   studentId?: Types.ObjectId;
   date: Date;
@@ -15,6 +16,12 @@ export interface ScheduleDocument {
 }
 
 const ScheduleSchema = new Schema<ScheduleDocument>({
+  tenantId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Tenant',
+    required: true,
+    index: true,
+  },
   professorId: { type: Schema.Types.ObjectId, ref: 'Professor', required: true, index: true },
   studentId: { type: Schema.Types.ObjectId, ref: 'Student' },
   date: { type: Date, required: true, index: true },
@@ -28,6 +35,9 @@ const ScheduleSchema = new Schema<ScheduleDocument>({
 }, { timestamps: true });
 
 ScheduleSchema.index({ date: 1, professorId: 1, isAvailable: 1 });
+ScheduleSchema.index({ tenantId: 1, professorId: 1, date: 1 });
+ScheduleSchema.index({ tenantId: 1, isAvailable: 1 });
+ScheduleSchema.index({ tenantId: 1, date: 1 });
 
 export const ScheduleModel = model<ScheduleDocument>('Schedule', ScheduleSchema);
 

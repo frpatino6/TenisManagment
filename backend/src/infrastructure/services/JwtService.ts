@@ -1,8 +1,9 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
+import { UserRole } from '../database/models/AuthUserModel';
 
 export interface JwtPayload {
   sub: string;
-  role: 'professor' | 'student';
+  role: UserRole;
 }
 
 export class JwtService {

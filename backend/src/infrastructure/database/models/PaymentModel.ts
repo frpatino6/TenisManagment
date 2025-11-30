@@ -2,6 +2,7 @@ import { Schema, model, Types } from 'mongoose';
 
 export interface PaymentDocument {
   _id: Types.ObjectId;
+  tenantId: Types.ObjectId; // Reference to Tenant (required for multi-tenancy)
   studentId: Types.ObjectId;
   professorId: Types.ObjectId;
   bookingId?: Types.ObjectId;
@@ -17,6 +18,12 @@ export interface PaymentDocument {
 
 const PaymentSchema = new Schema<PaymentDocument>(
   {
+    tenantId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Tenant',
+      required: true,
+      index: true,
+    },
     studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: true, index: true },
     professorId: { type: Schema.Types.ObjectId, ref: 'Professor', required: true, index: true },
     bookingId: { type: Schema.Types.ObjectId, ref: 'Booking' },
@@ -29,5 +36,10 @@ const PaymentSchema = new Schema<PaymentDocument>(
   },
   { timestamps: true },
 );
+
+// Compound indexes for multi-tenancy
+PaymentSchema.index({ tenantId: 1, studentId: 1 });
+PaymentSchema.index({ tenantId: 1, professorId: 1 });
+PaymentSchema.index({ tenantId: 1, date: 1 });
 
 export const PaymentModel = model<PaymentDocument>('Payment', PaymentSchema);

@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { JwtService } from '../../infrastructure/services/JwtService';
+import { UserRole } from '../../infrastructure/database/models/AuthUserModel';
 
 declare global {
   namespace Express {
     interface Request {
-      user?: { id: string; role: 'professor' | 'student'; uid?: string };
+      user?: { id: string; role: UserRole; uid?: string };
     }
   }
 }
@@ -26,7 +27,7 @@ export function authMiddleware(jwtService: JwtService) {
   };
 }
 
-export function requireRole(role: 'professor' | 'student') {
+export function requireRole(role: UserRole) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || req.user.role !== role) return res.status(403).json({ error: 'Forbidden' });
     next();

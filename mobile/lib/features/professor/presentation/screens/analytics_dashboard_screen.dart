@@ -127,7 +127,7 @@ class _AnalyticsDashboardScreenState
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
       ),
       child: Row(
         children: [
@@ -165,29 +165,51 @@ class _AnalyticsDashboardScreenState
             type: SkeletonType.metric,
           )
         else
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 1.2,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-            ),
-            itemCount: metrics.length,
-            itemBuilder: (context, index) {
-              final metric = metrics[index];
-              return AnalyticsMetricCard(
-                key: ValueKey('metric_${metric.id}_$index'),
-                metric: metric,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => MetricDetailScreen(metric: metric),
-                    ),
-                  );
-                },
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const crossAxisCount = 2;
+              const childAspectRatio = 1.2;
+              const crossAxisSpacing = 8.0;
+              const mainAxisSpacing = 8.0;
+
+              final itemWidth =
+                  (constraints.maxWidth - crossAxisSpacing) / crossAxisCount;
+              final itemHeight = itemWidth / childAspectRatio;
+              final rowCount = (metrics.length / crossAxisCount).ceil();
+              final totalHeight =
+                  (rowCount * itemHeight) + ((rowCount - 1) * mainAxisSpacing);
+
+              return SizedBox(
+                height: totalHeight,
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1.2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: metrics.length,
+                  itemBuilder: (context, index) {
+                    final metric = metrics[index];
+                    return AnalyticsMetricCard(
+                      key: ValueKey(
+                        'metric_${metric.title}_${metric.icon}_$index',
+                      ),
+                      metric: metric,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                MetricDetailScreen(metric: metric),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
               );
             },
           ),

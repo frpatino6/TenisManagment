@@ -3,27 +3,26 @@ import '../../domain/models/recent_activity_model.dart';
 import '../../domain/models/booking_model.dart';
 import '../../domain/services/student_service.dart';
 
-
 final studentServiceProvider = Provider<StudentService>((ref) {
   return StudentService();
 });
 
+final recentActivitiesProvider =
+    FutureProvider.autoDispose<List<RecentActivityModel>>((ref) async {
+      final service = ref.watch(studentServiceProvider);
+      return service.getRecentActivities();
+    });
 
-final recentActivitiesProvider = FutureProvider<List<RecentActivityModel>>((
+final studentInfoProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
   ref,
 ) async {
-  final service = ref.watch(studentServiceProvider);
-  return service.getRecentActivities();
-});
-
-
-final studentInfoProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final service = ref.watch(studentServiceProvider);
   return service.getStudentInfo();
 });
 
-
-final studentBookingsProvider = FutureProvider<List<BookingModel>>((ref) async {
+final studentBookingsProvider = FutureProvider.autoDispose<List<BookingModel>>((
+  ref,
+) async {
   final service = ref.watch(studentServiceProvider);
   return service.getBookings();
 });

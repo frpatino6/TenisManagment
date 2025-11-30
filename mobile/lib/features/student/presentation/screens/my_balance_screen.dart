@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../domain/services/student_service.dart';
 
 class MyBalanceScreen extends ConsumerStatefulWidget {
@@ -23,6 +24,11 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   void initState() {
     super.initState();
     _loadStudentInfo();
+  }
+
+  String _formatCurrency(double amount) {
+    final formatter = NumberFormat('#,###', 'es_CO');
+    return '\$${formatter.format(amount)}';
   }
 
   Future<void> _loadStudentInfo() async {
@@ -157,14 +163,12 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           _buildBalanceCard(context, totalSpent, totalClasses, totalPayments)
               .animate()
               .fadeIn(duration: 400.ms, delay: 200.ms)
               .slideY(begin: 0.2, end: 0),
 
           const Gap(24),
-
 
           Text(
                 'Estadísticas',
@@ -184,7 +188,6 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
               .slideY(begin: 0.2, end: 0),
 
           const Gap(24),
-
 
           Text(
                 'Acciones',
@@ -259,7 +262,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
                         ),
                       ),
                       Text(
-                        '\$${totalSpent.toStringAsFixed(0)}',
+                        _formatCurrency(totalSpent),
                         style: Theme.of(context).textTheme.headlineLarge
                             ?.copyWith(
                               color: Colors.white,
@@ -347,12 +350,12 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
       crossAxisCount: 2,
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
-      childAspectRatio: 1.5,
+      childAspectRatio: 1.3,
       children: [
         _buildStatCard(
           context,
           'Promedio por Clase',
-          '\$${averagePerClass.toStringAsFixed(0)}',
+          _formatCurrency(averagePerClass),
           Icons.trending_up,
           Colors.green,
         ),
@@ -373,7 +376,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
         _buildStatCard(
           context,
           'Inversión Total',
-          '\$${totalSpent.toStringAsFixed(0)}',
+          _formatCurrency(totalSpent),
           Icons.account_balance_wallet,
           Colors.purple,
         ),
@@ -406,31 +409,41 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: color,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: Colors.white, size: 20),
+              child: Icon(icon, color: Colors.white, size: 18),
             ),
-            const Gap(12),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
+            const Gap(8),
+            Flexible(
+              child: Text(
+                value,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
             ),
             const Gap(4),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+            Flexible(
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),

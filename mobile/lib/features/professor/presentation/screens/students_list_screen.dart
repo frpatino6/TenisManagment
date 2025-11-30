@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,9 +16,11 @@ class StudentsListScreen extends ConsumerStatefulWidget {
 class _StudentsListScreenState extends ConsumerState<StudentsListScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  Timer? _debounceTimer;
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -27,8 +30,8 @@ class _StudentsListScreenState extends ConsumerState<StudentsListScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final filteredStudents = ref.watch(filteredStudentsProvider(_searchQuery));
     final studentsAsync = ref.watch(studentsListProvider);
+    final filteredStudents = ref.watch(filteredStudentsProvider(_searchQuery));
 
     return Scaffold(
       appBar: AppBar(
@@ -76,8 +79,11 @@ class _StudentsListScreenState extends ConsumerState<StudentsListScreen> {
                 ),
               ),
               onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
+                _debounceTimer?.cancel();
+                _debounceTimer = Timer(const Duration(milliseconds: 400), () {
+                  setState(() {
+                    _searchQuery = value;
+                  });
                 });
               },
             ),
@@ -99,7 +105,6 @@ class _StudentsListScreenState extends ConsumerState<StudentsListScreen> {
                     itemBuilder: (context, index) {
                       final student = filteredStudents[index];
                       return StudentCard(
-
                         key: ValueKey('student_${student.id}_$index'),
                         student: student,
                         onTap: () {

@@ -54,7 +54,12 @@ class AnalyticsChartWidget extends StatelessWidget {
               ),
             ],
             const Gap(16),
-            SizedBox(height: height, child: _buildChart(context)),
+            SizedBox(
+              height: height,
+              child: RepaintBoundary(
+                child: _buildChart(context),
+              ),
+            ),
             if (chartData.xAxisLabel != null ||
                 chartData.yAxisLabel != null) ...[
               const Gap(8),

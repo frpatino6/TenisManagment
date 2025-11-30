@@ -49,7 +49,9 @@ class _InteractiveChartWidgetState extends State<InteractiveChartWidget> {
 
             SizedBox(
               height: widget.height,
-              child: _buildChart(theme, colorScheme),
+              child: RepaintBoundary(
+                child: _buildChart(theme, colorScheme),
+              ),
             ),
 
 

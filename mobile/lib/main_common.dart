@@ -15,14 +15,16 @@ class TennisManagementApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
-    final themeMode = ref.watch(themeProvider);
+    final themeMode = ref.watch(
+      themeProvider.select((theme) => theme.themeMode),
+    );
 
     return MaterialApp.router(
       title: AppConfig.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: themeMode.themeMode,
+      themeMode: themeMode,
       routerConfig: router,
       showPerformanceOverlay: AppConfig.showPerformanceOverlay,
     );

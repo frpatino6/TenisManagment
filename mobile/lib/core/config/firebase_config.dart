@@ -4,9 +4,9 @@ import 'environment.dart';
 import 'app_config.dart';
 
 /// Configuración de Firebase por ambiente
-/// 
+///
 /// Este archivo maneja las opciones de Firebase específicas para cada ambiente.
-/// 
+///
 /// NOTA: Actualmente ambos ambientes usan el mismo proyecto Firebase.
 /// En el futuro, se puede crear un proyecto separado para desarrollo:
 /// - Development: tennis-management-dev
@@ -24,13 +24,6 @@ class FirebaseConfig {
     }
   }
 
-  /// Opciones de Firebase para desarrollo
-  /// 
-  /// TODO: Cuando crees el proyecto 'tennis-management-dev' en Firebase Console:
-  /// 1. Ve a Project Settings > General
-  /// 2. Agrega apps para Android, iOS, Web
-  /// 3. Descarga google-services.json (Android) y GoogleService-Info.plist (iOS)
-  /// 4. Actualiza estos valores con los de tu proyecto dev
   static FirebaseOptions get developmentOptions {
     if (kIsWeb) {
       return const FirebaseOptions(
@@ -130,4 +123,3 @@ class FirebaseConfig {
     }
   }
 }
-

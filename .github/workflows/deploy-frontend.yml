@@ -55,7 +55,7 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    if: false  # Temporarily disabled - requires FIREBASE_SERVICE_ACCOUNT secret
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
     - name: Checkout code

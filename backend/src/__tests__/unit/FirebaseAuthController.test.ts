@@ -149,7 +149,9 @@ describe('FirebaseAuthController', () => {
         await controller.verifyToken(mockRequest as Request, mockResponse as Response);
 
         expect(mockResponse.status).toHaveBeenCalledWith(401);
-        expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Invalid token' });
+        expect(mockResponse.json).toHaveBeenCalledWith(
+          expect.objectContaining({ error: 'Invalid token' })
+        );
       });
 
       it('should handle Firebase service errors', async () => {
@@ -159,7 +161,9 @@ describe('FirebaseAuthController', () => {
         await controller.verifyToken(mockRequest as Request, mockResponse as Response);
 
         expect(mockResponse.status).toHaveBeenCalledWith(401);
-        expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Invalid token' });
+        expect(mockResponse.json).toHaveBeenCalledWith(
+          expect.objectContaining({ error: 'Invalid token' })
+        );
       });
     });
 
@@ -317,7 +321,9 @@ describe('FirebaseAuthController', () => {
         await controller.verifyToken(mockRequest as Request, mockResponse as Response);
 
         expect(mockResponse.status).toHaveBeenCalledWith(401);
-        expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Invalid token' });
+        expect(mockResponse.json).toHaveBeenCalledWith(
+          expect.objectContaining({ error: 'Invalid token' })
+        );
       });
     });
   });

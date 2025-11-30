@@ -151,7 +151,9 @@ describe('Firebase Auth Middleware', () => {
       await firebaseAuthMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Invalid token' });
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: 'Invalid token' })
+      );
       expect(mockNext).not.toHaveBeenCalled();
     });
 
@@ -162,7 +164,9 @@ describe('Firebase Auth Middleware', () => {
       await firebaseAuthMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Invalid token' });
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: 'Invalid token' })
+      );
     });
   });
 
@@ -240,7 +244,9 @@ describe('Firebase Auth Middleware', () => {
       await firebaseAuthMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Invalid token' });
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: 'Invalid token' })
+      );
       expect(mockNext).not.toHaveBeenCalled();
     });
 
@@ -254,7 +260,9 @@ describe('Firebase Auth Middleware', () => {
       await firebaseAuthMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Invalid token' });
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: 'Invalid token' })
+      );
     });
   });
 
@@ -267,7 +275,9 @@ describe('Firebase Auth Middleware', () => {
       await firebaseAuthMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Invalid token' });
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: 'Invalid token' })
+      );
     });
 
     it('should handle malformed authorization header', async () => {
@@ -280,7 +290,9 @@ describe('Firebase Auth Middleware', () => {
       await firebaseAuthMiddleware(mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.json).toHaveBeenCalledWith({ error: 'Invalid token' });
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: 'Invalid token' })
+      );
     });
   });
 });

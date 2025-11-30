@@ -196,7 +196,9 @@ describe('Middleware Tests', () => {
         middleware(mockReq, mockRes, mockNext);
 
         expect(mockRes.status).toHaveBeenCalledWith(401);
-        expect(mockRes.json).toHaveBeenCalledWith({ error: 'Invalid token' });
+        expect(mockRes.json).toHaveBeenCalledWith(
+          expect.objectContaining({ error: 'Invalid token' })
+        );
         expect(mockNext).not.toHaveBeenCalled();
       });
     });

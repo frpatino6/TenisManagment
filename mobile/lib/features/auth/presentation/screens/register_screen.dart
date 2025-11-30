@@ -61,37 +61,37 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               children: [
                 const Gap(16),
 
-                // Header
+
                 _buildHeader(context),
 
                 const Gap(32),
 
-                // Formulario
+
                 _buildForm(context),
 
                 const Gap(24),
 
-                // Botón de registro
+
                 _buildRegisterButton(context, isLoading),
 
                 const Gap(16),
 
-                // Divider
+
                 _buildDivider(context),
 
                 const Gap(16),
 
-                // Botón de Google
+
                 _buildGoogleButton(context, isLoading),
 
                 const Gap(24),
 
-                // Enlaces
+
                 _buildLinks(context),
 
                 const Gap(24),
 
-                // Mostrar error si existe
+
                 if (error != null) _buildErrorWidget(context, error),
               ],
             ),
@@ -104,7 +104,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget _buildHeader(BuildContext context) {
     return Column(
       children: [
-        // Logo
+
         Container(
               width: 60,
               height: 60,
@@ -124,7 +124,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
         const Gap(16),
 
-        // Título
+
         Text(
               'Crear Cuenta',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -138,7 +138,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
         const Gap(8),
 
-        // Subtítulo
+
         Text(
               'Únete a nuestra comunidad de tenis',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -155,7 +155,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget _buildForm(BuildContext context) {
     return Column(
       children: [
-        // Campo de nombre
+
         CustomTextField(
               controller: _nameController,
               label: 'Nombre completo',
@@ -178,7 +178,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
         const Gap(16),
 
-        // Campo de email
+
         CustomTextField(
               controller: _emailController,
               label: 'Email',
@@ -203,7 +203,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
         const Gap(16),
 
-        // Campo de teléfono
+
         CustomTextField(
               controller: _phoneController,
               label: 'Teléfono',
@@ -230,12 +230,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
         const Gap(16),
 
-        // Selector de rol
+
         _buildRoleSelector(context),
 
         const Gap(16),
 
-        // Campo de contraseña
+
         CustomTextField(
               controller: _passwordController,
               label: 'Contraseña',
@@ -270,7 +270,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
         const Gap(16),
 
-        // Campo de confirmar contraseña
+
         CustomTextField(
               controller: _confirmPasswordController,
               label: 'Confirmar contraseña',
@@ -305,7 +305,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
         const Gap(16),
 
-        // Términos y condiciones
+
         _buildTermsCheckbox(context),
       ],
     );
@@ -600,8 +600,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (mounted) {
         context.go('/home');
       }
-    } catch (e) {
-      // El error se maneja automáticamente en el provider
+    } catch (_) {
+      // Error handled by provider
     }
   }
 
@@ -612,8 +612,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (mounted) {
         context.go('/home');
       }
-    } catch (e) {
-      // El error se maneja automáticamente en el provider
+    } catch (_) {
+      // Error handled by provider
     }
   }
 }

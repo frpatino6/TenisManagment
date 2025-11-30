@@ -20,28 +20,15 @@ import 'main_common.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🎯 IMPORTANTE: Establecer el ambiente ANTES de cualquier otra inicialización
   AppConfig.setEnvironment(Environment.development);
 
-  // Imprimir configuración en consola (solo en modo debug)
-  AppConfig.printConfig();
-
-  // Inicializar Firebase con la configuración de desarrollo
   try {
-    // Intentar inicializar Firebase
     await Firebase.initializeApp(options: FirebaseConfig.developmentOptions);
-    debugPrint('✅ Firebase initialized for DEVELOPMENT');
-  } on FirebaseException catch (e) {
-    if (e.code == 'duplicate-app') {
-      // Firebase ya está inicializado (probablemente por plugin nativo)
-      debugPrint('✅ Firebase ya estaba inicializado');
-    } else {
-      debugPrint('⚠️ Firebase error: ${e.code} - ${e.message}');
-    }
-  } catch (e) {
-    debugPrint('⚠️ Error al inicializar Firebase: $e');
+  } on FirebaseException {
+    // Firebase already initialized
+  } catch (_) {
+    // Error initializing Firebase
   }
 
-  // Ejecutar la aplicación
   runApp(const ProviderScope(child: TennisManagementApp()));
 }

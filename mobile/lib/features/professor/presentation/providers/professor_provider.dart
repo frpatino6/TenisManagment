@@ -4,12 +4,10 @@ import '../../domain/models/professor_model.dart';
 import '../../domain/models/student_summary_model.dart';
 import '../../domain/models/class_schedule_model.dart';
 
-// Provider para el servicio del profesor
 final professorServiceProvider = Provider<ProfessorService>((ref) {
   return ProfessorService();
 });
 
-// Provider para la información del profesor
 final professorInfoProvider = FutureProvider.autoDispose<ProfessorModel>((
   ref,
 ) async {
@@ -17,37 +15,30 @@ final professorInfoProvider = FutureProvider.autoDispose<ProfessorModel>((
   return await service.getProfessorInfo();
 });
 
-// Provider para la lista de estudiantes
-final professorStudentsProvider = FutureProvider<List<StudentSummaryModel>>((
-  ref,
-) async {
-  final service = ref.read(professorServiceProvider);
-  return await service.getStudents();
-});
+final professorStudentsProvider =
+    FutureProvider.autoDispose<List<StudentSummaryModel>>((ref) async {
+      final service = ref.read(professorServiceProvider);
+      return await service.getStudents();
+    });
 
-// Provider para el horario de hoy
 final todayScheduleProvider =
     FutureProvider.autoDispose<List<ClassScheduleModel>>((ref) async {
       final service = ref.read(professorServiceProvider);
       return await service.getTodaySchedule();
     });
 
-// Provider para el horario de una fecha específica
 final scheduleByDateProvider = FutureProvider.autoDispose
     .family<List<ClassScheduleModel>, DateTime>((ref, date) async {
       final service = ref.read(professorServiceProvider);
       return await service.getScheduleByDate(date);
     });
 
-// Provider para el horario de la semana
-final weekScheduleProvider = FutureProvider<List<ClassScheduleModel>>((
-  ref,
-) async {
-  final service = ref.read(professorServiceProvider);
-  return await service.getWeekSchedule();
-});
+final weekScheduleProvider =
+    FutureProvider.autoDispose<List<ClassScheduleModel>>((ref) async {
+      final service = ref.read(professorServiceProvider);
+      return await service.getWeekSchedule();
+    });
 
-// Provider para las estadísticas de ganancias
 final earningsStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
   ref,
 ) async {
@@ -55,7 +46,6 @@ final earningsStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
   return await service.getEarningsStats();
 });
 
-// Provider para todos los horarios del profesor
 final professorSchedulesProvider = FutureProvider.autoDispose<List<dynamic>>((
   ref,
 ) async {
@@ -63,14 +53,12 @@ final professorSchedulesProvider = FutureProvider.autoDispose<List<dynamic>>((
   return await service.getMySchedules();
 });
 
-// Notifier para manejar acciones del profesor
 class ProfessorNotifier extends Notifier<AsyncValue<void>> {
   @override
   AsyncValue<void> build() {
     return const AsyncValue.data(null);
   }
 
-  // Actualizar perfil del profesor
   Future<void> updateProfile({
     required String name,
     required String phone,
@@ -90,7 +78,6 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
         experienceYears: experienceYears,
       );
 
-      // Invalidar providers para refrescar datos
       ref.invalidate(professorInfoProvider);
 
       state = const AsyncValue.data(null);
@@ -99,7 +86,6 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
-  // Confirmar clase
   Future<void> confirmClass(String classId) async {
     state = const AsyncValue.loading();
 
@@ -107,7 +93,6 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
       final service = ref.read(professorServiceProvider);
       await service.confirmClass(classId);
 
-      // Invalidar providers para refrescar datos
       ref.invalidate(todayScheduleProvider);
       ref.invalidate(weekScheduleProvider);
 
@@ -117,7 +102,6 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
-  // Cancelar clase
   Future<void> cancelClass(String classId, String reason) async {
     state = const AsyncValue.loading();
 
@@ -125,7 +109,6 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
       final service = ref.read(professorServiceProvider);
       await service.cancelClass(classId, reason);
 
-      // Invalidar providers para refrescar datos
       ref.invalidate(todayScheduleProvider);
       ref.invalidate(weekScheduleProvider);
 
@@ -135,7 +118,6 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
-  // Crear horario disponible
   Future<void> createSchedule({
     required DateTime date,
     required DateTime startTime,
@@ -151,7 +133,6 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
         endTime: endTime,
       );
 
-      // Invalidar providers para refrescar datos
       ref.invalidate(professorSchedulesProvider);
       ref.invalidate(todayScheduleProvider);
       ref.invalidate(weekScheduleProvider);
@@ -162,7 +143,6 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
-  // Eliminar horario
   Future<void> deleteSchedule(String scheduleId) async {
     state = const AsyncValue.loading();
 
@@ -170,7 +150,6 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
       final service = ref.read(professorServiceProvider);
       await service.deleteSchedule(scheduleId);
 
-      // Invalidar providers para refrescar datos
       ref.invalidate(professorSchedulesProvider);
       ref.invalidate(todayScheduleProvider);
       ref.invalidate(weekScheduleProvider);
@@ -181,7 +160,6 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
-  // Completar una clase
   Future<void> completeClass(String scheduleId, {double? paymentAmount}) async {
     state = const AsyncValue.loading();
 
@@ -189,11 +167,10 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
       final service = ref.read(professorServiceProvider);
       await service.completeClass(scheduleId, paymentAmount: paymentAmount);
 
-      // Invalidar providers para refrescar datos
       ref.invalidate(professorSchedulesProvider);
       ref.invalidate(todayScheduleProvider);
       ref.invalidate(scheduleByDateProvider);
-      ref.invalidate(earningsStatsProvider); // Refresh earnings stats
+      ref.invalidate(earningsStatsProvider);
 
       state = const AsyncValue.data(null);
     } catch (error, stackTrace) {
@@ -201,7 +178,6 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
-  // Cancelar una reserva
   Future<void> cancelBooking(
     String scheduleId, {
     String? reason,
@@ -217,11 +193,10 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
         penaltyAmount: penaltyAmount,
       );
 
-      // Invalidar providers para refrescar datos
       ref.invalidate(professorSchedulesProvider);
       ref.invalidate(todayScheduleProvider);
       ref.invalidate(scheduleByDateProvider);
-      ref.invalidate(earningsStatsProvider); // Refresh if penalty was charged
+      ref.invalidate(earningsStatsProvider);
 
       state = const AsyncValue.data(null);
     } catch (error, stackTrace) {
@@ -229,7 +204,6 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
-  // Refrescar todos los datos
   Future<void> refreshAll() async {
     ref.invalidate(professorInfoProvider);
     ref.invalidate(professorStudentsProvider);
@@ -240,13 +214,11 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
   }
 }
 
-// Provider para el notifier del profesor
 final professorNotifierProvider =
     NotifierProvider<ProfessorNotifier, AsyncValue<void>>(() {
       return ProfessorNotifier();
     });
 
-// Provider para verificar si el usuario es profesor
 final isProfessorProvider = Provider<bool>((ref) {
   final professorInfo = ref.watch(professorInfoProvider);
   return professorInfo.when(

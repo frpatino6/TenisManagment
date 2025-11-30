@@ -42,7 +42,6 @@ class EarningsWidget extends ConsumerWidget {
           ),
           child: Column(
             children: [
-              // Header
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -87,12 +86,10 @@ class EarningsWidget extends ConsumerWidget {
                 ),
               ),
 
-              // Contenido principal
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    // Ganancias principales
                     Row(
                       children: [
                         Expanded(
@@ -119,7 +116,6 @@ class EarningsWidget extends ConsumerWidget {
 
                     const Gap(16),
 
-                    // Estadísticas adicionales
                     Row(
                       children: [
                         Expanded(
@@ -144,7 +140,6 @@ class EarningsWidget extends ConsumerWidget {
 
                     const Gap(16),
 
-                    // Botón de ver detalles
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(

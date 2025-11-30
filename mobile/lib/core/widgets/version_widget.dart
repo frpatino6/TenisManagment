@@ -29,7 +29,6 @@ class _VersionWidgetState extends State<VersionWidget> {
   @override
   void initState() {
     super.initState();
-    // Usar valores hardcodeados para evitar el error de PackageInfo
   }
 
   @override

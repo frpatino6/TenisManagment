@@ -31,7 +31,6 @@ class UserProfileCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Avatar
             Container(
                   width: 60,
                   height: 60,
@@ -72,7 +71,6 @@ class UserProfileCard extends StatelessWidget {
 
             const Gap(16),
 
-            // Información del usuario
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,8 +91,8 @@ class UserProfileCard extends StatelessWidget {
                   Text(
                         user.email,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onPrimaryContainer.withValues(alpha: 
-                            0.8,
+                          color: colorScheme.onPrimaryContainer.withValues(
+                            alpha: 0.8,
                           ),
                         ),
                       )
@@ -104,7 +102,6 @@ class UserProfileCard extends StatelessWidget {
 
                   const Gap(8),
 
-                  // Badge de rol
                   Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -151,7 +148,6 @@ class UserProfileCard extends StatelessWidget {
               ),
             ),
 
-            // Botón de editar perfil
             IconButton(
                   onPressed: () {
                     // TODO: Implementar edición de perfil
@@ -166,8 +162,8 @@ class UserProfileCard extends StatelessWidget {
                     color: colorScheme.onPrimaryContainer,
                   ),
                   style: IconButton.styleFrom(
-                    backgroundColor: colorScheme.onPrimaryContainer.withValues(alpha: 
-                      0.1,
+                    backgroundColor: colorScheme.onPrimaryContainer.withValues(
+                      alpha: 0.1,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),

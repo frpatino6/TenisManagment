@@ -68,7 +68,6 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Información general
             _buildInfoCard(context)
                 .animate()
                 .fadeIn(duration: 400.ms, delay: 200.ms)
@@ -76,7 +75,6 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
 
             const Gap(24),
 
-            // Formulario
             _buildForm(context)
                 .animate()
                 .fadeIn(duration: 400.ms, delay: 400.ms)
@@ -84,7 +82,6 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
 
             const Gap(32),
 
-            // Botón de envío
             _buildSubmitButton(context)
                 .animate()
                 .fadeIn(duration: 400.ms, delay: 600.ms)
@@ -170,23 +167,18 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
         ),
         const Gap(16),
 
-        // Tipo de servicio
         _buildServiceTypeSelector(context),
         const Gap(20),
 
-        // Título
         _buildTitleField(context),
         const Gap(20),
 
-        // Descripción
         _buildDescriptionField(context),
         const Gap(20),
 
-        // Prioridad
         _buildPrioritySelector(context),
         const Gap(20),
 
-        // Notas adicionales
         _buildNotesField(context),
       ],
     );
@@ -466,7 +458,6 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
           ),
         );
 
-        // Clear form
         _titleController.clear();
         _descriptionController.clear();
         _notesController.clear();
@@ -475,7 +466,6 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
           _selectedPriority = 'medium';
         });
 
-        // Go back to home
         context.pop();
       }
     } catch (e) {

@@ -35,7 +35,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isLoading = ref.watch(authLoadingProvider);
     final error = ref.watch(authErrorProvider);
 
-    // Mostrar loading si está autenticando
     if (authState.isLoading) {
       return const LoadingScreen(message: 'Verificando autenticación...');
     }
@@ -51,37 +50,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               children: [
                 const Gap(40),
 
-                // Logo y título
                 _buildHeader(context),
 
                 const Gap(48),
 
-                // Formulario de login
                 _buildLoginForm(context),
 
                 const Gap(24),
 
-                // Botón de login
                 _buildLoginButton(context, isLoading),
 
                 const Gap(16),
 
-                // Divider
                 _buildDivider(context),
 
                 const Gap(16),
 
-                // Botón de Google
                 _buildGoogleButton(context, isLoading),
 
                 const Gap(24),
 
-                // Enlaces
                 _buildLinks(context),
 
                 const Gap(24),
 
-                // Mostrar error si existe
                 if (error != null) _buildErrorWidget(context, error),
               ],
             ),
@@ -94,7 +86,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _buildHeader(BuildContext context) {
     return Column(
       children: [
-        // Logo
         Container(
               width: 80,
               height: 80,
@@ -114,7 +105,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
         const Gap(24),
 
-        // Título
         Text(
               'Bienvenido',
               style: Theme.of(context).textTheme.displaySmall?.copyWith(
@@ -128,7 +118,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
         const Gap(8),
 
-        // Subtítulo
         Text(
               'Inicia sesión en tu cuenta',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -145,7 +134,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _buildLoginForm(BuildContext context) {
     return Column(
       children: [
-        // Campo de email
         CustomTextField(
               controller: _emailController,
               label: 'Email',
@@ -170,7 +158,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
         const Gap(16),
 
-        // Campo de contraseña
         CustomTextField(
               controller: _passwordController,
               label: 'Contraseña',
@@ -205,7 +192,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
         const Gap(16),
 
-        // Recordar contraseña
         Row(
           children: [
             Checkbox(
@@ -361,8 +347,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) {
         context.go('/home');
       }
-    } catch (e) {
-      // El error se maneja automáticamente en el provider
+    } catch (_) {
+      // Error handled by provider
     }
   }
 
@@ -373,8 +359,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) {
         context.go('/home');
       }
-    } catch (e) {
-      // El error se maneja automáticamente en el provider
+    } catch (_) {
+      // Error handled by provider
     }
   }
 }

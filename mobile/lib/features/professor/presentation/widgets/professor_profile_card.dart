@@ -36,10 +36,10 @@ class ProfessorProfileCard extends ConsumerWidget {
           ),
           child: Column(
             children: [
-              // Avatar y información básica
+
               Row(
                 children: [
-                  // Avatar
+
                   Container(
                     width: 60,
                     height: 60,
@@ -55,7 +55,7 @@ class ProfessorProfileCard extends ConsumerWidget {
                   ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
                   const Gap(16),
 
-                  // Información del profesor
+
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,7 +99,7 @@ class ProfessorProfileCard extends ConsumerWidget {
                     ),
                   ),
 
-                  // Botón de editar
+
                   IconButton(
                     onPressed: () {
                       context.push('/edit-profile');
@@ -114,7 +114,7 @@ class ProfessorProfileCard extends ConsumerWidget {
 
               const Gap(20),
 
-              // Estadísticas del profesor
+
               Row(
                 children: [
                   Expanded(

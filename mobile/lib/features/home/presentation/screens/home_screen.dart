@@ -14,6 +14,8 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+
+
     final authState = ref.watch(authStateProvider);
     final isLoading = ref.watch(authLoadingProvider);
 
@@ -67,7 +69,7 @@ class HomeScreen extends ConsumerWidget {
   ) {
     return CustomScrollView(
       slivers: [
-        // App Bar personalizado
+
         SliverAppBar(
           expandedHeight: 120,
           floating: false,
@@ -143,14 +145,14 @@ class HomeScreen extends ConsumerWidget {
           ],
         ),
 
-        // Contenido principal
+
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Tarjeta de perfil del usuario
+
                 UserProfileCard(user: user)
                     .animate()
                     .fadeIn(duration: 400.ms, delay: 200.ms)
@@ -158,7 +160,7 @@ class HomeScreen extends ConsumerWidget {
 
                 const Gap(24),
 
-                // Acciones rápidas
+
                 Text(
                       'Acciones Rápidas',
                       style: Theme.of(context).textTheme.headlineSmall
@@ -194,7 +196,7 @@ class HomeScreen extends ConsumerWidget {
 
                 const Gap(24),
 
-                // Versión de la aplicación
+
                 Center(
                       child: VersionBadge(
                         showBuildNumber: true,

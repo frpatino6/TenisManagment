@@ -2,14 +2,13 @@ import 'package:flutter/foundation.dart';
 import 'environment.dart';
 
 /// Configuración global de la aplicación
-/// 
+///
 /// Maneja todas las configuraciones específicas de cada ambiente:
 /// - URLs del backend
 /// - Configuraciones de Firebase
 /// - Nombre de la aplicación
 /// - Configuraciones de debugging
 class AppConfig {
-  // Singleton pattern
   static final AppConfig _instance = AppConfig._internal();
   factory AppConfig() => _instance;
   AppConfig._internal();
@@ -22,23 +21,15 @@ class AppConfig {
   /// Debe llamarse al inicio en main() antes de inicializar Firebase
   static void setEnvironment(Environment env) {
     _environment = env;
-    debugPrint('🌍 Environment set to: ${env.name} (${env.shortName})');
   }
 
   /// Obtiene el ambiente actual
   static Environment get environment => _environment;
 
-  // ============================================================================
-  // CONFIGURACIÓN DE BACKEND
-  // ============================================================================
-
   /// Obtiene la URL base del backend según el ambiente
   static String get backendUrl {
     switch (_environment) {
       case Environment.development:
-        // Para emulador Android usa 10.0.2.2 (localhost del host)
-        // Para simulador iOS usa localhost
-        // Para dispositivo físico usa tu IP local (ej: 192.168.1.100)
         if (defaultTargetPlatform == TargetPlatform.android) {
           return 'http://10.0.2.2:3000';
         } else {
@@ -55,10 +46,6 @@ class AppConfig {
 
   /// Obtiene la URL base de autenticación
   static String get authBaseUrl => '$backendUrl/api/auth';
-
-  // ============================================================================
-  // CONFIGURACIÓN DE LA APLICACIÓN
-  // ============================================================================
 
   /// Nombre de la aplicación según el ambiente
   static String get appName {
@@ -84,10 +71,6 @@ class AppConfig {
   static String get packageName =>
       'com.tennismanagement.tennis_management$packageSuffix';
 
-  // ============================================================================
-  // CONFIGURACIÓN DE DEBUGGING Y LOGS
-  // ============================================================================
-
   /// Habilita logs de debug (solo en desarrollo)
   static bool get enableDebugLogs => _environment.isDevelopment;
 
@@ -98,11 +81,7 @@ class AppConfig {
   static bool get showDebugBanner => _environment.isDevelopment;
 
   /// Habilita performance overlay (solo en desarrollo)
-  static bool get showPerformanceOverlay => false; // Activar manualmente si es necesario
-
-  // ============================================================================
-  // CONFIGURACIÓN DE FEATURES
-  // ============================================================================
+  static bool get showPerformanceOverlay => false;
 
   /// Habilita analytics (solo en producción)
   static bool get enableAnalytics => _environment.isProduction;
@@ -110,15 +89,11 @@ class AppConfig {
   /// Habilita crash reporting (solo en producción)
   static bool get enableCrashReporting => _environment.isProduction;
 
-  // ============================================================================
-  // CONFIGURACIÓN DE TIMEOUTS Y LÍMITES
-  // ============================================================================
-
   /// Timeout para requests HTTP (más largo en desarrollo para debugging)
   static Duration get httpTimeout {
     switch (_environment) {
       case Environment.development:
-        return const Duration(seconds: 60); // Más tiempo para debug
+        return const Duration(seconds: 60);
       case Environment.production:
         return const Duration(seconds: 30);
     }
@@ -132,34 +107,5 @@ class AppConfig {
       case Environment.production:
         return 3;
     }
-  }
-
-  // ============================================================================
-  // INFORMACIÓN DEL AMBIENTE (Para debugging)
-  // ============================================================================
-
-  /// Imprime toda la configuración actual (solo en modo debug)
-  static void printConfig() {
-    if (!kDebugMode) return;
-
-    debugPrint('┌─────────────────────────────────────────────────');
-    debugPrint('│ 🎯 APP CONFIGURATION');
-    debugPrint('├─────────────────────────────────────────────────');
-    debugPrint('│ Environment:        ${_environment.name}');
-    debugPrint('│ App Name:          $appName');
-    debugPrint('│ Package:           $packageName');
-    debugPrint('├─────────────────────────────────────────────────');
-    debugPrint('│ Backend URL:       $backendUrl');
-    debugPrint('│ API Base URL:      $apiBaseUrl');
-    debugPrint('│ Auth Base URL:     $authBaseUrl');
-    debugPrint('├─────────────────────────────────────────────────');
-    debugPrint('│ Debug Logs:        $enableDebugLogs');
-    debugPrint('│ Network Logs:      $enableNetworkLogs');
-    debugPrint('│ Analytics:         $enableAnalytics');
-    debugPrint('│ Crash Reporting:   $enableCrashReporting');
-    debugPrint('├─────────────────────────────────────────────────');
-    debugPrint('│ HTTP Timeout:      ${httpTimeout.inSeconds}s');
-    debugPrint('│ Max Retries:       $maxRetries');
-    debugPrint('└─────────────────────────────────────────────────');
   }
 }

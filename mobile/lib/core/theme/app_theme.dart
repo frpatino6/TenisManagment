@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Colores principales
+
   static const Color primaryColor = Color(0xFF2E7D32);
   static const Color secondaryColor = Color(0xFF4CAF50);
   static const Color accentColor = Color(0xFF8BC34A);
@@ -10,7 +10,7 @@ class AppTheme {
   static const Color warningColor = Color(0xFFFF9800);
   static const Color successColor = Color(0xFF4CAF50);
 
-  // Tema claro
+
   static ThemeData get lightTheme {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: primaryColor,
@@ -26,7 +26,7 @@ class AppTheme {
       colorScheme: colorScheme,
       fontFamily: GoogleFonts.poppins().fontFamily,
 
-      // AppBar theme
+
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
@@ -40,14 +40,14 @@ class AppTheme {
         ),
       ),
 
-      // Card theme
+
       cardTheme: CardThemeData(
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: const EdgeInsets.all(8),
       ),
 
-      // Elevated button theme
+
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 2,
@@ -62,7 +62,7 @@ class AppTheme {
         ),
       ),
 
-      // Outlined button theme
+
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -76,7 +76,7 @@ class AppTheme {
         ),
       ),
 
-      // Text button theme
+
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -88,7 +88,7 @@ class AppTheme {
         ),
       ),
 
-      // Input decoration theme
+
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
@@ -124,7 +124,7 @@ class AppTheme {
         ),
       ),
 
-      // Text theme
+
       textTheme: TextTheme(
         displayLarge: GoogleFonts.poppins(
           fontSize: 32,
@@ -205,7 +205,7 @@ class AppTheme {
     );
   }
 
-  // Tema oscuro
+
   static ThemeData get darkTheme {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: primaryColor,
@@ -221,7 +221,7 @@ class AppTheme {
       colorScheme: colorScheme,
       fontFamily: GoogleFonts.poppins().fontFamily,
 
-      // AppBar theme
+
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
@@ -235,14 +235,14 @@ class AppTheme {
         ),
       ),
 
-      // Card theme
+
       cardTheme: CardThemeData(
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: const EdgeInsets.all(8),
       ),
 
-      // Elevated button theme
+
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 2,
@@ -257,7 +257,7 @@ class AppTheme {
         ),
       ),
 
-      // Outlined button theme
+
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -271,7 +271,7 @@ class AppTheme {
         ),
       ),
 
-      // Text button theme
+
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -283,7 +283,7 @@ class AppTheme {
         ),
       ),
 
-      // Input decoration theme
+
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
@@ -319,7 +319,7 @@ class AppTheme {
         ),
       ),
 
-      // Text theme
+
       textTheme: TextTheme(
         displayLarge: GoogleFonts.poppins(
           fontSize: 32,

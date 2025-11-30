@@ -52,6 +52,8 @@ class RecentActivityList extends ConsumerWidget {
         final activity = activities[index];
         return _buildActivityItem(context, activity, index);
       },
+
+      cacheExtent: 250,
     );
   }
 
@@ -160,6 +162,7 @@ class RecentActivityList extends ConsumerWidget {
     final activityIcon = _getIconFromString(activity.icon);
 
     return Card(
+          key: ValueKey('activity_${activity.title}_$index'),
           elevation: 1,
           margin: const EdgeInsets.only(bottom: 12),
           shape: RoundedRectangleBorder(
@@ -375,7 +378,6 @@ class RecentActivityList extends ConsumerWidget {
   }
 
   List<ActivityItem> _getProfessorActivities() {
-    // Hardcoded data for professors (for now)
     return [
       ActivityItem(
         title: 'Clase con Juan Pérez',

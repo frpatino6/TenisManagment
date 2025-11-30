@@ -36,17 +36,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state.matchedLocation == '/login' ||
           state.matchedLocation == '/register';
 
-      // Si está autenticado y trata de ir a login/register, redirigir según rol
+
       if (isAuthenticated && isLoggingIn) {
         return user.role == 'professor' ? '/professor-home' : '/home';
       }
 
-      // Si no está autenticado y no está en login/register, redirigir a login
+
       if (!isAuthenticated && !isLoggingIn) {
         return '/login';
       }
 
-      // No redirigir
+
       return null;
     },
     routes: [

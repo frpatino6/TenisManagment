@@ -54,7 +54,12 @@ class AnalyticsChartWidget extends StatelessWidget {
               ),
             ],
             const Gap(16),
-            SizedBox(height: height, child: _buildChart(context)),
+            SizedBox(
+              height: height,
+              child: RepaintBoundary(
+                child: _buildChart(context),
+              ),
+            ),
             if (chartData.xAxisLabel != null ||
                 chartData.yAxisLabel != null) ...[
               const Gap(8),
@@ -287,7 +292,7 @@ class AnalyticsChartWidget extends StatelessWidget {
   }
 }
 
-// Custom painters for charts
+
 class LineChartPainter extends CustomPainter {
   final List<ChartDataPoint> data;
   final Color color;
@@ -298,7 +303,7 @@ class LineChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
 
-    // Filter out invalid data points
+
     final validData = data
         .where((e) => e.value.isFinite && !e.value.isNaN)
         .toList();
@@ -314,7 +319,7 @@ class LineChartPainter extends CustomPainter {
         .map((e) => e.value)
         .reduce((a, b) => a > b ? a : b);
 
-    // Handle single data point case
+
     final stepX = validData.length > 1
         ? size.width / (validData.length - 1)
         : 0.0;
@@ -334,7 +339,7 @@ class LineChartPainter extends CustomPainter {
 
     canvas.drawPath(path, paint);
 
-    // Draw points
+
     final pointPaint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
@@ -362,7 +367,7 @@ class PieChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
 
-    // Filter out invalid data points
+
     final validData = data
         .where((e) => e.value.isFinite && !e.value.isNaN && e.value > 0)
         .toList();
@@ -433,14 +438,14 @@ class AreaChartPainter extends CustomPainter {
     fillPath.lineTo(size.width, size.height);
     fillPath.close();
 
-    // Fill area
+
     final fillPaint = Paint()
       ..color = color.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
 
     canvas.drawPath(fillPath, fillPaint);
 
-    // Draw line
+
     final linePaint = Paint()
       ..color = color
       ..strokeWidth = 2

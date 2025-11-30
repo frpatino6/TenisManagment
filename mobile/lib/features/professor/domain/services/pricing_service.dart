@@ -48,7 +48,7 @@ class PricingResponse {
     final customPricingMap = json['customPricing'] as Map<String, dynamic>;
     final basePricingMap = json['basePricing'] as Map<String, dynamic>;
 
-    // If customPricing is empty, use basePricing for all values
+
     final effectiveCustomPricing = customPricingMap.isEmpty
         ? basePricingMap
         : {

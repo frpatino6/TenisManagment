@@ -34,7 +34,7 @@ class AnalyticsErrorWidget extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Error icon and title
+
           Row(
             children: [
               Container(
@@ -74,7 +74,7 @@ class AnalyticsErrorWidget extends StatelessWidget {
             ],
           ),
 
-          // Error details (if enabled)
+
           if (showDetails && error.details != null) ...[
             const Gap(16),
             Container(
@@ -126,7 +126,7 @@ class AnalyticsErrorWidget extends StatelessWidget {
             ),
           ],
 
-          // Retry button (if error is retryable)
+
           if (error.isRetryable && onRetry != null) ...[
             const Gap(16),
             SizedBox(
@@ -143,7 +143,7 @@ class AnalyticsErrorWidget extends StatelessWidget {
             ),
           ],
 
-          // Action buttons based on error type
+
           const Gap(12),
           _buildActionButtons(context),
         ],
@@ -203,7 +203,7 @@ class AnalyticsErrorWidget extends StatelessWidget {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: () {
-              // Navigate to login screen
+
               Navigator.of(
                 context,
               ).pushNamedAndRemoveUntil('/login', (route) => false);
@@ -221,7 +221,7 @@ class AnalyticsErrorWidget extends StatelessWidget {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: () {
-              // Navigate to schedule creation
+
               Navigator.of(context).pushNamed('/professor/schedule');
             },
             icon: const Icon(Icons.add),
@@ -237,7 +237,7 @@ class AnalyticsErrorWidget extends StatelessWidget {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: () {
-              // Clear filters and retry
+
               Navigator.of(context).pop();
             },
             icon: const Icon(Icons.clear),

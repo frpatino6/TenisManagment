@@ -45,7 +45,6 @@ class StudentProfileScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header con avatar y nombre
           Card(
             child: Padding(
               padding: const EdgeInsets.all(24),
@@ -110,7 +109,6 @@ class StudentProfileScreen extends ConsumerWidget {
 
           const Gap(16),
 
-          // Información de contacto
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -141,7 +139,6 @@ class StudentProfileScreen extends ConsumerWidget {
 
           const Gap(16),
 
-          // Información financiera
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -171,7 +168,6 @@ class StudentProfileScreen extends ConsumerWidget {
 
           const Gap(16),
 
-          // Información de cuenta
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -209,7 +205,6 @@ class StudentProfileScreen extends ConsumerWidget {
 
           const Gap(32),
 
-          // Botones de acción
           Row(
             children: [
               Expanded(

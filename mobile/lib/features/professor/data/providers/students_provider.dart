@@ -6,20 +6,20 @@ final studentsServiceProvider = Provider<StudentsService>((ref) {
   return StudentsService();
 });
 
-final studentsListProvider = FutureProvider<List<StudentModel>>((ref) async {
+final studentsListProvider = FutureProvider.autoDispose<List<StudentModel>>((
+  ref,
+) async {
   final service = ref.read(studentsServiceProvider);
   return service.getStudentsList();
 });
 
-final studentProfileProvider = FutureProvider.family<StudentModel?, String>((
-  ref,
-  studentId,
-) async {
-  final service = ref.read(studentsServiceProvider);
-  return service.getStudentProfile(studentId);
-});
+final studentProfileProvider = FutureProvider.autoDispose
+    .family<StudentModel?, String>((ref, studentId) async {
+      final service = ref.read(studentsServiceProvider);
+      return service.getStudentProfile(studentId);
+    });
 
-final filteredStudentsProvider = Provider.family<List<StudentModel>, String>((
+final filteredStudentsProvider = Provider.autoDispose.family<List<StudentModel>, String>((
   ref,
   searchQuery,
 ) {
@@ -27,12 +27,16 @@ final filteredStudentsProvider = Provider.family<List<StudentModel>, String>((
 
   return studentsAsync.when(
     data: (students) {
-      if (searchQuery.isEmpty) return students;
+      final trimmedQuery = searchQuery.trim();
+      if (trimmedQuery.isEmpty) return students;
 
-      final query = searchQuery.toLowerCase();
+      final query = trimmedQuery.toLowerCase();
+      
       return students.where((student) {
-        return student.name.toLowerCase().contains(query) ||
-            student.email.toLowerCase().contains(query);
+        final nameLower = student.name.toLowerCase();
+        final emailLower = student.email.toLowerCase();
+        
+        return nameLower.contains(query) || emailLower.contains(query);
       }).toList();
     },
     loading: () => [],

@@ -55,7 +55,7 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Professor selection
+
           Text(
             'Selecciona un profesor',
             style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700),
@@ -609,7 +609,7 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
 
       if (!mounted) return;
 
-      // Invalidate providers to refresh data
+
       ref.invalidate(professorsProvider);
       if (_selectedProfessor != null) {
         ref.invalidate(availableSchedulesProvider(_selectedProfessor!.id));
@@ -626,7 +626,7 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
         ),
       );
 
-      // Reset state after successful booking
+
       setState(() {
         _isBooking = false;
         _selectedSchedule = null;

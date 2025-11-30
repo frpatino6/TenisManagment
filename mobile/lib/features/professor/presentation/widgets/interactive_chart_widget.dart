@@ -42,17 +42,19 @@ class _InteractiveChartWidgetState extends State<InteractiveChartWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with title and controls
+
             _buildHeader(theme, colorScheme),
             const Gap(16),
 
-            // Chart
+
             SizedBox(
               height: widget.height,
-              child: _buildChart(theme, colorScheme),
+              child: RepaintBoundary(
+                child: _buildChart(theme, colorScheme),
+              ),
             ),
 
-            // Legend and info
+
             if (widget.data.isNotEmpty) ...[
               const Gap(16),
               _buildLegend(theme, colorScheme),
@@ -89,7 +91,7 @@ class _InteractiveChartWidgetState extends State<InteractiveChartWidget> {
             ],
           ),
         ),
-        // Chart controls
+
         Row(
           children: [
             IconButton(
@@ -372,7 +374,7 @@ class LineChartPainter extends CustomPainter {
       }
     }
 
-    // Draw area under the line
+
     final areaPath = Path.from(path);
     areaPath.lineTo(padding + chartWidth, padding + chartHeight);
     areaPath.lineTo(padding, padding + chartHeight);
@@ -389,14 +391,14 @@ class LineChartPainter extends CustomPainter {
     canvas.drawPath(areaPath, areaPaint);
     canvas.drawPath(path, paint);
 
-    // Draw points
+
     for (int i = 0; i < points.length; i++) {
       final point = points[i];
       final radius = (touchedIndex == i && showTooltip) ? 8.0 : 5.0;
 
       canvas.drawCircle(point, radius, pointPaint);
 
-      // Draw white center for better visibility
+
       canvas.drawCircle(point, radius - 2, Paint()..color = Colors.white);
     }
   }

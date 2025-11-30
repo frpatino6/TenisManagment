@@ -3,17 +3,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/models/user_model.dart';
 import '../../domain/services/auth_service.dart';
 
-// Provider para el servicio de autenticación
+
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService();
 });
 
-// Provider para el estado de autenticación de Firebase
+
 final firebaseAuthProvider = StreamProvider<User?>((ref) {
   return FirebaseAuth.instance.authStateChanges();
 });
 
-// Provider para el usuario autenticado
+
 final authStateProvider = StreamProvider<UserModel?>((ref) {
   final authService = ref.watch(authServiceProvider);
   final firebaseUser = ref.watch(firebaseAuthProvider);
@@ -40,7 +40,7 @@ final authStateProvider = StreamProvider<UserModel?>((ref) {
   );
 });
 
-// Notifier para el estado de carga
+
 class AuthLoadingNotifier extends Notifier<bool> {
   @override
   bool build() => false;
@@ -50,7 +50,7 @@ class AuthLoadingNotifier extends Notifier<bool> {
   }
 }
 
-// Notifier para los errores de autenticación
+
 class AuthErrorNotifier extends Notifier<String?> {
   @override
   String? build() => null;
@@ -64,17 +64,17 @@ class AuthErrorNotifier extends Notifier<String?> {
   }
 }
 
-// Provider para el estado de carga
+
 final authLoadingProvider = NotifierProvider<AuthLoadingNotifier, bool>(
   () => AuthLoadingNotifier(),
 );
 
-// Provider para los errores de autenticación
+
 final authErrorProvider = NotifierProvider<AuthErrorNotifier, String?>(
   () => AuthErrorNotifier(),
 );
 
-// Notifier para manejar la autenticación
+
 class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
   @override
   AsyncValue<UserModel?> build() {
@@ -185,13 +185,13 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
   }
 }
 
-// Provider para el notifier de autenticación
+
 final authNotifierProvider =
     NotifierProvider<AuthNotifier, AsyncValue<UserModel?>>(() {
       return AuthNotifier();
     });
 
-// Provider para verificar si el usuario está autenticado
+
 final isAuthenticatedProvider = Provider<bool>((ref) {
   final authState = ref.watch(authStateProvider);
   return authState.when(
@@ -201,7 +201,7 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
   );
 });
 
-// Provider para obtener el usuario actual
+
 final currentUserProvider = Provider<UserModel?>((ref) {
   final authState = ref.watch(authStateProvider);
   return authState.when(

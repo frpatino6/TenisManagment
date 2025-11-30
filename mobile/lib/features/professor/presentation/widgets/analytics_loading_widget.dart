@@ -513,17 +513,37 @@ class _AnalyticsSkeletonLoadingState extends State<AnalyticsSkeletonLoading>
   Widget _buildSkeletonContent(ThemeData theme, ColorScheme colorScheme) {
     switch (widget.type) {
       case SkeletonType.metric:
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 1.2,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: widget.itemCount,
-          itemBuilder: (context, index) => _buildMetricSkeleton(colorScheme),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = 2;
+            final childAspectRatio = 1.2;
+            final crossAxisSpacing = 8.0;
+            final mainAxisSpacing = 8.0;
+
+            final itemWidth =
+                (constraints.maxWidth - crossAxisSpacing) / crossAxisCount;
+            final itemHeight = itemWidth / childAspectRatio;
+            final rowCount = (widget.itemCount / crossAxisCount).ceil();
+            final totalHeight =
+                (rowCount * itemHeight) + ((rowCount - 1) * mainAxisSpacing);
+
+            return SizedBox(
+              height: totalHeight,
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 1.2,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                ),
+                itemCount: widget.itemCount,
+                itemBuilder: (context, index) =>
+                    _buildMetricSkeleton(colorScheme),
+              ),
+            );
+          },
         );
       case SkeletonType.chart:
         return Column(

@@ -29,21 +29,21 @@ class _AnalyticsDashboardScreenState
   @override
   void initState() {
     super.initState();
-    // Refresh data when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshAnalytics();
     });
   }
 
   void _refreshAnalytics() {
+    final period = _filters['period'] ?? 'month';
+
     ref.invalidate(analyticsOverviewProvider(_filters));
-    ref.invalidate(analyticsRevenueProvider(_filters['period'] ?? 'month'));
-    ref.invalidate(analyticsBookingsProvider(_filters['period'] ?? 'month'));
-    ref.invalidate(analyticsStudentsProvider(_filters['period'] ?? 'month'));
+    ref.invalidate(analyticsRevenueProvider(period));
+    ref.invalidate(analyticsBookingsProvider(period));
+    ref.invalidate(analyticsStudentsProvider(period));
   }
 
   void _updateFilters(Map<String, String?> newFilters) {
-    // print('🔍 Updating filters: $newFilters');
     setState(() {
       _filters = newFilters;
     });
@@ -90,7 +90,6 @@ class _AnalyticsDashboardScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Filter bar
             AnalyticsFilterBar(
               selectedPeriod: _filters['period'] ?? 'month',
               selectedServiceType: _filters['serviceType'],
@@ -107,20 +106,12 @@ class _AnalyticsDashboardScreenState
               onRefresh: _refreshAnalytics,
             ),
             const Gap(16),
-
-            // Last updated info
             _buildLastUpdatedInfo(context, analytics.lastUpdated),
             const Gap(16),
-
-            // Metrics cards
             _buildMetricsSection(context, analytics.metrics),
             const Gap(24),
-
-            // Charts section
             _buildChartsSection(context, analytics.charts),
             const Gap(24),
-
-            // Quick actions
             _buildQuickActionsSection(context),
           ],
         ),
@@ -136,7 +127,7 @@ class _AnalyticsDashboardScreenState
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
       ),
       child: Row(
         children: [
@@ -174,28 +165,51 @@ class _AnalyticsDashboardScreenState
             type: SkeletonType.metric,
           )
         else
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 1.2,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-            ),
-            itemCount: metrics.length,
-            itemBuilder: (context, index) {
-              return AnalyticsMetricCard(
-                metric: metrics[index],
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          MetricDetailScreen(metric: metrics[index]),
-                    ),
-                  );
-                },
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const crossAxisCount = 2;
+              const childAspectRatio = 1.2;
+              const crossAxisSpacing = 8.0;
+              const mainAxisSpacing = 8.0;
+
+              final itemWidth =
+                  (constraints.maxWidth - crossAxisSpacing) / crossAxisCount;
+              final itemHeight = itemWidth / childAspectRatio;
+              final rowCount = (metrics.length / crossAxisCount).ceil();
+              final totalHeight =
+                  (rowCount * itemHeight) + ((rowCount - 1) * mainAxisSpacing);
+
+              return SizedBox(
+                height: totalHeight,
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1.2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: metrics.length,
+                  itemBuilder: (context, index) {
+                    final metric = metrics[index];
+                    return AnalyticsMetricCard(
+                      key: ValueKey(
+                        'metric_${metric.title}_${metric.icon}_$index',
+                      ),
+                      metric: metric,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                MetricDetailScreen(metric: metric),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
               );
             },
           ),
@@ -308,13 +322,11 @@ class _AnalyticsDashboardScreenState
   }
 
   Widget _buildErrorState(BuildContext context, Object error) {
-    // Try to parse as AnalyticsError, fallback to generic error
     AnalyticsError? analyticsError;
     try {
       if (error is AnalyticsError) {
         analyticsError = error;
       } else {
-        // Create a generic error from the exception
         analyticsError = AnalyticsError(
           type: AnalyticsErrorType.unknownError,
           message: 'Error al cargar analytics',

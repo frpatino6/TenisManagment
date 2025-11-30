@@ -27,22 +27,24 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              // Refresh bookings
               ref.invalidate(studentBookingsProvider);
             },
           ),
         ],
       ),
-      body: ref.watch(studentBookingsProvider).when(
-        data: (bookings) {
-          if (bookings.isEmpty) {
-            return _buildEmptyState(context);
-          }
-          return _buildBookingsList(context, bookings);
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => _buildErrorState(context, error.toString()),
-      ),
+      body: ref
+          .watch(studentBookingsProvider)
+          .when(
+            data: (bookings) {
+              if (bookings.isEmpty) {
+                return _buildEmptyState(context);
+              }
+              return _buildBookingsList(context, bookings);
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) =>
+                _buildErrorState(context, error.toString()),
+          ),
     );
   }
 
@@ -122,7 +124,6 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
   }
 
   Widget _buildBookingsList(BuildContext context, List<BookingModel> bookings) {
-    // Separate bookings by status
     final upcomingBookings = bookings
         .where(
           (b) =>

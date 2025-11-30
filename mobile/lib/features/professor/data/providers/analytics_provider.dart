@@ -7,11 +7,8 @@ final analyticsServiceProvider = Provider<AnalyticsService>((ref) {
   return AnalyticsService();
 });
 
-final analyticsOverviewProvider =
-    FutureProvider.family<AnalyticsOverview, Map<String, String?>>((
-      ref,
-      filters,
-    ) async {
+final analyticsOverviewProvider = FutureProvider.autoDispose
+    .family<AnalyticsOverview, Map<String, String?>>((ref, filters) async {
       final service = ref.read(analyticsServiceProvider);
       return service.getOverview(
         period: filters['period'] ?? 'month',
@@ -20,33 +17,30 @@ final analyticsOverviewProvider =
       );
     });
 
-final analyticsRevenueProvider =
-    FutureProvider.family<AnalyticsChartData, String>((ref, period) async {
+final analyticsRevenueProvider = FutureProvider.autoDispose
+    .family<AnalyticsChartData, String>((ref, period) async {
       final service = ref.read(analyticsServiceProvider);
       return service.getRevenueData(period: period);
     });
 
-final analyticsBookingsProvider =
-    FutureProvider.family<AnalyticsChartData, String>((ref, period) async {
+final analyticsBookingsProvider = FutureProvider.autoDispose
+    .family<AnalyticsChartData, String>((ref, period) async {
       final service = ref.read(analyticsServiceProvider);
       return service.getBookingsData(period: period);
     });
 
-final analyticsStudentsProvider =
-    FutureProvider.family<AnalyticsChartData, String>((ref, period) async {
+final analyticsStudentsProvider = FutureProvider.autoDispose
+    .family<AnalyticsChartData, String>((ref, period) async {
       final service = ref.read(analyticsServiceProvider);
       return service.getStudentsData(period: period);
     });
 
-// Provider para filtros de analytics
 final analyticsFiltersProvider = Provider<Map<String, String?>>((ref) {
   return {'period': 'month', 'serviceType': null, 'status': null};
 });
 
-// Provider para refrescar datos
 final analyticsRefreshProvider = Provider<int>((ref) => 0);
 
-// Función helper para refrescar analytics
 void refreshAnalytics(WidgetRef ref) {
   ref.invalidate(analyticsOverviewProvider);
   ref.invalidate(analyticsRevenueProvider);

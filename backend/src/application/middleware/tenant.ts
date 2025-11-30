@@ -149,4 +149,3 @@ export function requireTenant(tenantService: TenantService) {
     requireTenantAccess(tenantService),
   ];
 }
-

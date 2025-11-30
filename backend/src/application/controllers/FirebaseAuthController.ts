@@ -114,8 +114,14 @@ export class FirebaseAuthController {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error('Firebase auth error', { error: message });
-      res.status(401).json({ error: 'Invalid token' });
+      const code = (error as any)?.code || 'unknown';
+      const stack = error instanceof Error ? error.stack : undefined;
+      this.logger.error('Firebase auth error', { 
+        error: message, 
+        code,
+        stack: stack?.split('\n').slice(0, 3).join('\n')
+      });
+      res.status(401).json({ error: 'Invalid token', details: message });
     }
   };
 

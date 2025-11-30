@@ -211,6 +211,12 @@ class AuthService {
         throw Exception('No se pudo obtener el token de Firebase');
       }
 
+      // TEMPORAL: Imprimir token para Postman
+      debugPrint('═══════════════════════════════════════════════════════');
+      debugPrint('🔥 TOKEN FIREBASE PARA POSTMAN (copia esto):');
+      debugPrint(idToken);
+      debugPrint('═══════════════════════════════════════════════════════');
+
       final url = Uri.parse('$_baseUrl/firebase/verify');
       debugPrint('🔐 Autenticando con backend: $url');
       

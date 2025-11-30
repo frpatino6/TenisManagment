@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../domain/models/booking_model.dart';
+import '../providers/student_provider.dart';
 
 class MyBookingsScreen extends ConsumerStatefulWidget {
   const MyBookingsScreen({super.key});
@@ -27,30 +28,20 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
             icon: const Icon(Icons.refresh),
             onPressed: () {
               // Refresh bookings
-              setState(() {});
+              ref.invalidate(studentBookingsProvider);
             },
           ),
         ],
       ),
-      body: FutureBuilder<List<BookingModel>>(
-        future: _getBookings(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return _buildErrorState(context, snapshot.error.toString());
-          }
-
-          final bookings = snapshot.data ?? [];
-
+      body: ref.watch(studentBookingsProvider).when(
+        data: (bookings) {
           if (bookings.isEmpty) {
             return _buildEmptyState(context);
           }
-
           return _buildBookingsList(context, bookings);
         },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => _buildErrorState(context, error.toString()),
       ),
     );
   }
@@ -121,7 +112,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
           ),
           const Gap(32),
           ElevatedButton.icon(
-            onPressed: () => setState(() {}),
+            onPressed: () => ref.invalidate(studentBookingsProvider),
             icon: const Icon(Icons.refresh),
             label: const Text('Reintentar'),
           ),
@@ -513,43 +504,5 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
         content: Text('Funcionalidad de cancelación en desarrollo'),
       ),
     );
-  }
-
-  Future<List<BookingModel>> _getBookings() async {
-    // TODO: Implement actual API call
-    // For now, return mock data
-    await Future.delayed(const Duration(seconds: 1));
-
-    return [
-      BookingModel(
-        id: '1',
-        professor: ProfessorBookingModel(
-          id: '1',
-          name: 'Juan Pérez',
-          email: 'juan@example.com',
-          specialties: ['Técnica', 'Físico'],
-          pricing: {'individualClass': 50000},
-        ),
-        schedule: AvailableScheduleModel(
-          id: '1',
-          professorId: '1',
-          startTime: DateTime.now()
-              .add(const Duration(days: 1))
-              .toIso8601String(),
-          endTime: DateTime.now()
-              .add(const Duration(days: 1, hours: 1))
-              .toIso8601String(),
-          type: 'individual_class',
-          price: 50000,
-          status: 'available',
-        ),
-        serviceType: 'individual_class',
-        price: 50000,
-        status: 'confirmed',
-        createdAt: DateTime.now()
-            .subtract(const Duration(days: 1))
-            .toIso8601String(),
-      ),
-    ];
   }
 }

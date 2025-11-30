@@ -20,16 +20,34 @@ class BookingModel {
   factory BookingModel.fromJson(Map<String, dynamic> json) {
     return BookingModel(
       id: json['id'] as String,
-      professor: ProfessorBookingModel.fromJson(
-        json['professor'] as Map<String, dynamic>,
-      ),
-      schedule: AvailableScheduleModel.fromJson(
-        json['schedule'] as Map<String, dynamic>,
-      ),
-      serviceType: json['serviceType'] as String,
-      price: (json['price'] as num).toDouble(),
-      status: json['status'] as String,
-      createdAt: json['createdAt'] as String,
+      professor: json['professor'] != null
+          ? ProfessorBookingModel.fromJson(
+              json['professor'] as Map<String, dynamic>,
+            )
+          : ProfessorBookingModel(
+              id: '',
+              name: 'Profesor no disponible',
+              email: '',
+              specialties: [],
+              pricing: {},
+            ),
+      schedule: json['schedule'] != null
+          ? AvailableScheduleModel.fromJson(
+              json['schedule'] as Map<String, dynamic>,
+            )
+          : AvailableScheduleModel(
+              id: '',
+              professorId: '',
+              startTime: DateTime.now().toIso8601String(),
+              endTime: DateTime.now().toIso8601String(),
+              type: 'individual_class',
+              price: 0,
+              status: 'pending',
+            ),
+      serviceType: json['serviceType'] as String? ?? 'individual_class',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      status: json['status'] as String? ?? 'pending',
+      createdAt: json['createdAt'] as String? ?? DateTime.now().toIso8601String(),
     );
   }
 
@@ -63,11 +81,13 @@ class ProfessorBookingModel {
 
   factory ProfessorBookingModel.fromJson(Map<String, dynamic> json) {
     return ProfessorBookingModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      email: json['email'] as String,
-      specialties: List<String>.from(json['specialties'] as List),
-      pricing: json['pricing'] as Map<String, dynamic>,
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? 'Profesor no disponible',
+      email: json['email'] as String? ?? '',
+      specialties: json['specialties'] != null
+          ? List<String>.from(json['specialties'] as List)
+          : [],
+      pricing: json['pricing'] as Map<String, dynamic>? ?? {},
     );
   }
 
@@ -103,13 +123,13 @@ class AvailableScheduleModel {
 
   factory AvailableScheduleModel.fromJson(Map<String, dynamic> json) {
     return AvailableScheduleModel(
-      id: json['id'] as String,
-      professorId: json['professorId'] as String,
-      startTime: json['startTime'] as String,
-      endTime: json['endTime'] as String,
-      type: json['type'] as String,
-      price: (json['price'] as num).toDouble(),
-      status: json['status'] as String,
+      id: json['id'] as String? ?? '',
+      professorId: json['professorId'] as String? ?? '',
+      startTime: json['startTime'] as String? ?? DateTime.now().toIso8601String(),
+      endTime: json['endTime'] as String? ?? DateTime.now().toIso8601String(),
+      type: json['type'] as String? ?? 'individual_class',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      status: json['status'] as String? ?? 'pending',
     );
   }
 

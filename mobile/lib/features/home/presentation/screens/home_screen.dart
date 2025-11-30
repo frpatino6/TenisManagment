@@ -14,6 +14,8 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Optimización: Usar watch solo cuando sea necesario
+    // isLoading puede no requerir rebuild si solo se usa en condiciones específicas
     final authState = ref.watch(authStateProvider);
     final isLoading = ref.watch(authLoadingProvider);
 

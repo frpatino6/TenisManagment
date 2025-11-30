@@ -57,6 +57,8 @@ class StudentsListWidget extends ConsumerWidget {
             itemBuilder: (context, index) {
               final student = students[index];
               return Container(
+                    // Optimización: Key única para cada estudiante
+                    key: ValueKey('student_card_${student.id}_$index'),
                     width: 160,
                     margin: EdgeInsets.only(
                       right: index < students.length - 1 ? 12 : 0,
@@ -71,6 +73,8 @@ class StudentsListWidget extends ConsumerWidget {
                   )
                   .fadeIn(duration: 400.ms, delay: (index * 100).ms);
             },
+            // Optimización: Cache más items para scroll horizontal suave
+            cacheExtent: 200,
           ),
         );
       },
@@ -101,6 +105,7 @@ class StudentsListWidget extends ConsumerWidget {
   }
 
   Widget _buildStudentCard(BuildContext context, student) {
+    // Optimización: Memoizar Theme y ColorScheme para evitar múltiples llamadas
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 

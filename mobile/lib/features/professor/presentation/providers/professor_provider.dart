@@ -18,12 +18,12 @@ final professorInfoProvider = FutureProvider.autoDispose<ProfessorModel>((
 });
 
 // Provider para la lista de estudiantes
-final professorStudentsProvider = FutureProvider<List<StudentSummaryModel>>((
-  ref,
-) async {
-  final service = ref.read(professorServiceProvider);
-  return await service.getStudents();
-});
+// Optimización: Agregar autoDispose para liberar recursos cuando no se use
+final professorStudentsProvider =
+    FutureProvider.autoDispose<List<StudentSummaryModel>>((ref) async {
+      final service = ref.read(professorServiceProvider);
+      return await service.getStudents();
+    });
 
 // Provider para el horario de hoy
 final todayScheduleProvider =
@@ -40,12 +40,12 @@ final scheduleByDateProvider = FutureProvider.autoDispose
     });
 
 // Provider para el horario de la semana
-final weekScheduleProvider = FutureProvider<List<ClassScheduleModel>>((
-  ref,
-) async {
-  final service = ref.read(professorServiceProvider);
-  return await service.getWeekSchedule();
-});
+// Optimización: Agregar autoDispose para liberar recursos cuando no se use
+final weekScheduleProvider =
+    FutureProvider.autoDispose<List<ClassScheduleModel>>((ref) async {
+      final service = ref.read(professorServiceProvider);
+      return await service.getWeekSchedule();
+    });
 
 // Provider para las estadísticas de ganancias
 final earningsStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((

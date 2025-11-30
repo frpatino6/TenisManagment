@@ -102,6 +102,11 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
             FutureBuilder<PackageInfo?>(
                   future: _getPackageInfo(),
                   builder: (context, snapshot) {
+                    // Optimización: Memoizar Theme y ColorScheme para evitar múltiples llamadas
+                    final theme = Theme.of(context);
+                    final colorScheme = theme.colorScheme;
+                    final primaryColor = colorScheme.primary;
+                    
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return Center(
                         child: Container(
@@ -113,21 +118,15 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                Theme.of(
-                                  context,
-                                ).colorScheme.primary.withValues(alpha: 0.1),
-                                Theme.of(
-                                  context,
-                                ).colorScheme.primary.withValues(alpha: 0.05),
+                                primaryColor.withValues(alpha: 0.1),
+                                primaryColor.withValues(alpha: 0.05),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.primary.withValues(alpha: 0.3),
+                              color: primaryColor.withValues(alpha: 0.3),
                               width: 1,
                             ),
                           ),
@@ -140,21 +139,18 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    Theme.of(context).colorScheme.primary,
+                                    primaryColor,
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 'Cargando versión...',
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
-                                    ),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: primaryColor,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
                               ),
                             ],
                           ),
@@ -164,6 +160,7 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
 
                     if (snapshot.hasData) {
                       final packageInfo = snapshot.data!;
+                      // Optimización: Reutilizar theme y colorScheme ya obtenidos arriba
                       return Center(
                         child: Container(
                           margin: const EdgeInsets.symmetric(vertical: 16),
@@ -174,28 +171,20 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                Theme.of(
-                                  context,
-                                ).colorScheme.primary.withValues(alpha: 0.1),
-                                Theme.of(
-                                  context,
-                                ).colorScheme.primary.withValues(alpha: 0.05),
+                                primaryColor.withValues(alpha: 0.1),
+                                primaryColor.withValues(alpha: 0.05),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.primary.withValues(alpha: 0.3),
+                              color: primaryColor.withValues(alpha: 0.3),
                               width: 1,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.primary.withValues(alpha: 0.1),
+                                color: primaryColor.withValues(alpha: 0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -207,19 +196,16 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
                               Icon(
                                 Icons.info_outline,
                                 size: 16,
-                                color: Theme.of(context).colorScheme.primary,
+                                color: primaryColor,
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 packageInfo.appName,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
-                                    ),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: primaryColor,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
                               ),
                               const SizedBox(width: 8),
                               Container(
@@ -580,6 +566,10 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
+    // Optimización: Memoizar Theme y ColorScheme para evitar múltiples llamadas
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -618,7 +608,7 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.onSurface,
+                  color: colorScheme.onSurface,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -628,7 +618,7 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
                 subtitle,
                 style: GoogleFonts.inter(
                   fontSize: 11,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: colorScheme.onSurfaceVariant,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

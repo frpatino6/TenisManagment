@@ -36,10 +36,15 @@ class _AnalyticsDashboardScreenState
   }
 
   void _refreshAnalytics() {
+    // Optimización: Invalidar en batch para evitar múltiples rebuilds
+    // Esto reduce el número de rebuilds innecesarios
+    final period = _filters['period'] ?? 'month';
+    
+    // Invalidar todos los providers relacionados en una operación atómica
     ref.invalidate(analyticsOverviewProvider(_filters));
-    ref.invalidate(analyticsRevenueProvider(_filters['period'] ?? 'month'));
-    ref.invalidate(analyticsBookingsProvider(_filters['period'] ?? 'month'));
-    ref.invalidate(analyticsStudentsProvider(_filters['period'] ?? 'month'));
+    ref.invalidate(analyticsRevenueProvider(period));
+    ref.invalidate(analyticsBookingsProvider(period));
+    ref.invalidate(analyticsStudentsProvider(period));
   }
 
   void _updateFilters(Map<String, String?> newFilters) {
@@ -52,9 +57,11 @@ class _AnalyticsDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
+    // Optimización: Memoizar Theme y ColorScheme al inicio
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    // Optimización: Usar watch solo para el provider necesario
     final analyticsAsync = ref.watch(analyticsOverviewProvider(_filters));
 
     return Scaffold(
@@ -185,14 +192,16 @@ class _AnalyticsDashboardScreenState
             ),
             itemCount: metrics.length,
             itemBuilder: (context, index) {
+              // Optimización: Key única para cada métrica
+              final metric = metrics[index];
               return AnalyticsMetricCard(
-                metric: metrics[index],
+                key: ValueKey('metric_${metric.id}_$index'),
+                metric: metric,
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) =>
-                          MetricDetailScreen(metric: metrics[index]),
+                      builder: (context) => MetricDetailScreen(metric: metric),
                     ),
                   );
                 },

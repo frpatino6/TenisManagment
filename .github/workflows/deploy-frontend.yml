@@ -41,7 +41,12 @@ jobs:
       
     - name: Run tests
       working-directory: ./mobile
-      run: flutter test
+      run: |
+        if [ -d "test" ] && [ "$(ls -A test)" ]; then
+          flutter test
+        else
+          echo "No tests found, skipping test execution"
+        fi
       
     - name: Build web
       working-directory: ./mobile

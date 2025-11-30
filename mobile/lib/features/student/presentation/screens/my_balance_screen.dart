@@ -423,10 +423,10 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
             const Gap(8),
             Flexible(
               child: Text(
-                value,
+              value,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
+                fontWeight: FontWeight.bold,
+                color: color,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -436,11 +436,11 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
             const Gap(4),
             Flexible(
               child: Text(
-                title,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
+              title,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),

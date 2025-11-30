@@ -15,9 +15,9 @@ final studentsListProvider = FutureProvider.autoDispose<List<StudentModel>>((
 
 final studentProfileProvider = FutureProvider.autoDispose
     .family<StudentModel?, String>((ref, studentId) async {
-      final service = ref.read(studentsServiceProvider);
-      return service.getStudentProfile(studentId);
-    });
+  final service = ref.read(studentsServiceProvider);
+  return service.getStudentProfile(studentId);
+});
 
 final filteredStudentsProvider = Provider.autoDispose.family<List<StudentModel>, String>((
   ref,
@@ -31,7 +31,7 @@ final filteredStudentsProvider = Provider.autoDispose.family<List<StudentModel>,
       if (trimmedQuery.isEmpty) return students;
 
       final query = trimmedQuery.toLowerCase();
-      
+
       return students.where((student) {
         final nameLower = student.name.toLowerCase();
         final emailLower = student.email.toLowerCase();

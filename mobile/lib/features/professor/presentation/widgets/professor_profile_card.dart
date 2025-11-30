@@ -52,7 +52,7 @@ class ProfessorProfileCard extends ConsumerWidget {
                       ),
                     ),
                     child: Icon(Icons.person, color: Colors.white, size: 30),
-                  ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
+                  ).animate().scale(duration: 400.ms, curve: Curves.easeOut),
                   const Gap(16),
 
 

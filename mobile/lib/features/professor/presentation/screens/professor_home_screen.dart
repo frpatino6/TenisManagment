@@ -300,8 +300,8 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
           ),
         )
         .animate()
-        .scale(duration: 600.ms, curve: Curves.elasticOut)
-        .fadeIn(duration: 400.ms);
+        .scale(duration: 400.ms, curve: Curves.easeOut)
+        .fadeIn(duration: 300.ms);
   }
 
   Widget _buildQuickActionsGrid(BuildContext context) {

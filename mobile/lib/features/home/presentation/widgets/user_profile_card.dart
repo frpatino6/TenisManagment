@@ -66,8 +66,8 @@ class UserProfileCard extends StatelessWidget {
                         ),
                 )
                 .animate()
-                .scale(duration: 600.ms, curve: Curves.elasticOut)
-                .fadeIn(duration: 400.ms),
+                .scale(duration: 400.ms, curve: Curves.easeOut)
+                .fadeIn(duration: 300.ms),
 
             const Gap(16),
 

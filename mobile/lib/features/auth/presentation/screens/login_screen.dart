@@ -100,7 +100,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             )
             .animate()
-            .scale(duration: 600.ms, curve: Curves.elasticOut)
+            .scale(duration: 400.ms, curve: Curves.easeOut)
             .fadeIn(duration: 400.ms),
 
         const Gap(24),

@@ -10,3 +10,4 @@ docs/AGENTES_BACKUP_README.md
 
 # Dependency directories
 **/node_modules/
+mobile/.vscode/launch.json

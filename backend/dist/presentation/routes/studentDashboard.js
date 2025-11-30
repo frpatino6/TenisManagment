@@ -12,6 +12,7 @@ router.get('/activities', controller.getRecentActivities);
 router.get('/me', controller.getStudentInfo);
 router.get('/professors', controller.getProfessors);
 router.get('/available-schedules', controller.getAvailableSchedules);
+router.get('/bookings', controller.getBookings);
 router.post('/book-lesson', controller.bookLesson);
 exports.default = router;
 //# sourceMappingURL=studentDashboard.js.map

@@ -334,6 +334,90 @@ class StudentDashboardController {
                 res.status(500).json({ error: 'Error interno del servidor' });
             }
         };
+        /**
+         * Get student bookings
+         */
+        this.getBookings = async (req, res) => {
+            console.log('=== StudentDashboardController.getBookings called ===');
+            console.log('req.user:', req.user);
+            try {
+                const firebaseUid = req.user?.uid;
+                if (!firebaseUid) {
+                    console.log('No firebaseUid found in req.user');
+                    return res.status(401).json({ error: 'Usuario no autenticado' });
+                }
+                // Get AuthUser by Firebase UID
+                const authUser = await AuthUserModel_1.AuthUserModel.findOne({ firebaseUid });
+                if (!authUser) {
+                    console.log('AuthUser not found for Firebase UID:', firebaseUid);
+                    return res.status(404).json({ error: 'Usuario no encontrado' });
+                }
+                // Get Student profile
+                const student = await StudentModel_1.StudentModel.findOne({ authUserId: authUser._id });
+                if (!student) {
+                    console.log('Student profile not found for authUserId:', authUser._id);
+                    return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
+                }
+                console.log('Student found:', student._id);
+                // Get base pricing for professor pricing calculation
+                const baseConfig = await SystemConfigModel_1.SystemConfigModel.findOne({ key: 'base_pricing' });
+                const basePricing = baseConfig?.value || DEFAULT_BASE_PRICING;
+                // Fetch all bookings for the student with populated schedule and professor
+                const bookings = await BookingModel_1.BookingModel.find({
+                    studentId: student._id
+                })
+                    .populate({
+                    path: 'scheduleId',
+                    populate: {
+                        path: 'professorId',
+                        select: 'name email specialties pricing hourlyRate'
+                    }
+                })
+                    .sort({ createdAt: -1 });
+                console.log(`Found ${bookings.length} bookings for student ${student._id}`);
+                // Format bookings according to frontend BookingModel structure
+                const bookingsData = bookings.map((booking) => {
+                    const schedule = booking.scheduleId;
+                    const professor = schedule?.professorId;
+                    // Calculate effective pricing for the professor
+                    const effectivePricing = {
+                        individualClass: professor?.pricing?.individualClass ?? basePricing.individualClass,
+                        groupClass: professor?.pricing?.groupClass ?? basePricing.groupClass,
+                        courtRental: professor?.pricing?.courtRental ?? basePricing.courtRental,
+                    };
+                    return {
+                        id: booking._id.toString(),
+                        professor: {
+                            id: professor?._id?.toString() || '',
+                            name: professor?.name || '',
+                            email: professor?.email || '',
+                            specialties: professor?.specialties || [],
+                            pricing: effectivePricing,
+                        },
+                        schedule: {
+                            id: schedule?._id?.toString() || '',
+                            professorId: schedule?.professorId?._id?.toString() || schedule?.professorId?.toString() || '',
+                            startTime: schedule?.startTime ? new Date(schedule.startTime).toISOString() : '',
+                            endTime: schedule?.endTime ? new Date(schedule.endTime).toISOString() : '',
+                            type: 'individual_class', // Default type since it's not stored in schedule
+                            price: booking.price,
+                            status: schedule?.status || 'pending',
+                        },
+                        serviceType: booking.serviceType,
+                        price: booking.price,
+                        status: booking.status,
+                        createdAt: booking.createdAt ? new Date(booking.createdAt).toISOString() : new Date().toISOString(),
+                    };
+                });
+                console.log(`Returning ${bookingsData.length} formatted bookings`);
+                res.json({ items: bookingsData });
+            }
+            catch (error) {
+                console.error('Error getting bookings:', error);
+                console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
     }
 }
 exports.StudentDashboardController = StudentDashboardController;

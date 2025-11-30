@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import '../../../../core/config/app_config.dart';
 import '../models/user_model.dart';
 
@@ -27,41 +27,58 @@ class AuthService {
   /// Throws [Exception] if authentication fails or is cancelled
   Future<UserModel> signInWithGoogle() async {
     try {
+      debugPrint('🔵 Iniciando Google Sign-In...');
       User? user;
 
       if (kIsWeb) {
+        debugPrint('🌐 Modo Web detectado');
         final provider = GoogleAuthProvider();
         provider.setCustomParameters({'prompt': 'select_account'});
         final UserCredential userCredential = await _firebaseAuth
             .signInWithPopup(provider);
         user = userCredential.user;
       } else {
+        debugPrint('📱 Modo móvil detectado');
         final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
         if (googleUser == null) {
+          debugPrint('❌ Google Sign-In cancelado por el usuario');
           throw Exception('Google Sign-In was cancelled');
         }
 
+        debugPrint('✅ Google Sign-In exitoso: ${googleUser.email}');
         final GoogleSignInAuthentication googleAuth =
             await googleUser.authentication;
+
+        if (googleAuth.idToken == null) {
+          debugPrint('❌ No se obtuvo idToken de Google');
+          throw Exception('Failed to get ID token from Google');
+        }
 
         final OAuthCredential credential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
         );
 
+        debugPrint('🔥 Autenticando con Firebase...');
         final UserCredential userCredential = await _firebaseAuth
             .signInWithCredential(credential);
         user = userCredential.user;
+        debugPrint('✅ Firebase auth exitoso: ${user?.email}');
       }
 
       if (user == null) {
+        debugPrint('❌ Usuario de Firebase es null');
         throw Exception('Failed to sign in with Google');
       }
 
       // Autenticar con el backend
+      debugPrint('🔄 Autenticando con backend...');
       final UserModel userModel = await _authenticateWithBackend(user);
+      debugPrint('✅ Autenticación completa: ${userModel.email}');
       return userModel;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('💥 Error en signInWithGoogle: $e');
+      debugPrint('📚 Stack trace: $stackTrace');
       rethrow;
     }
   }
@@ -189,20 +206,33 @@ class AuthService {
   Future<UserModel> _authenticateWithBackend(User user) async {
     try {
       final String idToken = await user.getIdToken() ?? '';
+      
+      if (idToken.isEmpty) {
+        throw Exception('No se pudo obtener el token de Firebase');
+      }
 
+      final url = Uri.parse('$_baseUrl/firebase/verify');
+      debugPrint('🔐 Autenticando con backend: $url');
+      
       final response = await http.post(
-        Uri.parse('$_baseUrl/firebase/verify'),
+        url,
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'idToken': idToken}),
       );
+
+      debugPrint('📡 Respuesta del backend: ${response.statusCode}');
+      debugPrint('📄 Body: ${response.body}');
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         return UserModel.fromJson(data['user'] as Map<String, dynamic>);
       } else {
-        throw Exception('Backend authentication failed');
+        final errorBody = response.body;
+        debugPrint('❌ Error del backend: $errorBody');
+        throw Exception('Backend authentication failed: ${response.statusCode} - $errorBody');
       }
     } catch (e) {
+      debugPrint('💥 Error en _authenticateWithBackend: $e');
       rethrow;
     }
   }

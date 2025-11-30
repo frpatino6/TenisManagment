@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_core/firebase_core.dart' show FirebaseException;
 import 'core/config/environment.dart';
 import 'core/config/app_config.dart';
 import 'core/config/firebase_config.dart';
@@ -28,13 +29,20 @@ void main() async {
 
   // Inicializar Firebase con la configuración de desarrollo
   try {
+    // Intentar inicializar Firebase
     await Firebase.initializeApp(
       options: FirebaseConfig.developmentOptions,
     );
     debugPrint('✅ Firebase initialized for DEVELOPMENT');
+  } on FirebaseException catch (e) {
+    if (e.code == 'duplicate-app') {
+      // Firebase ya está inicializado (probablemente por plugin nativo)
+      debugPrint('✅ Firebase ya estaba inicializado');
+    } else {
+      debugPrint('⚠️ Firebase error: ${e.code} - ${e.message}');
+    }
   } catch (e) {
-    debugPrint('⚠️ Firebase initialization error: $e');
-    // Firebase ya está inicializado, continuar
+    debugPrint('⚠️ Error al inicializar Firebase: $e');
   }
 
   // Ejecutar la aplicación

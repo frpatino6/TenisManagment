@@ -20,6 +20,11 @@ android {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
+    // Habilitar BuildConfig para usar buildConfigField en flavors
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.tennismanagement.tennis_management"
         minSdk = flutter.minSdkVersion
@@ -40,7 +45,8 @@ android {
     productFlavors {
         create("dev") {
             dimension = "environment"
-            applicationIdSuffix = ".dev"
+            // Temporalmente sin suffix para que funcione con google-services.json
+            // applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
             
             // Nombre de la app en el dispositivo

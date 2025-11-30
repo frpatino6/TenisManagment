@@ -21,8 +21,8 @@ class TennisManagementApp extends ConsumerWidget {
       // El título de la app cambia según el ambiente
       title: AppConfig.appName,
       
-      // Banner de debug (visible solo en desarrollo)
-      debugShowCheckedModeBanner: AppConfig.showDebugBanner,
+      // Banner de debug (oculto siempre, independiente del ambiente)
+      debugShowCheckedModeBanner: false,
       
       // Temas
       theme: AppTheme.lightTheme,

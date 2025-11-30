@@ -14,16 +14,24 @@
       },
       "oauth_client": [
         {
-          "client_id": "147485418255-5l66cjpub7hfmf6kt5ji929n9o3no5q3.apps.googleusercontent.com",
-          "client_type": 3
-        },
-        {
-          "client_id": "147485418255-5l66cjpub7hfmf6kt5ji929n9o3no5q3.apps.googleusercontent.com",
+          "client_id": "147485418255-8q71f0i23vsc6d2il2ln8f70jqu51uu9.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.tennismanagement.tennis_management",
             "certificate_hash": "26bafecb92e31cd06381e7084ee75bf60e4fdfbf"
           }
+        },
+        {
+          "client_id": "147485418255-eh4ga6h8sp917mko7fi5scv6cu4ab764.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tennismanagement.tennis_management",
+            "certificate_hash": "f8ca2e2437d7786cfb0476693b106c8d6cfd363a"
+          }
+        },
+        {
+          "client_id": "147485418255-5l66cjpub7hfmf6kt5ji929n9o3no5q3.apps.googleusercontent.com",
+          "client_type": 3
         }
       ],
       "api_key": [

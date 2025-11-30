@@ -1,0 +1,1776 @@
+{
+  "info": {
+    "name": "Tennis Management API",
+    "description": "API completa del sistema de gestión de clases de tenis\n\nVariables de colección:\n- base_url: URL base de la API (default: http://localhost:3000/api)\n- firebase_token: Token de Firebase para autenticación\n- jwt_token: JWT Access Token para autenticación tradicional\n- jwt_refresh_token: JWT Refresh Token",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/health",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "API Ready",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            ""
+          ]
+        }
+      }
+    },
+    {
+      "name": "Auth (JWT)",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"student\",\n  \"profile\": {\n    \"name\": \"Juan Pérez\",\n    \"phone\": \"1234567890\",\n    \"membershipType\": \"basic\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{jwt_refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth Firebase",
+      "item": [
+        {
+          "name": "Verify Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"{{firebase_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/firebase/verify",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "firebase",
+                "verify"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Juan Pérez\",\n  \"email\": \"student@example.com\",\n  \"phone\": \"1234567890\",\n  \"role\": \"student\",\n  \"firebaseUid\": \"{{firebase_uid}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/firebase/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "firebase",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/firebase/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "firebase",
+                "me"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Student Dashboard (Firebase)",
+      "item": [
+        {
+          "name": "Get Recent Activities",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/student-dashboard/activities",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "student-dashboard",
+                "activities"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Student Info",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/student-dashboard/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "student-dashboard",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Professors",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/student-dashboard/professors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "student-dashboard",
+                "professors"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Available Schedules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/student-dashboard/available-schedules?professorId={{professor_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "student-dashboard",
+                "available-schedules"
+              ],
+              "query": [
+                {
+                  "key": "professorId",
+                  "value": "{{professor_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/student-dashboard/bookings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "student-dashboard",
+                "bookings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Book Lesson",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduleId\": \"{{schedule_id}}\",\n  \"serviceType\": \"individual_class\",\n  \"price\": 50000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/student-dashboard/book-lesson",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "student-dashboard",
+                "book-lesson"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Student (JWT)",
+      "item": [
+        {
+          "name": "Get Available Schedules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/student/available-schedules?professorId={{professor_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "student",
+                "available-schedules"
+              ],
+              "query": [
+                {
+                  "key": "professorId",
+                  "value": "{{professor_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Book Lesson",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduleId\": \"{{schedule_id}}\",\n  \"serviceType\": \"individual_class\",\n  \"price\": 50000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/student/book-lesson",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "student",
+                "book-lesson"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/student/bookings?studentId={{student_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "student",
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "studentId",
+                  "value": "{{student_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Balance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/student/balance?studentId={{student_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "student",
+                "balance"
+              ],
+              "query": [
+                {
+                  "key": "studentId",
+                  "value": "{{student_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Payment History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/student/payment-history?studentId={{student_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "student",
+                "payment-history"
+              ],
+              "query": [
+                {
+                  "key": "studentId",
+                  "value": "{{student_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Request Service",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceType\": \"lesson\",\n  \"title\": \"Clase personalizada\",\n  \"description\": \"Necesito una clase personalizada\",\n  \"notes\": \"Disponible los fines de semana\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/student/request-service",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "student",
+                "request-service"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Professor (JWT)",
+      "item": [
+        {
+          "name": "Get Schedule",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor/schedule",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor",
+                "schedule"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Schedule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2024-01-15\",\n  \"startTime\": \"2024-01-15T10:00:00Z\",\n  \"endTime\": \"2024-01-15T11:00:00Z\",\n  \"isAvailable\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/professor/schedule",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor",
+                "schedule"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Schedule",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isAvailable\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/professor/schedule/{{schedule_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor",
+                "schedule",
+                "{{schedule_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Schedule",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor/schedule/{{schedule_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor",
+                "schedule",
+                "{{schedule_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Income Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor/income-report",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor",
+                "income-report"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Students",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor/students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor",
+                "students"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Service",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Clase Individual\",\n  \"description\": \"Clase personalizada\",\n  \"price\": 50000,\n  \"duration\": 60\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/professor/services",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor",
+                "services"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Service",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Clase Individual Actualizada\",\n  \"price\": 55000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/professor/services/{{service_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor",
+                "services",
+                "{{service_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Services",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor/services",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor",
+                "services"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Service",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor/services/{{service_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor",
+                "services",
+                "{{service_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"{{student_id}}\",\n  \"amount\": 50000,\n  \"date\": \"2024-01-15\",\n  \"notes\": \"Pago de clase\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/professor/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor",
+                "payments"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Professor Dashboard (Firebase)",
+      "item": [
+        {
+          "name": "Get Professor Info",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Students",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "students"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Schedule By Date",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/schedule/by-date?date=2024-01-15",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "schedule",
+                "by-date"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2024-01-15"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Today Schedule",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/schedule/today",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "schedule",
+                "today"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Week Schedule",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/schedule/week",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "schedule",
+                "week"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Earnings Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/earnings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "earnings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Profesor Actualizado\",\n  \"phone\": \"1234567890\",\n  \"specialties\": [\n    \"Técnica\",\n    \"Físico\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "profile"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Schedule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2024-01-15\",\n  \"startTime\": \"2024-01-15T10:00:00Z\",\n  \"endTime\": \"2024-01-15T11:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/schedules",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "schedules"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Schedules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/schedules",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "schedules"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Schedule",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/schedules/{{schedule_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "schedules",
+                "{{schedule_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Block Schedule",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/schedules/{{schedule_id}}/block",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "schedules",
+                "{{schedule_id}}",
+                "block"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unblock Schedule",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/schedules/{{schedule_id}}/unblock",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "schedules",
+                "{{schedule_id}}",
+                "unblock"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Confirm Class",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/schedule/{{class_id}}/confirm",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "schedule",
+                "{{class_id}}",
+                "confirm"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancel Class",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/schedule/{{class_id}}/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "schedule",
+                "{{class_id}}",
+                "cancel"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Complete Class",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/schedules/{{schedule_id}}/complete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "schedules",
+                "{{schedule_id}}",
+                "complete"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/schedules/{{schedule_id}}/cancel-booking",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "schedules",
+                "{{schedule_id}}",
+                "cancel-booking"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pricing",
+      "item": [
+        {
+          "name": "Get Base Pricing",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/pricing/base",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pricing",
+                "base"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Professor Pricing",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/pricing/professor/{{professor_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pricing",
+                "professor",
+                "{{professor_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Pricing",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pricing/my-pricing",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pricing",
+                "my-pricing"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update My Pricing",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"individualClass\": 55000,\n  \"groupClass\": 40000,\n  \"courtRental\": 30000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/pricing/my-pricing",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pricing",
+                "my-pricing"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reset My Pricing",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pricing/my-pricing",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pricing",
+                "my-pricing"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get Overview",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/analytics/overview?period=month",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "analytics",
+                "overview"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Revenue Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/analytics/revenue?period=month",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "analytics",
+                "revenue"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Bookings Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/analytics/bookings?period=month",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "analytics",
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Students Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/analytics/students?period=month",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "analytics",
+                "students"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Revenue Breakdown",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/analytics/revenue/breakdown?period=month&startDate=2024-01-01&endDate=2024-01-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "analytics",
+                "revenue",
+                "breakdown"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-01-31"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Bookings Breakdown",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/analytics/bookings/breakdown?period=month&startDate=2024-01-01&endDate=2024-01-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "analytics",
+                "bookings",
+                "breakdown"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-01-31"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Revenue Trend",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/analytics/revenue/trend?period=month&startDate=2024-01-01&endDate=2024-01-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "analytics",
+                "revenue",
+                "trend"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-01-31"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Bookings Trend",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/analytics/bookings/trend?period=month&startDate=2024-01-01&endDate=2024-01-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "analytics",
+                "bookings",
+                "trend"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-01-31"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Students Breakdown",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/analytics/students/breakdown?period=month&startDate=2024-01-01&endDate=2024-01-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "analytics",
+                "students",
+                "breakdown"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-01-31"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Students Trend",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/analytics/students/trend?period=month&startDate=2024-01-01&endDate=2024-01-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "analytics",
+                "students",
+                "trend"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-01-31"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Occupancy Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebase_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/professor-dashboard/analytics/occupancy/details?period=month&startDate=2024-01-01&endDate=2024-01-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "professor-dashboard",
+                "analytics",
+                "occupancy",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "month"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-01-31"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "firebase_token",
+      "value": "",
+      "type": "string",
+      "description": "Firebase ID Token obtenido de /auth/firebase/verify"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT Access Token obtenido de /auth/login"
+    },
+    {
+      "key": "jwt_refresh_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT Refresh Token obtenido de /auth/login"
+    },
+    {
+      "key": "professor_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "student_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "schedule_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "class_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "service_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "firebase_uid",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

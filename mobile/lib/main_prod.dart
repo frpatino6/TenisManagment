@@ -29,13 +29,20 @@ void main() async {
 
   // Inicializar Firebase con la configuración de producción
   try {
+    // Intentar inicializar Firebase
     await Firebase.initializeApp(
       options: FirebaseConfig.productionOptions,
     );
     debugPrint('✅ Firebase initialized for PRODUCTION');
+  } on FirebaseException catch (e) {
+    if (e.code == 'duplicate-app') {
+      // Firebase ya está inicializado (probablemente por plugin nativo)
+      debugPrint('✅ Firebase ya estaba inicializado');
+    } else {
+      debugPrint('⚠️ Firebase error: ${e.code} - ${e.message}');
+    }
   } catch (e) {
-    debugPrint('⚠️ Firebase initialization error: $e');
-    // Firebase ya está inicializado, continuar
+    debugPrint('⚠️ Error al inicializar Firebase: $e');
   }
 
   // Ejecutar la aplicación

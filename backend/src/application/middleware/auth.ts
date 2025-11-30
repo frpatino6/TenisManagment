@@ -6,6 +6,7 @@ declare global {
   namespace Express {
     interface Request {
       user?: { id: string; role: UserRole; uid?: string };
+      tenantId?: string; // Added for multi-tenancy (TEN-85)
     }
   }
 }

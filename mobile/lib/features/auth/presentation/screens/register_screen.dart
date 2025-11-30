@@ -600,8 +600,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (mounted) {
         context.go('/home');
       }
-    } catch (e) {
-
+    } catch (_) {
+      // Error handled by provider
     }
   }
 
@@ -612,8 +612,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (mounted) {
         context.go('/home');
       }
-    } catch (e) {
-
+    } catch (_) {
+      // Error handled by provider
     }
   }
 }

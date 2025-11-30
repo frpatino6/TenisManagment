@@ -25,8 +25,11 @@ void main() async {
 
   try {
     await Firebase.initializeApp(options: FirebaseConfig.productionOptions);
-  } on FirebaseException catch (e) {
-  } catch (e) {}
+  } on FirebaseException {
+    // Firebase already initialized
+  } catch (_) {
+    // Error initializing Firebase
+  }
 
   runApp(const ProviderScope(child: TennisManagementApp()));
 }

@@ -347,7 +347,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) {
         context.go('/home');
       }
-    } catch (e) {}
+    } catch (_) {
+      // Error handled by provider
+    }
   }
 
   Future<void> _handleGoogleLogin() async {
@@ -357,6 +359,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) {
         context.go('/home');
       }
-    } catch (e) {}
+    } catch (_) {
+      // Error handled by provider
+    }
   }
 }

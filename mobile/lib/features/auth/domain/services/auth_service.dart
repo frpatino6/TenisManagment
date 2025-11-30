@@ -64,7 +64,7 @@ class AuthService {
 
       final UserModel userModel = await _authenticateWithBackend(user);
       return userModel;
-    } catch (e, stackTrace) {
+    } catch (e) {
       rethrow;
     }
   }

@@ -25,3 +25,6 @@ config/*.json
 .env.*.local
 backend/.env
 mobile/.env
+
+# Firebase secret files
+.github/FIREBASE_SECRET_CONTENT.txt

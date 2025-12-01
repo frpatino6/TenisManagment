@@ -110,6 +110,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
@@ -125,6 +130,16 @@ jobs:
       working-directory: ./mobile
       run: flutter build web --release
       
+    - name: Verify build output
+      working-directory: ./mobile
+      run: |
+        if [ ! -d "build/web" ]; then
+          echo "Error: build/web directory not found"
+          exit 1
+        fi
+        echo "Build output verified"
+        ls -la build/web | head -10
+        
     - name: Deploy to Firebase
       uses: FirebaseExtended/action-hosting-deploy@v0
       with:

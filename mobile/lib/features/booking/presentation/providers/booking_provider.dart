@@ -45,19 +45,9 @@ final courtsProvider =
       // Wait for tenant to be available
       final hasTenant = ref.watch(hasTenantProvider);
       if (!hasTenant) {
-        print('[courtsProvider] No tenant available');
         throw Exception('Tenant ID requerido. Selecciona un centro primero.');
       }
       
-      try {
-        print('[courtsProvider] Fetching courts...');
-        final service = ref.watch(courtServiceProvider);
-        final courts = await service.getCourts();
-        print('[courtsProvider] Successfully fetched ${courts.length} courts');
-        return courts;
-      } catch (e, stackTrace) {
-        print('[courtsProvider] Error fetching courts: $e');
-        print('[courtsProvider] Stack trace: $stackTrace');
-        rethrow;
-      }
+      final service = ref.watch(courtServiceProvider);
+      return service.getCourts();
     });

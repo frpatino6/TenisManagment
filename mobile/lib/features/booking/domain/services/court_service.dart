@@ -16,55 +16,37 @@ class CourtService {
   /// Get list of available courts for the active tenant
   Future<List<CourtModel>> getCourts() async {
     try {
-      print('[CourtService] Getting courts...');
       final user = _auth.currentUser;
       if (user == null) {
-        print('[CourtService] User is null');
         throw Exception('Usuario no autenticado');
       }
 
-      print('[CourtService] Getting ID token...');
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        print('[CourtService] ID token is null');
         throw Exception('No se pudo obtener el token de autenticación');
       }
 
-      final url = Uri.parse('$_baseUrl/student-dashboard/courts');
-      print('[CourtService] Making GET request to: $url');
-      
       final response = await _http.get(
-        url,
+        Uri.parse('$_baseUrl/student-dashboard/courts'),
         headers: {
           'Authorization': 'Bearer $idToken',
         },
       );
 
-      print('[CourtService] Response status: ${response.statusCode}');
-      print('[CourtService] Response body: ${response.body}');
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         final items = data['items'] as List<dynamic>? ?? [];
 
-        print('[CourtService] Parsed ${items.length} courts');
         return items
             .map((item) => CourtModel.fromJson(item as Map<String, dynamic>))
             .toList();
       } else if (response.statusCode == 400) {
         final error = json.decode(response.body) as Map<String, dynamic>;
-        final errorMessage = error['error'] as String? ?? 'Error al obtener canchas';
-        print('[CourtService] Error 400: $errorMessage');
-        throw Exception(errorMessage);
+        throw Exception(error['error'] as String? ?? 'Error al obtener canchas');
       } else {
-        final errorMessage = 'Error al obtener canchas: ${response.statusCode}';
-        print('[CourtService] Error ${response.statusCode}: $errorMessage');
-        print('[CourtService] Response body: ${response.body}');
-        throw Exception(errorMessage);
+        throw Exception('Error al obtener canchas: ${response.statusCode}');
       }
-    } catch (e, stackTrace) {
-      print('[CourtService] Exception caught: $e');
-      print('[CourtService] Stack trace: $stackTrace');
+    } catch (e) {
       rethrow;
     }
   }

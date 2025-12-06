@@ -26,23 +26,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   Widget build(BuildContext context) {
     final hasTenant = ref.watch(hasTenantProvider);
     final tenantState = ref.watch(tenantNotifierProvider);
-    final tenantId = ref.watch(currentTenantIdProvider);
     final courtsAsync = ref.watch(courtsProvider);
-
-    // Debug logging
-    print('=== BookCourtScreen Debug ===');
-    print('hasTenant: $hasTenant');
-    print('tenantId: $tenantId');
-    print('tenantState.isLoading: ${tenantState.isLoading}');
-    print('tenantState.hasError: ${tenantState.hasError}');
-    tenantState.when(
-      data: (id) => print('tenantState.data: $id'),
-      loading: () => print('tenantState: loading'),
-      error: (e, st) => print('tenantState.error: $e'),
-    );
-    print('courtsAsync.isLoading: ${courtsAsync.isLoading}');
-    print('courtsAsync.hasError: ${courtsAsync.hasError}');
-    print('============================');
 
     // Wait for tenant state to load before showing error
     if (tenantState.isLoading) {
@@ -70,7 +54,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     }
 
     final tenantAsync = ref.watch(currentTenantProvider);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -88,8 +72,6 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) {
-          print('[BookCourtScreen] Error loading courts: $error');
-          print('[BookCourtScreen] Stack trace: $stackTrace');
           return _buildErrorState(context, error);
         },
       ),
@@ -238,7 +220,11 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     );
   }
 
-  Widget _buildContent(BuildContext context, List<CourtModel> courts, AsyncValue tenantAsync) {
+  Widget _buildContent(
+    BuildContext context,
+    List<CourtModel> courts,
+    AsyncValue tenantAsync,
+  ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -250,7 +236,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               if (tenant == null) return const SizedBox.shrink();
               return Card(
                 margin: const EdgeInsets.only(bottom: 16),
-                color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primaryContainer.withOpacity(0.3),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
@@ -268,7 +256,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                               'Centro',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                             ),
                             const Gap(4),
@@ -298,7 +288,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
           ),
-          
+
           // Court selection
           Text(
             'Selecciona una cancha',
@@ -770,7 +760,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       // Load available tenants
       final service = ref.read(tenant_domain.tenantDomainServiceProvider);
       final tenants = await service.getAvailableTenants();
-      
+
       if (tenants.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -786,7 +776,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       final currentTenantId = ref.read(currentTenantIdProvider);
 
       if (!mounted) return;
-      
+
       // Show dialog with tenant list
       final selectedTenant = await showDialog<TenantModel>(
         context: context,
@@ -803,7 +793,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               itemBuilder: (context, index) {
                 final tenant = tenants[index];
                 final isSelected = tenant.id == currentTenantId;
-                
+
                 return ListTile(
                   leading: CircleAvatar(
                     backgroundColor: isSelected
@@ -818,7 +808,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                                   Icons.business,
                                   color: isSelected
                                       ? Theme.of(context).colorScheme.onPrimary
-                                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                                      : Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
                                 );
                               },
                             ),
@@ -827,13 +819,17 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                             Icons.business,
                             color: isSelected
                                 ? Theme.of(context).colorScheme.onPrimary
-                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                           ),
                   ),
                   title: Text(
                     tenant.name,
                     style: GoogleFonts.inter(
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                   ),
                   subtitle: tenant.slug.isNotEmpty
@@ -866,12 +862,14 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
 
       if (selectedTenant != null && selectedTenant.id != currentTenantId) {
         // Change tenant without modifying favorites
-        await ref.read(tenantNotifierProvider.notifier).setTenant(selectedTenant.id);
-        
+        await ref
+            .read(tenantNotifierProvider.notifier)
+            .setTenant(selectedTenant.id);
+
         // Invalidate providers to reload data with new tenant
         ref.invalidate(courtsProvider);
         ref.invalidate(currentTenantProvider);
-        
+
         // Reset selection
         setState(() {
           _selectedCourt = null;

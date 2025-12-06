@@ -48,16 +48,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // This check must be FIRST before any other logic
       if (uriPath == '/book-court' ||
           uriPath.startsWith('/book-court') ||
-          (matchedPath != null &&
-              (matchedPath == '/book-court' ||
-                  matchedPath.startsWith('/book-court'))) ||
-          (fullPath != null &&
-              (fullPath == '/book-court' ||
-                  fullPath.startsWith('/book-court')))) {
+          matchedPath == '/book-court' ||
+          matchedPath.startsWith('/book-court') ||
+          fullPath == '/book-court' ||
+          fullPath.startsWith('/book-court')) {
         return null; // Stay on book-court no matter what - DO NOT REDIRECT
       }
 
-      final currentPath = matchedPath ?? uriPath;
+      final currentPath = matchedPath;
 
       final user = authState.when(
         data: (user) => user,

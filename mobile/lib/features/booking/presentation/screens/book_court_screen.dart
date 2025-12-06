@@ -22,7 +22,6 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   TimeOfDay? _selectedTime;
   bool _isBooking = false;
 
-
   @override
   Widget build(BuildContext context) {
     final hasTenant = ref.watch(hasTenantProvider);

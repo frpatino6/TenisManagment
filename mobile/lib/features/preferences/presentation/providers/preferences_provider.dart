@@ -119,7 +119,7 @@ class PreferencesNotifier extends Notifier<AsyncValue<UserPreferencesModel>> {
       data: (preferences) =>
           preferences.favoriteProfessors.any((p) => p.id == professorId),
       loading: () => false,
-      error: (_, __) => false,
+      error: (error, stackTrace) => false,
     );
   }
 
@@ -129,7 +129,7 @@ class PreferencesNotifier extends Notifier<AsyncValue<UserPreferencesModel>> {
       data: (preferences) =>
           preferences.favoriteTenants.any((t) => t.id == tenantId),
       loading: () => false,
-      error: (_, __) => false,
+      error: (error, stackTrace) => false,
     );
   }
 

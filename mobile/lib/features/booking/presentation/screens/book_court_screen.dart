@@ -286,7 +286,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               );
             },
             loading: () => const SizedBox.shrink(),
-            error: (_, ___) => const SizedBox.shrink(),
+            error: (error, stackTrace) => const SizedBox.shrink(),
           ),
 
           // Court selection
@@ -765,7 +765,8 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
 
       if (tenants.isEmpty) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('No hay centros disponibles'),
             backgroundColor: Colors.orange,

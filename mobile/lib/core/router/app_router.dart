@@ -44,6 +44,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state.matchedLocation == '/login' ||
           state.matchedLocation == '/register';
       final isSelectingTenant = state.matchedLocation == '/select-tenant';
+      final isBookCourt = state.matchedLocation == '/book-court';
 
       // If not authenticated, redirect to login (unless already there)
       if (!isAuthenticated && !isLoggingIn) {
@@ -69,9 +70,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       // If authenticated and trying to access protected routes without tenant
+      // BUT allow /book-court to stay even without tenant (it will show error message)
       if (isAuthenticated &&
           !isLoggingIn &&
           !isSelectingTenant &&
+          !isBookCourt &&
           !hasTenant &&
           !tenantState.isLoading) {
         return '/select-tenant';

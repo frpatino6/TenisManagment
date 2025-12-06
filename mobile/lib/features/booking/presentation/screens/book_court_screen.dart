@@ -881,7 +881,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         // currentTenantProvider will update automatically when currentTenantIdProvider changes
         if (mounted) {
           ref.invalidate(courtsProvider);
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Centro cambiado a ${selectedTenant.name}'),

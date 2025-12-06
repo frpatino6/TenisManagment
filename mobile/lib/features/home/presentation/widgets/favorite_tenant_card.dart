@@ -28,8 +28,8 @@ class FavoriteTenantCard extends ConsumerWidget {
       ),
       child: InkWell(
         onTap: () {
-          // Navigate to tenant details or booking
-          context.push('/book-class');
+          // Navigate to tenant selection screen
+          context.push('/select-tenant');
         },
         borderRadius: BorderRadius.circular(16),
         child: Container(
@@ -111,7 +111,7 @@ class FavoriteTenantCard extends ConsumerWidget {
                   size: 20,
                 ),
                 onPressed: () {
-                  context.push('/book-class');
+                  context.push('/select-tenant');
                 },
               ),
             ],

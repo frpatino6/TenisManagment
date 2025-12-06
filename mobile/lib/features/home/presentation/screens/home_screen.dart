@@ -124,6 +124,16 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
                 const PopupMenuItem(
+                  value: 'change-center',
+                  child: Row(
+                    children: [
+                      Icon(Icons.business),
+                      Gap(12),
+                      Text('Cambiar Centro'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
                   value: 'theme',
                   child: Row(
                     children: [
@@ -228,6 +238,9 @@ class HomeScreen extends ConsumerWidget {
   void _handleMenuSelection(BuildContext context, WidgetRef ref, String value) {
     switch (value) {
       case 'profile':
+        break;
+      case 'change-center':
+        context.push('/select-tenant');
         break;
       case 'theme':
         context.push('/theme-settings');

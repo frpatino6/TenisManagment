@@ -6,6 +6,7 @@ import { ScheduleModel } from '../../infrastructure/database/models/ScheduleMode
 import { BookingModel } from '../../infrastructure/database/models/BookingModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
 import { Logger } from '../../infrastructure/services/Logger';
+import { Types } from 'mongoose';
 const logger = new Logger({ controller: 'ProfessorDashboardController' });
 
 export class ProfessorDashboardController {
@@ -194,10 +195,17 @@ export class ProfessorDashboardController {
       // Then filter to only include schedules that have bookings
       const schedulesWithBookings = [];
       for (const schedule of allSchedules) {
-        const booking = await BookingModel.findOne({ 
+        const bookingQuery: any = {
           scheduleId: schedule._id,
-          status: 'confirmed' // Only confirmed bookings
-        });
+          status: 'confirmed', // Only confirmed bookings
+        };
+        
+        // Filter by tenantId if provided (from middleware)
+        if (req.tenantId) {
+          bookingQuery.tenantId = new Types.ObjectId(req.tenantId);
+        }
+        
+        const booking = await BookingModel.findOne(bookingQuery);
         
         if (booking) {
           // Populate student info from the booking
@@ -217,7 +225,14 @@ export class ProfessorDashboardController {
       // Get booking info for each schedule to include price and service type
       const classesData = await Promise.all(
         schedules.map(async (schedule) => {
-          const booking = await BookingModel.findOne({ scheduleId: schedule._id });
+          const bookingQuery: any = { scheduleId: schedule._id };
+          
+          // Filter by tenantId if provided (from middleware)
+          if (req.tenantId) {
+            bookingQuery.tenantId = new Types.ObjectId(req.tenantId);
+          }
+          
+          const booking = await BookingModel.findOne(bookingQuery);
           
           return {
             id: schedule._id.toString(),
@@ -268,11 +283,19 @@ export class ProfessorDashboardController {
         professorId: professor._id.toString()
       });
 
-      // First, let's see ALL schedules with studentId for this professor
-      const allReservedSchedules = await ScheduleModel.find({
+      // Build schedule query with tenantId filter if present
+      const scheduleQuery: any = {
         professorId: professor._id,
-        studentId: { $exists: true, $ne: null }
-      })
+        studentId: { $exists: true, $ne: null },
+      };
+      
+      // Filter by tenantId if provided (from middleware)
+      if (req.tenantId) {
+        scheduleQuery.tenantId = new Types.ObjectId(req.tenantId);
+      }
+      
+      // First, let's see ALL schedules with studentId for this professor
+      const allReservedSchedules = await ScheduleModel.find(scheduleQuery)
         .populate('studentId', 'name email')
         .sort({ startTime: 1 })
         .limit(5);
@@ -287,22 +310,37 @@ export class ProfessorDashboardController {
         });
       });
 
-      // First, find all schedules for today
-      const allTodaySchedules = await ScheduleModel.find({
+      // Build schedule query with tenantId filter if present
+      const todayScheduleQuery: any = {
         professorId: professor._id,
         startTime: {
           $gte: today,
           $lt: tomorrow
         }
-      }).sort({ startTime: 1 });
+      };
+      
+      // Filter by tenantId if provided (from middleware)
+      if (req.tenantId) {
+        todayScheduleQuery.tenantId = new Types.ObjectId(req.tenantId);
+      }
+      
+      // First, find all schedules for today
+      const allTodaySchedules = await ScheduleModel.find(todayScheduleQuery).sort({ startTime: 1 });
 
       // Then filter to only include schedules that have bookings
       const todaySchedulesWithBookings = [];
       for (const schedule of allTodaySchedules) {
-        const booking = await BookingModel.findOne({ 
+        const bookingQuery: any = {
           scheduleId: schedule._id,
-          status: 'confirmed' // Only confirmed bookings
-        });
+          status: 'confirmed', // Only confirmed bookings
+        };
+        
+        // Filter by tenantId if provided (from middleware)
+        if (req.tenantId) {
+          bookingQuery.tenantId = new Types.ObjectId(req.tenantId);
+        }
+        
+        const booking = await BookingModel.findOne(bookingQuery);
         
         if (booking) {
           // Populate student info from the booking
@@ -330,7 +368,14 @@ export class ProfessorDashboardController {
       // Get booking info for each schedule to include price and service type
       const classesData = await Promise.all(
         todayClasses.map(async (schedule) => {
-          const booking = await BookingModel.findOne({ scheduleId: schedule._id });
+          const bookingQuery: any = { scheduleId: schedule._id };
+          
+          // Filter by tenantId if provided (from middleware)
+          if (req.tenantId) {
+            bookingQuery.tenantId = new Types.ObjectId(req.tenantId);
+          }
+          
+          const booking = await BookingModel.findOne(bookingQuery);
           
           return {
             id: schedule._id.toString(),
@@ -373,14 +418,22 @@ export class ProfessorDashboardController {
       const weekEnd = new Date(today);
       weekEnd.setDate(weekEnd.getDate() + 7);
 
-      const weekClasses = await ScheduleModel.find({
+      // Build schedule query with tenantId filter if present
+      const weekScheduleQuery: any = {
         professorId: professor._id,
         startTime: {
           $gte: today,
           $lt: weekEnd
         },
-        studentId: { $exists: true, $ne: null } // Solo horarios reservados
-      })
+        studentId: { $exists: true, $ne: null }, // Solo horarios reservados
+      };
+      
+      // Filter by tenantId if provided (from middleware)
+      if (req.tenantId) {
+        weekScheduleQuery.tenantId = new Types.ObjectId(req.tenantId);
+      }
+      
+      const weekClasses = await ScheduleModel.find(weekScheduleQuery)
         .populate('studentId', 'name email')
         .sort({ startTime: 1 });
 
@@ -424,17 +477,28 @@ export class ProfessorDashboardController {
       const startOfWeek = new Date(now);
       startOfWeek.setDate(now.getDate() - now.getDay());
 
-      // Obtener pagos del mes
-      const monthlyPayments = await PaymentModel.find({
+      // Build payment queries with tenantId filter if present
+      const monthlyPaymentQuery: any = {
         professorId: professor._id,
         createdAt: { $gte: startOfMonth }
-      });
-
-      // Obtener pagos de la semana
-      const weeklyPayments = await PaymentModel.find({
+      };
+      
+      const weeklyPaymentQuery: any = {
         professorId: professor._id,
         createdAt: { $gte: startOfWeek }
-      });
+      };
+      
+      // Filter by tenantId if provided (from middleware)
+      if (req.tenantId) {
+        monthlyPaymentQuery.tenantId = new Types.ObjectId(req.tenantId);
+        weeklyPaymentQuery.tenantId = new Types.ObjectId(req.tenantId);
+      }
+      
+      // Obtener pagos del mes
+      const monthlyPayments = await PaymentModel.find(monthlyPaymentQuery);
+
+      // Obtener pagos de la semana
+      const weeklyPayments = await PaymentModel.find(weeklyPaymentQuery);
 
       // Calcular totales
       const monthlyEarnings = monthlyPayments.reduce((sum, payment) => sum + payment.amount, 0);
@@ -835,8 +899,16 @@ export class ProfessorDashboardController {
       schedule.status = 'completed';
       await schedule.save();
 
+      // Build booking query with tenantId filter if present
+      const bookingQuery: any = { scheduleId: schedule._id };
+      
+      // Filter by tenantId if provided (from middleware)
+      if (req.tenantId) {
+        bookingQuery.tenantId = new Types.ObjectId(req.tenantId);
+      }
+      
       // Update booking status
-      const booking = await BookingModel.findOne({ scheduleId: schedule._id });
+      const booking = await BookingModel.findOne(bookingQuery);
       if (booking) {
         booking.status = 'completed';
         await booking.save();
@@ -906,8 +978,16 @@ export class ProfessorDashboardController {
         return res.status(403).json({ error: 'No autorizado para cancelar esta reserva' });
       }
 
+      // Build booking query with tenantId filter if present
+      const bookingQuery: any = { scheduleId: schedule._id };
+      
+      // Filter by tenantId if provided (from middleware)
+      if (req.tenantId) {
+        bookingQuery.tenantId = new Types.ObjectId(req.tenantId);
+      }
+      
       // Update booking
-      const booking = await BookingModel.findOne({ scheduleId: schedule._id });
+      const booking = await BookingModel.findOne(bookingQuery);
       if (booking) {
         booking.status = 'cancelled';
         booking.notes = reason || 'Cancelado por el profesor';

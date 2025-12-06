@@ -8,6 +8,7 @@ const ScheduleModel_1 = require("../../infrastructure/database/models/ScheduleMo
 const BookingModel_1 = require("../../infrastructure/database/models/BookingModel");
 const PaymentModel_1 = require("../../infrastructure/database/models/PaymentModel");
 const Logger_1 = require("../../infrastructure/services/Logger");
+const mongoose_1 = require("mongoose");
 const logger = new Logger_1.Logger({ controller: 'ProfessorDashboardController' });
 class ProfessorDashboardController {
     constructor() {
@@ -169,10 +170,15 @@ class ProfessorDashboardController {
                 // Then filter to only include schedules that have bookings
                 const schedulesWithBookings = [];
                 for (const schedule of allSchedules) {
-                    const booking = await BookingModel_1.BookingModel.findOne({
+                    const bookingQuery = {
                         scheduleId: schedule._id,
-                        status: 'confirmed' // Only confirmed bookings
-                    });
+                        status: 'confirmed', // Only confirmed bookings
+                    };
+                    // Filter by tenantId if provided (from middleware)
+                    if (req.tenantId) {
+                        bookingQuery.tenantId = new mongoose_1.Types.ObjectId(req.tenantId);
+                    }
+                    const booking = await BookingModel_1.BookingModel.findOne(bookingQuery);
                     if (booking) {
                         // Populate student info from the booking
                         const student = await StudentModel_1.StudentModel.findById(booking.studentId);
@@ -188,7 +194,12 @@ class ProfessorDashboardController {
                 const schedules = schedulesWithBookings;
                 // Get booking info for each schedule to include price and service type
                 const classesData = await Promise.all(schedules.map(async (schedule) => {
-                    const booking = await BookingModel_1.BookingModel.findOne({ scheduleId: schedule._id });
+                    const bookingQuery = { scheduleId: schedule._id };
+                    // Filter by tenantId if provided (from middleware)
+                    if (req.tenantId) {
+                        bookingQuery.tenantId = new mongoose_1.Types.ObjectId(req.tenantId);
+                    }
+                    const booking = await BookingModel_1.BookingModel.findOne(bookingQuery);
                     return {
                         id: schedule._id.toString(),
                         studentName: schedule.studentInfo?.name || 'Estudiante',
@@ -232,11 +243,17 @@ class ProfessorDashboardController {
                     tomorrow: tomorrow.toISOString(),
                     professorId: professor._id.toString()
                 });
-                // First, let's see ALL schedules with studentId for this professor
-                const allReservedSchedules = await ScheduleModel_1.ScheduleModel.find({
+                // Build schedule query with tenantId filter if present
+                const scheduleQuery = {
                     professorId: professor._id,
-                    studentId: { $exists: true, $ne: null }
-                })
+                    studentId: { $exists: true, $ne: null },
+                };
+                // Filter by tenantId if provided (from middleware)
+                if (req.tenantId) {
+                    scheduleQuery.tenantId = new mongoose_1.Types.ObjectId(req.tenantId);
+                }
+                // First, let's see ALL schedules with studentId for this professor
+                const allReservedSchedules = await ScheduleModel_1.ScheduleModel.find(scheduleQuery)
                     .populate('studentId', 'name email')
                     .sort({ startTime: 1 })
                     .limit(5);
@@ -249,21 +266,32 @@ class ProfessorDashboardController {
                         status: s.status
                     });
                 });
-                // First, find all schedules for today
-                const allTodaySchedules = await ScheduleModel_1.ScheduleModel.find({
+                // Build schedule query with tenantId filter if present
+                const todayScheduleQuery = {
                     professorId: professor._id,
                     startTime: {
                         $gte: today,
                         $lt: tomorrow
                     }
-                }).sort({ startTime: 1 });
+                };
+                // Filter by tenantId if provided (from middleware)
+                if (req.tenantId) {
+                    todayScheduleQuery.tenantId = new mongoose_1.Types.ObjectId(req.tenantId);
+                }
+                // First, find all schedules for today
+                const allTodaySchedules = await ScheduleModel_1.ScheduleModel.find(todayScheduleQuery).sort({ startTime: 1 });
                 // Then filter to only include schedules that have bookings
                 const todaySchedulesWithBookings = [];
                 for (const schedule of allTodaySchedules) {
-                    const booking = await BookingModel_1.BookingModel.findOne({
+                    const bookingQuery = {
                         scheduleId: schedule._id,
-                        status: 'confirmed' // Only confirmed bookings
-                    });
+                        status: 'confirmed', // Only confirmed bookings
+                    };
+                    // Filter by tenantId if provided (from middleware)
+                    if (req.tenantId) {
+                        bookingQuery.tenantId = new mongoose_1.Types.ObjectId(req.tenantId);
+                    }
+                    const booking = await BookingModel_1.BookingModel.findOne(bookingQuery);
                     if (booking) {
                         // Populate student info from the booking
                         const student = await StudentModel_1.StudentModel.findById(booking.studentId);
@@ -286,7 +314,12 @@ class ProfessorDashboardController {
                 }
                 // Get booking info for each schedule to include price and service type
                 const classesData = await Promise.all(todayClasses.map(async (schedule) => {
-                    const booking = await BookingModel_1.BookingModel.findOne({ scheduleId: schedule._id });
+                    const bookingQuery = { scheduleId: schedule._id };
+                    // Filter by tenantId if provided (from middleware)
+                    if (req.tenantId) {
+                        bookingQuery.tenantId = new mongoose_1.Types.ObjectId(req.tenantId);
+                    }
+                    const booking = await BookingModel_1.BookingModel.findOne(bookingQuery);
                     return {
                         id: schedule._id.toString(),
                         studentName: schedule.studentInfo?.name || 'Estudiante',
@@ -323,14 +356,20 @@ class ProfessorDashboardController {
                 today.setHours(0, 0, 0, 0);
                 const weekEnd = new Date(today);
                 weekEnd.setDate(weekEnd.getDate() + 7);
-                const weekClasses = await ScheduleModel_1.ScheduleModel.find({
+                // Build schedule query with tenantId filter if present
+                const weekScheduleQuery = {
                     professorId: professor._id,
                     startTime: {
                         $gte: today,
                         $lt: weekEnd
                     },
-                    studentId: { $exists: true, $ne: null } // Solo horarios reservados
-                })
+                    studentId: { $exists: true, $ne: null }, // Solo horarios reservados
+                };
+                // Filter by tenantId if provided (from middleware)
+                if (req.tenantId) {
+                    weekScheduleQuery.tenantId = new mongoose_1.Types.ObjectId(req.tenantId);
+                }
+                const weekClasses = await ScheduleModel_1.ScheduleModel.find(weekScheduleQuery)
                     .populate('studentId', 'name email')
                     .sort({ startTime: 1 });
                 console.log(`Found ${weekClasses.length} classes for this week`);
@@ -368,16 +407,24 @@ class ProfessorDashboardController {
                 const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
                 const startOfWeek = new Date(now);
                 startOfWeek.setDate(now.getDate() - now.getDay());
-                // Obtener pagos del mes
-                const monthlyPayments = await PaymentModel_1.PaymentModel.find({
+                // Build payment queries with tenantId filter if present
+                const monthlyPaymentQuery = {
                     professorId: professor._id,
                     createdAt: { $gte: startOfMonth }
-                });
-                // Obtener pagos de la semana
-                const weeklyPayments = await PaymentModel_1.PaymentModel.find({
+                };
+                const weeklyPaymentQuery = {
                     professorId: professor._id,
                     createdAt: { $gte: startOfWeek }
-                });
+                };
+                // Filter by tenantId if provided (from middleware)
+                if (req.tenantId) {
+                    monthlyPaymentQuery.tenantId = new mongoose_1.Types.ObjectId(req.tenantId);
+                    weeklyPaymentQuery.tenantId = new mongoose_1.Types.ObjectId(req.tenantId);
+                }
+                // Obtener pagos del mes
+                const monthlyPayments = await PaymentModel_1.PaymentModel.find(monthlyPaymentQuery);
+                // Obtener pagos de la semana
+                const weeklyPayments = await PaymentModel_1.PaymentModel.find(weeklyPaymentQuery);
                 // Calcular totales
                 const monthlyEarnings = monthlyPayments.reduce((sum, payment) => sum + payment.amount, 0);
                 const weeklyEarnings = weeklyPayments.reduce((sum, payment) => sum + payment.amount, 0);
@@ -717,8 +764,14 @@ class ProfessorDashboardController {
                 // Update schedule status
                 schedule.status = 'completed';
                 await schedule.save();
+                // Build booking query with tenantId filter if present
+                const bookingQuery = { scheduleId: schedule._id };
+                // Filter by tenantId if provided (from middleware)
+                if (req.tenantId) {
+                    bookingQuery.tenantId = new mongoose_1.Types.ObjectId(req.tenantId);
+                }
                 // Update booking status
-                const booking = await BookingModel_1.BookingModel.findOne({ scheduleId: schedule._id });
+                const booking = await BookingModel_1.BookingModel.findOne(bookingQuery);
                 if (booking) {
                     booking.status = 'completed';
                     await booking.save();
@@ -779,8 +832,14 @@ class ProfessorDashboardController {
                 if (schedule.professorId.toString() !== professor._id.toString()) {
                     return res.status(403).json({ error: 'No autorizado para cancelar esta reserva' });
                 }
+                // Build booking query with tenantId filter if present
+                const bookingQuery = { scheduleId: schedule._id };
+                // Filter by tenantId if provided (from middleware)
+                if (req.tenantId) {
+                    bookingQuery.tenantId = new mongoose_1.Types.ObjectId(req.tenantId);
+                }
                 // Update booking
-                const booking = await BookingModel_1.BookingModel.findOne({ scheduleId: schedule._id });
+                const booking = await BookingModel_1.BookingModel.findOne(bookingQuery);
                 if (booking) {
                     booking.status = 'cancelled';
                     booking.notes = reason || 'Cancelado por el profesor';

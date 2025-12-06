@@ -850,6 +850,31 @@ class StudentDashboardController {
             }
         };
         /**
+         * Get all available active tenants (for selection)
+         * TEN-91: MT-BACK-009
+         * GET /api/student-dashboard/tenants/available
+         */
+        this.getAvailableTenants = async (_req, res) => {
+            try {
+                const tenants = await TenantModel_1.TenantModel.find({ isActive: true })
+                    .select('_id name slug domain config isActive')
+                    .lean();
+                const items = tenants.map((tenant) => ({
+                    id: tenant._id.toString(),
+                    name: tenant.name,
+                    slug: tenant.slug,
+                    domain: tenant.domain || null,
+                    logo: tenant.config?.logo || null,
+                    isActive: tenant.isActive,
+                }));
+                res.json({ items });
+            }
+            catch (error) {
+                console.error('Error getting available tenants:', error);
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
+        /**
          * Get user preferences (favorite professors and tenants)
          * GET /api/student-dashboard/preferences
          */

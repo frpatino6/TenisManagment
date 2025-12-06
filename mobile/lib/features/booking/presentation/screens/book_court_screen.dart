@@ -596,6 +596,57 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     }
   }
 
+  Widget _buildNoTenantScreen(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Reservar Cancha',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.business_center_outlined,
+                size: 64,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const Gap(16),
+              Text(
+                'Selecciona un centro primero',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const Gap(8),
+              Text(
+                'Necesitas seleccionar un centro para poder reservar canchas',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const Gap(24),
+              FilledButton.icon(
+                onPressed: () => context.push('/select-tenant'),
+                icon: const Icon(Icons.business),
+                label: const Text('Seleccionar Centro'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmptyState(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;

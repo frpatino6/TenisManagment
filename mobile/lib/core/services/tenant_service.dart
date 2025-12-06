@@ -24,10 +24,14 @@ class TenantService {
   /// Load the saved tenant ID from SharedPreferences
   /// Returns the tenant ID if found, null otherwise
   Future<String?> loadTenant() async {
+    print('[TenantService] loadTenant() called');
     _prefs ??= await SharedPreferences.getInstance();
+    print('[TenantService] SharedPreferences initialized');
 
     final tenantId = _prefs!.getString(_tenantIdKey);
+    print('[TenantService] Loaded tenant ID from SharedPreferences: $tenantId');
     _currentTenantId = tenantId;
+    print('[TenantService] _currentTenantId set to: $_currentTenantId');
     return tenantId;
   }
 

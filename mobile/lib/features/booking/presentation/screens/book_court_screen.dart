@@ -29,7 +29,23 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   Widget build(BuildContext context) {
     final hasTenant = ref.watch(hasTenantProvider);
     final tenantState = ref.watch(tenantNotifierProvider);
+    final tenantId = ref.watch(currentTenantIdProvider);
     final courtsAsync = ref.watch(courtsProvider);
+    
+    // Debug logging
+    print('=== BookCourtScreen Debug ===');
+    print('hasTenant: $hasTenant');
+    print('tenantId: $tenantId');
+    print('tenantState.isLoading: ${tenantState.isLoading}');
+    print('tenantState.hasError: ${tenantState.hasError}');
+    tenantState.when(
+      data: (id) => print('tenantState.data: $id'),
+      loading: () => print('tenantState: loading'),
+      error: (e, st) => print('tenantState.error: $e'),
+    );
+    print('courtsAsync.isLoading: ${courtsAsync.isLoading}');
+    print('courtsAsync.hasError: ${courtsAsync.hasError}');
+    print('============================');
 
     // Wait for tenant state to load before showing error
     if (tenantState.isLoading) {

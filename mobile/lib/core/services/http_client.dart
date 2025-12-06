@@ -21,6 +21,7 @@ class AppHttpClient {
     try {
       // First try to get from provider
       final tenantId = _ref.read(currentTenantIdProvider);
+      print('[AppHttpClient] Tenant ID from provider: $tenantId');
       if (tenantId != null && tenantId.isNotEmpty) {
         return tenantId;
       }
@@ -28,19 +29,25 @@ class AppHttpClient {
       // If provider returns null, try to get directly from service
       final service = _ref.read(tenantServiceProvider);
       final serviceTenantId = service.currentTenantId;
+      print('[AppHttpClient] Tenant ID from service: $serviceTenantId');
       if (serviceTenantId != null && serviceTenantId.isNotEmpty) {
         // Update provider state
         _ref.read(currentTenantIdProvider.notifier).update(serviceTenantId);
         return serviceTenantId;
       }
       
+      print('[AppHttpClient] No tenant ID found');
       return null;
     } catch (e) {
+      print('[AppHttpClient] Error getting tenant ID: $e');
       // Provider not available, try service directly
       try {
         final service = _ref.read(tenantServiceProvider);
-        return service.currentTenantId;
+        final serviceTenantId = service.currentTenantId;
+        print('[AppHttpClient] Tenant ID from service (fallback): $serviceTenantId');
+        return serviceTenantId;
       } catch (_) {
+        print('[AppHttpClient] Error in fallback: $_');
         return null;
       }
     }

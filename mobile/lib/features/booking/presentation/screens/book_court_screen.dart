@@ -883,6 +883,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         // The widget will automatically rebuild because it's watching courtsProvider
         // currentTenantProvider will update automatically when currentTenantIdProvider changes
         if (!mounted) return;
+        if (!context.mounted) return;
         ref.invalidate(courtsProvider);
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -894,6 +895,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al cambiar centro: ${e.toString()}'),

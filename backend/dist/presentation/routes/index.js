@@ -10,6 +10,8 @@ const professor_dashboard_1 = __importDefault(require("./professor-dashboard"));
 const analytics_1 = __importDefault(require("./analytics"));
 const student_1 = __importDefault(require("./student"));
 const pricing_1 = __importDefault(require("./pricing"));
+const admin_1 = __importDefault(require("./admin"));
+const tenant_1 = __importDefault(require("./tenant"));
 const router = (0, express_1.Router)();
 // Placeholder routers to be mounted later
 router.get('/', (_req, res) => {
@@ -21,5 +23,7 @@ router.use('/professor-dashboard', professor_dashboard_1.default);
 router.use('/professor-dashboard/analytics', analytics_1.default);
 router.use('/student', student_1.default);
 router.use('/pricing', pricing_1.default);
+router.use('/admin', admin_1.default);
+router.use('/tenant', tenant_1.default);
 exports.default = router;
 //# sourceMappingURL=index.js.map

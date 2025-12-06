@@ -21,4 +21,11 @@ router.get('/bookings', controller.getBookings);
 router.post('/book-lesson', controller.bookLesson);
 router.post('/book-court', controller.bookCourt);
 
+// Preferences endpoints (TEN-95)
+router.get('/preferences', controller.getPreferences);
+router.post('/preferences/favorite-professor', controller.addFavoriteProfessor);
+router.delete('/preferences/favorite-professor/:professorId', controller.removeFavoriteProfessor);
+router.post('/preferences/favorite-tenant', controller.addFavoriteTenant);
+router.delete('/preferences/favorite-tenant/:tenantId', controller.removeFavoriteTenant);
+
 export default router;

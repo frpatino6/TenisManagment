@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StudentDashboardController = void 0;
 const AuthUserModel_1 = require("../../infrastructure/database/models/AuthUserModel");
@@ -9,6 +42,9 @@ const ServiceRequestModel_1 = require("../../infrastructure/database/models/Serv
 const ScheduleModel_1 = require("../../infrastructure/database/models/ScheduleModel");
 const ProfessorModel_1 = require("../../infrastructure/database/models/ProfessorModel");
 const SystemConfigModel_1 = require("../../infrastructure/database/models/SystemConfigModel");
+const CourtModel_1 = require("../../infrastructure/database/models/CourtModel");
+const TenantService_1 = require("../services/TenantService");
+const mongoose_1 = require("mongoose");
 // Default base pricing
 const DEFAULT_BASE_PRICING = {
     individualClass: 50000,
@@ -303,8 +339,16 @@ class StudentDashboardController {
                 if (!professor) {
                     return res.status(404).json({ error: 'Profesor no encontrado' });
                 }
-                // Create booking
+                // Get tenantId from schedule (required for multi-tenancy)
+                const tenantId = schedule.tenantId;
+                if (!tenantId) {
+                    return res.status(400).json({ error: 'El horario no tiene un tenant asociado' });
+                }
+                // Ensure StudentTenant relationship exists (creates if not exists)
+                await this.tenantService.addStudentToTenant(student._id.toString(), tenantId.toString());
+                // Create booking with tenantId
                 const booking = await BookingModel_1.BookingModel.create({
+                    tenantId: tenantId,
                     scheduleId: schedule._id,
                     studentId: student._id,
                     professorId: professor._id,
@@ -362,10 +406,16 @@ class StudentDashboardController {
                 // Get base pricing for professor pricing calculation
                 const baseConfig = await SystemConfigModel_1.SystemConfigModel.findOne({ key: 'base_pricing' });
                 const basePricing = baseConfig?.value || DEFAULT_BASE_PRICING;
+                // Build query with tenantId filter if present
+                const bookingQuery = {
+                    studentId: student._id,
+                };
+                // Filter by tenantId if provided (from middleware)
+                if (req.tenantId) {
+                    bookingQuery.tenantId = new mongoose_1.Types.ObjectId(req.tenantId);
+                }
                 // Fetch all bookings for the student with populated schedule and professor
-                const bookings = await BookingModel_1.BookingModel.find({
-                    studentId: student._id
-                })
+                const bookings = await BookingModel_1.BookingModel.find(bookingQuery)
                     .populate({
                     path: 'scheduleId',
                     populate: {
@@ -418,6 +468,111 @@ class StudentDashboardController {
                 res.status(500).json({ error: 'Error interno del servidor' });
             }
         };
+        /**
+         * Book a court (court rental)
+         * TEN-89: MT-BACK-007
+         */
+        this.bookCourt = async (req, res) => {
+            console.log('=== StudentDashboardController.bookCourt called ===');
+            try {
+                const firebaseUid = req.user?.uid;
+                if (!firebaseUid) {
+                    return res.status(401).json({ error: 'Usuario no autenticado' });
+                }
+                const { courtId, startTime, endTime, price } = req.body;
+                console.log('Request body:', { courtId, startTime, endTime, price });
+                if (!courtId) {
+                    return res.status(400).json({ error: 'courtId es requerido' });
+                }
+                if (!startTime || !endTime) {
+                    return res.status(400).json({ error: 'startTime y endTime son requeridos' });
+                }
+                if (!price || price <= 0) {
+                    return res.status(400).json({ error: 'price es requerido y debe ser mayor a 0' });
+                }
+                // Get student
+                const authUser = await AuthUserModel_1.AuthUserModel.findOne({ firebaseUid });
+                if (!authUser) {
+                    console.log('ERROR: AuthUser not found for firebaseUid:', firebaseUid);
+                    return res.status(404).json({ error: 'Usuario no encontrado' });
+                }
+                const student = await StudentModel_1.StudentModel.findOne({ authUserId: authUser._id });
+                if (!student) {
+                    console.log('ERROR: Student not found for authUserId:', authUser._id);
+                    return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
+                }
+                console.log('Looking for court:', courtId);
+                // Check if court exists and is available
+                const court = await CourtModel_1.CourtModel.findById(courtId);
+                console.log('Court found:', !!court);
+                if (!court) {
+                    return res.status(404).json({ error: 'Cancha no encontrada' });
+                }
+                if (!court.isActive) {
+                    return res.status(400).json({ error: 'Esta cancha no está disponible' });
+                }
+                // Get tenantId from court (required for multi-tenancy)
+                const tenantId = court.tenantId;
+                if (!tenantId) {
+                    return res.status(400).json({ error: 'La cancha no tiene un tenant asociado' });
+                }
+                // Ensure StudentTenant relationship exists (creates if not exists)
+                await this.tenantService.addStudentToTenant(student._id.toString(), tenantId.toString());
+                // Create a schedule for the court rental (optional, can be null for court rentals)
+                // For now, we'll create a booking without a scheduleId
+                // Note: We need to handle this case - court rentals might not need a schedule
+                // For simplicity, we'll create a minimal schedule or handle it differently
+                // Create booking for court rental
+                // Note: For court rentals, we might not have a professorId or scheduleId
+                // We'll need to adjust the BookingModel or create a different approach
+                // For now, let's create a booking with a dummy professorId (or make it optional)
+                // Actually, looking at the BookingModel, professorId is required
+                // We might need to create a "system" professor or make it optional for court rentals
+                // For now, let's use a workaround: create a booking with the court's tenant admin as professor
+                // Or better: check if we can make professorId optional for court_rental type
+                // Since BookingModel requires professorId, we'll need to handle this differently
+                // For court rentals, we could:
+                // 1. Create a system professor for court rentals
+                // 2. Make professorId optional in BookingModel (breaking change)
+                // 3. Use the tenant admin as professor (workaround)
+                // For now, let's use a workaround: get the tenant admin
+                const { TenantModel } = await Promise.resolve().then(() => __importStar(require('../../infrastructure/database/models/TenantModel')));
+                const tenant = await TenantModel.findById(tenantId);
+                if (!tenant) {
+                    return res.status(404).json({ error: 'Tenant no encontrado' });
+                }
+                // Use tenant admin as professor for court rentals (workaround)
+                // In a real scenario, we might want to make professorId optional for court_rental
+                const booking = await BookingModel_1.BookingModel.create({
+                    tenantId: tenantId,
+                    scheduleId: new mongoose_1.Types.ObjectId(), // Dummy scheduleId for court rentals
+                    studentId: student._id,
+                    professorId: tenant.adminUserId, // Use tenant admin as professor (workaround)
+                    serviceType: 'court_rental',
+                    price: price,
+                    status: 'confirmed',
+                    notes: `Reserva de cancha: ${court.name} - ${new Date(startTime).toLocaleString()} a ${new Date(endTime).toLocaleString()}`,
+                    bookingDate: new Date(startTime),
+                });
+                console.log(`Court booking created: ${booking._id}`);
+                res.status(201).json({
+                    id: booking._id,
+                    studentId: booking.studentId,
+                    courtId: court._id,
+                    serviceType: booking.serviceType,
+                    status: booking.status,
+                    price: booking.price,
+                    startTime: new Date(startTime).toISOString(),
+                    endTime: new Date(endTime).toISOString(),
+                    createdAt: booking.createdAt
+                });
+            }
+            catch (error) {
+                console.error('Error booking court:', error);
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
+        this.tenantService = new TenantService_1.TenantService();
     }
 }
 exports.StudentDashboardController = StudentDashboardController;

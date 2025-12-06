@@ -14,5 +14,6 @@ router.get('/professors', controller.getProfessors);
 router.get('/available-schedules', controller.getAvailableSchedules);
 router.get('/bookings', controller.getBookings);
 router.post('/book-lesson', controller.bookLesson);
+router.post('/book-court', controller.bookCourt);
 exports.default = router;
 //# sourceMappingURL=studentDashboard.js.map

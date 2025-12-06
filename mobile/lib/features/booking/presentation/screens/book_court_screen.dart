@@ -847,6 +847,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                   onTap: () {
                     Navigator.of(context).pop(tenant);
                   },
+                  selected: isSelected,
                 );
               },
             ),
@@ -866,15 +867,21 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             .read(tenantNotifierProvider.notifier)
             .setTenant(selectedTenant.id);
 
-        // Invalidate providers to reload data with new tenant
-        ref.invalidate(courtsProvider);
-        ref.invalidate(currentTenantProvider);
-
         // Reset selection
-        setState(() {
-          _selectedCourt = null;
-          _selectedDate = null;
-          _selectedTime = null;
+        if (mounted) {
+          setState(() {
+            _selectedCourt = null;
+            _selectedDate = null;
+            _selectedTime = null;
+          });
+        }
+
+        // Invalidate providers to reload data with new tenant
+        // The widget will automatically rebuild because it's watching these providers
+        // Using Future.microtask to ensure the tenant change is processed first
+        Future.microtask(() {
+          ref.invalidate(courtsProvider);
+          ref.invalidate(currentTenantProvider);
         });
 
         if (mounted) {

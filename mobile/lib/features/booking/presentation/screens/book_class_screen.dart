@@ -9,6 +9,7 @@ import '../../domain/models/available_schedule_model.dart';
 import '../../domain/models/service_type.dart';
 import '../providers/booking_provider.dart';
 import '../../../preferences/presentation/providers/preferences_provider.dart';
+import '../../../../core/providers/tenant_provider.dart';
 
 class BookClassScreen extends ConsumerStatefulWidget {
   const BookClassScreen({super.key});
@@ -25,7 +26,61 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasTenant = ref.watch(hasTenantProvider);
     final professorsAsync = ref.watch(professorsProvider);
+    final preferencesAsync = ref.watch(preferencesNotifierProvider);
+
+    // Validate tenant first
+    if (!hasTenant) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Reservar Clase',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.business_center_outlined,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const Gap(16),
+                Text(
+                  'Selecciona un centro primero',
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const Gap(8),
+                Text(
+                  'Necesitas seleccionar un centro para poder reservar clases',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const Gap(24),
+                FilledButton.icon(
+                  onPressed: () => context.push('/select-tenant'),
+                  icon: const Icon(Icons.business),
+                  label: const Text('Seleccionar Centro'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -40,7 +95,22 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
           if (professors.isEmpty) {
             return _buildEmptyState(context);
           }
-          return _buildContent(context, professors);
+          // Sort professors: favorites first
+          final favoriteIds = preferencesAsync.maybeWhen(
+            data: (prefs) => prefs.favoriteProfessors.map((p) => p.id).toSet(),
+            orElse: () => <String>{},
+          );
+          
+          final sortedProfessors = List<ProfessorBookingModel>.from(professors)
+            ..sort((a, b) {
+              final aIsFavorite = favoriteIds.contains(a.id);
+              final bIsFavorite = favoriteIds.contains(b.id);
+              if (aIsFavorite && !bIsFavorite) return -1;
+              if (!aIsFavorite && bIsFavorite) return 1;
+              return 0;
+            });
+          
+          return _buildContent(context, sortedProfessors, favoriteIds);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => _buildErrorState(context, error),
@@ -51,24 +121,58 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
   Widget _buildContent(
     BuildContext context,
     List<ProfessorBookingModel> professors,
+    Set<String> favoriteIds,
   ) {
+    final favoriteProfessors = professors.where((p) => favoriteIds.contains(p.id)).toList();
+    final otherProfessors = professors.where((p) => !favoriteIds.contains(p.id)).toList();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           Text(
             'Selecciona un profesor',
             style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700),
           ).animate().fadeIn(duration: 400.ms).slideX(begin: -0.2, end: 0),
           const Gap(16),
 
-          ...professors.asMap().entries.map((entry) {
-            final index = entry.key;
-            final professor = entry.value;
-            return _buildProfessorCard(professor, index);
-          }),
+          // Favorites section
+          if (favoriteProfessors.isNotEmpty) ...[
+            Row(
+              children: [
+                Icon(Icons.favorite, size: 20, color: Theme.of(context).colorScheme.error),
+                const Gap(8),
+                Text(
+                  'Mis Favoritos',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
+            ),
+            const Gap(12),
+            ...favoriteProfessors.asMap().entries.map((entry) {
+              final index = entry.key;
+              final professor = entry.value;
+              return _buildProfessorCard(professor, index, isFavorite: true);
+            }),
+            const Gap(24),
+            if (otherProfessors.isNotEmpty)
+              Divider(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
+            const Gap(16),
+          ],
+
+          // Other professors
+          if (otherProfessors.isNotEmpty) ...[
+            ...otherProfessors.asMap().entries.map((entry) {
+              final index = entry.key;
+              final professor = entry.value;
+              return _buildProfessorCard(professor, favoriteProfessors.length + index, isFavorite: false);
+            }),
+          ],
 
           if (_selectedProfessor != null) ...[
             const Gap(32),
@@ -99,7 +203,7 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
     );
   }
 
-  Widget _buildProfessorCard(ProfessorBookingModel professor, int index) {
+  Widget _buildProfessorCard(ProfessorBookingModel professor, int index, {bool isFavorite = false}) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isSelected = _selectedProfessor?.id == professor.id;
@@ -157,12 +261,41 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              professor.name,
-                              style: GoogleFonts.inter(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    professor.name,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                if (isFavorite)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.error.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.favorite, size: 12, color: colorScheme.error),
+                                        const Gap(4),
+                                        Text(
+                                          'Favorito',
+                                          style: GoogleFonts.inter(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: colorScheme.error,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
                             ),
                             const Gap(4),
                             Row(
@@ -207,7 +340,7 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
                                         data: (preferences) =>
                                             preferences.favoriteProfessors.any((p) => p.id == professor.id),
                                         loading: () => false,
-                                        error: (_, __) => false,
+                                        error: (_, _) => false,
                                       );
                                   return IconButton(
                                     icon: Icon(

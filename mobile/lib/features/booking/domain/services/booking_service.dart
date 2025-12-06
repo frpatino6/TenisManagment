@@ -1,13 +1,16 @@
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
 import '../../../../core/config/app_config.dart';
+import '../../../../core/services/http_client.dart';
 import '../models/professor_model.dart';
 import '../models/available_schedule_model.dart';
 
 class BookingService {
-  String get _baseUrl => AppConfig.apiBaseUrl;
+  final String _baseUrl = AppConfig.apiBaseUrl;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final AppHttpClient _http;
+
+  BookingService(this._http);
 
   /// Get list of all professors
   Future<List<ProfessorBookingModel>> getProfessors() async {
@@ -22,10 +25,9 @@ class BookingService {
         throw Exception('No se pudo obtener el token de autenticación');
       }
 
-      final response = await http.get(
+      final response = await _http.get(
         Uri.parse('$_baseUrl/student-dashboard/professors'),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',
         },
       );
@@ -63,12 +65,11 @@ class BookingService {
         throw Exception('No se pudo obtener el token de autenticación');
       }
 
-      final response = await http.get(
+      final response = await _http.get(
         Uri.parse(
           '$_baseUrl/student-dashboard/available-schedules?professorId=$professorId',
         ),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',
         },
       );
@@ -110,11 +111,11 @@ class BookingService {
         throw Exception('No se pudo obtener el token de autenticación');
       }
 
-      final response = await http.post(
+      final response = await _http.post(
         Uri.parse('$_baseUrl/student-dashboard/book-lesson'),
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',
+          'Content-Type': 'application/json',
         },
         body: json.encode({
           'scheduleId': scheduleId,

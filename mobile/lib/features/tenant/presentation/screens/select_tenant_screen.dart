@@ -55,7 +55,7 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
         // If user has no tenants, get all available tenants
         tenants = await service.getAvailableTenants();
       }
-      
+
       setState(() {
         _allTenants = tenants;
         _filteredTenants = tenants;
@@ -77,10 +77,12 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
       } else {
         _isSearching = true;
         _filteredTenants = _allTenants
-            .where((tenant) =>
-                tenant.name.toLowerCase().contains(query.toLowerCase()) ||
-                tenant.slug.toLowerCase().contains(query.toLowerCase()) ||
-                tenant.id.toLowerCase().contains(query.toLowerCase()))
+            .where(
+              (tenant) =>
+                  tenant.name.toLowerCase().contains(query.toLowerCase()) ||
+                  tenant.slug.toLowerCase().contains(query.toLowerCase()) ||
+                  tenant.id.toLowerCase().contains(query.toLowerCase()),
+            )
             .toList();
       }
     });
@@ -99,7 +101,7 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
 
     try {
       await ref.read(tenantNotifierProvider.notifier).setTenant(tenant.id);
-      
+
       if (mounted) {
         // Navigate to home based on user role
         final user = ref.read(authStateProvider).value;
@@ -122,19 +124,21 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
     }
   }
 
-<<<<<<< HEAD
-=======
   Future<void> _toggleFavoriteTenant(TenantModel tenant) async {
     try {
-      final isFavorite = ref.read(preferencesNotifierProvider).when(
+      final isFavorite = ref
+          .read(preferencesNotifierProvider)
+          .when(
             data: (preferences) =>
                 preferences.favoriteTenants.any((t) => t.id == tenant.id),
             loading: () => false,
-            error: (_, __) => false,
+            error: (error, stackTrace) => false,
           );
 
       if (isFavorite) {
-        await ref.read(preferencesNotifierProvider.notifier).removeFavoriteTenant(tenant.id);
+        await ref
+            .read(preferencesNotifierProvider.notifier)
+            .removeFavoriteTenant(tenant.id);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -144,7 +148,9 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
           );
         }
       } else {
-        await ref.read(preferencesNotifierProvider.notifier).addFavoriteTenant(tenant.id);
+        await ref
+            .read(preferencesNotifierProvider.notifier)
+            .addFavoriteTenant(tenant.id);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -166,7 +172,6 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
     }
   }
 
->>>>>>> origin/main
   Future<void> _searchByCode(String code) async {
     if (code.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -186,7 +191,7 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
     try {
       final service = ref.read(tenant_domain.tenantDomainServiceProvider);
       final tenant = await service.searchTenantByCode(code.trim());
-      
+
       if (tenant != null) {
         await _selectTenant(tenant);
       } else {
@@ -213,10 +218,7 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
   @override
   Widget build(BuildContext context) {
     final currentTenantId = ref.watch(currentTenantIdProvider);
-<<<<<<< HEAD
-=======
     final favoriteTenants = ref.watch(favoriteTenantsProvider);
->>>>>>> origin/main
 
     return Scaffold(
       appBar: AppBar(
@@ -296,159 +298,152 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _errorMessage != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error_outline,
-                                size: 64, color: Colors.red),
-                            const SizedBox(height: 16),
-                            Text(
-                              _errorMessage!,
-                              style: const TextStyle(color: Colors.red),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _loadTenants,
-                              child: const Text('Reintentar'),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red,
                         ),
-                      )
-                    : _filteredTenants.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  _isSearching
-                                      ? Icons.search_off
-                                      : Icons.business_center,
-                                  size: 64,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  _isSearching
-                                      ? 'No se encontraron centros'
-                                      : 'No hay centros disponibles',
-                                  style: Theme.of(context).textTheme.titleMedium,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  _isSearching
-                                      ? 'Intenta con otro término de búsqueda'
-                                      : 'Contacta al administrador para más información',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: _filteredTenants.length,
-                            itemBuilder: (context, index) {
-                              final tenant = _filteredTenants[index];
-                              final isSelected = currentTenantId == tenant.id;
-<<<<<<< HEAD
-=======
-                              final isFavorite = favoriteTenants.any((t) => t.id == tenant.id);
->>>>>>> origin/main
+                        const SizedBox(height: 16),
+                        Text(
+                          _errorMessage!,
+                          style: const TextStyle(color: Colors.red),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadTenants,
+                          child: const Text('Reintentar'),
+                        ),
+                      ],
+                    ),
+                  )
+                : _filteredTenants.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _isSearching
+                              ? Icons.search_off
+                              : Icons.business_center,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _isSearching
+                              ? 'No se encontraron centros'
+                              : 'No hay centros disponibles',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _isSearching
+                              ? 'Intenta con otro término de búsqueda'
+                              : 'Contacta al administrador para más información',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _filteredTenants.length,
+                    itemBuilder: (context, index) {
+                      final tenant = _filteredTenants[index];
+                      final isSelected = currentTenantId == tenant.id;
+                      final isFavorite = favoriteTenants.any(
+                        (t) => t.id == tenant.id,
+                      );
 
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                elevation: isSelected ? 4 : 2,
-                                color: isSelected
-                                    ? Theme.of(context)
-                                        .colorScheme
-                                        .primaryContainer
-                                    : null,
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor:
-                                        Theme.of(context).colorScheme.primary,
-                                    child: tenant.logo != null
-                                        ? ClipOval(
-                                            child: Image.network(
-                                              tenant.logo!,
-                                              errorBuilder:
-                                                  (context, error, stackTrace) {
-                                                return const Icon(
-                                                  Icons.business,
-                                                  color: Colors.white,
-                                                );
-                                              },
-                                            ),
-                                          )
-                                        : const Icon(
-                                            Icons.business,
-                                            color: Colors.white,
-                                          ),
-                                  ),
-                                  title: Text(
-                                    tenant.name,
-                                    style: TextStyle(
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: isSelected ? 4 : 2,
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primaryContainer
+                            : null,
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                            child: tenant.logo != null
+                                ? ClipOval(
+                                    child: Image.network(
+                                      tenant.logo!,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return const Icon(
+                                              Icons.business,
+                                              color: Colors.white,
+                                            );
+                                          },
                                     ),
+                                  )
+                                : const Icon(
+                                    Icons.business,
+                                    color: Colors.white,
                                   ),
-                                  subtitle: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Código: ${tenant.slug}'),
-                                      if (!tenant.isActive)
-                                        const Text(
-                                          'Inactivo',
-                                          style: TextStyle(
-                                            color: Colors.orange,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-<<<<<<< HEAD
-                                  trailing: isSelected
-                                      ? const Icon(Icons.check_circle,
-                                          color: Colors.green)
-                                      : const Icon(Icons.chevron_right),
-=======
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      // Favorite button
-                                      IconButton(
-                                        icon: Icon(
-                                          isFavorite
-                                              ? Icons.favorite
-                                              : Icons.favorite_border,
-                                          color: isFavorite
-                                              ? Colors.red
-                                              : Colors.grey,
-                                          size: 24,
-                                        ),
-                                        onPressed: () => _toggleFavoriteTenant(tenant),
-                                        tooltip: isFavorite
-                                            ? 'Eliminar de favoritos'
-                                            : 'Agregar a favoritos',
-                                      ),
-                                      // Selection indicator
-                                      if (isSelected)
-                                        const Icon(Icons.check_circle,
-                                            color: Colors.green)
-                                      else
-                                        const Icon(Icons.chevron_right),
-                                    ],
-                                  ),
->>>>>>> origin/main
-                                  onTap: () => _selectTenant(tenant),
-                                ),
-                              );
-                            },
                           ),
+                          title: Text(
+                            tenant.name,
+                            style: TextStyle(
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Código: ${tenant.slug}'),
+                              if (!tenant.isActive)
+                                const Text(
+                                  'Inactivo',
+                                  style: TextStyle(
+                                    color: Colors.orange,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Favorite button
+                              IconButton(
+                                icon: Icon(
+                                  isFavorite
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: isFavorite ? Colors.red : Colors.grey,
+                                  size: 24,
+                                ),
+                                onPressed: () => _toggleFavoriteTenant(tenant),
+                                tooltip: isFavorite
+                                    ? 'Eliminar de favoritos'
+                                    : 'Agregar a favoritos',
+                              ),
+                              // Selection indicator
+                              if (isSelected)
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                )
+                              else
+                                const Icon(Icons.chevron_right),
+                            ],
+                          ),
+                          onTap: () => _selectTenant(tenant),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

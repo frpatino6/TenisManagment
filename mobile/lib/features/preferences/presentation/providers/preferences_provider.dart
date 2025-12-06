@@ -73,7 +73,9 @@ class PreferencesNotifier extends Notifier<AsyncValue<UserPreferencesModel>> {
   Future<void> toggleFavoriteProfessor(String professorId) async {
     return state.when(
       data: (preferences) async {
-        final isFavorite = preferences.favoriteProfessors.any((p) => p.id == professorId);
+        final isFavorite = preferences.favoriteProfessors.any(
+          (p) => p.id == professorId,
+        );
         if (isFavorite) {
           await removeFavoriteProfessor(professorId);
         } else {
@@ -83,7 +85,7 @@ class PreferencesNotifier extends Notifier<AsyncValue<UserPreferencesModel>> {
       loading: () async {
         await loadPreferences();
       },
-      error: (_, __) async {
+      error: (error, stackTrace) async {
         await loadPreferences();
       },
     );
@@ -93,7 +95,9 @@ class PreferencesNotifier extends Notifier<AsyncValue<UserPreferencesModel>> {
   Future<void> toggleFavoriteTenant(String tenantId) async {
     return state.when(
       data: (preferences) async {
-        final isFavorite = preferences.favoriteTenants.any((t) => t.id == tenantId);
+        final isFavorite = preferences.favoriteTenants.any(
+          (t) => t.id == tenantId,
+        );
         if (isFavorite) {
           await removeFavoriteTenant(tenantId);
         } else {
@@ -103,7 +107,7 @@ class PreferencesNotifier extends Notifier<AsyncValue<UserPreferencesModel>> {
       loading: () async {
         await loadPreferences();
       },
-      error: (_, __) async {
+      error: (error, stackTrace) async {
         await loadPreferences();
       },
     );
@@ -112,18 +116,20 @@ class PreferencesNotifier extends Notifier<AsyncValue<UserPreferencesModel>> {
   /// Check if professor is favorite
   bool isProfessorFavorite(String professorId) {
     return state.when(
-      data: (preferences) => preferences.favoriteProfessors.any((p) => p.id == professorId),
+      data: (preferences) =>
+          preferences.favoriteProfessors.any((p) => p.id == professorId),
       loading: () => false,
-      error: (_, __) => false,
+      error: (error, stackTrace) => false,
     );
   }
 
   /// Check if tenant is favorite
   bool isTenantFavorite(String tenantId) {
     return state.when(
-      data: (preferences) => preferences.favoriteTenants.any((t) => t.id == tenantId),
+      data: (preferences) =>
+          preferences.favoriteTenants.any((t) => t.id == tenantId),
       loading: () => false,
-      error: (_, __) => false,
+      error: (error, stackTrace) => false,
     );
   }
 
@@ -132,13 +138,15 @@ class PreferencesNotifier extends Notifier<AsyncValue<UserPreferencesModel>> {
     return state.when(
       data: (preferences) {
         try {
-          return preferences.favoriteProfessors.firstWhere((p) => p.id == professorId);
+          return preferences.favoriteProfessors.firstWhere(
+            (p) => p.id == professorId,
+          );
         } catch (e) {
           return null;
         }
       },
       loading: () => null,
-      error: (_, __) => null,
+      error: (error, stackTrace) => null,
     );
   }
 
@@ -147,13 +155,15 @@ class PreferencesNotifier extends Notifier<AsyncValue<UserPreferencesModel>> {
     return state.when(
       data: (preferences) {
         try {
-          return preferences.favoriteTenants.firstWhere((t) => t.id == tenantId);
+          return preferences.favoriteTenants.firstWhere(
+            (t) => t.id == tenantId,
+          );
         } catch (e) {
           return null;
         }
       },
       loading: () => null,
-      error: (_, __) => null,
+      error: (error, stackTrace) => null,
     );
   }
 }
@@ -161,15 +171,17 @@ class PreferencesNotifier extends Notifier<AsyncValue<UserPreferencesModel>> {
 /// Provider for PreferencesNotifier
 final preferencesNotifierProvider =
     NotifierProvider<PreferencesNotifier, AsyncValue<UserPreferencesModel>>(() {
-  return PreferencesNotifier();
-});
+      return PreferencesNotifier();
+    });
 
 /// Provider for current preferences (value only, no loading/error states)
 final currentPreferencesProvider = Provider<UserPreferencesModel?>((ref) {
-  return ref.watch(preferencesNotifierProvider).when(
+  return ref
+      .watch(preferencesNotifierProvider)
+      .when(
         data: (preferences) => preferences,
         loading: () => null,
-        error: (_, __) => null,
+        error: (error, stackTrace) => null,
       );
 });
 
@@ -184,4 +196,3 @@ final favoriteTenantsProvider = Provider<List<FavoriteTenant>>((ref) {
   final preferences = ref.watch(currentPreferencesProvider);
   return preferences?.favoriteTenants ?? [];
 });
-

@@ -13,6 +13,7 @@ import '../../features/professor/presentation/screens/students_list_screen.dart'
 import '../../features/professor/presentation/screens/student_profile_screen.dart';
 import '../../features/professor/presentation/screens/analytics_dashboard_screen.dart';
 import '../../features/booking/presentation/screens/book_class_screen.dart';
+import '../../features/booking/presentation/screens/book_court_screen.dart';
 import '../../features/booking/presentation/screens/professor_schedules_screen.dart';
 import '../../features/booking/presentation/screens/confirm_booking_screen.dart';
 import '../../features/booking/domain/models/schedule_model.dart';
@@ -26,12 +27,37 @@ import '../providers/tenant_provider.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
+  // Use select to only rebuild when hasTenant actually changes value, not state
   final hasTenant = ref.watch(hasTenantProvider);
-  final tenantState = ref.watch(tenantNotifierProvider);
+  // Capture ref to use inside redirect callback
+  // Don't watch tenantState here to prevent router rebuilds when tenant changes
 
   return GoRouter(
     initialLocation: '/login',
     redirect: (context, state) {
+      // Read tenantState fresh each time redirect is called
+      // This prevents router from rebuilding when tenant changes
+      final tenantState = ref.read(tenantNotifierProvider);
+      // CRITICAL: NEVER redirect from /book-court, check this FIRST
+      // Check multiple ways to detect if we're on /book-court
+      final uriPath = state.uri.path;
+      final matchedPath = state.matchedLocation;
+      final fullPath = state.fullPath;
+
+      // If we're on /book-court in ANY way, NEVER redirect - return null immediately
+      // This check must be FIRST before any other logic
+      if (uriPath == '/book-court' ||
+          uriPath.startsWith('/book-court') ||
+          matchedPath == '/book-court' ||
+          matchedPath.startsWith('/book-court') ||
+          (fullPath != null &&
+              (fullPath == '/book-court' ||
+                  fullPath.startsWith('/book-court')))) {
+        return null; // Stay on book-court no matter what - DO NOT REDIRECT
+      }
+
+      final currentPath = matchedPath;
+
       final user = authState.when(
         data: (user) => user,
         loading: () => null,
@@ -39,10 +65,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       );
 
       final isAuthenticated = user != null;
-      final isLoggingIn =
-          state.matchedLocation == '/login' ||
-          state.matchedLocation == '/register';
-      final isSelectingTenant = state.matchedLocation == '/select-tenant';
+      final isLoggingIn = currentPath == '/login' || currentPath == '/register';
+      final isSelectingTenant = currentPath == '/select-tenant';
 
       // If not authenticated, redirect to login (unless already there)
       if (!isAuthenticated && !isLoggingIn) {
@@ -103,6 +127,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/book-class',
         name: 'book-class',
         builder: (context, state) => const BookClassScreen(),
+      ),
+      GoRoute(
+        path: '/book-court',
+        name: 'book-court',
+        builder: (context, state) => const BookCourtScreen(),
       ),
       GoRoute(
         path: '/professor/:professorId/schedules',

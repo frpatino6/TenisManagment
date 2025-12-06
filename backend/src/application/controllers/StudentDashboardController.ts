@@ -10,6 +10,7 @@ import { SystemConfigModel } from '../../infrastructure/database/models/SystemCo
 import { CourtModel } from '../../infrastructure/database/models/CourtModel';
 import { TenantModel } from '../../infrastructure/database/models/TenantModel';
 import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
+import { ProfessorTenantModel } from '../../infrastructure/database/models/ProfessorTenantModel';
 import { UserPreferencesModel } from '../../infrastructure/database/models/UserPreferencesModel';
 import { TenantService } from '../services/TenantService';
 import { Types } from 'mongoose';
@@ -214,25 +215,48 @@ export class StudentDashboardController {
   };
 
   /**
-   * Get list of all professors
+   * Get list of professors for the active tenant
+   * TEN-96: Updated to filter by tenant (multi-tenancy)
    */
   getProfessors = async (req: Request, res: Response) => {
     try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        return res.status(400).json({ 
+          error: 'Tenant ID requerido. Selecciona un centro primero.' 
+        });
+      }
+
       // Get base pricing
       const baseConfig = await SystemConfigModel.findOne({ key: 'base_pricing' });
       const basePricing = baseConfig?.value || DEFAULT_BASE_PRICING;
 
-      const professors = await ProfessorModel.find()
-        .select('name email phone specialties hourlyRate pricing experienceYears rating')
-        .limit(50);
+      // Get active professors for this tenant
+      const professorTenants = await ProfessorTenantModel.find({
+        tenantId: new Types.ObjectId(tenantId),
+        isActive: true,
+      })
+        .populate('professorId', 'name email phone specialties hourlyRate pricing experienceYears rating')
+        .lean();
 
-      const professorsData = professors.map((prof) => {
-        // Calculate effective pricing for this professor
+      const professorsData = professorTenants.map((pt: any) => {
+        const prof = pt.professorId;
+        if (!prof) return null;
+
+        // Use tenant-specific pricing if available, otherwise professor's pricing, otherwise base pricing
         const effectivePricing = {
           individualClass:
-            prof.pricing?.individualClass ?? basePricing.individualClass,
-          groupClass: prof.pricing?.groupClass ?? basePricing.groupClass,
-          courtRental: prof.pricing?.courtRental ?? basePricing.courtRental,
+            pt.pricing?.individualClass ??
+            prof.pricing?.individualClass ??
+            basePricing.individualClass,
+          groupClass:
+            pt.pricing?.groupClass ??
+            prof.pricing?.groupClass ??
+            basePricing.groupClass,
+          courtRental:
+            pt.pricing?.courtRental ??
+            prof.pricing?.courtRental ??
+            basePricing.courtRental,
         };
 
         return {
@@ -243,10 +267,10 @@ export class StudentDashboardController {
           specialties: prof.specialties || [],
           hourlyRate: prof.hourlyRate || 0,
           pricing: effectivePricing,
-          experienceYears: 0, // Can be added to model later
-          rating: 0, // Can be added to model later
+          experienceYears: prof.experienceYears || 0,
+          rating: prof.rating || 0,
         };
-      });
+      }).filter((p: any) => p !== null);
 
       res.json({ items: professorsData });
     } catch (error) {
@@ -974,6 +998,42 @@ export class StudentDashboardController {
       res.json({ items });
     } catch (error) {
       console.error('Error getting available tenants:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * Get available courts for the active tenant
+   * TEN-96: MT-FRONT-005
+   * GET /api/student-dashboard/courts
+   */
+  getCourts = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido. Selecciona un centro primero.' });
+        return;
+      }
+
+      const courts = await CourtModel.find({
+        tenantId: new Types.ObjectId(tenantId),
+        isActive: true,
+      })
+        .sort({ name: 1 })
+        .lean();
+
+      const items = courts.map((court) => ({
+        id: court._id.toString(),
+        name: court.name,
+        type: court.type,
+        pricePerHour: court.price || 0,
+        description: court.description || null,
+        features: court.features || [],
+      }));
+
+      res.json({ items });
+    } catch (error) {
+      console.error('Error getting courts:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

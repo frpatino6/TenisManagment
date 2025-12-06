@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
@@ -7,7 +8,7 @@ import 'core/config/app_config.dart';
 import 'core/providers/tenant_provider.dart';
 
 /// Widget principal de la aplicación
-/// 
+///
 /// Este widget es compartido entre todos los ambientes (dev, prod)
 /// La configuración específica se establece en los entrypoints (main_dev.dart, main_prod.dart)
 class TennisManagementApp extends ConsumerStatefulWidget {
@@ -23,8 +24,12 @@ class _TennisManagementAppState extends ConsumerState<TennisManagementApp> {
   void initState() {
     super.initState();
     // Initialize tenant service and load saved tenant
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(tenantNotifierProvider.notifier).loadTenant();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // First initialize the service
+      final service = ref.read(tenantServiceProvider);
+      await service.initialize();
+      // Then load tenant through notifier
+      await ref.read(tenantNotifierProvider.notifier).loadTenant();
     });
   }
 
@@ -43,6 +48,16 @@ class _TennisManagementAppState extends ConsumerState<TennisManagementApp> {
       themeMode: themeMode,
       routerConfig: router,
       showPerformanceOverlay: AppConfig.showPerformanceOverlay,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('es', 'ES'), // Spanish (Spain)
+        Locale('en', 'US'), // English (United States)
+      ],
+      locale: const Locale('es', 'ES'),
     );
   }
 }

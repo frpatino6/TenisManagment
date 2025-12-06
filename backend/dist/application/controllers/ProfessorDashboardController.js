@@ -7,6 +7,7 @@ const StudentModel_1 = require("../../infrastructure/database/models/StudentMode
 const ScheduleModel_1 = require("../../infrastructure/database/models/ScheduleModel");
 const BookingModel_1 = require("../../infrastructure/database/models/BookingModel");
 const PaymentModel_1 = require("../../infrastructure/database/models/PaymentModel");
+const ProfessorTenantModel_1 = require("../../infrastructure/database/models/ProfessorTenantModel");
 const Logger_1 = require("../../infrastructure/services/Logger");
 const mongoose_1 = require("mongoose");
 const logger = new Logger_1.Logger({ controller: 'ProfessorDashboardController' });
@@ -872,6 +873,65 @@ class ProfessorDashboardController {
             }
             catch (error) {
                 console.error('Error cancelling booking:', error);
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
+        /**
+         * Get tenants (centers) where the professor is active
+         * TEN-91: MT-BACK-009
+         * GET /api/professor-dashboard/tenants
+         */
+        this.getMyTenants = async (req, res) => {
+            console.log('=== ProfessorDashboardController.getMyTenants called ===');
+            try {
+                const firebaseUid = req.user?.uid;
+                if (!firebaseUid) {
+                    return res.status(401).json({ error: 'Usuario no autenticado' });
+                }
+                // Get AuthUser by Firebase UID
+                const authUser = await AuthUserModel_1.AuthUserModel.findOne({ firebaseUid });
+                if (!authUser) {
+                    return res.status(404).json({ error: 'Usuario no encontrado' });
+                }
+                // Get Professor profile
+                const professor = await ProfessorModel_1.ProfessorModel.findOne({ authUserId: authUser._id });
+                if (!professor) {
+                    return res.status(404).json({ error: 'Perfil de profesor no encontrado' });
+                }
+                // Get all active ProfessorTenant relationships
+                const professorTenants = await ProfessorTenantModel_1.ProfessorTenantModel.find({
+                    professorId: professor._id,
+                    isActive: true,
+                })
+                    .populate('tenantId', 'name slug config isActive')
+                    .sort({ joinedAt: -1 });
+                // Get last activity (last schedule) for each tenant
+                const tenantsWithActivity = await Promise.all(professorTenants.map(async (pt) => {
+                    const tenant = pt.tenantId;
+                    // Get last schedule/booking for this professor in this tenant
+                    const lastSchedule = await ScheduleModel_1.ScheduleModel.findOne({
+                        professorId: professor._id,
+                        tenantId: tenant._id,
+                    })
+                        .sort({ startTime: -1 })
+                        .limit(1)
+                        .lean();
+                    return {
+                        id: tenant._id.toString(),
+                        name: tenant.name,
+                        slug: tenant.slug,
+                        logo: tenant.config?.logo || null,
+                        isActive: pt.isActive,
+                        joinedAt: pt.joinedAt,
+                        lastActivity: lastSchedule ? lastSchedule.startTime : null,
+                        pricing: pt.pricing || null,
+                    };
+                }));
+                console.log(`Found ${tenantsWithActivity.length} active tenants for professor ${professor._id}`);
+                res.json({ items: tenantsWithActivity });
+            }
+            catch (error) {
+                console.error('Error getting professor tenants:', error);
                 res.status(500).json({ error: 'Error interno del servidor' });
             }
         };

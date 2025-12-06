@@ -19,6 +19,8 @@ router.get('/schedule/today', professorDashboardController.getTodaySchedule);
 router.get('/schedule/week', professorDashboardController.getWeekSchedule);
 // Obtener estadísticas de ganancias
 router.get('/earnings', professorDashboardController.getEarningsStats);
+// Obtener tenants del profesor
+router.get('/tenants', professorDashboardController.getMyTenants); // TEN-91: Tenants del profesor
 // Actualizar perfil del profesor
 router.put('/profile', professorDashboardController.updateProfile);
 // Confirmar clase

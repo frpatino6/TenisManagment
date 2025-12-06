@@ -370,4 +370,3 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
     );
   }
 }
-

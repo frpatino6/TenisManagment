@@ -52,12 +52,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         if (tenantState.isLoading) {
           return null; // Wait for tenant to load
         }
-        
+
         // If no tenant configured, redirect to tenant selection
         if (!hasTenant && !isSelectingTenant) {
           return '/select-tenant';
         }
-        
+
         // If tenant is configured, redirect to home
         if (hasTenant) {
           return user.role == 'professor' ? '/professor-home' : '/home';
@@ -65,9 +65,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       // If authenticated and trying to access protected routes without tenant
-      if (isAuthenticated && 
-          !isLoggingIn && 
-          !isSelectingTenant && 
+      if (isAuthenticated &&
+          !isLoggingIn &&
+          !isSelectingTenant &&
           !hasTenant &&
           !tenantState.isLoading) {
         return '/select-tenant';

@@ -33,6 +33,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/login',
     redirect: (context, state) {
+      // CRITICAL: NEVER redirect from /book-court, check this FIRST
+      final currentPath = state.matchedLocation;
+      if (currentPath == '/book-court') {
+        return null; // Stay on book-court no matter what
+      }
+
       final user = authState.when(
         data: (user) => user,
         loading: () => null,
@@ -41,10 +47,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       final isAuthenticated = user != null;
       final isLoggingIn =
-          state.matchedLocation == '/login' ||
-          state.matchedLocation == '/register';
-      final isSelectingTenant = state.matchedLocation == '/select-tenant';
-      final isBookCourt = state.matchedLocation == '/book-court';
+          currentPath == '/login' ||
+          currentPath == '/register';
+      final isSelectingTenant = currentPath == '/select-tenant';
 
       // If not authenticated, redirect to login (unless already there)
       if (!isAuthenticated && !isLoggingIn) {
@@ -52,8 +57,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       // If authenticated and logging in, check tenant before redirecting
-      // BUT never redirect if we're on /book-court
-      if (isAuthenticated && isLoggingIn && !isBookCourt) {
+      if (isAuthenticated && isLoggingIn) {
         // Wait for tenant state to load
         if (tenantState.isLoading) {
           return null; // Wait for tenant to load
@@ -71,20 +75,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       // If authenticated and trying to access protected routes without tenant
-      // BUT allow /book-court to stay even without tenant (it will show error message)
-      // AND prevent redirect when changing tenant on /book-court
       if (isAuthenticated &&
           !isLoggingIn &&
           !isSelectingTenant &&
-          !isBookCourt &&
           !hasTenant &&
           !tenantState.isLoading) {
         return '/select-tenant';
-      }
-
-      // NEVER redirect from /book-court, even if tenant state changes
-      if (isBookCourt) {
-        return null;
       }
 
       return null;

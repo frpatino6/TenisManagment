@@ -30,6 +30,13 @@ jest.mock('../../infrastructure/database/models/StudentModel', () => ({
 jest.mock('../../infrastructure/database/models/ScheduleModel', () => ({
   ScheduleModel: {
     countDocuments: jest.fn(),
+    findOne: jest.fn(),
+  },
+}));
+
+jest.mock('../../infrastructure/database/models/ProfessorTenantModel', () => ({
+  ProfessorTenantModel: {
+    find: jest.fn(),
   },
 }));
 

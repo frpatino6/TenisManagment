@@ -44,6 +44,7 @@ const ProfessorModel_1 = require("../../infrastructure/database/models/Professor
 const SystemConfigModel_1 = require("../../infrastructure/database/models/SystemConfigModel");
 const CourtModel_1 = require("../../infrastructure/database/models/CourtModel");
 const TenantModel_1 = require("../../infrastructure/database/models/TenantModel");
+const StudentTenantModel_1 = require("../../infrastructure/database/models/StudentTenantModel");
 const TenantService_1 = require("../services/TenantService");
 const mongoose_1 = require("mongoose");
 // Default base pricing
@@ -782,6 +783,68 @@ class StudentDashboardController {
             }
             catch (error) {
                 console.error('Error booking court:', error);
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
+        /**
+         * Get tenants (centers) where the student has made bookings
+         * TEN-91: MT-BACK-009
+         * GET /api/student-dashboard/tenants
+         */
+        this.getMyTenants = async (req, res) => {
+            console.log('=== StudentDashboardController.getMyTenants called ===');
+            try {
+                const firebaseUid = req.user?.uid;
+                if (!firebaseUid) {
+                    return res.status(401).json({ error: 'Usuario no autenticado' });
+                }
+                // Get AuthUser by Firebase UID
+                const authUser = await AuthUserModel_1.AuthUserModel.findOne({ firebaseUid });
+                if (!authUser) {
+                    return res.status(404).json({ error: 'Usuario no encontrado' });
+                }
+                // Get Student profile
+                const student = await StudentModel_1.StudentModel.findOne({ authUserId: authUser._id });
+                if (!student) {
+                    return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
+                }
+                // Get all active StudentTenant relationships
+                const studentTenants = await StudentTenantModel_1.StudentTenantModel.find({
+                    studentId: student._id,
+                    isActive: true,
+                })
+                    .populate('tenantId', 'name slug config isActive')
+                    .sort({ joinedAt: -1 });
+                // Get last booking for each tenant
+                const tenantsWithActivity = await Promise.all(studentTenants.map(async (st) => {
+                    const tenant = st.tenantId;
+                    // Get last booking for this student in this tenant
+                    const lastBooking = await BookingModel_1.BookingModel.findOne({
+                        studentId: student._id,
+                        tenantId: tenant._id,
+                    })
+                        .sort({ createdAt: -1 })
+                        .limit(1)
+                        .lean();
+                    return {
+                        id: tenant._id.toString(),
+                        name: tenant.name,
+                        slug: tenant.slug,
+                        logo: tenant.config?.logo || null,
+                        isActive: st.isActive,
+                        joinedAt: st.joinedAt,
+                        balance: st.balance,
+                        lastBooking: lastBooking ? {
+                            id: lastBooking._id.toString(),
+                            createdAt: lastBooking.createdAt,
+                        } : null,
+                    };
+                }));
+                console.log(`Found ${tenantsWithActivity.length} active tenants for student ${student._id}`);
+                res.json({ items: tenantsWithActivity });
+            }
+            catch (error) {
+                console.error('Error getting student tenants:', error);
                 res.status(500).json({ error: 'Error interno del servidor' });
             }
         };

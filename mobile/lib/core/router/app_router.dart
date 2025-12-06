@@ -27,15 +27,20 @@ import '../providers/tenant_provider.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
+  // Use select to only rebuild when tenant state actually changes, not on every update
   final hasTenant = ref.watch(hasTenantProvider);
   final tenantState = ref.watch(tenantNotifierProvider);
 
-  return GoRouter(
+  // Get current route to prevent unnecessary rebuilds
+  GoRouter? router;
+
+  router = GoRouter(
     initialLocation: '/login',
     redirect: (context, state) {
       // CRITICAL: NEVER redirect from /book-court, check this FIRST
-      final currentPath = state.matchedLocation;
-      if (currentPath == '/book-court') {
+      final currentPath = state.matchedLocation ?? state.uri.path;
+      if (currentPath == '/book-court' ||
+          currentPath.startsWith('/book-court')) {
         return null; // Stay on book-court no matter what
       }
 
@@ -46,9 +51,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       );
 
       final isAuthenticated = user != null;
-      final isLoggingIn =
-          currentPath == '/login' ||
-          currentPath == '/register';
+      final currentPath = matchedPath ?? uriPath;
+      final isLoggingIn = currentPath == '/login' || currentPath == '/register';
       final isSelectingTenant = currentPath == '/select-tenant';
 
       // If not authenticated, redirect to login (unless already there)

@@ -146,7 +146,7 @@ class PreferencesNotifier extends Notifier<AsyncValue<UserPreferencesModel>> {
         }
       },
       loading: () => null,
-      error: (_, __) => null,
+      error: (error, stackTrace) => null,
     );
   }
 
@@ -163,7 +163,7 @@ class PreferencesNotifier extends Notifier<AsyncValue<UserPreferencesModel>> {
         }
       },
       loading: () => null,
-      error: (_, __) => null,
+      error: (error, stackTrace) => null,
     );
   }
 }

@@ -765,8 +765,8 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
 
       if (tenants.isEmpty) {
         if (!mounted) return;
-        final messenger = ScaffoldMessenger.of(context);
-        messenger.showSnackBar(
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('No hay centros disponibles'),
             backgroundColor: Colors.orange,
@@ -778,6 +778,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       final currentTenantId = ref.read(currentTenantIdProvider);
 
       if (!mounted) return;
+      if (!context.mounted) return;
 
       // Show dialog with tenant list
       final selectedTenant = await showDialog<TenantModel>(

@@ -37,16 +37,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Check URI path first as it's more reliable than matchedLocation
       final uriPath = state.uri.path;
       final matchedPath = state.matchedLocation;
-      
+
       // If we're on /book-court, NEVER redirect - return null immediately
       // This check must be FIRST before any other logic
-      if (uriPath == '/book-court' || 
+      if (uriPath == '/book-court' ||
           matchedPath == '/book-court' ||
           uriPath.startsWith('/book-court') ||
           (matchedPath != null && matchedPath.startsWith('/book-court'))) {
         return null; // Stay on book-court no matter what - DO NOT REDIRECT
       }
-      
+
       final currentPath = matchedPath ?? uriPath;
 
       final user = authState.when(

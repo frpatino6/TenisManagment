@@ -45,6 +45,7 @@ const SystemConfigModel_1 = require("../../infrastructure/database/models/System
 const CourtModel_1 = require("../../infrastructure/database/models/CourtModel");
 const TenantModel_1 = require("../../infrastructure/database/models/TenantModel");
 const StudentTenantModel_1 = require("../../infrastructure/database/models/StudentTenantModel");
+const ProfessorTenantModel_1 = require("../../infrastructure/database/models/ProfessorTenantModel");
 const UserPreferencesModel_1 = require("../../infrastructure/database/models/UserPreferencesModel");
 const TenantService_1 = require("../services/TenantService");
 const mongoose_1 = require("mongoose");
@@ -220,22 +221,42 @@ class StudentDashboardController {
             }
         };
         /**
-         * Get list of all professors
+         * Get list of professors for the active tenant
+         * TEN-96: Updated to filter by tenant (multi-tenancy)
          */
         this.getProfessors = async (req, res) => {
             try {
+                const tenantId = req.tenantId;
+                if (!tenantId) {
+                    return res.status(400).json({
+                        error: 'Tenant ID requerido. Selecciona un centro primero.'
+                    });
+                }
                 // Get base pricing
                 const baseConfig = await SystemConfigModel_1.SystemConfigModel.findOne({ key: 'base_pricing' });
                 const basePricing = baseConfig?.value || DEFAULT_BASE_PRICING;
-                const professors = await ProfessorModel_1.ProfessorModel.find()
-                    .select('name email phone specialties hourlyRate pricing experienceYears rating')
-                    .limit(50);
-                const professorsData = professors.map((prof) => {
-                    // Calculate effective pricing for this professor
+                // Get active professors for this tenant
+                const professorTenants = await ProfessorTenantModel_1.ProfessorTenantModel.find({
+                    tenantId: new mongoose_1.Types.ObjectId(tenantId),
+                    isActive: true,
+                })
+                    .populate('professorId', 'name email phone specialties hourlyRate pricing experienceYears rating')
+                    .lean();
+                const professorsData = professorTenants.map((pt) => {
+                    const prof = pt.professorId;
+                    if (!prof)
+                        return null;
+                    // Use tenant-specific pricing if available, otherwise professor's pricing, otherwise base pricing
                     const effectivePricing = {
-                        individualClass: prof.pricing?.individualClass ?? basePricing.individualClass,
-                        groupClass: prof.pricing?.groupClass ?? basePricing.groupClass,
-                        courtRental: prof.pricing?.courtRental ?? basePricing.courtRental,
+                        individualClass: pt.pricing?.individualClass ??
+                            prof.pricing?.individualClass ??
+                            basePricing.individualClass,
+                        groupClass: pt.pricing?.groupClass ??
+                            prof.pricing?.groupClass ??
+                            basePricing.groupClass,
+                        courtRental: pt.pricing?.courtRental ??
+                            prof.pricing?.courtRental ??
+                            basePricing.courtRental,
                     };
                     return {
                         id: prof._id.toString(),
@@ -245,10 +266,10 @@ class StudentDashboardController {
                         specialties: prof.specialties || [],
                         hourlyRate: prof.hourlyRate || 0,
                         pricing: effectivePricing,
-                        experienceYears: 0, // Can be added to model later
-                        rating: 0, // Can be added to model later
+                        experienceYears: prof.experienceYears || 0,
+                        rating: prof.rating || 0,
                     };
-                });
+                }).filter((p) => p !== null);
                 res.json({ items: professorsData });
             }
             catch (error) {
@@ -871,6 +892,39 @@ class StudentDashboardController {
             }
             catch (error) {
                 console.error('Error getting available tenants:', error);
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
+        /**
+         * Get available courts for the active tenant
+         * TEN-96: MT-FRONT-005
+         * GET /api/student-dashboard/courts
+         */
+        this.getCourts = async (req, res) => {
+            try {
+                const tenantId = req.tenantId;
+                if (!tenantId) {
+                    res.status(400).json({ error: 'Tenant ID requerido. Selecciona un centro primero.' });
+                    return;
+                }
+                const courts = await CourtModel_1.CourtModel.find({
+                    tenantId: new mongoose_1.Types.ObjectId(tenantId),
+                    isActive: true,
+                })
+                    .sort({ name: 1 })
+                    .lean();
+                const items = courts.map((court) => ({
+                    id: court._id.toString(),
+                    name: court.name,
+                    type: court.type,
+                    pricePerHour: court.price || 0,
+                    description: court.description || null,
+                    features: court.features || [],
+                }));
+                res.json({ items });
+            }
+            catch (error) {
+                console.error('Error getting courts:', error);
                 res.status(500).json({ error: 'Error interno del servidor' });
             }
         };

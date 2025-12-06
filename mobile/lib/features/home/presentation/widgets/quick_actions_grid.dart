@@ -168,6 +168,15 @@ class QuickActionsGrid extends StatelessWidget {
         },
       ),
       QuickAction(
+        title: 'Reservar Cancha',
+        subtitle: 'Alquila una cancha directamente',
+        icon: Icons.sports_tennis,
+        color: Colors.teal,
+        onTap: () {
+          context.push('/book-court');
+        },
+      ),
+      QuickAction(
         title: 'Mis Reservas',
         subtitle: 'Ve tus clases reservadas',
         icon: Icons.calendar_today,
@@ -183,15 +192,6 @@ class QuickActionsGrid extends StatelessWidget {
         color: Colors.orange,
         onTap: () {
           context.push('/my-balance');
-        },
-      ),
-      QuickAction(
-        title: 'Solicitar Servicio',
-        subtitle: 'Pide servicios especiales',
-        icon: Icons.support_agent,
-        color: Colors.purple,
-        onTap: () {
-          context.push('/request-service');
         },
       ),
     ];

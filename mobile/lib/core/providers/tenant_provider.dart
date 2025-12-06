@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/tenant_service.dart';
+import '../../features/tenant/domain/services/tenant_service.dart' as tenant_domain;
+import '../../features/tenant/domain/models/tenant_model.dart';
 
 /// Provider for TenantService singleton
 final tenantServiceProvider = Provider<TenantService>((ref) {
@@ -10,12 +12,27 @@ final tenantServiceProvider = Provider<TenantService>((ref) {
 class CurrentTenantIdNotifier extends Notifier<String?> {
   @override
   String? build() {
+    // Initialize by reading from service
     final service = ref.read(tenantServiceProvider);
-    return service.currentTenantId;
+    final tenantId = service.currentTenantId;
+    
+    // If service has tenant but state is null, update state
+    if (tenantId != null && tenantId.isNotEmpty && state != tenantId) {
+      // Use Future.microtask to avoid modifying state during build
+      Future.microtask(() => state = tenantId);
+    }
+    
+    return tenantId;
   }
 
   void update(String? tenantId) {
     state = tenantId;
+  }
+  
+  /// Refresh from service
+  void refresh() {
+    final service = ref.read(tenantServiceProvider);
+    state = service.currentTenantId;
   }
 }
 
@@ -46,12 +63,23 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
     state = const AsyncValue.loading();
     try {
       final service = ref.read(tenantServiceProvider);
+      
+      // Ensure service is initialized by calling loadTenant which initializes _prefs if needed
+      // loadTenant() already handles _prefs ??= await SharedPreferences.getInstance()
+      
       final tenantId = await service.loadTenant();
       state = AsyncValue.data(tenantId);
-      // Update the state provider as well
-      ref.read(currentTenantIdProvider.notifier).update(tenantId);
+      // Update the state provider as well - ensure it's updated
+      if (tenantId != null && tenantId.isNotEmpty) {
+        ref.read(currentTenantIdProvider.notifier).update(tenantId);
+        // Also refresh to ensure consistency
+        ref.read(currentTenantIdProvider.notifier).refresh();
+      } else {
+        ref.read(currentTenantIdProvider.notifier).update(null);
+      }
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
+      ref.read(currentTenantIdProvider.notifier).update(null);
     }
   }
 
@@ -63,13 +91,16 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
       final success = await service.setTenant(tenantId);
       if (success) {
         state = AsyncValue.data(tenantId);
-        // Update the state provider as well
+        // Update the state provider as well - ensure it's updated
         ref.read(currentTenantIdProvider.notifier).update(tenantId);
+        // Also refresh to ensure consistency
+        ref.read(currentTenantIdProvider.notifier).refresh();
       } else {
         throw Exception('Failed to save tenant ID');
       }
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
+      ref.read(currentTenantIdProvider.notifier).update(null);
     }
   }
 
@@ -97,3 +128,34 @@ final tenantNotifierProvider =
     NotifierProvider<TenantNotifier, AsyncValue<String?>>(() {
       return TenantNotifier();
     });
+
+/// Provider to get the current tenant model (with name, etc.)
+/// This provider fetches the tenant details based on the current tenant ID
+final currentTenantProvider = FutureProvider.autoDispose<TenantModel?>((ref) async {
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null || tenantId.isEmpty) {
+    return null;
+  }
+
+  try {
+    final service = ref.watch(tenant_domain.tenantDomainServiceProvider);
+    // Get all available tenants and find the one matching the current ID
+    final tenants = await service.getAvailableTenants();
+    return tenants.firstWhere(
+      (tenant) => tenant.id == tenantId,
+      orElse: () => throw Exception('Centro no encontrado'),
+    );
+  } catch (e) {
+    // If getAvailableTenants fails, try getMyTenants
+    try {
+      final service = ref.watch(tenant_domain.tenantDomainServiceProvider);
+      final tenants = await service.getMyTenants();
+      return tenants.firstWhere(
+        (tenant) => tenant.id == tenantId,
+        orElse: () => throw Exception('Centro no encontrado'),
+      );
+    } catch (_) {
+      rethrow;
+    }
+  }
+});

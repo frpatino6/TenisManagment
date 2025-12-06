@@ -52,7 +52,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       // If authenticated and logging in, check tenant before redirecting
-      if (isAuthenticated && isLoggingIn) {
+      // BUT never redirect if we're on /book-court
+      if (isAuthenticated && isLoggingIn && !isBookCourt) {
         // Wait for tenant state to load
         if (tenantState.isLoading) {
           return null; // Wait for tenant to load

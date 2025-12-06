@@ -13,6 +13,9 @@ import '../../features/professor/presentation/screens/students_list_screen.dart'
 import '../../features/professor/presentation/screens/student_profile_screen.dart';
 import '../../features/professor/presentation/screens/analytics_dashboard_screen.dart';
 import '../../features/booking/presentation/screens/book_class_screen.dart';
+import '../../features/booking/presentation/screens/professor_schedules_screen.dart';
+import '../../features/booking/presentation/screens/confirm_booking_screen.dart';
+import '../../features/booking/domain/models/schedule_model.dart';
 import '../../features/student/presentation/screens/my_bookings_screen.dart';
 import '../../features/student/presentation/screens/my_balance_screen.dart';
 import '../../features/student/presentation/screens/request_service_screen.dart';
@@ -100,6 +103,37 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/book-class',
         name: 'book-class',
         builder: (context, state) => const BookClassScreen(),
+      ),
+      GoRoute(
+        path: '/professor/:professorId/schedules',
+        name: 'professor-schedules',
+        builder: (context, state) {
+          final professorId = state.pathParameters['professorId']!;
+          final professorName = state.uri.queryParameters['name'] ?? 'Profesor';
+          return ProfessorSchedulesScreen(
+            professorId: professorId,
+            professorName: professorName,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/confirm-booking',
+        name: 'confirm-booking',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          if (extra == null) {
+            return const Scaffold(
+              body: Center(child: Text('Error: No se proporcionaron datos')),
+            );
+          }
+          return ConfirmBookingScreen(
+            schedule: extra['schedule'] as ScheduleModel,
+            professorId: extra['professorId'] as String,
+            professorName: extra['professorName'] as String,
+            tenantId: extra['tenantId'] as String,
+            tenantName: extra['tenantName'] as String,
+          );
+        },
       ),
       GoRoute(
         path: '/my-bookings',

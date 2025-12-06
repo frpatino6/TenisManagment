@@ -13,6 +13,7 @@ import '../../features/professor/presentation/screens/students_list_screen.dart'
 import '../../features/professor/presentation/screens/student_profile_screen.dart';
 import '../../features/professor/presentation/screens/analytics_dashboard_screen.dart';
 import '../../features/booking/presentation/screens/book_class_screen.dart';
+import '../../features/booking/presentation/screens/book_court_screen.dart';
 import '../../features/booking/presentation/screens/professor_schedules_screen.dart';
 import '../../features/booking/presentation/screens/confirm_booking_screen.dart';
 import '../../features/booking/domain/models/schedule_model.dart';
@@ -103,6 +104,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/book-class',
         name: 'book-class',
         builder: (context, state) => const BookClassScreen(),
+      ),
+      GoRoute(
+        path: '/book-court',
+        name: 'book-court',
+        builder: (context, state) => const BookCourtScreen(),
       ),
       GoRoute(
         path: '/professor/:professorId/schedules',

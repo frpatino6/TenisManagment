@@ -71,6 +71,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // If authenticated and trying to access protected routes without tenant
       // BUT allow /book-court to stay even without tenant (it will show error message)
+      // AND prevent redirect when changing tenant on /book-court
       if (isAuthenticated &&
           !isLoggingIn &&
           !isSelectingTenant &&
@@ -78,6 +79,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           !hasTenant &&
           !tenantState.isLoading) {
         return '/select-tenant';
+      }
+
+      // NEVER redirect from /book-court, even if tenant state changes
+      if (isBookCourt) {
+        return null;
       }
 
       return null;

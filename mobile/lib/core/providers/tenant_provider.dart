@@ -60,7 +60,6 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
 
   /// Load tenant from storage
   Future<void> loadTenant() async {
-    print('[TenantNotifier] loadTenant() called');
     state = const AsyncValue.loading();
     try {
       final service = ref.read(tenantServiceProvider);
@@ -68,23 +67,17 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
       // Ensure service is initialized by calling loadTenant which initializes _prefs if needed
       // loadTenant() already handles _prefs ??= await SharedPreferences.getInstance()
       
-      print('[TenantNotifier] Loading tenant from service...');
       final tenantId = await service.loadTenant();
-      print('[TenantNotifier] Loaded tenant ID: $tenantId');
       state = AsyncValue.data(tenantId);
       // Update the state provider as well - ensure it's updated
       if (tenantId != null && tenantId.isNotEmpty) {
-        print('[TenantNotifier] Updating currentTenantIdProvider with: $tenantId');
         ref.read(currentTenantIdProvider.notifier).update(tenantId);
         // Also refresh to ensure consistency
         ref.read(currentTenantIdProvider.notifier).refresh();
       } else {
-        print('[TenantNotifier] No tenant ID found, updating to null');
         ref.read(currentTenantIdProvider.notifier).update(null);
       }
     } catch (e, stackTrace) {
-      print('[TenantNotifier] Error loading tenant: $e');
-      print('[TenantNotifier] Stack trace: $stackTrace');
       state = AsyncValue.error(e, stackTrace);
       ref.read(currentTenantIdProvider.notifier).update(null);
     }

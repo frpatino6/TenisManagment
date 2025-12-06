@@ -8,6 +8,7 @@ import '../../../../core/widgets/version_widget.dart';
 import '../widgets/professor_profile_card.dart';
 import '../widgets/schedule_widget.dart';
 import '../widgets/earnings_widget.dart';
+import '../widgets/tenant_selector_widget.dart';
 import '../providers/professor_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
@@ -76,6 +77,10 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildWelcomeSection(context, professor),
+            const Gap(24),
+
+            // Tenant selector for professors with multiple centers
+            const TenantSelectorWidget(),
             const Gap(24),
 
             const ProfessorProfileCard(),

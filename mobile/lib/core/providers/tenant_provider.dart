@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/tenant_service.dart';
+import '../../features/tenant/domain/services/tenant_service.dart' as tenant_domain;
+import '../../features/tenant/domain/models/tenant_model.dart';
 
 /// Provider for TenantService singleton
 final tenantServiceProvider = Provider<TenantService>((ref) {
@@ -133,3 +135,34 @@ final tenantNotifierProvider =
     NotifierProvider<TenantNotifier, AsyncValue<String?>>(() {
       return TenantNotifier();
     });
+
+/// Provider to get the current tenant model (with name, etc.)
+/// This provider fetches the tenant details based on the current tenant ID
+final currentTenantProvider = FutureProvider.autoDispose<TenantModel?>((ref) async {
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null || tenantId.isEmpty) {
+    return null;
+  }
+
+  try {
+    final service = ref.watch(tenant_domain.tenantDomainServiceProvider);
+    // Get all available tenants and find the one matching the current ID
+    final tenants = await service.getAvailableTenants();
+    return tenants.firstWhere(
+      (tenant) => tenant.id == tenantId,
+      orElse: () => throw Exception('Centro no encontrado'),
+    );
+  } catch (e) {
+    // If getAvailableTenants fails, try getMyTenants
+    try {
+      final service = ref.watch(tenant_domain.tenantDomainServiceProvider);
+      final tenants = await service.getMyTenants();
+      return tenants.firstWhere(
+        (tenant) => tenant.id == tenantId,
+        orElse: () => throw Exception('Centro no encontrado'),
+      );
+    } catch (_) {
+      rethrow;
+    }
+  }
+});

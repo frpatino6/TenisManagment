@@ -67,6 +67,8 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       return _buildNoTenantScreen(context);
     }
 
+    final tenantAsync = ref.watch(currentTenantProvider);
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -80,7 +82,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           if (courts.isEmpty) {
             return _buildEmptyState(context);
           }
-          return _buildContent(context, courts);
+          return _buildContent(context, courts, tenantAsync);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) {
@@ -234,12 +236,59 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     );
   }
 
-  Widget _buildContent(BuildContext context, List<CourtModel> courts) {
+  Widget _buildContent(BuildContext context, List<CourtModel> courts, AsyncValue tenantAsync) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Tenant info card
+          tenantAsync.when(
+            data: (tenant) {
+              if (tenant == null) return const SizedBox.shrink();
+              return Card(
+                margin: const EdgeInsets.only(bottom: 16),
+                color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.business,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const Gap(12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Centro',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const Gap(4),
+                            Text(
+                              tenant.name,
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+          
           // Court selection
           Text(
             'Selecciona una cancha',

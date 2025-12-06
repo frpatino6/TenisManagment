@@ -949,4 +949,41 @@ export class StudentDashboardController {
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
+
+  /**
+   * Get all active tenants (centers) available for selection
+   * TEN-93: MT-FRONT-002
+   * GET /api/student-dashboard/tenants/available
+   * Returns all active tenants that students can select from
+   */
+  getAvailableTenants = async (req: Request, res: Response) => {
+    try {
+      const firebaseUid = req.user?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+
+      // Get all active tenants
+      const { TenantModel } = await import('../../infrastructure/database/models/TenantModel');
+      const tenants = await TenantModel.find({ isActive: true })
+        .select('name slug domain config isActive createdAt')
+        .sort({ name: 1 })
+        .lean();
+
+      const tenantsList = tenants.map((tenant) => ({
+        id: tenant._id.toString(),
+        name: tenant.name,
+        slug: tenant.slug,
+        domain: tenant.domain || null,
+        logo: tenant.config?.logo || null,
+        isActive: tenant.isActive,
+        createdAt: tenant.createdAt,
+      }));
+
+      res.json({ items: tenantsList });
+    } catch (error) {
+      console.error('Error obteniendo centros disponibles:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
 }

@@ -17,10 +17,14 @@ import '../../features/student/presentation/screens/my_bookings_screen.dart';
 import '../../features/student/presentation/screens/my_balance_screen.dart';
 import '../../features/student/presentation/screens/request_service_screen.dart';
 import '../../features/settings/presentation/screens/theme_settings_screen.dart';
+import '../../features/tenant/presentation/screens/select_tenant_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../providers/tenant_provider.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
+  final hasTenant = ref.watch(hasTenantProvider);
+  final tenantState = ref.watch(tenantNotifierProvider);
 
   return GoRouter(
     initialLocation: '/login',
@@ -35,17 +39,39 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isLoggingIn =
           state.matchedLocation == '/login' ||
           state.matchedLocation == '/register';
+      final isSelectingTenant = state.matchedLocation == '/select-tenant';
 
-
-      if (isAuthenticated && isLoggingIn) {
-        return user.role == 'professor' ? '/professor-home' : '/home';
-      }
-
-
+      // If not authenticated, redirect to login (unless already there)
       if (!isAuthenticated && !isLoggingIn) {
         return '/login';
       }
 
+      // If authenticated and logging in, check tenant before redirecting
+      if (isAuthenticated && isLoggingIn) {
+        // Wait for tenant state to load
+        if (tenantState.isLoading) {
+          return null; // Wait for tenant to load
+        }
+        
+        // If no tenant configured, redirect to tenant selection
+        if (!hasTenant && !isSelectingTenant) {
+          return '/select-tenant';
+        }
+        
+        // If tenant is configured, redirect to home
+        if (hasTenant) {
+          return user.role == 'professor' ? '/professor-home' : '/home';
+        }
+      }
+
+      // If authenticated and trying to access protected routes without tenant
+      if (isAuthenticated && 
+          !isLoggingIn && 
+          !isSelectingTenant && 
+          !hasTenant &&
+          !tenantState.isLoading) {
+        return '/select-tenant';
+      }
 
       return null;
     },
@@ -132,6 +158,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/theme-settings',
         name: 'theme-settings',
         builder: (context, state) => const ThemeSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/select-tenant',
+        name: 'select-tenant',
+        builder: (context, state) => const SelectTenantScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

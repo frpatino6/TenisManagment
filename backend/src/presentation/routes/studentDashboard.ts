@@ -17,6 +17,7 @@ router.get('/professors/:professorId/schedules', controller.getProfessorSchedule
 router.get('/tenants/:tenantId/schedules', controller.getTenantSchedules); // TEN-90: Horarios de un centro
 router.get('/all-available-schedules', controller.getAllAvailableSchedules); // TEN-90: Todos los horarios disponibles agrupados
 router.get('/tenants', controller.getMyTenants); // TEN-91: Tenants del estudiante
+router.get('/tenants/available', controller.getAvailableTenants); // TEN-93: Todos los centros disponibles
 router.get('/bookings', controller.getBookings);
 router.post('/book-lesson', controller.bookLesson);
 router.post('/book-court', controller.bookCourt);

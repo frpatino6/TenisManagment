@@ -34,3 +34,19 @@ export function requireRole(role: UserRole) {
     next();
   };
 }
+
+/**
+ * Middleware para requerir rol de Super Admin
+ * TEN-87: MT-BACK-005
+ */
+export function requireSuperAdmin(req: Request, res: Response, next: NextFunction): void {
+  if (!req.user) {
+    res.status(401).json({ error: 'No autenticado' });
+    return;
+  }
+  if (req.user.role !== 'super_admin') {
+    res.status(403).json({ error: 'Solo Super Admin puede acceder a este recurso' });
+    return;
+  }
+  next();
+}

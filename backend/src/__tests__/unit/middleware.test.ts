@@ -6,7 +6,7 @@
 import { describe, it, beforeEach, expect, jest } from '@jest/globals';
 import { Request, Response, NextFunction } from 'express';
 import { validateBody } from '../../application/middleware/validation';
-import { authMiddleware, requireRole } from '../../application/middleware/auth';
+import { authMiddleware, requireRole, requireSuperAdmin } from '../../application/middleware/auth';
 import { requestIdMiddleware } from '../../application/middleware/requestId';
 import { MockHelper } from '../utils/test-helpers';
 import { JwtService } from '../../infrastructure/services/JwtService';
@@ -297,5 +297,69 @@ describe('Middleware Tests', () => {
       expect(mockNext).toHaveBeenCalled();
     });
   });
-});
 
+  describe('requireSuperAdmin', () => {
+    let mockReq: any;
+    let mockRes: any;
+    let mockNext: NextFunction;
+
+    beforeEach(() => {
+      mockReq = MockHelper.createMockRequest();
+      mockRes = MockHelper.createMockResponse();
+      mockNext = MockHelper.createMockNextFunction();
+    });
+
+    describe('✅ Valid Cases', () => {
+      it('should call next() when user is super_admin', () => {
+        mockReq.user = { id: 'super-admin-id', role: 'super_admin' };
+
+        requireSuperAdmin(mockReq, mockRes, mockNext);
+
+        expect(mockNext).toHaveBeenCalled();
+        expect(mockRes.status).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('❌ Invalid Cases', () => {
+      it('should return 401 when user is not authenticated', () => {
+        mockReq.user = undefined;
+
+        requireSuperAdmin(mockReq, mockRes, mockNext);
+
+        expect(mockRes.status).toHaveBeenCalledWith(401);
+        expect(mockRes.json).toHaveBeenCalledWith({ error: 'No autenticado' });
+        expect(mockNext).not.toHaveBeenCalled();
+      });
+
+      it('should return 403 when user is not super_admin', () => {
+        mockReq.user = { id: 'user-id', role: 'tenant_admin' };
+
+        requireSuperAdmin(mockReq, mockRes, mockNext);
+
+        expect(mockRes.status).toHaveBeenCalledWith(403);
+        expect(mockRes.json).toHaveBeenCalledWith({
+          error: 'Solo Super Admin puede acceder a este recurso',
+        });
+        expect(mockNext).not.toHaveBeenCalled();
+      });
+
+      it('should return 403 when user is professor', () => {
+        mockReq.user = { id: 'prof-id', role: 'professor' };
+
+        requireSuperAdmin(mockReq, mockRes, mockNext);
+
+        expect(mockRes.status).toHaveBeenCalledWith(403);
+        expect(mockNext).not.toHaveBeenCalled();
+      });
+
+      it('should return 403 when user is student', () => {
+        mockReq.user = { id: 'student-id', role: 'student' };
+
+        requireSuperAdmin(mockReq, mockRes, mockNext);
+
+        expect(mockRes.status).toHaveBeenCalledWith(403);
+        expect(mockNext).not.toHaveBeenCalled();
+      });
+    });
+  });
+});

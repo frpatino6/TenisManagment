@@ -27,8 +27,13 @@ import '../providers/tenant_provider.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
+  // Only watch hasTenant, not tenantState, to reduce rebuilds
+  // tenantState is only needed in redirect logic
   final hasTenant = ref.watch(hasTenantProvider);
   final tenantState = ref.watch(tenantNotifierProvider);
+  
+  // Store router instance to prevent recreation
+  final router = ref.state;
 
   return GoRouter(
     initialLocation: '/login',

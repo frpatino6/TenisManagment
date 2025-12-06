@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../domain/models/court_model.dart';
 import '../providers/booking_provider.dart';
 import '../../../../core/providers/tenant_provider.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../tenant/domain/services/tenant_service.dart' as tenant_domain;
 import '../../../tenant/domain/models/tenant_model.dart';
 

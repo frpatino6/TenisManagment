@@ -27,8 +27,10 @@ import '../providers/tenant_provider.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
+  // Use select to only rebuild when hasTenant actually changes value, not state
   final hasTenant = ref.watch(hasTenantProvider);
-  final tenantState = ref.watch(tenantNotifierProvider);
+  // Only read tenantState when needed in redirect, don't watch it to prevent rebuilds
+  final tenantState = ref.read(tenantNotifierProvider);
 
   return GoRouter(
     initialLocation: '/login',
@@ -42,14 +44,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // If we're on /book-court in ANY way, NEVER redirect - return null immediately
       // This check must be FIRST before any other logic
-      final isOnBookCourt = uriPath == '/book-court' ||
+      final isOnBookCourt =
+          uriPath == '/book-court' ||
           matchedPath == '/book-court' ||
           fullPath == '/book-court' ||
           location == '/book-court' ||
           uriPath.startsWith('/book-court') ||
           (matchedPath != null && matchedPath.startsWith('/book-court')) ||
           (fullPath != null && fullPath.startsWith('/book-court'));
-      
+
       if (isOnBookCourt) {
         return null; // Stay on book-court no matter what - DO NOT REDIRECT
       }

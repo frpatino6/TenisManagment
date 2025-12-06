@@ -1,12 +1,15 @@
 import { Router } from 'express';
 import { StudentDashboardController } from '../../application/controllers/StudentDashboardController';
 import { firebaseAuthMiddleware } from '../../application/middleware/firebaseAuth';
+import { extractTenantId } from '../../application/middleware/tenant';
 
 const router = Router();
 const controller = new StudentDashboardController();
 
 // All routes use Firebase authentication
 router.use(firebaseAuthMiddleware);
+// Extract tenant ID from X-Tenant-ID header
+router.use(extractTenantId);
 
 // Student dashboard endpoints
 router.get('/activities', controller.getRecentActivities);

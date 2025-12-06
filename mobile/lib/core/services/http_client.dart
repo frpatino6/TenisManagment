@@ -25,7 +25,7 @@ class AppHttpClient {
       if (tenantId != null && tenantId.isNotEmpty) {
         return tenantId;
       }
-      
+
       // If provider returns null, try to get directly from service
       final service = _ref.read(tenantServiceProvider);
       final serviceTenantId = service.currentTenantId;
@@ -35,7 +35,7 @@ class AppHttpClient {
         _ref.read(currentTenantIdProvider.notifier).update(serviceTenantId);
         return serviceTenantId;
       }
-      
+
       print('[AppHttpClient] No tenant ID found');
       return null;
     } catch (e) {
@@ -44,10 +44,12 @@ class AppHttpClient {
       try {
         final service = _ref.read(tenantServiceProvider);
         final serviceTenantId = service.currentTenantId;
-        print('[AppHttpClient] Tenant ID from service (fallback): $serviceTenantId');
+        print(
+          '[AppHttpClient] Tenant ID from service (fallback): $serviceTenantId',
+        );
         return serviceTenantId;
-      } catch (_) {
-        print('[AppHttpClient] Error in fallback: $_');
+      } catch (e) {
+        print('[AppHttpClient] Error in fallback: $e');
         return null;
       }
     }
@@ -69,14 +71,8 @@ class AppHttpClient {
   }
 
   /// GET request with automatic X-Tenant-ID header
-  Future<http.Response> get(
-    Uri url, {
-    Map<String, String>? headers,
-  }) async {
-    return http.get(
-      url,
-      headers: _buildHeaders(headers),
-    );
+  Future<http.Response> get(Uri url, {Map<String, String>? headers}) async {
+    return http.get(url, headers: _buildHeaders(headers));
   }
 
   /// POST request with automatic X-Tenant-ID header
@@ -140,14 +136,8 @@ class AppHttpClient {
   }
 
   /// HEAD request with automatic X-Tenant-ID header
-  Future<http.Response> head(
-    Uri url, {
-    Map<String, String>? headers,
-  }) async {
-    return http.head(
-      url,
-      headers: _buildHeaders(headers),
-    );
+  Future<http.Response> head(Uri url, {Map<String, String>? headers}) async {
+    return http.head(url, headers: _buildHeaders(headers));
   }
 }
 
@@ -160,4 +150,3 @@ class AppHttpClient {
 final appHttpClientProvider = Provider<AppHttpClient>((ref) {
   return AppHttpClient(ref);
 });
-

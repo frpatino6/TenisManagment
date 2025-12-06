@@ -181,7 +181,7 @@ final currentPreferencesProvider = Provider<UserPreferencesModel?>((ref) {
       .when(
         data: (preferences) => preferences,
         loading: () => null,
-        error: (_, __) => null,
+        error: (error, stackTrace) => null,
       );
 });
 

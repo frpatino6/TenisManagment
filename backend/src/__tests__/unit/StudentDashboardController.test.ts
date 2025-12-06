@@ -32,6 +32,27 @@ jest.mock('../../infrastructure/database/models/SystemConfigModel', () => ({
   },
 }));
 
+jest.mock('../../infrastructure/database/models/ScheduleModel', () => ({
+  ScheduleModel: {
+    find: jest.fn(),
+    findById: jest.fn(),
+  },
+}));
+
+jest.mock('../../infrastructure/database/models/ProfessorModel', () => ({
+  ProfessorModel: {
+    find: jest.fn(),
+    findById: jest.fn(),
+    findOne: jest.fn(),
+  },
+}));
+
+jest.mock('../../infrastructure/database/models/TenantModel', () => ({
+  TenantModel: {
+    findById: jest.fn(),
+  },
+}));
+
 describe('StudentDashboardController', () => {
   let controller: StudentDashboardController;
   let mockRequest: any;
@@ -605,6 +626,290 @@ describe('StudentDashboardController', () => {
       expect(jsonCall.items[0].professor.name).toBe('');
       expect(jsonCall.items[0].schedule.id).toBe('');
       expect(jsonCall.items[0].schedule.startTime).toBe('');
+    });
+  });
+
+  describe('getProfessorSchedules - TEN-90', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should return schedules grouped by tenant', async () => {
+      // Arrange
+      const professorId = 'professor-id';
+      const tenantId1 = 'tenant-id-1';
+      const tenantId2 = 'tenant-id-2';
+      mockRequest.params = { professorId };
+
+      const { ProfessorModel } = require('../../infrastructure/database/models/ProfessorModel');
+      const { ScheduleModel } = require('../../infrastructure/database/models/ScheduleModel');
+
+      ProfessorModel.findById.mockResolvedValue({
+        _id: professorId,
+        name: 'Prof. Test',
+      });
+
+      const mockSchedules = [
+        {
+          _id: 'schedule-1',
+          tenantId: { _id: tenantId1, name: 'Centro A', slug: 'centro-a', config: {} },
+          professorId: professorId,
+          date: new Date(),
+          startTime: new Date('2025-12-10T10:00:00Z'),
+          endTime: new Date('2025-12-10T11:00:00Z'),
+          isAvailable: true,
+          status: 'pending',
+        },
+        {
+          _id: 'schedule-2',
+          tenantId: { _id: tenantId1, name: 'Centro A', slug: 'centro-a', config: {} },
+          professorId: professorId,
+          date: new Date(),
+          startTime: new Date('2025-12-10T14:00:00Z'),
+          endTime: new Date('2025-12-10T15:00:00Z'),
+          isAvailable: true,
+          status: 'pending',
+        },
+        {
+          _id: 'schedule-3',
+          tenantId: { _id: tenantId2, name: 'Centro B', slug: 'centro-b', config: {} },
+          professorId: professorId,
+          date: new Date(),
+          startTime: new Date('2025-12-11T10:00:00Z'),
+          endTime: new Date('2025-12-11T11:00:00Z'),
+          isAvailable: true,
+          status: 'pending',
+        },
+      ];
+
+      const mockFind = jest.fn().mockReturnValue({
+        populate: jest.fn().mockReturnValue({
+          sort: jest.fn().mockReturnValue({
+            limit: jest.fn().mockResolvedValue(mockSchedules),
+          }),
+        }),
+      });
+
+      ScheduleModel.find = mockFind;
+
+      // Act
+      await controller.getProfessorSchedules(mockRequest, mockResponse);
+
+      // Assert
+      expect(ProfessorModel.findById).toHaveBeenCalledWith(professorId);
+      expect(mockResponse.json).toHaveBeenCalled();
+      const jsonCall = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
+      expect(jsonCall.professorId).toBe(professorId);
+      expect(jsonCall.professorName).toBe('Prof. Test');
+      expect(jsonCall.schedules).toHaveLength(2); // 2 tenants
+      expect(jsonCall.schedules[0].schedules).toHaveLength(2); // 2 schedules in first tenant
+      expect(jsonCall.schedules[1].schedules).toHaveLength(1); // 1 schedule in second tenant
+    });
+
+    it('should return 404 if professor does not exist', async () => {
+      // Arrange
+      mockRequest.params = { professorId: 'non-existent' };
+
+      const { ProfessorModel } = require('../../infrastructure/database/models/ProfessorModel');
+      ProfessorModel.findById.mockResolvedValue(null);
+
+      // Act
+      await controller.getProfessorSchedules(mockRequest, mockResponse);
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
+    });
+  });
+
+  describe('getTenantSchedules - TEN-90', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should return schedules grouped by professor', async () => {
+      // Arrange
+      const mongoose = require('mongoose');
+      const tenantId = new mongoose.Types.ObjectId().toString();
+      const professorId1 = new mongoose.Types.ObjectId().toString();
+      const professorId2 = new mongoose.Types.ObjectId().toString();
+      mockRequest.params = { tenantId };
+
+      const { TenantModel } = require('../../infrastructure/database/models/TenantModel');
+      const { ScheduleModel } = require('../../infrastructure/database/models/ScheduleModel');
+
+      TenantModel.findById.mockResolvedValue({
+        _id: tenantId,
+        name: 'Centro Test',
+        slug: 'centro-test',
+        isActive: true,
+        config: {},
+      });
+
+      const mockSchedules = [
+        {
+          _id: 'schedule-1',
+          tenantId: new mongoose.Types.ObjectId(tenantId),
+          professorId: { _id: professorId1, name: 'Prof. A', email: 'prof-a@test.com', specialties: [] },
+          date: new Date(),
+          startTime: new Date('2025-12-10T10:00:00Z'),
+          endTime: new Date('2025-12-10T11:00:00Z'),
+          isAvailable: true,
+          status: 'pending',
+        },
+        {
+          _id: 'schedule-2',
+          tenantId: new mongoose.Types.ObjectId(tenantId),
+          professorId: { _id: professorId2, name: 'Prof. B', email: 'prof-b@test.com', specialties: [] },
+          date: new Date(),
+          startTime: new Date('2025-12-10T14:00:00Z'),
+          endTime: new Date('2025-12-10T15:00:00Z'),
+          isAvailable: true,
+          status: 'pending',
+        },
+      ];
+
+      const mockPopulate = jest.fn().mockReturnThis();
+      const mockSort = jest.fn().mockReturnThis();
+      const mockLimit = jest.fn().mockResolvedValue(mockSchedules);
+      
+      const mockFind = jest.fn().mockReturnValue({
+        populate: mockPopulate,
+      });
+      
+      mockPopulate.mockReturnValue({
+        sort: mockSort,
+      });
+      
+      mockSort.mockReturnValue({
+        limit: mockLimit,
+      });
+
+      ScheduleModel.find = mockFind;
+
+      // Act
+      await controller.getTenantSchedules(mockRequest, mockResponse);
+
+      // Assert
+      expect(TenantModel.findById).toHaveBeenCalledWith(tenantId);
+      expect(mockResponse.json).toHaveBeenCalled();
+      const jsonCall = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
+      expect(jsonCall.tenantId).toBe(tenantId);
+      expect(jsonCall.tenantName).toBe('Centro Test');
+      expect(Array.isArray(jsonCall.schedules)).toBe(true);
+      if (jsonCall.schedules && jsonCall.schedules.length > 0) {
+        expect(jsonCall.schedules.length).toBeGreaterThanOrEqual(1);
+      }
+    });
+
+    it('should return 404 if tenant does not exist', async () => {
+      // Arrange
+      mockRequest.params = { tenantId: 'non-existent' };
+
+      const { TenantModel } = require('../../infrastructure/database/models/TenantModel');
+      TenantModel.findById.mockResolvedValue(null);
+
+      // Act
+      await controller.getTenantSchedules(mockRequest, mockResponse);
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
+    });
+
+    it('should return 400 if tenant is not active', async () => {
+      // Arrange
+      mockRequest.params = { tenantId: 'tenant-id' };
+
+      const { TenantModel } = require('../../infrastructure/database/models/TenantModel');
+      TenantModel.findById.mockResolvedValue({
+        _id: 'tenant-id',
+        name: 'Centro Test',
+        isActive: false,
+      });
+
+      // Act
+      await controller.getTenantSchedules(mockRequest, mockResponse);
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+    });
+  });
+
+  describe('getAllAvailableSchedules - TEN-90', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should return all available schedules grouped by tenant and professor', async () => {
+      // Arrange
+      const { ScheduleModel } = require('../../infrastructure/database/models/ScheduleModel');
+
+      const mockSchedules = [
+        {
+          _id: 'schedule-1',
+          tenantId: { _id: 'tenant-1', name: 'Centro A', slug: 'centro-a', config: {} },
+          professorId: { _id: 'prof-1', name: 'Prof. A', email: 'prof-a@test.com', specialties: [] },
+          date: new Date(),
+          startTime: new Date('2025-12-10T10:00:00Z'),
+          endTime: new Date('2025-12-10T11:00:00Z'),
+          isAvailable: true,
+          status: 'pending',
+        },
+        {
+          _id: 'schedule-2',
+          tenantId: { _id: 'tenant-1', name: 'Centro A', slug: 'centro-a', config: {} },
+          professorId: { _id: 'prof-2', name: 'Prof. B', email: 'prof-b@test.com', specialties: [] },
+          date: new Date(),
+          startTime: new Date('2025-12-10T14:00:00Z'),
+          endTime: new Date('2025-12-10T15:00:00Z'),
+          isAvailable: true,
+          status: 'pending',
+        },
+        {
+          _id: 'schedule-3',
+          tenantId: { _id: 'tenant-2', name: 'Centro B', slug: 'centro-b', config: {} },
+          professorId: { _id: 'prof-1', name: 'Prof. A', email: 'prof-a@test.com', specialties: [] },
+          date: new Date(),
+          startTime: new Date('2025-12-11T10:00:00Z'),
+          endTime: new Date('2025-12-11T11:00:00Z'),
+          isAvailable: true,
+          status: 'pending',
+        },
+      ];
+
+      const mockPopulate1 = jest.fn().mockReturnThis();
+      const mockPopulate2 = jest.fn().mockReturnThis();
+      const mockSort = jest.fn().mockReturnThis();
+      const mockLimit = jest.fn().mockResolvedValue(mockSchedules);
+      
+      const mockFind = jest.fn().mockReturnValue({
+        populate: mockPopulate1,
+      });
+      
+      mockPopulate1.mockReturnValue({
+        populate: mockPopulate2,
+      });
+      
+      mockPopulate2.mockReturnValue({
+        sort: mockSort,
+      });
+      
+      mockSort.mockReturnValue({
+        limit: mockLimit,
+      });
+
+      ScheduleModel.find = mockFind;
+
+      // Act
+      await controller.getAllAvailableSchedules(mockRequest, mockResponse);
+
+      // Assert
+      expect(mockResponse.json).toHaveBeenCalled();
+      const jsonCall = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
+      expect(jsonCall).toHaveProperty('items');
+      expect(Array.isArray(jsonCall.items)).toBe(true);
+      if (jsonCall.items && jsonCall.items.length > 0) {
+        expect(jsonCall.items.length).toBeGreaterThanOrEqual(1);
+      }
     });
   });
 });

@@ -27,8 +27,7 @@ class TenantService {
         throw Exception('No se pudo obtener el token de autenticación');
       }
 
-      final client = AppHttpClient(_ref);
-      final response = await client.get(
+      final response = await _http.get(
         Uri.parse('$_baseUrl/student-dashboard/tenants/available'),
         headers: {
           'Authorization': 'Bearer $idToken',
@@ -69,11 +68,9 @@ class TenantService {
       // For now, we'll try both endpoints and see which one works
       // In a real scenario, we'd know the role from the user model
       
-      final client = AppHttpClient(_ref);
-      
       // Try student endpoint first (most common)
       try {
-        final response = await client.get(
+        final response = await _http.get(
           Uri.parse('$_baseUrl/student-dashboard/tenants'),
           headers: {
             'Authorization': 'Bearer $idToken',
@@ -89,7 +86,7 @@ class TenantService {
               .toList();
         } else if (response.statusCode == 404) {
           // User might be a professor, try professor endpoint
-          final profResponse = await client.get(
+          final profResponse = await _http.get(
             Uri.parse('$_baseUrl/professor-dashboard/tenants'),
             headers: {
               'Authorization': 'Bearer $idToken',

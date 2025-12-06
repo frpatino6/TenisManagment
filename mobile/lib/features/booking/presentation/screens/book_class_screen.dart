@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -209,6 +210,26 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const Gap(8),
+                          // Botón para ver horarios agrupados (TEN-94)
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              context.push(
+                                '/professor/${professor.id}/schedules?name=${Uri.encodeComponent(professor.name)}',
+                              );
+                            },
+                            icon: const Icon(Icons.calendar_view_week, size: 16),
+                            label: Text(
+                              'Ver horarios',
+                              style: GoogleFonts.inter(fontSize: 12),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                             ),
                           ),
                         ],

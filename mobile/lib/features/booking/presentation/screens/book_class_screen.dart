@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,6 +8,7 @@ import '../../domain/models/professor_model.dart';
 import '../../domain/models/available_schedule_model.dart';
 import '../../domain/models/service_type.dart';
 import '../providers/booking_provider.dart';
+import '../../../preferences/presentation/providers/preferences_provider.dart';
 
 class BookClassScreen extends ConsumerStatefulWidget {
   const BookClassScreen({super.key});
@@ -196,6 +198,58 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Consumer(
+                                builder: (context, ref, _) {
+                                  final isFavorite = ref.watch(preferencesNotifierProvider).when(
+                                        data: (preferences) =>
+                                            preferences.favoriteProfessors.any((p) => p.id == professor.id),
+                                        loading: () => false,
+                                        error: (_, __) => false,
+                                      );
+                                  return IconButton(
+                                    icon: Icon(
+                                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                                      color: isFavorite ? colorScheme.error : colorScheme.onSurfaceVariant,
+                                      size: 24,
+                                    ),
+                                    onPressed: () async {
+                                      try {
+                                        await ref
+                                            .read(preferencesNotifierProvider.notifier)
+                                            .toggleFavoriteProfessor(professor.id);
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                isFavorite
+                                                    ? 'Profesor eliminado de favoritos'
+                                                    : 'Profesor agregado a favoritos',
+                                              ),
+                                              duration: const Duration(seconds: 2),
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Error: ${e.toString()}'),
+                                              backgroundColor: colorScheme.error,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                           Text(
                             'Desde \$${professor.pricing.courtRental.toStringAsFixed(0)}',
                             style: GoogleFonts.inter(
@@ -209,6 +263,26 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const Gap(8),
+                          // Botón para ver horarios agrupados (TEN-94)
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              context.push(
+                                '/professor/${professor.id}/schedules?name=${Uri.encodeComponent(professor.name)}',
+                              );
+                            },
+                            icon: const Icon(Icons.calendar_view_week, size: 16),
+                            label: Text(
+                              'Ver horarios',
+                              style: GoogleFonts.inter(fontSize: 12),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                             ),
                           ),
                         ],

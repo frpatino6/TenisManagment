@@ -45,6 +45,7 @@ const SystemConfigModel_1 = require("../../infrastructure/database/models/System
 const CourtModel_1 = require("../../infrastructure/database/models/CourtModel");
 const TenantModel_1 = require("../../infrastructure/database/models/TenantModel");
 const StudentTenantModel_1 = require("../../infrastructure/database/models/StudentTenantModel");
+const UserPreferencesModel_1 = require("../../infrastructure/database/models/UserPreferencesModel");
 const TenantService_1 = require("../services/TenantService");
 const mongoose_1 = require("mongoose");
 // Default base pricing
@@ -845,6 +846,226 @@ class StudentDashboardController {
             }
             catch (error) {
                 console.error('Error getting student tenants:', error);
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
+        /**
+         * Get all available active tenants (for selection)
+         * TEN-91: MT-BACK-009
+         * GET /api/student-dashboard/tenants/available
+         */
+        this.getAvailableTenants = async (_req, res) => {
+            try {
+                const tenants = await TenantModel_1.TenantModel.find({ isActive: true })
+                    .select('_id name slug domain config isActive')
+                    .lean();
+                const items = tenants.map((tenant) => ({
+                    id: tenant._id.toString(),
+                    name: tenant.name,
+                    slug: tenant.slug,
+                    domain: tenant.domain || null,
+                    logo: tenant.config?.logo || null,
+                    isActive: tenant.isActive,
+                }));
+                res.json({ items });
+            }
+            catch (error) {
+                console.error('Error getting available tenants:', error);
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
+        /**
+         * Get user preferences (favorite professors and tenants)
+         * GET /api/student-dashboard/preferences
+         */
+        this.getPreferences = async (req, res) => {
+            try {
+                const authUser = req.user;
+                if (!authUser) {
+                    res.status(401).json({ error: 'No autenticado' });
+                    return;
+                }
+                // Get or create preferences
+                let preferences = await UserPreferencesModel_1.UserPreferencesModel.findOne({ userId: authUser.id }).populate([
+                    { path: 'favoriteProfessors', select: 'name email specialties' },
+                    { path: 'favoriteTenants', select: 'name slug config isActive' },
+                ]);
+                if (!preferences) {
+                    // Create default preferences
+                    preferences = await UserPreferencesModel_1.UserPreferencesModel.create({
+                        userId: new mongoose_1.Types.ObjectId(authUser.id),
+                        favoriteProfessors: [],
+                        favoriteTenants: [],
+                    });
+                }
+                res.json({
+                    favoriteProfessors: preferences.favoriteProfessors.map((prof) => ({
+                        id: prof._id.toString(),
+                        name: prof.name,
+                        email: prof.email,
+                        specialties: prof.specialties || [],
+                    })),
+                    favoriteTenants: preferences.favoriteTenants.map((tenant) => ({
+                        id: tenant._id.toString(),
+                        name: tenant.name,
+                        slug: tenant.slug,
+                        logo: tenant.config?.logo || null,
+                        isActive: tenant.isActive,
+                    })),
+                });
+            }
+            catch (error) {
+                console.error('Error getting preferences:', error);
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
+        /**
+         * Add professor to favorites
+         * POST /api/student-dashboard/preferences/favorite-professor
+         */
+        this.addFavoriteProfessor = async (req, res) => {
+            try {
+                const authUser = req.user;
+                if (!authUser) {
+                    res.status(401).json({ error: 'No autenticado' });
+                    return;
+                }
+                const { professorId } = req.body;
+                if (!professorId) {
+                    res.status(400).json({ error: 'professorId es requerido' });
+                    return;
+                }
+                // Validate professor exists
+                const professor = await ProfessorModel_1.ProfessorModel.findById(professorId);
+                if (!professor) {
+                    res.status(404).json({ error: 'Profesor no encontrado' });
+                    return;
+                }
+                // Get or create preferences
+                let preferences = await UserPreferencesModel_1.UserPreferencesModel.findOne({ userId: new mongoose_1.Types.ObjectId(authUser.id) });
+                if (!preferences) {
+                    preferences = await UserPreferencesModel_1.UserPreferencesModel.create({
+                        userId: new mongoose_1.Types.ObjectId(authUser.id),
+                        favoriteProfessors: [],
+                        favoriteTenants: [],
+                    });
+                }
+                // Add professor if not already in favorites
+                const professorObjectId = new mongoose_1.Types.ObjectId(professorId);
+                if (!preferences.favoriteProfessors.some((id) => id.equals(professorObjectId))) {
+                    preferences.favoriteProfessors.push(professorObjectId);
+                    await preferences.save();
+                }
+                res.json({ message: 'Profesor agregado a favoritos', professorId });
+            }
+            catch (error) {
+                console.error('Error adding favorite professor:', error);
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
+        /**
+         * Remove professor from favorites
+         * DELETE /api/student-dashboard/preferences/favorite-professor/:professorId
+         */
+        this.removeFavoriteProfessor = async (req, res) => {
+            try {
+                const authUser = req.user;
+                if (!authUser) {
+                    res.status(401).json({ error: 'No autenticado' });
+                    return;
+                }
+                const { professorId } = req.params;
+                if (!professorId) {
+                    res.status(400).json({ error: 'professorId es requerido' });
+                    return;
+                }
+                const preferences = await UserPreferencesModel_1.UserPreferencesModel.findOne({ userId: new mongoose_1.Types.ObjectId(authUser.id) });
+                if (!preferences) {
+                    res.status(404).json({ error: 'Preferencias no encontradas' });
+                    return;
+                }
+                const professorObjectId = new mongoose_1.Types.ObjectId(professorId);
+                preferences.favoriteProfessors = preferences.favoriteProfessors.filter((id) => !id.equals(professorObjectId));
+                await preferences.save();
+                res.json({ message: 'Profesor eliminado de favoritos', professorId });
+            }
+            catch (error) {
+                console.error('Error removing favorite professor:', error);
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
+        /**
+         * Add tenant to favorites
+         * POST /api/student-dashboard/preferences/favorite-tenant
+         */
+        this.addFavoriteTenant = async (req, res) => {
+            try {
+                const authUser = req.user;
+                if (!authUser) {
+                    res.status(401).json({ error: 'No autenticado' });
+                    return;
+                }
+                const { tenantId } = req.body;
+                if (!tenantId) {
+                    res.status(400).json({ error: 'tenantId es requerido' });
+                    return;
+                }
+                // Validate tenant exists
+                const tenant = await TenantModel_1.TenantModel.findById(tenantId);
+                if (!tenant) {
+                    res.status(404).json({ error: 'Centro no encontrado' });
+                    return;
+                }
+                // Get or create preferences
+                let preferences = await UserPreferencesModel_1.UserPreferencesModel.findOne({ userId: new mongoose_1.Types.ObjectId(authUser.id) });
+                if (!preferences) {
+                    preferences = await UserPreferencesModel_1.UserPreferencesModel.create({
+                        userId: new mongoose_1.Types.ObjectId(authUser.id),
+                        favoriteProfessors: [],
+                        favoriteTenants: [],
+                    });
+                }
+                // Add tenant if not already in favorites
+                const tenantObjectId = new mongoose_1.Types.ObjectId(tenantId);
+                if (!preferences.favoriteTenants.some((id) => id.equals(tenantObjectId))) {
+                    preferences.favoriteTenants.push(tenantObjectId);
+                    await preferences.save();
+                }
+                res.json({ message: 'Centro agregado a favoritos', tenantId });
+            }
+            catch (error) {
+                console.error('Error adding favorite tenant:', error);
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
+        /**
+         * Remove tenant from favorites
+         * DELETE /api/student-dashboard/preferences/favorite-tenant/:tenantId
+         */
+        this.removeFavoriteTenant = async (req, res) => {
+            try {
+                const authUser = req.user;
+                if (!authUser) {
+                    res.status(401).json({ error: 'No autenticado' });
+                    return;
+                }
+                const { tenantId } = req.params;
+                if (!tenantId) {
+                    res.status(400).json({ error: 'tenantId es requerido' });
+                    return;
+                }
+                const preferences = await UserPreferencesModel_1.UserPreferencesModel.findOne({ userId: new mongoose_1.Types.ObjectId(authUser.id) });
+                if (!preferences) {
+                    res.status(404).json({ error: 'Preferencias no encontradas' });
+                    return;
+                }
+                const tenantObjectId = new mongoose_1.Types.ObjectId(tenantId);
+                preferences.favoriteTenants = preferences.favoriteTenants.filter((id) => !id.equals(tenantObjectId));
+                await preferences.save();
+                res.json({ message: 'Centro eliminado de favoritos', tenantId });
+            }
+            catch (error) {
+                console.error('Error removing favorite tenant:', error);
                 res.status(500).json({ error: 'Error interno del servidor' });
             }
         };

@@ -5,6 +5,7 @@ import '../../../../core/providers/tenant_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/services/tenant_service.dart' as tenant_domain;
 import '../../domain/models/tenant_model.dart';
+import '../../../preferences/presentation/providers/preferences_provider.dart';
 
 /// Screen for selecting a tenant (center)
 ///
@@ -12,6 +13,7 @@ import '../../domain/models/tenant_model.dart';
 /// - View list of available tenants
 /// - Search by code/slug
 /// - Select a tenant to set as active
+/// - Mark tenants as favorites
 class SelectTenantScreen extends ConsumerStatefulWidget {
   const SelectTenantScreen({super.key});
 
@@ -120,6 +122,51 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
     }
   }
 
+<<<<<<< HEAD
+=======
+  Future<void> _toggleFavoriteTenant(TenantModel tenant) async {
+    try {
+      final isFavorite = ref.read(preferencesNotifierProvider).when(
+            data: (preferences) =>
+                preferences.favoriteTenants.any((t) => t.id == tenant.id),
+            loading: () => false,
+            error: (_, __) => false,
+          );
+
+      if (isFavorite) {
+        await ref.read(preferencesNotifierProvider.notifier).removeFavoriteTenant(tenant.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Centro eliminado de favoritos'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        await ref.read(preferencesNotifierProvider.notifier).addFavoriteTenant(tenant.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Centro agregado a favoritos'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+>>>>>>> origin/main
   Future<void> _searchByCode(String code) async {
     if (code.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -166,6 +213,10 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
   @override
   Widget build(BuildContext context) {
     final currentTenantId = ref.watch(currentTenantIdProvider);
+<<<<<<< HEAD
+=======
+    final favoriteTenants = ref.watch(favoriteTenantsProvider);
+>>>>>>> origin/main
 
     return Scaffold(
       appBar: AppBar(
@@ -301,6 +352,10 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
                             itemBuilder: (context, index) {
                               final tenant = _filteredTenants[index];
                               final isSelected = currentTenantId == tenant.id;
+<<<<<<< HEAD
+=======
+                              final isFavorite = favoriteTenants.any((t) => t.id == tenant.id);
+>>>>>>> origin/main
 
                               return Card(
                                 margin: const EdgeInsets.only(bottom: 12),
@@ -355,10 +410,40 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
                                         ),
                                     ],
                                   ),
+<<<<<<< HEAD
                                   trailing: isSelected
                                       ? const Icon(Icons.check_circle,
                                           color: Colors.green)
                                       : const Icon(Icons.chevron_right),
+=======
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Favorite button
+                                      IconButton(
+                                        icon: Icon(
+                                          isFavorite
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          color: isFavorite
+                                              ? Colors.red
+                                              : Colors.grey,
+                                          size: 24,
+                                        ),
+                                        onPressed: () => _toggleFavoriteTenant(tenant),
+                                        tooltip: isFavorite
+                                            ? 'Eliminar de favoritos'
+                                            : 'Agregar a favoritos',
+                                      ),
+                                      // Selection indicator
+                                      if (isSelected)
+                                        const Icon(Icons.check_circle,
+                                            color: Colors.green)
+                                      else
+                                        const Icon(Icons.chevron_right),
+                                    ],
+                                  ),
+>>>>>>> origin/main
                                   onTap: () => _selectTenant(tenant),
                                 ),
                               );

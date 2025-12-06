@@ -61,12 +61,23 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
     state = const AsyncValue.loading();
     try {
       final service = ref.read(tenantServiceProvider);
+      
+      // Ensure service is initialized by calling loadTenant which initializes _prefs if needed
+      // loadTenant() already handles _prefs ??= await SharedPreferences.getInstance()
+      
       final tenantId = await service.loadTenant();
       state = AsyncValue.data(tenantId);
-      // Update the state provider as well
-      ref.read(currentTenantIdProvider.notifier).update(tenantId);
+      // Update the state provider as well - ensure it's updated
+      if (tenantId != null && tenantId.isNotEmpty) {
+        ref.read(currentTenantIdProvider.notifier).update(tenantId);
+        // Also refresh to ensure consistency
+        ref.read(currentTenantIdProvider.notifier).refresh();
+      } else {
+        ref.read(currentTenantIdProvider.notifier).update(null);
+      }
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
+      ref.read(currentTenantIdProvider.notifier).update(null);
     }
   }
 

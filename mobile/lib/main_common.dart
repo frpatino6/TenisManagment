@@ -23,8 +23,12 @@ class _TennisManagementAppState extends ConsumerState<TennisManagementApp> {
   void initState() {
     super.initState();
     // Initialize tenant service and load saved tenant
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(tenantNotifierProvider.notifier).loadTenant();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // First initialize the service
+      final service = ref.read(tenantServiceProvider);
+      await service.initialize();
+      // Then load tenant through notifier
+      await ref.read(tenantNotifierProvider.notifier).loadTenant();
     });
   }
 

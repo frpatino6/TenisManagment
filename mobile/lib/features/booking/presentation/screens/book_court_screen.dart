@@ -45,6 +45,12 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       );
     }
 
+    // Check if tenant state has error (e.g., tenant was cleared)
+    if (tenantState.hasError) {
+      // If error, treat as no tenant
+      return _buildNoTenantScreen(context);
+    }
+
     // Validate tenant first
     if (!hasTenant) {
       return Scaffold(

@@ -8,6 +8,7 @@ import '../../domain/models/professor_model.dart';
 import '../../domain/models/available_schedule_model.dart';
 import '../../domain/models/service_type.dart';
 import '../providers/booking_provider.dart';
+import '../../../preferences/presentation/providers/preferences_provider.dart';
 
 class BookClassScreen extends ConsumerStatefulWidget {
   const BookClassScreen({super.key});
@@ -197,6 +198,58 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Consumer(
+                                builder: (context, ref, _) {
+                                  final isFavorite = ref.watch(preferencesNotifierProvider).when(
+                                        data: (preferences) =>
+                                            preferences.favoriteProfessors.any((p) => p.id == professor.id),
+                                        loading: () => false,
+                                        error: (_, __) => false,
+                                      );
+                                  return IconButton(
+                                    icon: Icon(
+                                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                                      color: isFavorite ? colorScheme.error : colorScheme.onSurfaceVariant,
+                                      size: 24,
+                                    ),
+                                    onPressed: () async {
+                                      try {
+                                        await ref
+                                            .read(preferencesNotifierProvider.notifier)
+                                            .toggleFavoriteProfessor(professor.id);
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                isFavorite
+                                                    ? 'Profesor eliminado de favoritos'
+                                                    : 'Profesor agregado a favoritos',
+                                              ),
+                                              duration: const Duration(seconds: 2),
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Error: ${e.toString()}'),
+                                              backgroundColor: colorScheme.error,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                           Text(
                             'Desde \$${professor.pricing.courtRental.toStringAsFixed(0)}',
                             style: GoogleFonts.inter(

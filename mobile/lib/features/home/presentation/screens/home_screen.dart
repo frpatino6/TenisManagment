@@ -8,6 +8,9 @@ import '../../../../core/widgets/version_widget.dart';
 import '../widgets/user_profile_card.dart';
 import '../widgets/recent_activity_list.dart';
 import '../widgets/quick_actions_grid.dart';
+import '../widgets/favorite_professor_card.dart';
+import '../widgets/favorite_tenant_card.dart';
+import '../../../preferences/presentation/providers/preferences_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -121,6 +124,16 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
                 const PopupMenuItem(
+                  value: 'change-center',
+                  child: Row(
+                    children: [
+                      Icon(Icons.business),
+                      Gap(12),
+                      Text('Cambiar Centro'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
                   value: 'theme',
                   child: Row(
                     children: [
@@ -156,6 +169,14 @@ class HomeScreen extends ConsumerWidget {
                 UserProfileCard(user: user)
                     .animate()
                     .fadeIn(duration: 300.ms, delay: 100.ms)
+                    .slideY(begin: 0.1, end: 0),
+
+                const Gap(24),
+
+                // Favorites section
+                _buildFavoritesSection(context, ref)
+                    .animate()
+                    .fadeIn(duration: 300.ms, delay: 150.ms)
                     .slideY(begin: 0.1, end: 0),
 
                 const Gap(24),
@@ -218,6 +239,9 @@ class HomeScreen extends ConsumerWidget {
     switch (value) {
       case 'profile':
         break;
+      case 'change-center':
+        context.push('/select-tenant');
+        break;
       case 'theme':
         context.push('/theme-settings');
         break;
@@ -260,5 +284,34 @@ class HomeScreen extends ConsumerWidget {
         }
       }
     }
+  }
+
+  Widget _buildFavoritesSection(BuildContext context, WidgetRef ref) {
+    final favoriteProfessors = ref.watch(favoriteProfessorsProvider);
+    final favoriteTenants = ref.watch(favoriteTenantsProvider);
+
+    // If no favorites, don't show section
+    if (favoriteProfessors.isEmpty && favoriteTenants.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Favoritos',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const Gap(16),
+        // Favorite Professor
+        if (favoriteProfessors.isNotEmpty)
+          FavoriteProfessorCard(professor: favoriteProfessors.first),
+        // Favorite Tenant
+        if (favoriteTenants.isNotEmpty)
+          FavoriteTenantCard(tenant: favoriteTenants.first),
+      ],
+    );
   }
 }

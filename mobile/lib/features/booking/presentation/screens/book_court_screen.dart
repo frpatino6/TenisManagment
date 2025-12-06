@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../domain/models/court_model.dart';
 import '../providers/booking_provider.dart';
 import '../../../../core/providers/tenant_provider.dart';
+import '../../../tenant/domain/services/tenant_service.dart' as tenant_domain;
+import '../../../tenant/domain/models/tenant_model.dart';
 
 class BookCourtScreen extends ConsumerStatefulWidget {
   const BookCourtScreen({super.key});
@@ -279,6 +281,14 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                             ),
                           ],
                         ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.swap_horiz,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        tooltip: 'Cambiar centro',
+                        onPressed: () => _showChangeTenantDialog(context),
                       ),
                     ],
                   ),
@@ -750,6 +760,142 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         setState(() {
           _isBooking = false;
         });
+      }
+    }
+  }
+
+  /// Show dialog to change tenant without modifying favorites
+  Future<void> _showChangeTenantDialog(BuildContext context) async {
+    try {
+      // Load available tenants
+      final service = ref.read(tenant_domain.tenantDomainServiceProvider);
+      final tenants = await service.getAvailableTenants();
+      
+      if (tenants.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No hay centros disponibles'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      final currentTenantId = ref.read(currentTenantIdProvider);
+
+      if (!mounted) return;
+      
+      // Show dialog with tenant list
+      final selectedTenant = await showDialog<TenantModel>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(
+            'Cambiar Centro',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: tenants.length,
+              itemBuilder: (context, index) {
+                final tenant = tenants[index];
+                final isSelected = tenant.id == currentTenantId;
+                
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.surfaceVariant,
+                    child: tenant.logo != null
+                        ? ClipOval(
+                            child: Image.network(
+                              tenant.logo!,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.business,
+                                  color: isSelected
+                                      ? Theme.of(context).colorScheme.onPrimary
+                                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                                );
+                              },
+                            ),
+                          )
+                        : Icon(
+                            Icons.business,
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.onPrimary
+                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                  ),
+                  title: Text(
+                    tenant.name,
+                    style: GoogleFonts.inter(
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                  ),
+                  subtitle: tenant.slug.isNotEmpty
+                      ? Text(
+                          tenant.slug,
+                          style: GoogleFonts.inter(fontSize: 12),
+                        )
+                      : null,
+                  trailing: isSelected
+                      ? Icon(
+                          Icons.check_circle,
+                          color: Theme.of(context).colorScheme.primary,
+                        )
+                      : null,
+                  onTap: () {
+                    Navigator.of(context).pop(tenant);
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+          ],
+        ),
+      );
+
+      if (selectedTenant != null && selectedTenant.id != currentTenantId) {
+        // Change tenant without modifying favorites
+        await ref.read(tenantNotifierProvider.notifier).setTenant(selectedTenant.id);
+        
+        // Invalidate providers to reload data with new tenant
+        ref.invalidate(courtsProvider);
+        ref.invalidate(currentTenantProvider);
+        
+        // Reset selection
+        setState(() {
+          _selectedCourt = null;
+          _selectedDate = null;
+          _selectedTime = null;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Centro cambiado a ${selectedTenant.name}'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cambiar centro: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }

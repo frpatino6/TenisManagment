@@ -45,74 +45,126 @@ class FavoriteTenantCard extends ConsumerWidget {
             ),
           ),
           padding: const EdgeInsets.all(20),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (tenant.logo != null && tenant.logo!.isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    tenant.logo!,
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildDefaultIcon(colorScheme);
-                    },
-                  ),
-                )
-              else
-                _buildDefaultIcon(colorScheme),
-              const Gap(16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              Row(
+                children: [
+                  if (tenant.logo != null && tenant.logo!.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        tenant.logo!,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildDefaultIcon(colorScheme);
+                        },
+                      ),
+                    )
+                  else
+                    _buildDefaultIcon(colorScheme),
+                  const Gap(16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.favorite,
-                          color: colorScheme.error,
-                          size: 18,
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.favorite,
+                              color: colorScheme.error,
+                              size: 18,
+                            ),
+                            const Gap(4),
+                            Text(
+                              'Centro Favorito',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: colorScheme.onSecondaryContainer,
+                              ),
+                            ),
+                          ],
                         ),
                         const Gap(4),
                         Text(
-                          'Centro Favorito',
+                          tenant.name,
+                          style: GoogleFonts.inter(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: colorScheme.onSecondaryContainer,
+                          ),
+                        ),
+                        Text(
+                          tenant.slug,
                           style: GoogleFonts.inter(
                             fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: colorScheme.onSecondaryContainer,
+                            color: colorScheme.onSecondaryContainer.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
                     ),
-                    const Gap(4),
-                    Text(
-                      tenant.name,
-                      style: GoogleFonts.inter(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: colorScheme.onSecondaryContainer,
-                      ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.arrow_forward_ios,
+                      color: colorScheme.onSecondaryContainer,
+                      size: 20,
                     ),
-                    Text(
-                      tenant.slug,
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: colorScheme.onSecondaryContainer.withValues(alpha: 0.7),
-                      ),
-                    ),
-                  ],
-                ),
+                    onPressed: () {
+                      context.push('/select-tenant');
+                    },
+                  ),
+                ],
               ),
-              IconButton(
-                icon: Icon(
-                  Icons.arrow_forward_ios,
-                  color: colorScheme.onSecondaryContainer,
-                  size: 20,
-                ),
-                onPressed: () {
-                  context.push('/select-tenant');
-                },
+              const Gap(16),
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        context.push('/book-class');
+                      },
+                      icon: const Icon(Icons.people, size: 18),
+                      label: Text(
+                        'Ver profesores',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: colorScheme.secondary,
+                        side: BorderSide(color: colorScheme.secondary),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Gap(12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        context.push('/book-court');
+                      },
+                      icon: const Icon(Icons.sports_tennis, size: 18),
+                      label: Text(
+                        'Reservar cancha',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.secondary,
+                        foregroundColor: colorScheme.onSecondary,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

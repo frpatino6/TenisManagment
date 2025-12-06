@@ -290,19 +290,29 @@ class HomeScreen extends ConsumerWidget {
     final favoriteProfessors = ref.watch(favoriteProfessorsProvider);
     final favoriteTenants = ref.watch(favoriteTenantsProvider);
 
-    // If no favorites, don't show section
+    // Show empty state if no favorites
     if (favoriteProfessors.isEmpty && favoriteTenants.isEmpty) {
-      return const SizedBox.shrink();
+      return _buildEmptyFavoritesState(context, ref);
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Favoritos',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+        Row(
+          children: [
+            Icon(
+              Icons.favorite,
+              color: Theme.of(context).colorScheme.error,
+              size: 24,
+            ),
+            const Gap(8),
+            Text(
+              'Favoritos',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ],
         ),
         const Gap(16),
         // Favorite Professor
@@ -312,6 +322,76 @@ class HomeScreen extends ConsumerWidget {
         if (favoriteTenants.isNotEmpty)
           FavoriteTenantCard(tenant: favoriteTenants.first),
       ],
+    );
+  }
+
+  Widget _buildEmptyFavoritesState(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.favorite_border,
+            size: 48,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          const Gap(16),
+          Text(
+            '¡Bienvenido!',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const Gap(8),
+          Text(
+            'Agrega profesores y centros favoritos para acceder rápidamente a tus reservas',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const Gap(24),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    context.push('/select-tenant');
+                  },
+                  icon: const Icon(Icons.business),
+                  label: const Text('Explorar centros'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const Gap(12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    context.push('/book-class');
+                  },
+                  icon: const Icon(Icons.search),
+                  label: const Text('Buscar profesores'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

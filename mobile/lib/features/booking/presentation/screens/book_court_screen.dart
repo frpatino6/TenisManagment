@@ -876,15 +876,12 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           });
         }
 
-        // Invalidate providers to reload data with new tenant
-        // The widget will automatically rebuild because it's watching these providers
-        // Using Future.microtask to ensure the tenant change is processed first
-        Future.microtask(() {
-          ref.invalidate(courtsProvider);
-          ref.invalidate(currentTenantProvider);
-        });
-
+        // Invalidate courts provider to reload data with new tenant
+        // The widget will automatically rebuild because it's watching courtsProvider
+        // currentTenantProvider will update automatically when currentTenantIdProvider changes
         if (mounted) {
+          ref.invalidate(courtsProvider);
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Centro cambiado a ${selectedTenant.name}'),

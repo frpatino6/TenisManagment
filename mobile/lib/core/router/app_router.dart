@@ -29,12 +29,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
   // Use select to only rebuild when hasTenant actually changes value, not state
   final hasTenant = ref.watch(hasTenantProvider);
-  // Only read tenantState when needed in redirect, don't watch it to prevent rebuilds
-  final tenantState = ref.read(tenantNotifierProvider);
+  // Capture ref to use inside redirect callback
+  // Don't watch tenantState here to prevent router rebuilds when tenant changes
 
   return GoRouter(
     initialLocation: '/login',
     redirect: (context, state) {
+      // Read tenantState fresh each time redirect is called
+      // This prevents router from rebuilding when tenant changes
+      final tenantState = ref.read(tenantNotifierProvider);
       // CRITICAL: NEVER redirect from /book-court, check this FIRST
       // Check multiple ways to detect if we're on /book-court
       final uriPath = state.uri.path;

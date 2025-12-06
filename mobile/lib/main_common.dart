@@ -34,9 +34,7 @@ class _TennisManagementAppState extends ConsumerState<TennisManagementApp> {
 
   @override
   Widget build(BuildContext context) {
-    // Use ref.read instead of ref.watch to prevent router recreation
-    // The router will handle redirects internally via the redirect callback
-    final router = ref.read(appRouterProvider);
+    final router = ref.watch(appRouterProvider);
     final themeMode = ref.watch(
       themeProvider.select((theme) => theme.themeMode),
     );

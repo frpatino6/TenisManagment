@@ -28,7 +28,22 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   @override
   Widget build(BuildContext context) {
     final hasTenant = ref.watch(hasTenantProvider);
+    final tenantState = ref.watch(tenantNotifierProvider);
     final courtsAsync = ref.watch(courtsProvider);
+
+    // Wait for tenant state to load before showing error
+    if (tenantState.isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Reservar Cancha',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
+          centerTitle: true,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     // Validate tenant first
     if (!hasTenant) {

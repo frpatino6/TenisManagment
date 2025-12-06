@@ -43,20 +43,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final uriPath = state.uri.path;
       final matchedPath = state.matchedLocation;
       final fullPath = state.fullPath;
-      final location = state.matchedLocation ?? state.uri.path;
 
       // If we're on /book-court in ANY way, NEVER redirect - return null immediately
       // This check must be FIRST before any other logic
-      final isOnBookCourt =
-          uriPath == '/book-court' ||
-          matchedPath == '/book-court' ||
-          fullPath == '/book-court' ||
-          location == '/book-court' ||
+      if (uriPath == '/book-court' ||
           uriPath.startsWith('/book-court') ||
-          (matchedPath != null && matchedPath.startsWith('/book-court')) ||
-          (fullPath != null && fullPath.startsWith('/book-court'));
-
-      if (isOnBookCourt) {
+          (matchedPath != null && (matchedPath == '/book-court' || matchedPath.startsWith('/book-court'))) ||
+          (fullPath != null && (fullPath == '/book-court' || fullPath.startsWith('/book-court')))) {
         return null; // Stay on book-court no matter what - DO NOT REDIRECT
       }
 

@@ -6,7 +6,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../domain/models/court_model.dart';
 import '../providers/booking_provider.dart';
 import '../../../../core/providers/tenant_provider.dart';
-import '../../../../core/router/app_router.dart';
 import '../../../tenant/domain/services/tenant_service.dart' as tenant_domain;
 import '../../../tenant/domain/models/tenant_model.dart';
 
@@ -239,7 +238,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                 margin: const EdgeInsets.only(bottom: 16),
                 color: Theme.of(
                   context,
-                ).colorScheme.primaryContainer.withOpacity(0.3),
+                ).colorScheme.primaryContainer.withValues(alpha: 0.3),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
@@ -287,7 +286,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               );
             },
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, ___) => const SizedBox.shrink(),
           ),
 
           // Court selection
@@ -296,7 +295,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600),
           ),
           const Gap(12),
-          ...courts.map((court) => _buildCourtCard(context, court)).toList(),
+          ...courts.map((court) => _buildCourtCard(context, court)),
 
           const Gap(24),
 
@@ -584,7 +583,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     }
 
     return Card(
-      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+      color: Theme.of(
+        context,
+      ).colorScheme.primaryContainer.withValues(alpha: 0.3),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -763,14 +764,13 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       final tenants = await service.getAvailableTenants();
 
       if (tenants.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No hay centros disponibles'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No hay centros disponibles'),
+            backgroundColor: Colors.orange,
+          ),
+        );
         return;
       }
 
@@ -799,7 +799,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                   leading: CircleAvatar(
                     backgroundColor: isSelected
                         ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.surfaceVariant,
+                        : Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: tenant.logo != null
                         ? ClipOval(
                             child: Image.network(
@@ -880,26 +880,24 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         // Invalidate courts provider to reload data with new tenant
         // The widget will automatically rebuild because it's watching courtsProvider
         // currentTenantProvider will update automatically when currentTenantIdProvider changes
-        if (mounted) {
-          ref.invalidate(courtsProvider);
+        if (!mounted) return;
+        ref.invalidate(courtsProvider);
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Centro cambiado a ${selectedTenant.name}'),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al cambiar centro: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            content: Text('Centro cambiado a ${selectedTenant.name}'),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cambiar centro: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 }

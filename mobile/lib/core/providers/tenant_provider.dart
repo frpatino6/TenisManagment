@@ -10,12 +10,27 @@ final tenantServiceProvider = Provider<TenantService>((ref) {
 class CurrentTenantIdNotifier extends Notifier<String?> {
   @override
   String? build() {
+    // Initialize by reading from service
     final service = ref.read(tenantServiceProvider);
-    return service.currentTenantId;
+    final tenantId = service.currentTenantId;
+    
+    // If service has tenant but state is null, update state
+    if (tenantId != null && tenantId.isNotEmpty && state != tenantId) {
+      // Use Future.microtask to avoid modifying state during build
+      Future.microtask(() => state = tenantId);
+    }
+    
+    return tenantId;
   }
 
   void update(String? tenantId) {
     state = tenantId;
+  }
+  
+  /// Refresh from service
+  void refresh() {
+    final service = ref.read(tenantServiceProvider);
+    state = service.currentTenantId;
   }
 }
 
@@ -63,13 +78,16 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
       final success = await service.setTenant(tenantId);
       if (success) {
         state = AsyncValue.data(tenantId);
-        // Update the state provider as well
+        // Update the state provider as well - ensure it's updated
         ref.read(currentTenantIdProvider.notifier).update(tenantId);
+        // Also refresh to ensure consistency
+        ref.read(currentTenantIdProvider.notifier).refresh();
       } else {
         throw Exception('Failed to save tenant ID');
       }
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
+      ref.read(currentTenantIdProvider.notifier).update(null);
     }
   }
 

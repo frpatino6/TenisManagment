@@ -12,7 +12,10 @@ router.use(firebaseAuthMiddleware);
 router.get('/activities', controller.getRecentActivities);
 router.get('/me', controller.getStudentInfo);
 router.get('/professors', controller.getProfessors);
-router.get('/available-schedules', controller.getAvailableSchedules);
+router.get('/available-schedules', controller.getAvailableSchedules); // Legacy endpoint
+router.get('/professors/:professorId/schedules', controller.getProfessorSchedules); // TEN-90: Horarios agrupados por centro
+router.get('/tenants/:tenantId/schedules', controller.getTenantSchedules); // TEN-90: Horarios de un centro
+router.get('/all-available-schedules', controller.getAllAvailableSchedules); // TEN-90: Todos los horarios disponibles agrupados
 router.get('/bookings', controller.getBookings);
 router.post('/book-lesson', controller.bookLesson);
 router.post('/book-court', controller.bookCourt);

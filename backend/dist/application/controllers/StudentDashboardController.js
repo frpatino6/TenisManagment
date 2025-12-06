@@ -43,6 +43,7 @@ const ScheduleModel_1 = require("../../infrastructure/database/models/ScheduleMo
 const ProfessorModel_1 = require("../../infrastructure/database/models/ProfessorModel");
 const SystemConfigModel_1 = require("../../infrastructure/database/models/SystemConfigModel");
 const CourtModel_1 = require("../../infrastructure/database/models/CourtModel");
+const TenantModel_1 = require("../../infrastructure/database/models/TenantModel");
 const TenantService_1 = require("../services/TenantService");
 const mongoose_1 = require("mongoose");
 // Default base pricing
@@ -255,6 +256,7 @@ class StudentDashboardController {
         };
         /**
          * Get available schedules for a specific professor
+         * TEN-90: Actualizado para mantener compatibilidad
          */
         this.getAvailableSchedules = async (req, res) => {
             console.log('=== StudentDashboardController.getAvailableSchedules called ===');
@@ -273,11 +275,14 @@ class StudentDashboardController {
                         { isBlocked: false }
                     ]
                 })
+                    .populate('tenantId', 'name slug config')
                     .sort({ startTime: 1 })
                     .limit(100);
                 const schedulesData = schedules.map(schedule => ({
                     id: schedule._id.toString(),
                     professorId: schedule.professorId.toString(),
+                    tenantId: schedule.tenantId ? schedule.tenantId._id.toString() : null,
+                    tenantName: schedule.tenantId ? schedule.tenantId.name : null,
                     startTime: schedule.startTime,
                     endTime: schedule.endTime,
                     type: 'individual_class', // Default type since we removed it from schedule
@@ -289,6 +294,214 @@ class StudentDashboardController {
             }
             catch (error) {
                 console.error('Error getting available schedules:', error);
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
+        /**
+         * Get professor schedules grouped by tenant (center)
+         * TEN-90: MT-BACK-008
+         * GET /api/student-dashboard/professors/:professorId/schedules
+         */
+        this.getProfessorSchedules = async (req, res) => {
+            console.log('=== StudentDashboardController.getProfessorSchedules called ===');
+            try {
+                const { professorId } = req.params;
+                if (!professorId) {
+                    return res.status(400).json({ error: 'professorId es requerido' });
+                }
+                // Verify professor exists
+                const professor = await ProfessorModel_1.ProfessorModel.findById(professorId);
+                if (!professor) {
+                    return res.status(404).json({ error: 'Profesor no encontrado' });
+                }
+                // Get all available schedules for the professor
+                const schedules = await ScheduleModel_1.ScheduleModel.find({
+                    professorId: new mongoose_1.Types.ObjectId(professorId),
+                    startTime: { $gte: new Date() }, // Only future schedules
+                    isAvailable: true, // Only available slots
+                    $or: [
+                        { isBlocked: { $exists: false } },
+                        { isBlocked: false }
+                    ]
+                })
+                    .populate('tenantId', 'name slug config')
+                    .sort({ startTime: 1 })
+                    .limit(200);
+                // Group schedules by tenantId
+                const groupedByTenant = {};
+                for (const schedule of schedules) {
+                    const tenantId = schedule.tenantId ? schedule.tenantId._id.toString() : 'unknown';
+                    const tenant = schedule.tenantId;
+                    if (!groupedByTenant[tenantId]) {
+                        groupedByTenant[tenantId] = {
+                            tenantId,
+                            tenantName: tenant?.name || 'Centro desconocido',
+                            tenantSlug: tenant?.slug || '',
+                            tenantLogo: tenant?.config?.logo || null,
+                            schedules: [],
+                        };
+                    }
+                    groupedByTenant[tenantId].schedules.push({
+                        id: schedule._id.toString(),
+                        date: schedule.date,
+                        startTime: schedule.startTime,
+                        endTime: schedule.endTime,
+                        status: schedule.status || 'pending',
+                        notes: schedule.notes,
+                    });
+                }
+                const result = {
+                    professorId: professor._id.toString(),
+                    professorName: professor.name,
+                    schedules: Object.values(groupedByTenant),
+                };
+                console.log(`Found ${schedules.length} schedules for professor ${professorId}, grouped into ${Object.keys(groupedByTenant).length} tenants`);
+                res.json(result);
+            }
+            catch (error) {
+                console.error('Error getting professor schedules:', error);
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
+        /**
+         * Get schedules for a specific tenant, grouped by professor
+         * TEN-90: MT-BACK-008
+         * GET /api/student-dashboard/tenants/:tenantId/schedules
+         */
+        this.getTenantSchedules = async (req, res) => {
+            console.log('=== StudentDashboardController.getTenantSchedules called ===');
+            try {
+                const { tenantId } = req.params;
+                if (!tenantId) {
+                    return res.status(400).json({ error: 'tenantId es requerido' });
+                }
+                // Verify tenant exists
+                const tenant = await TenantModel_1.TenantModel.findById(tenantId);
+                if (!tenant) {
+                    return res.status(404).json({ error: 'Centro no encontrado' });
+                }
+                if (!tenant.isActive) {
+                    return res.status(400).json({ error: 'El centro no está activo' });
+                }
+                // Get all available schedules for this tenant
+                const schedules = await ScheduleModel_1.ScheduleModel.find({
+                    tenantId: new mongoose_1.Types.ObjectId(tenantId),
+                    startTime: { $gte: new Date() }, // Only future schedules
+                    isAvailable: true, // Only available slots
+                    $or: [
+                        { isBlocked: { $exists: false } },
+                        { isBlocked: false }
+                    ]
+                })
+                    .populate('professorId', 'name email specialties pricing hourlyRate')
+                    .sort({ startTime: 1 })
+                    .limit(200);
+                // Group schedules by professorId
+                const groupedByProfessor = {};
+                for (const schedule of schedules) {
+                    const professorId = schedule.professorId ? schedule.professorId.toString() : 'unknown';
+                    const professor = schedule.professorId;
+                    if (!groupedByProfessor[professorId]) {
+                        groupedByProfessor[professorId] = {
+                            professorId,
+                            professorName: professor?.name || 'Profesor desconocido',
+                            professorEmail: professor?.email || '',
+                            specialties: professor?.specialties || [],
+                            schedules: [],
+                        };
+                    }
+                    groupedByProfessor[professorId].schedules.push({
+                        id: schedule._id.toString(),
+                        date: schedule.date,
+                        startTime: schedule.startTime,
+                        endTime: schedule.endTime,
+                        status: schedule.status || 'pending',
+                        notes: schedule.notes,
+                    });
+                }
+                const result = {
+                    tenantId: tenant._id.toString(),
+                    tenantName: tenant.name,
+                    tenantSlug: tenant.slug,
+                    tenantLogo: tenant.config?.logo || null,
+                    schedules: Object.values(groupedByProfessor),
+                };
+                console.log(`Found ${schedules.length} schedules for tenant ${tenantId}, grouped into ${Object.keys(groupedByProfessor).length} professors`);
+                res.json(result);
+            }
+            catch (error) {
+                console.error('Error getting tenant schedules:', error);
+                res.status(500).json({ error: 'Error interno del servidor' });
+            }
+        };
+        /**
+         * Get all available schedules grouped by tenant and professor
+         * TEN-90: MT-BACK-008
+         * GET /api/student-dashboard/available-schedules
+         */
+        this.getAllAvailableSchedules = async (req, res) => {
+            console.log('=== StudentDashboardController.getAllAvailableSchedules called ===');
+            try {
+                // Get all available schedules across all tenants
+                const schedules = await ScheduleModel_1.ScheduleModel.find({
+                    startTime: { $gte: new Date() }, // Only future schedules
+                    isAvailable: true, // Only available slots
+                    $or: [
+                        { isBlocked: { $exists: false } },
+                        { isBlocked: false }
+                    ]
+                })
+                    .populate('tenantId', 'name slug config')
+                    .populate('professorId', 'name email specialties')
+                    .sort({ startTime: 1 })
+                    .limit(500);
+                // Group by tenant first, then by professor
+                const groupedByTenant = {};
+                for (const schedule of schedules) {
+                    const tenantId = schedule.tenantId ? schedule.tenantId._id.toString() : 'unknown';
+                    const tenant = schedule.tenantId;
+                    const professorId = schedule.professorId ? schedule.professorId.toString() : 'unknown';
+                    const professor = schedule.professorId;
+                    if (!groupedByTenant[tenantId]) {
+                        groupedByTenant[tenantId] = {
+                            tenantId,
+                            tenantName: tenant?.name || 'Centro desconocido',
+                            tenantSlug: tenant?.slug || '',
+                            tenantLogo: tenant?.config?.logo || null,
+                            professors: {},
+                        };
+                    }
+                    if (!groupedByTenant[tenantId].professors[professorId]) {
+                        groupedByTenant[tenantId].professors[professorId] = {
+                            professorId,
+                            professorName: professor?.name || 'Profesor desconocido',
+                            professorEmail: professor?.email || '',
+                            specialties: professor?.specialties || [],
+                            schedules: [],
+                        };
+                    }
+                    groupedByTenant[tenantId].professors[professorId].schedules.push({
+                        id: schedule._id.toString(),
+                        date: schedule.date,
+                        startTime: schedule.startTime,
+                        endTime: schedule.endTime,
+                        status: schedule.status || 'pending',
+                        notes: schedule.notes,
+                    });
+                }
+                // Transform professors object to array
+                const result = Object.values(groupedByTenant).map((tenantGroup) => ({
+                    tenantId: tenantGroup.tenantId,
+                    tenantName: tenantGroup.tenantName,
+                    tenantSlug: tenantGroup.tenantSlug,
+                    tenantLogo: tenantGroup.tenantLogo,
+                    professors: Object.values(tenantGroup.professors),
+                }));
+                console.log(`Found ${schedules.length} available schedules, grouped into ${result.length} tenants`);
+                res.json({ items: result });
+            }
+            catch (error) {
+                console.error('Error getting all available schedules:', error);
                 res.status(500).json({ error: 'Error interno del servidor' });
             }
         };

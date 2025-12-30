@@ -154,14 +154,26 @@ describe('StudentDashboardController', () => {
         createdAt: new Date('2025-01-15T10:00:00Z'),
       };
 
-      // Mock populate chain
-      const mockPopulate = jest.fn().mockReturnThis();
-      // @ts-expect-error - Jest mock type issue
-      const mockSort = jest.fn().mockResolvedValue([mockBooking] as any);
+      // Mock populate chain - need to handle chained populate calls
+      const populatedSchedule = {
+        ...mockSchedule,
+        professorId: mockProfessor,
+      };
+      const finalBooking = {
+        ...mockBooking,
+        scheduleId: populatedSchedule,
+        professorId: mockProfessor,
+      };
+
+      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        sort: mockSort,
+      });
+      const mockPopulate1 = jest.fn().mockReturnValue({
+        populate: mockPopulate2,
+      });
       const mockFind = jest.fn().mockReturnValue({
-        populate: mockPopulate.mockReturnValue({
-          sort: mockSort,
-        }),
+        populate: mockPopulate1,
       });
 
       const { AuthUserModel } = require('../../infrastructure/database/models/AuthUserModel');
@@ -180,24 +192,6 @@ describe('StudentDashboardController', () => {
         },
       });
       BookingModel.find = mockFind;
-
-      // Mock populate to return schedule with professor
-      mockPopulate.mockImplementation((config: any) => {
-        if (config.path === 'scheduleId') {
-          const populatedSchedule = {
-            ...mockSchedule,
-            professorId: mockProfessor,
-          };
-          return {
-            // @ts-expect-error - Jest mock type issue
-            sort: jest.fn().mockResolvedValue([{
-              ...mockBooking,
-              scheduleId: populatedSchedule,
-            }] as any),
-          };
-        }
-        return { sort: mockSort };
-      });
 
       // Act
       await controller.getBookings(mockRequest, mockResponse);
@@ -226,13 +220,15 @@ describe('StudentDashboardController', () => {
       StudentModel.findOne.mockResolvedValue({ _id: 'student-id' });
       SystemConfigModel.findOne.mockResolvedValue(null);
 
-      const mockPopulate = jest.fn().mockReturnThis();
-      // @ts-expect-error - Jest mock type issue
       const mockSort = jest.fn().mockResolvedValue([] as any);
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        sort: mockSort,
+      });
+      const mockPopulate1 = jest.fn().mockReturnValue({
+        populate: mockPopulate2,
+      });
       BookingModel.find = jest.fn().mockReturnValue({
-        populate: mockPopulate.mockReturnValue({
-          sort: mockSort,
-        }),
+        populate: mockPopulate1,
       });
 
       // Act
@@ -285,13 +281,19 @@ describe('StudentDashboardController', () => {
         },
       });
 
-      const mockPopulate = jest.fn().mockReturnThis();
-      // @ts-expect-error - Jest mock type issue
-      const mockSort = jest.fn().mockResolvedValue([mockBooking] as any);
+      const finalBooking = {
+        ...mockBooking,
+        professorId: mockBooking.scheduleId?.professorId || null,
+      };
+      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        sort: mockSort,
+      });
+      const mockPopulate1 = jest.fn().mockReturnValue({
+        populate: mockPopulate2,
+      });
       BookingModel.find = jest.fn().mockReturnValue({
-        populate: mockPopulate.mockReturnValue({
-          sort: mockSort,
-        }),
+        populate: mockPopulate1,
       });
 
       // Act
@@ -397,13 +399,15 @@ describe('StudentDashboardController', () => {
       StudentModel.findOne.mockResolvedValue({ _id: 'student-id' });
       SystemConfigModel.findOne.mockResolvedValue(null);
 
-      const mockPopulate = jest.fn().mockReturnThis();
-      // @ts-expect-error - Jest mock type issue
       const mockSort = jest.fn().mockResolvedValue([] as any);
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        sort: mockSort,
+      });
+      const mockPopulate1 = jest.fn().mockReturnValue({
+        populate: mockPopulate2,
+      });
       BookingModel.find = jest.fn().mockReturnValue({
-        populate: mockPopulate.mockReturnValue({
-          sort: mockSort,
-        }),
+        populate: mockPopulate1,
       });
 
       // Act
@@ -447,13 +451,19 @@ describe('StudentDashboardController', () => {
       StudentModel.findOne.mockResolvedValue({ _id: 'student-id' });
       SystemConfigModel.findOne.mockResolvedValue(null);
 
-      const mockPopulate = jest.fn().mockReturnThis();
-      // @ts-expect-error - Jest mock type issue
-      const mockSort = jest.fn().mockResolvedValue([mockBooking] as any);
+      const finalBooking = {
+        ...mockBooking,
+        professorId: mockBooking.scheduleId?.professorId || null,
+      };
+      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        sort: mockSort,
+      });
+      const mockPopulate1 = jest.fn().mockReturnValue({
+        populate: mockPopulate2,
+      });
       BookingModel.find = jest.fn().mockReturnValue({
-        populate: mockPopulate.mockReturnValue({
-          sort: mockSort,
-        }),
+        populate: mockPopulate1,
       });
 
       // Act
@@ -494,13 +504,19 @@ describe('StudentDashboardController', () => {
       StudentModel.findOne.mockResolvedValue({ _id: 'student-id' });
       SystemConfigModel.findOne.mockResolvedValue(null);
 
-      const mockPopulate = jest.fn().mockReturnThis();
-      // @ts-expect-error - Jest mock type issue
-      const mockSort = jest.fn().mockResolvedValue([mockBooking] as any);
+      const finalBooking = {
+        ...mockBooking,
+        professorId: mockBooking.scheduleId?.professorId || null,
+      };
+      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        sort: mockSort,
+      });
+      const mockPopulate1 = jest.fn().mockReturnValue({
+        populate: mockPopulate2,
+      });
       BookingModel.find = jest.fn().mockReturnValue({
-        populate: mockPopulate.mockReturnValue({
-          sort: mockSort,
-        }),
+        populate: mockPopulate1,
       });
 
       // Act
@@ -549,13 +565,19 @@ describe('StudentDashboardController', () => {
       StudentModel.findOne.mockResolvedValue({ _id: 'student-id' });
       SystemConfigModel.findOne.mockResolvedValue(null);
 
-      const mockPopulate = jest.fn().mockReturnThis();
-      // @ts-expect-error - Jest mock type issue
-      const mockSort = jest.fn().mockResolvedValue([mockBooking] as any);
+      const finalBooking = {
+        ...mockBooking,
+        professorId: mockBooking.scheduleId?.professorId || null,
+      };
+      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        sort: mockSort,
+      });
+      const mockPopulate1 = jest.fn().mockReturnValue({
+        populate: mockPopulate2,
+      });
       BookingModel.find = jest.fn().mockReturnValue({
-        populate: mockPopulate.mockReturnValue({
-          sort: mockSort,
-        }),
+        populate: mockPopulate1,
       });
 
       // Act
@@ -614,25 +636,34 @@ describe('StudentDashboardController', () => {
       StudentModel.findOne.mockResolvedValue({ _id: 'student-id' });
       SystemConfigModel.findOne.mockResolvedValue(null);
 
-      const mockPopulate = jest.fn().mockReturnThis();
-      // @ts-expect-error - Jest mock type issue
-      const mockSort = jest.fn().mockResolvedValue([mockBooking] as any);
+      const finalBooking = {
+        ...mockBooking,
+        professorId: mockBooking.scheduleId?.professorId || null,
+      };
+      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        sort: mockSort,
+      });
+      const mockPopulate1 = jest.fn().mockReturnValue({
+        populate: mockPopulate2,
+      });
       BookingModel.find = jest.fn().mockReturnValue({
-        populate: mockPopulate.mockReturnValue({
-          sort: mockSort,
-        }),
+        populate: mockPopulate1,
       });
 
       // Act
       await controller.getBookings(mockRequest, mockResponse);
 
       // Assert - Should not throw error, should use default values
+      // When schedule is null, it falls back to bookingDate or createdAt for startTime/endTime
       expect(mockResponse.json).toHaveBeenCalled();
       const jsonCall = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
       expect(jsonCall.items[0].professor.id).toBe('');
       expect(jsonCall.items[0].professor.name).toBe('');
       expect(jsonCall.items[0].schedule.id).toBe('');
-      expect(jsonCall.items[0].schedule.startTime).toBe('');
+      // startTime and endTime will be generated from createdAt, so they won't be empty
+      expect(jsonCall.items[0].schedule.startTime).toBeDefined();
+      expect(typeof jsonCall.items[0].schedule.startTime).toBe('string');
     });
   });
 

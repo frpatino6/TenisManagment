@@ -28,6 +28,80 @@ export class StudentDashboardController {
   constructor() {
     this.tenantService = new TenantService();
   }
+
+  /**
+   * Find an available court for a given time range
+   * Returns the first available court, or null if none available
+   */
+  private async findAvailableCourt(
+    tenantId: Types.ObjectId,
+    startTime: Date,
+    endTime: Date,
+  ): Promise<{ _id: Types.ObjectId; name: string } | null> {
+    // Get all active courts for this tenant
+    const courts = await CourtModel.find({
+      tenantId: tenantId,
+      isActive: true,
+    }).lean();
+
+    if (courts.length === 0) {
+      return null;
+    }
+
+    // Find all bookings that have a courtId assigned and might overlap with the requested time
+    // We need to check both court_rental (using bookingDate) and lessons (using scheduleId)
+    const bookingsWithCourt = await BookingModel.find({
+      tenantId: tenantId,
+      courtId: { $exists: true, $ne: null },
+      status: { $in: ['confirmed', 'pending'] },
+    })
+      .populate('scheduleId')
+      .lean();
+
+    // Create a set of occupied court IDs during this time
+    const occupiedCourtIds = new Set<string>();
+
+    bookingsWithCourt.forEach((booking) => {
+      if (!booking.courtId) return;
+
+      let bookingStart: Date;
+      let bookingEnd: Date;
+
+      if (booking.serviceType === 'court_rental' && booking.bookingDate) {
+        // Court rental: use bookingDate as start, assume 1 hour duration
+        bookingStart = new Date(booking.bookingDate);
+        bookingEnd = new Date(bookingStart);
+        bookingEnd.setUTCHours(bookingEnd.getUTCHours() + 1);
+      } else if (booking.scheduleId && (booking.scheduleId as any).startTime) {
+        // Lesson: use schedule times
+        const schedule = booking.scheduleId as any;
+        bookingStart = new Date(schedule.startTime);
+        bookingEnd = new Date(schedule.endTime);
+      } else {
+        // Can't determine time, skip
+        return;
+      }
+
+      // Check if time ranges overlap
+      const overlaps =
+        (startTime >= bookingStart && startTime < bookingEnd) ||
+        (endTime > bookingStart && endTime <= bookingEnd) ||
+        (startTime <= bookingStart && endTime >= bookingEnd);
+
+      if (overlaps) {
+        occupiedCourtIds.add(booking.courtId.toString());
+      }
+    });
+
+    // Find first available court
+    for (const court of courts) {
+      if (!occupiedCourtIds.has(court._id.toString())) {
+        return { _id: court._id, name: court.name };
+      }
+    }
+
+    return null;
+  }
   /**
    * Get student's recent activities (bookings, payments, service requests)
    */
@@ -636,16 +710,30 @@ export class StudentDashboardController {
         tenantId.toString(),
       );
 
-      // Create booking with tenantId
+      // Find an available court for this lesson
+      const availableCourt = await this.findAvailableCourt(
+        tenantId,
+        schedule.startTime,
+        schedule.endTime,
+      );
+
+      if (!availableCourt) {
+        return res.status(409).json({
+          error: 'No hay canchas disponibles para este horario. Por favor, intenta con otro horario.',
+        });
+      }
+
+      // Create booking with tenantId and assigned courtId
       const booking = await BookingModel.create({
         tenantId: tenantId,
         scheduleId: schedule._id,
         studentId: student._id,
         professorId: professor._id,
+        courtId: availableCourt._id,
         serviceType: serviceType,
         price: price,
         status: 'confirmed',
-        notes: `Reserva de ${serviceType}`
+        notes: `Reserva de ${serviceType} - Cancha: ${availableCourt.name}`
       });
 
       // Update schedule availability
@@ -654,12 +742,13 @@ export class StudentDashboardController {
       schedule.status = 'confirmed';
       await schedule.save();
 
-      console.log(`Booking created: ${booking._id}`);
+      console.log(`Booking created: ${booking._id} with court: ${availableCourt.name}`);
       
       res.status(201).json({
         id: booking._id,
         studentId: booking.studentId,
         scheduleId: booking.scheduleId,
+        courtId: booking.courtId?.toString(),
         serviceType: booking.serviceType,
         status: booking.status,
         price: booking.price,
@@ -715,7 +804,7 @@ export class StudentDashboardController {
         bookingQuery.tenantId = new Types.ObjectId(req.tenantId);
       }
 
-      // Fetch all bookings for the student with populated schedule and professor
+      // Fetch all bookings for the student with populated schedule, professor, and court
       // Only populate scheduleId if it exists (not for court_rental)
       const bookings = await BookingModel.find(bookingQuery)
         .populate({
@@ -731,6 +820,11 @@ export class StudentDashboardController {
           select: 'name email specialties pricing hourlyRate',
           strictPopulate: false // Allow null professorId
         })
+        .populate({
+          path: 'courtId',
+          select: 'name type price',
+          strictPopulate: false // Allow null courtId
+        })
         .sort({ createdAt: -1 });
 
       console.log(`Found ${bookings.length} bookings for student ${student._id}`);
@@ -739,6 +833,7 @@ export class StudentDashboardController {
       const bookingsData = bookings.map((booking) => {
         const schedule = booking.scheduleId as any;
         const professor = (schedule?.professorId || booking.professorId) as any;
+        const court = booking.courtId as any;
 
         // Calculate effective pricing for the professor
         const effectivePricing = {
@@ -793,6 +888,12 @@ export class StudentDashboardController {
             price: booking.price,
             status: schedule?.status || booking.status || 'pending',
           },
+          court: court ? {
+            id: court._id?.toString() || '',
+            name: court.name || '',
+            type: court.type || 'tennis',
+            price: court.price || 0,
+          } : null,
           serviceType: booking.serviceType,
           price: booking.price,
           status: booking.status,
@@ -886,36 +987,53 @@ export class StudentDashboardController {
         return res.status(400).json({ error: 'La hora de inicio debe ser anterior a la hora de fin' });
       }
 
-      // Check for conflicting bookings for this tenant
-      // Since we don't store courtId in BookingModel, we check by tenantId
-      // For court rentals, we use bookingDate to store the start time
-      // We assume a default duration of 1 hour if not specified
-      
-      // Find all active court rental bookings for this tenant that might overlap
-      // Check bookings that start within the requested time range or
-      // bookings that start before but end during the requested time
-      // Use UTC methods since all dates are in UTC
+      // Check for conflicting bookings for this specific court
+      // We need to check both court_rental and lessons that have this court assigned
       const oneHourBefore = new Date(requestedStart);
       oneHourBefore.setUTCHours(oneHourBefore.getUTCHours() - 1);
       
+      // Find all bookings for this specific court that might overlap
       const potentialConflicts = await BookingModel.find({
         tenantId: tenantId,
-        serviceType: 'court_rental',
+        courtId: court._id,
         status: { $in: ['confirmed', 'pending'] },
-        bookingDate: {
-          $gte: oneHourBefore,
-          $lte: requestedEnd,
-        },
-      }).lean();
+        $or: [
+          // Court rentals: check bookingDate
+          {
+            serviceType: 'court_rental',
+            bookingDate: {
+              $gte: oneHourBefore,
+              $lte: requestedEnd,
+            },
+          },
+          // Lessons: we'll check schedule times after populating
+          {
+            scheduleId: { $exists: true },
+          },
+        ],
+      })
+        .populate('scheduleId')
+        .lean();
 
       // Check for actual overlaps
-      // Since we store bookingDate as start time, we assume 1-hour duration for court rentals
       const hasConflict = potentialConflicts.some((booking) => {
-        if (!booking.bookingDate) return false;
-        
-        const existingStart = new Date(booking.bookingDate);
-        const existingEnd = new Date(existingStart);
-        existingEnd.setUTCHours(existingEnd.getUTCHours() + 1); // Default 1-hour duration (using UTC)
+        let existingStart: Date;
+        let existingEnd: Date;
+
+        if (booking.serviceType === 'court_rental' && booking.bookingDate) {
+          // Court rental: use bookingDate as start, assume 1-hour duration
+          existingStart = new Date(booking.bookingDate);
+          existingEnd = new Date(existingStart);
+          existingEnd.setUTCHours(existingEnd.getUTCHours() + 1);
+        } else if (booking.scheduleId && (booking.scheduleId as any).startTime) {
+          // Lesson: use schedule times
+          const schedule = booking.scheduleId as any;
+          existingStart = new Date(schedule.startTime);
+          existingEnd = new Date(schedule.endTime);
+        } else {
+          // Can't determine time, skip
+          return false;
+        }
 
         // Two time ranges overlap if:
         // - requestedStart is within existing range, OR
@@ -934,9 +1052,10 @@ export class StudentDashboardController {
         });
       }
 
-      // Create booking for court rental
+      // Create booking for court rental with courtId
       const booking = await BookingModel.create({
         tenantId: tenantId,
+        courtId: court._id,
         // scheduleId is optional for court_rental - not included
         studentId: student._id,
         // professorId is optional for court_rental - not included
@@ -1190,19 +1309,29 @@ export class StudentDashboardController {
       const startHour = openHour;
       const endHour = closeHour;
 
-      // Get all bookings for this tenant on this date
-      // We need to compare in local time, so we create a date range that covers the entire day in UTC
-      // The targetDate is already at midnight UTC for the requested date
+      // Get all bookings for this specific court on this date
+      // We need to check both court_rental and lessons that have this court assigned
       const bookings = await BookingModel.find({
         tenantId: new Types.ObjectId(tenantId),
-        serviceType: 'court_rental',
+        courtId: new Types.ObjectId(courtId),
         status: { $in: ['confirmed', 'pending'] },
-        bookingDate: {
-          $gte: targetDate,
-          $lt: nextDay,
-        },
-      }).lean();
-
+        $or: [
+          // Court rentals: check bookingDate
+          {
+            serviceType: 'court_rental',
+            bookingDate: {
+              $gte: targetDate,
+              $lt: nextDay,
+            },
+          },
+          // Lessons: we'll check schedule times after populating
+          {
+            scheduleId: { $exists: true },
+          },
+        ],
+      })
+        .populate('scheduleId')
+        .lean();
 
       // Generate available time slots based on operating hours
       // operatingHours are in local time of the tenant, so we generate slots in local time
@@ -1212,10 +1341,30 @@ export class StudentDashboardController {
       // Mark booked slots - bookings are stored in UTC, convert to local time for comparison
       // operatingHours are in local time, so we need to compare in local time
       bookings.forEach((booking) => {
-        if (booking.bookingDate) {
-          const bookingDate = new Date(booking.bookingDate);
+        let bookingTime: Date | null = null;
+
+        if (booking.serviceType === 'court_rental' && booking.bookingDate) {
+          // Court rental: use bookingDate
+          bookingTime = new Date(booking.bookingDate);
+        } else if (booking.scheduleId && (booking.scheduleId as any).startTime) {
+          // Lesson: use schedule startTime
+          const schedule = booking.scheduleId as any;
+          const scheduleStart = new Date(schedule.startTime);
+          // Check if schedule is on the target date
+          const scheduleDate = new Date(Date.UTC(
+            scheduleStart.getUTCFullYear(),
+            scheduleStart.getUTCMonth(),
+            scheduleStart.getUTCDate(),
+            0, 0, 0, 0
+          ));
+          if (scheduleDate.getTime() === targetDate.getTime()) {
+            bookingTime = scheduleStart;
+          }
+        }
+
+        if (bookingTime) {
           // Convert UTC booking to local time for comparison with local operating hours
-          const hour = bookingDate.getHours();
+          const hour = bookingTime.getUTCHours();
           bookedSlots.add(`${hour.toString().padStart(2, '0')}:00`);
         }
       });

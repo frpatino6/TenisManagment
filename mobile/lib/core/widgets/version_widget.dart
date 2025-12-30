@@ -22,7 +22,7 @@ class VersionWidget extends StatefulWidget {
 }
 
 class _VersionWidgetState extends State<VersionWidget> {
-  final String _version = 'v2.0.1';
+  final String _version = 'v2.0.2';
   final String _buildNumber = '1';
   final bool _isInitialized = true;
 
@@ -147,7 +147,7 @@ class VersionBadge extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              'v2.0.1',
+              'v2.0.2',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,

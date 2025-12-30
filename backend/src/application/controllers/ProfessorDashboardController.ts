@@ -672,23 +672,13 @@ export class ProfessorDashboardController {
         return res.status(400).json({ error: 'No se pudo determinar el centro (tenantId) para el horario' });
       }
 
-      // Parse dates - they come in ISO format but we need to preserve local time
-      // The client sends dates in local timezone, but when parsed as Date they become UTC
-      // We need to adjust by adding the timezone offset
+      // Parse dates - the client now sends UTC DateTime with the exact hour/minute selected
+      // The client creates DateTime.utc() with the selected local time components
+      // So if user selects 10:00 AM local, client sends 10:00 UTC (not 15:00 UTC)
+      // We can directly parse these as UTC dates
       const parsedStartTime = new Date(startTime);
       const parsedEndTime = new Date(endTime);
       const parsedDate = new Date(date);
-
-      console.log('Received dates (from client):', { date, startTime, endTime, tenantId: finalTenantId });
-      console.log('Parsed as UTC:', { 
-        parsedDate: parsedDate.toISOString(), 
-        parsedStartTime: parsedStartTime.toISOString(),
-        parsedEndTime: parsedEndTime.toISOString()
-      });
-      console.log('Local time interpretation:', {
-        startHour: parsedStartTime.getUTCHours(),
-        endHour: parsedEndTime.getUTCHours(),
-      });
 
       // Create schedule with tenantId
       const schedule = await ScheduleModel.create({

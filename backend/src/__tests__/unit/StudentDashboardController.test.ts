@@ -54,6 +54,14 @@ jest.mock('../../infrastructure/database/models/TenantModel', () => ({
   },
 }));
 
+jest.mock('../../infrastructure/database/models/CourtModel', () => ({
+  CourtModel: {
+    find: jest.fn(),
+    findById: jest.fn(),
+    findOne: jest.fn(),
+  },
+}));
+
 jest.mock('../../infrastructure/database/models/StudentTenantModel', () => ({
   StudentTenantModel: {
     find: jest.fn(),
@@ -166,8 +174,11 @@ describe('StudentDashboardController', () => {
       };
 
       const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
-      const mockPopulate2 = jest.fn().mockReturnValue({
+      const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
+      });
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        populate: mockPopulate3,
       });
       const mockPopulate1 = jest.fn().mockReturnValue({
         populate: mockPopulate2,
@@ -221,8 +232,11 @@ describe('StudentDashboardController', () => {
       SystemConfigModel.findOne.mockResolvedValue(null);
 
       const mockSort = jest.fn().mockResolvedValue([] as any);
-      const mockPopulate2 = jest.fn().mockReturnValue({
+      const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
+      });
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        populate: mockPopulate3,
       });
       const mockPopulate1 = jest.fn().mockReturnValue({
         populate: mockPopulate2,
@@ -284,10 +298,14 @@ describe('StudentDashboardController', () => {
       const finalBooking = {
         ...mockBooking,
         professorId: mockBooking.scheduleId?.professorId || null,
+        courtId: null, // No court assigned in this test
       };
       const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
-      const mockPopulate2 = jest.fn().mockReturnValue({
+      const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
+      });
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        populate: mockPopulate3,
       });
       const mockPopulate1 = jest.fn().mockReturnValue({
         populate: mockPopulate2,
@@ -400,8 +418,11 @@ describe('StudentDashboardController', () => {
       SystemConfigModel.findOne.mockResolvedValue(null);
 
       const mockSort = jest.fn().mockResolvedValue([] as any);
-      const mockPopulate2 = jest.fn().mockReturnValue({
+      const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
+      });
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        populate: mockPopulate3,
       });
       const mockPopulate1 = jest.fn().mockReturnValue({
         populate: mockPopulate2,
@@ -454,10 +475,14 @@ describe('StudentDashboardController', () => {
       const finalBooking = {
         ...mockBooking,
         professorId: mockBooking.scheduleId?.professorId || null,
+        courtId: null, // No court assigned in this test
       };
       const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
-      const mockPopulate2 = jest.fn().mockReturnValue({
+      const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
+      });
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        populate: mockPopulate3,
       });
       const mockPopulate1 = jest.fn().mockReturnValue({
         populate: mockPopulate2,
@@ -507,10 +532,14 @@ describe('StudentDashboardController', () => {
       const finalBooking = {
         ...mockBooking,
         professorId: mockBooking.scheduleId?.professorId || null,
+        courtId: null, // No court assigned in this test
       };
       const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
-      const mockPopulate2 = jest.fn().mockReturnValue({
+      const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
+      });
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        populate: mockPopulate3,
       });
       const mockPopulate1 = jest.fn().mockReturnValue({
         populate: mockPopulate2,
@@ -568,10 +597,14 @@ describe('StudentDashboardController', () => {
       const finalBooking = {
         ...mockBooking,
         professorId: mockBooking.scheduleId?.professorId || null,
+        courtId: null, // No court assigned in this test
       };
       const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
-      const mockPopulate2 = jest.fn().mockReturnValue({
+      const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
+      });
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        populate: mockPopulate3,
       });
       const mockPopulate1 = jest.fn().mockReturnValue({
         populate: mockPopulate2,
@@ -639,10 +672,14 @@ describe('StudentDashboardController', () => {
       const finalBooking = {
         ...mockBooking,
         professorId: mockBooking.scheduleId?.professorId || null,
+        courtId: null, // No court assigned in this test
       };
       const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
-      const mockPopulate2 = jest.fn().mockReturnValue({
+      const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
+      });
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        populate: mockPopulate3,
       });
       const mockPopulate1 = jest.fn().mockReturnValue({
         populate: mockPopulate2,

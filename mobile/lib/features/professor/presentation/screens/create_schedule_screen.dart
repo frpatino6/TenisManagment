@@ -49,7 +49,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               Center(
                 child: Column(
                   children: [
@@ -91,7 +90,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
 
               const Gap(32),
 
-
               Text(
                 'Fecha',
                 style: GoogleFonts.inter(
@@ -126,7 +124,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
               ),
 
               const Gap(24),
-
 
               Row(
                 children: [
@@ -222,7 +219,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
 
               const Gap(24),
 
-
               Card(
                 elevation: 0,
                 color: colorScheme.primaryContainer.withValues(alpha: 0.3),
@@ -316,7 +312,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
 
               const Gap(24),
 
-
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -348,7 +343,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
               ),
 
               const Gap(32),
-
 
               SizedBox(
                 width: double.infinity,
@@ -477,8 +471,9 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
   Future<void> _handleCreate() async {
     if (!_formKey.currentState!.validate()) return;
 
-
-    final startDateTime = DateTime(
+    // Create UTC DateTime with the selected local time components
+    // This ensures we send the exact hour/minute the user selected, not adjusted for timezone
+    final startDateTime = DateTime.utc(
       _selectedDate.year,
       _selectedDate.month,
       _selectedDate.day,
@@ -486,7 +481,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
       _startTime.minute,
     );
 
-    final endDateTime = DateTime(
+    final endDateTime = DateTime.utc(
       _selectedDate.year,
       _selectedDate.month,
       _selectedDate.day,
@@ -516,7 +511,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
       final notifier = ref.read(professorNotifierProvider.notifier);
 
       if (_generateMultipleSlots) {
-
         final slots = _generateTimeSlots(startDateTime, endDateTime);
 
         if (slots.isEmpty) {
@@ -525,10 +519,15 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           );
         }
 
-
         for (final slot in slots) {
+          // Create UTC date at midnight for the selected date
+          final utcDate = DateTime.utc(
+            _selectedDate.year,
+            _selectedDate.month,
+            _selectedDate.day,
+          );
           await notifier.createSchedule(
-            date: _selectedDate,
+            date: utcDate,
             startTime: slot['start']!,
             endTime: slot['end']!,
           );
@@ -546,9 +545,14 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           ),
         );
       } else {
-
+        // Create UTC date at midnight for the selected date
+        final utcDate = DateTime.utc(
+          _selectedDate.year,
+          _selectedDate.month,
+          _selectedDate.day,
+        );
         await notifier.createSchedule(
-          date: _selectedDate,
+          date: utcDate,
           startTime: startDateTime,
           endTime: endDateTime,
         );
@@ -589,7 +593,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
 
     while (currentStart.isBefore(end)) {
       final currentEnd = currentStart.add(Duration(minutes: _slotDuration));
-
 
       if (currentEnd.isAfter(end)) {
         break;

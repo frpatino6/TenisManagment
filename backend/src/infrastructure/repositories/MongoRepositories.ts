@@ -237,12 +237,12 @@ export class MongoBookingRepository implements BookingRepository {
     const created = await BookingModel.create({
       ...booking,
       studentId: new Types.ObjectId(booking.studentId),
-      scheduleId: new Types.ObjectId(booking.scheduleId),
+      scheduleId: booking.scheduleId ? new Types.ObjectId(booking.scheduleId) : undefined,
     });
     return {
       id: created._id.toString(),
       studentId: created.studentId.toString(),
-      scheduleId: created.scheduleId.toString(),
+      scheduleId: created.scheduleId?.toString(),
       serviceType: created.serviceType,
       status: created.status,
       price: created.price,
@@ -256,7 +256,7 @@ export class MongoBookingRepository implements BookingRepository {
     return docs.map((d) => ({
       id: d._id.toString(),
       studentId: d.studentId.toString(),
-      scheduleId: d.scheduleId.toString(),
+      scheduleId: d.scheduleId?.toString(),
       serviceType: d.serviceType,
       status: d.status,
       price: d.price,
@@ -270,7 +270,7 @@ export class MongoBookingRepository implements BookingRepository {
     return docs.map((d) => ({
       id: d._id.toString(),
       studentId: d.studentId.toString(),
-      scheduleId: d.scheduleId.toString(),
+      scheduleId: d.scheduleId?.toString(),
       serviceType: d.serviceType,
       status: d.status,
       price: d.price,
@@ -285,7 +285,7 @@ export class MongoBookingRepository implements BookingRepository {
       ? {
           id: d._id.toString(),
           studentId: d.studentId.toString(),
-          scheduleId: d.scheduleId.toString(),
+          scheduleId: d.scheduleId?.toString(),
           serviceType: d.serviceType,
           status: d.status,
           price: d.price,

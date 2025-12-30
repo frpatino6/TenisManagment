@@ -5,7 +5,7 @@ export type PaymentStatus = 'paid' | 'pending' | 'overdue';
 export interface Booking {
   id: string;
   studentId: string;
-  scheduleId: string;
+  scheduleId?: string; // Optional - not required for court_rental
   serviceType: BookingType;
   status: BookingStatus;
   price: number;

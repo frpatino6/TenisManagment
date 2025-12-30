@@ -51,3 +51,16 @@ final courtsProvider =
       final service = ref.watch(courtServiceProvider);
       return service.getCourts();
     });
+
+/// Provider for available time slots for a court on a specific date
+final courtAvailableSlotsProvider = FutureProvider.autoDispose
+    .family<Map<String, dynamic>, ({String courtId, DateTime date})>((ref, params) async {
+  // Wait for tenant to be available
+  final hasTenant = ref.watch(hasTenantProvider);
+  if (!hasTenant) {
+    throw Exception('Tenant ID requerido. Selecciona un centro primero.');
+  }
+  
+  final service = ref.watch(courtServiceProvider);
+  return service.getAvailableSlots(courtId: params.courtId, date: params.date);
+});

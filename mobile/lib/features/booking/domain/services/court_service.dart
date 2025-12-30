@@ -28,9 +28,7 @@ class CourtService {
 
       final response = await _http.get(
         Uri.parse('$_baseUrl/student-dashboard/courts'),
-        headers: {
-          'Authorization': 'Bearer $idToken',
-        },
+        headers: {'Authorization': 'Bearer $idToken'},
       );
 
       if (response.statusCode == 200) {
@@ -42,9 +40,59 @@ class CourtService {
             .toList();
       } else if (response.statusCode == 400) {
         final error = json.decode(response.body) as Map<String, dynamic>;
-        throw Exception(error['error'] as String? ?? 'Error al obtener canchas');
+        throw Exception(
+          error['error'] as String? ?? 'Error al obtener canchas',
+        );
       } else {
         throw Exception('Error al obtener canchas: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Get available time slots for a court on a specific date
+  Future<Map<String, dynamic>> getAvailableSlots({
+    required String courtId,
+    required DateTime date,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final idToken = await user.getIdToken(true);
+      if (idToken == null) {
+        throw Exception('No se pudo obtener el token de autenticación');
+      }
+
+      final dateStr = date.toIso8601String().split('T')[0]; // YYYY-MM-DD format
+
+      final response = await _http.get(
+        Uri.parse(
+          '$_baseUrl/student-dashboard/courts/$courtId/available-slots?date=$dateStr',
+        ),
+        headers: {'Authorization': 'Bearer $idToken'},
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      } else {
+        // Try to parse error message
+        try {
+          final error = json.decode(response.body) as Map<String, dynamic>;
+          final errorMessage =
+              error['error'] as String? ??
+              'Error al obtener horarios disponibles';
+          throw Exception(errorMessage);
+        } catch (e) {
+          // If parsing fails, throw generic error
+          if (e is Exception) rethrow;
+          throw Exception(
+            'Error al obtener horarios disponibles: ${response.statusCode}',
+          );
+        }
       }
     } catch (e) {
       rethrow;
@@ -87,7 +135,9 @@ class CourtService {
         return json.decode(response.body) as Map<String, dynamic>;
       } else {
         final error = json.decode(response.body) as Map<String, dynamic>;
-        throw Exception(error['error'] as String? ?? 'Error al reservar cancha');
+        throw Exception(
+          error['error'] as String? ?? 'Error al reservar cancha',
+        );
       }
     } catch (e) {
       rethrow;
@@ -99,4 +149,3 @@ class CourtService {
 final courtServiceProvider = Provider<CourtService>((ref) {
   return CourtService(ref.watch(appHttpClientProvider));
 });
-

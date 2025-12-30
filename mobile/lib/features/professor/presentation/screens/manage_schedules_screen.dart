@@ -17,7 +17,8 @@ class ManageSchedulesScreen extends ConsumerStatefulWidget {
 }
 
 class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
-  ScheduleFilter _selectedFilter = ScheduleFilter.booked;
+  ScheduleFilter _selectedFilter = ScheduleFilter
+      .all; // Changed from 'booked' to 'all' to show all schedules by default
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +38,6 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
             return _buildEmptyState(context);
           }
 
-
           final schedules = schedulesData
               .map(
                 (data) => ProfessorScheduleModel.fromJson(
@@ -45,7 +45,6 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
                 ),
               )
               .toList();
-
 
           final available = schedules
               .where((s) => s.isAvailable && !s.isBlocked)
@@ -56,7 +55,6 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
                 (s) => !s.isAvailable && !s.isBlocked && s.studentName != null,
               )
               .toList();
-
 
           List<ProfessorScheduleModel> filteredSchedules;
           switch (_selectedFilter) {
@@ -79,7 +77,6 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   _buildFilterButtons(
                     context,
                     available.length,
@@ -88,7 +85,6 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
                     schedules.length,
                   ),
                   const Gap(24),
-
 
                   if (filteredSchedules.isEmpty)
                     _buildNoResultsState(context)

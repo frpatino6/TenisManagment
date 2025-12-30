@@ -47,7 +47,8 @@ class BookingModel {
       serviceType: json['serviceType'] as String? ?? 'individual_class',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] as String? ?? 'pending',
-      createdAt: json['createdAt'] as String? ?? DateTime.now().toIso8601String(),
+      createdAt:
+          json['createdAt'] as String? ?? DateTime.now().toIso8601String(),
     );
   }
 
@@ -122,11 +123,26 @@ class AvailableScheduleModel {
   });
 
   factory AvailableScheduleModel.fromJson(Map<String, dynamic> json) {
+    // Safely parse startTime and endTime, handling empty strings
+    String parseTime(String? timeStr) {
+      if (timeStr == null || timeStr.isEmpty) {
+        return DateTime.now().toIso8601String();
+      }
+      try {
+        // Validate that it's a valid ISO string
+        DateTime.parse(timeStr);
+        return timeStr;
+      } catch (e) {
+        // If parsing fails, return current time
+        return DateTime.now().toIso8601String();
+      }
+    }
+
     return AvailableScheduleModel(
       id: json['id'] as String? ?? '',
       professorId: json['professorId'] as String? ?? '',
-      startTime: json['startTime'] as String? ?? DateTime.now().toIso8601String(),
-      endTime: json['endTime'] as String? ?? DateTime.now().toIso8601String(),
+      startTime: parseTime(json['startTime'] as String?),
+      endTime: parseTime(json['endTime'] as String?),
       type: json['type'] as String? ?? 'individual_class',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] as String? ?? 'pending',

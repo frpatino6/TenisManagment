@@ -2,6 +2,7 @@ class BookingModel {
   final String id;
   final ProfessorBookingModel professor;
   final AvailableScheduleModel schedule;
+  final CourtBookingModel? court;
   final String serviceType;
   final double price;
   final String status;
@@ -11,6 +12,7 @@ class BookingModel {
     required this.id,
     required this.professor,
     required this.schedule,
+    this.court,
     required this.serviceType,
     required this.price,
     required this.status,
@@ -44,6 +46,11 @@ class BookingModel {
               price: 0,
               status: 'pending',
             ),
+      court: json['court'] != null
+          ? CourtBookingModel.fromJson(
+              json['court'] as Map<String, dynamic>,
+            )
+          : null,
       serviceType: json['serviceType'] as String? ?? 'individual_class',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] as String? ?? 'pending',
@@ -57,10 +64,43 @@ class BookingModel {
       'id': id,
       'professor': professor.toJson(),
       'schedule': schedule.toJson(),
+      'court': court?.toJson(),
       'serviceType': serviceType,
       'price': price,
       'status': status,
       'createdAt': createdAt,
+    };
+  }
+}
+
+class CourtBookingModel {
+  final String id;
+  final String name;
+  final String type;
+  final double price;
+
+  CourtBookingModel({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.price,
+  });
+
+  factory CourtBookingModel.fromJson(Map<String, dynamic> json) {
+    return CourtBookingModel(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? 'Cancha',
+      type: json['type'] as String? ?? 'tennis',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'type': type,
+      'price': price,
     };
   }
 }

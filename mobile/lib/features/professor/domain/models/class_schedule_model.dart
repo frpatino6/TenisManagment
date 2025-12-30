@@ -24,12 +24,25 @@ class ClassScheduleModel extends Equatable {
   });
 
   factory ClassScheduleModel.fromJson(Map<String, dynamic> json) {
+    // Parse dates as UTC - the backend sends UTC times that represent the local time selected
+    // When user selects 10:00 AM, backend stores 10:00 UTC (not 15:00 UTC)
+    // So we parse as UTC and display as UTC (no conversion needed)
+    final startTimeStr = json['startTime'] as String? ?? '';
+    final endTimeStr = json['endTime'] as String? ?? '';
+    
+    final startTime = startTimeStr.isNotEmpty 
+        ? DateTime.parse(startTimeStr).toUtc()
+        : DateTime.now().toUtc();
+    final endTime = endTimeStr.isNotEmpty
+        ? DateTime.parse(endTimeStr).toUtc()
+        : DateTime.now().toUtc();
+    
     return ClassScheduleModel(
       id: json['_id'] ?? json['id'] ?? '',
       studentName: json['studentName'] ?? '',
       studentId: json['studentId'] ?? '',
-      startTime: DateTime.parse(json['startTime']),
-      endTime: DateTime.parse(json['endTime']),
+      startTime: startTime,
+      endTime: endTime,
       type: json['serviceType'] ?? json['type'] ?? 'Clase individual',
       status: json['status'] ?? 'pending',
       notes: json['notes'],
@@ -52,15 +65,18 @@ class ClassScheduleModel extends Equatable {
   }
 
   String get formattedTime {
-    final localStart = startTime.toLocal();
-    final hour = localStart.hour.toString().padLeft(2, '0');
-    final minute = localStart.minute.toString().padLeft(2, '0');
-    return '$hour:$minute ${localStart.hour < 12 ? 'AM' : 'PM'}';
+    // The times are stored in UTC but represent the local time the user selected
+    // So we display them directly as UTC hours (no conversion to local)
+    // Example: User selected 10:00 AM -> stored as 10:00 UTC -> display as 10:00 AM
+    final hour = startTime.hour.toString().padLeft(2, '0');
+    final minute = startTime.minute.toString().padLeft(2, '0');
+    return '$hour:$minute ${startTime.hour < 12 ? 'AM' : 'PM'}';
   }
 
   String get formattedDate {
-    final localStart = startTime.toLocal();
-    return '${localStart.day}/${localStart.month}/${localStart.year}';
+    // The date is stored in UTC but represents the local date selected
+    // So we display it directly as UTC date (no conversion needed)
+    return '${startTime.day}/${startTime.month}/${startTime.year}';
   }
 
   Duration get duration {

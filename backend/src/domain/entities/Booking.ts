@@ -6,6 +6,7 @@ export interface Booking {
   id: string;
   studentId: string;
   scheduleId?: string; // Optional - not required for court_rental
+  courtId?: string; // Optional - can be assigned automatically for lessons or selected for court_rental
   serviceType: BookingType;
   status: BookingStatus;
   price: number;

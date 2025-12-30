@@ -325,6 +325,25 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
                 ),
               ],
             ),
+            if (booking.court != null) ...[
+              const Gap(8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const Gap(8),
+                  Text(
+                    'Cancha: ${booking.court!.name}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             if (isUpcoming && booking.status == 'confirmed') ...[
               const Gap(16),
               Row(

@@ -54,6 +54,14 @@ jest.mock('../../infrastructure/database/models/TenantModel', () => ({
   },
 }));
 
+jest.mock('../../infrastructure/database/models/CourtModel', () => ({
+  CourtModel: {
+    find: jest.fn(),
+    findById: jest.fn(),
+    findOne: jest.fn(),
+  },
+}));
+
 jest.mock('../../infrastructure/database/models/StudentTenantModel', () => ({
   StudentTenantModel: {
     find: jest.fn(),

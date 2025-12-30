@@ -6,6 +6,7 @@ export interface BookingDocument {
   scheduleId?: Types.ObjectId; // Optional - not required for court_rental
   studentId: Types.ObjectId;
   professorId?: Types.ObjectId; // Optional - not required for court_rental
+  courtId?: Types.ObjectId; // Optional - can be assigned automatically for lessons or selected for court_rental
   serviceType: 'individual_class' | 'group_class' | 'court_rental';
   price: number;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
@@ -34,6 +35,12 @@ const BookingSchema = new Schema<BookingDocument>({
     ref: 'Professor', 
     required: false, // Made explicitly optional, validation handled in pre-save hook
     index: true 
+  },
+  courtId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Court',
+    required: false, // Optional - can be assigned automatically or selected
+    index: true,
   },
   serviceType: { 
     type: String, 
@@ -74,5 +81,8 @@ BookingSchema.index({ tenantId: 1, createdAt: 1 });
 BookingSchema.index({ tenantId: 1, serviceType: 1, createdAt: 1 });
 // Index for checking court rental availability by date
 BookingSchema.index({ tenantId: 1, serviceType: 1, bookingDate: 1, status: 1 });
+// Index for checking court availability (all bookings for a specific court and time)
+BookingSchema.index({ courtId: 1, bookingDate: 1, status: 1 }, { sparse: true });
+BookingSchema.index({ tenantId: 1, courtId: 1, bookingDate: 1, status: 1 }, { sparse: true });
 
 export const BookingModel = model<BookingDocument>('Booking', BookingSchema);

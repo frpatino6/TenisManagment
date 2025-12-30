@@ -1,6 +1,6 @@
 {
   "name": "tennis-management-backend",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Backend API para el sistema de gestión de clases de tenis",
   "private": true,
   "engines": {

@@ -716,13 +716,20 @@ export class StudentDashboardController {
       }
 
       // Fetch all bookings for the student with populated schedule and professor
+      // Only populate scheduleId if it exists (not for court_rental)
       const bookings = await BookingModel.find(bookingQuery)
         .populate({
           path: 'scheduleId',
           populate: {
             path: 'professorId',
             select: 'name email specialties pricing hourlyRate'
-          }
+          },
+          strictPopulate: false // Allow null scheduleId
+        })
+        .populate({
+          path: 'professorId',
+          select: 'name email specialties pricing hourlyRate',
+          strictPopulate: false // Allow null professorId
         })
         .sort({ createdAt: -1 });
 
@@ -731,7 +738,7 @@ export class StudentDashboardController {
       // Format bookings according to frontend BookingModel structure
       const bookingsData = bookings.map((booking) => {
         const schedule = booking.scheduleId as any;
-        const professor = schedule?.professorId as any;
+        const professor = (schedule?.professorId || booking.professorId) as any;
 
         // Calculate effective pricing for the professor
         const effectivePricing = {
@@ -740,6 +747,33 @@ export class StudentDashboardController {
           groupClass: professor?.pricing?.groupClass ?? basePricing.groupClass,
           courtRental: professor?.pricing?.courtRental ?? basePricing.courtRental,
         };
+
+        // For court_rental, use bookingDate if available, otherwise use current date
+        let startTime = '';
+        let endTime = '';
+        
+        if (booking.serviceType === 'court_rental') {
+          // For court rentals, use bookingDate or createdAt as the time reference
+          const bookingDateTime = booking.bookingDate || booking.createdAt || new Date();
+          const startDateTime = new Date(bookingDateTime);
+          startTime = startDateTime.toISOString();
+          // Default to 1 hour duration for court rentals (using UTC)
+          const endDateTime = new Date(startDateTime);
+          endDateTime.setUTCHours(endDateTime.getUTCHours() + 1);
+          endTime = endDateTime.toISOString();
+        } else if (schedule) {
+          // For classes with schedule, use schedule times
+          startTime = schedule.startTime ? new Date(schedule.startTime).toISOString() : '';
+          endTime = schedule.endTime ? new Date(schedule.endTime).toISOString() : '';
+        } else {
+          // Fallback: use bookingDate or createdAt
+          const bookingDateTime = booking.bookingDate || booking.createdAt || new Date();
+          const startDateTime = new Date(bookingDateTime);
+          startTime = startDateTime.toISOString();
+          const endDateTime = new Date(startDateTime);
+          endDateTime.setUTCHours(endDateTime.getUTCHours() + 1);
+          endTime = endDateTime.toISOString();
+        }
 
         return {
           id: booking._id.toString(),
@@ -752,12 +786,12 @@ export class StudentDashboardController {
           },
           schedule: {
             id: schedule?._id?.toString() || '',
-            professorId: schedule?.professorId?._id?.toString() || schedule?.professorId?.toString() || '',
-            startTime: schedule?.startTime ? new Date(schedule.startTime).toISOString() : '',
-            endTime: schedule?.endTime ? new Date(schedule.endTime).toISOString() : '',
-            type: 'individual_class', // Default type since it's not stored in schedule
+            professorId: schedule?.professorId?._id?.toString() || schedule?.professorId?.toString() || professor?._id?.toString() || '',
+            startTime: startTime,
+            endTime: endTime,
+            type: booking.serviceType === 'court_rental' ? 'court_rental' : (booking.serviceType === 'group_class' ? 'group_class' : 'individual_class'),
             price: booking.price,
-            status: schedule?.status || 'pending',
+            status: schedule?.status || booking.status || 'pending',
           },
           serviceType: booking.serviceType,
           price: booking.price,
@@ -843,48 +877,76 @@ export class StudentDashboardController {
         tenantId.toString(),
       );
 
-      // Create a schedule for the court rental (optional, can be null for court rentals)
-      // For now, we'll create a booking without a scheduleId
-      // Note: We need to handle this case - court rentals might not need a schedule
-      // For simplicity, we'll create a minimal schedule or handle it differently
-      
-      // Create booking for court rental
-      // Note: For court rentals, we might not have a professorId or scheduleId
-      // We'll need to adjust the BookingModel or create a different approach
-      // For now, let's create a booking with a dummy professorId (or make it optional)
-      // Actually, looking at the BookingModel, professorId is required
-      // We might need to create a "system" professor or make it optional for court rentals
-      // For now, let's use a workaround: create a booking with the court's tenant admin as professor
-      // Or better: check if we can make professorId optional for court_rental type
-      
-      // Since BookingModel requires professorId, we'll need to handle this differently
-      // For court rentals, we could:
-      // 1. Create a system professor for court rentals
-      // 2. Make professorId optional in BookingModel (breaking change)
-      // 3. Use the tenant admin as professor (workaround)
-      
-      // For now, let's use a workaround: get the tenant admin
-      const { TenantModel } = await import('../../infrastructure/database/models/TenantModel');
-      const tenant = await TenantModel.findById(tenantId);
-      if (!tenant) {
-        return res.status(404).json({ error: 'Tenant no encontrado' });
+      // Parse dates - they come as ISO strings in UTC
+      const requestedStart = new Date(startTime);
+      const requestedEnd = new Date(endTime);
+
+      // Validate date range
+      if (requestedStart >= requestedEnd) {
+        return res.status(400).json({ error: 'La hora de inicio debe ser anterior a la hora de fin' });
       }
 
-      // Use tenant admin as professor for court rentals (workaround)
-      // In a real scenario, we might want to make professorId optional for court_rental
+      // Check for conflicting bookings for this tenant
+      // Since we don't store courtId in BookingModel, we check by tenantId
+      // For court rentals, we use bookingDate to store the start time
+      // We assume a default duration of 1 hour if not specified
+      
+      // Find all active court rental bookings for this tenant that might overlap
+      // Check bookings that start within the requested time range or
+      // bookings that start before but end during the requested time
+      // Use UTC methods since all dates are in UTC
+      const oneHourBefore = new Date(requestedStart);
+      oneHourBefore.setUTCHours(oneHourBefore.getUTCHours() - 1);
+      
+      const potentialConflicts = await BookingModel.find({
+        tenantId: tenantId,
+        serviceType: 'court_rental',
+        status: { $in: ['confirmed', 'pending'] },
+        bookingDate: {
+          $gte: oneHourBefore,
+          $lte: requestedEnd,
+        },
+      }).lean();
+
+      // Check for actual overlaps
+      // Since we store bookingDate as start time, we assume 1-hour duration for court rentals
+      const hasConflict = potentialConflicts.some((booking) => {
+        if (!booking.bookingDate) return false;
+        
+        const existingStart = new Date(booking.bookingDate);
+        const existingEnd = new Date(existingStart);
+        existingEnd.setUTCHours(existingEnd.getUTCHours() + 1); // Default 1-hour duration (using UTC)
+
+        // Two time ranges overlap if:
+        // - requestedStart is within existing range, OR
+        // - requestedEnd is within existing range, OR
+        // - requested range completely contains existing range
+        return (
+          (requestedStart >= existingStart && requestedStart < existingEnd) ||
+          (requestedEnd > existingStart && requestedEnd <= existingEnd) ||
+          (requestedStart <= existingStart && requestedEnd >= existingEnd)
+        );
+      });
+
+      if (hasConflict) {
+        return res.status(409).json({
+          error: 'El horario seleccionado ya está ocupado. Por favor, selecciona otro horario.',
+        });
+      }
+
+      // Create booking for court rental
       const booking = await BookingModel.create({
         tenantId: tenantId,
-        scheduleId: new Types.ObjectId(), // Dummy scheduleId for court rentals
+        // scheduleId is optional for court_rental - not included
         studentId: student._id,
-        professorId: tenant.adminUserId, // Use tenant admin as professor (workaround)
+        // professorId is optional for court_rental - not included
         serviceType: 'court_rental',
         price: price,
         status: 'confirmed',
-        notes: `Reserva de cancha: ${court.name} - ${new Date(startTime).toLocaleString()} a ${new Date(endTime).toLocaleString()}`,
-        bookingDate: new Date(startTime),
+        notes: `Reserva de cancha: ${court.name} - ${requestedStart.toISOString()} a ${requestedEnd.toISOString()}`,
+        bookingDate: requestedStart,
       });
 
-      console.log(`Court booking created: ${booking._id}`);
       
       res.status(201).json({
         id: booking._id,
@@ -899,7 +961,14 @@ export class StudentDashboardController {
       });
     } catch (error) {
       console.error('Error booking court:', error);
-      res.status(500).json({ error: 'Error interno del servidor' });
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : 'No stack trace';
+      console.error('Error details:', { errorMessage, errorStack });
+      res.status(500).json({ 
+        error: 'Error interno del servidor',
+        message: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? errorStack : undefined
+      });
     }
   };
 
@@ -998,6 +1067,174 @@ export class StudentDashboardController {
       res.json({ items });
     } catch (error) {
       console.error('Error getting available tenants:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * Get available time slots for a court on a specific date
+   * GET /api/student-dashboard/courts/:courtId/available-slots?date=YYYY-MM-DD
+   */
+  getCourtAvailableSlots = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { courtId } = req.params;
+      const { date } = req.query;
+      const tenantId = req.tenantId;
+
+      if (!courtId) {
+        res.status(400).json({ error: 'courtId es requerido' });
+        return;
+      }
+
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido. Selecciona un centro primero.' });
+        return;
+      }
+
+      // Parse date or use today
+      // Important: Use UTC to avoid timezone issues
+      let targetDate: Date;
+      if (date) {
+        // Parse date string (YYYY-MM-DD) and create UTC date
+        const dateParts = (date as string).split('-');
+        targetDate = new Date(Date.UTC(
+          parseInt(dateParts[0]),
+          parseInt(dateParts[1]) - 1, // Month is 0-indexed
+          parseInt(dateParts[2]),
+          0, 0, 0, 0
+        ));
+      } else {
+        const now = new Date();
+        targetDate = new Date(Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate(),
+          0, 0, 0, 0
+        ));
+      }
+      
+      const nextDay = new Date(targetDate);
+      nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+
+      console.log('Checking availability for date:', {
+        inputDate: date,
+        targetDateUTC: targetDate.toISOString(),
+        nextDayUTC: nextDay.toISOString(),
+      });
+
+      // Verify court exists and belongs to tenant
+      const court = await CourtModel.findOne({
+        _id: new Types.ObjectId(courtId),
+        tenantId: new Types.ObjectId(tenantId),
+        isActive: true,
+      }).populate('tenantId');
+
+      if (!court) {
+        res.status(404).json({ error: 'Cancha no encontrada o no disponible' });
+        return;
+      }
+
+      // Get tenant to check operating hours configuration
+      const tenant = await TenantModel.findById(tenantId);
+      
+      // Operating hours must be configured - use defaults if not set (temporary)
+      let open = '06:00';
+      let close = '22:00';
+      let daysOfWeek: number[] | undefined;
+
+      if (tenant?.config?.operatingHours?.open && tenant?.config?.operatingHours?.close) {
+        open = tenant.config.operatingHours.open;
+        close = tenant.config.operatingHours.close;
+        daysOfWeek = tenant.config.operatingHours.daysOfWeek;
+      } else {
+        // Log warning but use defaults
+        console.warn(`Tenant ${tenantId} does not have operating hours configured. Using defaults: ${open} - ${close}`);
+      }
+
+      // open, close, and daysOfWeek are already set above
+      
+      // Check if the requested date is within operating days
+      if (daysOfWeek && daysOfWeek.length > 0) {
+        const dayOfWeek = targetDate.getUTCDay(); // 0 = Sunday, 6 = Saturday
+        if (!daysOfWeek.includes(dayOfWeek)) {
+          res.json({
+            courtId: court._id.toString(),
+            date: targetDate.toISOString().split('T')[0],
+            availableSlots: [],
+            bookedSlots: [],
+            message: 'El centro no opera en este día',
+          });
+          return;
+        }
+      }
+
+      const [openHour] = open.split(':').map(Number);
+      const [closeHour] = close.split(':').map(Number);
+
+      // Validate operating hours
+      if (isNaN(openHour) || openHour < 0 || openHour >= 24) {
+        res.status(400).json({ error: 'Hora de apertura inválida en la configuración del centro' });
+        return;
+      }
+
+      if (isNaN(closeHour) || closeHour <= 0 || closeHour > 24) {
+        res.status(400).json({ error: 'Hora de cierre inválida en la configuración del centro' });
+        return;
+      }
+
+      if (openHour >= closeHour) {
+        res.status(400).json({ error: 'La hora de apertura debe ser anterior a la hora de cierre' });
+        return;
+      }
+
+      const startHour = openHour;
+      const endHour = closeHour;
+
+      // Get all bookings for this tenant on this date
+      // We need to compare in local time, so we create a date range that covers the entire day in UTC
+      // The targetDate is already at midnight UTC for the requested date
+      const bookings = await BookingModel.find({
+        tenantId: new Types.ObjectId(tenantId),
+        serviceType: 'court_rental',
+        status: { $in: ['confirmed', 'pending'] },
+        bookingDate: {
+          $gte: targetDate,
+          $lt: nextDay,
+        },
+      }).lean();
+
+
+      // Generate available time slots based on operating hours
+      // operatingHours are in local time of the tenant, so we generate slots in local time
+      const availableSlots: string[] = [];
+      const bookedSlots = new Set<string>();
+
+      // Mark booked slots - bookings are stored in UTC, convert to local time for comparison
+      // operatingHours are in local time, so we need to compare in local time
+      bookings.forEach((booking) => {
+        if (booking.bookingDate) {
+          const bookingDate = new Date(booking.bookingDate);
+          // Convert UTC booking to local time for comparison with local operating hours
+          const hour = bookingDate.getHours();
+          bookedSlots.add(`${hour.toString().padStart(2, '0')}:00`);
+        }
+      });
+
+      // Generate all possible slots based on operating hours (in local time)
+      for (let hour = startHour; hour < endHour; hour++) {
+        const slot = `${hour.toString().padStart(2, '0')}:00`;
+        if (!bookedSlots.has(slot)) {
+          availableSlots.push(slot);
+        }
+      }
+      res.json({
+        courtId: court._id.toString(),
+        date: targetDate.toISOString().split('T')[0],
+        availableSlots,
+        bookedSlots: Array.from(bookedSlots),
+      });
+    } catch (error) {
+      console.error('Error getting court available slots:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

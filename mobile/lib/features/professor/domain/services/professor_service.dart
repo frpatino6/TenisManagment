@@ -309,6 +309,7 @@ class ProfessorService {
     required DateTime date,
     required DateTime startTime,
     required DateTime endTime,
+    String? tenantId, // Optional tenantId - if not provided, backend will use first active tenant
   }) async {
     try {
       final user = _firebaseAuth.currentUser;
@@ -318,23 +319,35 @@ class ProfessorService {
 
       final idToken = await user.getIdToken(true);
 
+      // Build request body with optional tenantId
+      final requestBody = <String, dynamic>{
+        'date': date.toIso8601String(),
+        'startTime': startTime.toIso8601String(),
+        'endTime': endTime.toIso8601String(),
+      };
+      
+      // Add tenantId if provided
+      if (tenantId != null && tenantId.isNotEmpty) {
+        requestBody['tenantId'] = tenantId;
+      }
+
       final response = await http.post(
         Uri.parse('$_baseUrl/professor-dashboard/schedules'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',
         },
-        body: json.encode({
-          'date': date.toIso8601String(),
-          'startTime': startTime.toIso8601String(),
-          'endTime': endTime.toIso8601String(),
-        }),
+        body: json.encode(requestBody),
       );
 
       if (response.statusCode == 201) {
         return json.decode(response.body) as Map<String, dynamic>;
       } else {
-        throw Exception('Error al crear horario: ${response.statusCode}');
+        final errorBody = json.decode(response.body) as Map<String, dynamic>?;
+        final errorMessage = errorBody?['error'] as String? ?? 
+                            errorBody?['message'] as String? ?? 
+                            'Error al crear horario: ${response.statusCode}';
+        throw Exception(errorMessage);
       }
     } catch (e) {
       rethrow;

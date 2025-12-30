@@ -3,6 +3,7 @@ import '../../domain/services/professor_service.dart';
 import '../../domain/models/professor_model.dart';
 import '../../domain/models/student_summary_model.dart';
 import '../../domain/models/class_schedule_model.dart';
+import '../../../../core/providers/tenant_provider.dart';
 
 final professorServiceProvider = Provider<ProfessorService>((ref) {
   return ProfessorService();
@@ -127,10 +128,14 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
 
     try {
       final service = ref.read(professorServiceProvider);
+      // Get current tenantId if available
+      final tenantId = ref.read(currentTenantIdProvider);
+      
       await service.createSchedule(
         date: date,
         startTime: startTime,
         endTime: endTime,
+        tenantId: tenantId, // Pass tenantId if available, backend will use first active tenant if null
       );
 
       ref.invalidate(professorSchedulesProvider);

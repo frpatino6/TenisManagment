@@ -133,6 +133,142 @@ export class TenantAdminController {
   };
 
   /**
+   * PUT /api/tenant/operating-hours
+   * Configurar horarios de operación del centro
+   */
+  updateOperatingHours = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ error: 'No autenticado' });
+        return;
+      }
+
+      // Obtener el tenant del admin
+      const tenantAdmin = await TenantAdminModel.findOne({
+        adminUserId: userId,
+        isActive: true,
+      });
+
+      if (!tenantAdmin) {
+        res.status(404).json({ error: 'No eres admin de ningún tenant' });
+        return;
+      }
+
+      const { open, close, daysOfWeek } = req.body;
+
+      // Validaciones
+      if (!open || !close) {
+        res.status(400).json({ error: 'open y close son requeridos' });
+        return;
+      }
+
+      // Validar formato de hora (HH:mm)
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (!timeRegex.test(open) || !timeRegex.test(close)) {
+        res.status(400).json({ error: 'El formato de hora debe ser HH:mm (ej: 08:00, 20:00)' });
+        return;
+      }
+
+      const [openHour, openMinute] = open.split(':').map(Number);
+      const [closeHour, closeMinute] = close.split(':').map(Number);
+
+      // Validar rangos
+      if (openHour < 0 || openHour >= 24 || openMinute < 0 || openMinute >= 60) {
+        res.status(400).json({ error: 'Hora de apertura inválida' });
+        return;
+      }
+
+      if (closeHour < 0 || closeHour > 24 || closeMinute < 0 || closeMinute >= 60) {
+        res.status(400).json({ error: 'Hora de cierre inválida' });
+        return;
+      }
+
+      // Convertir a minutos para comparar
+      const openMinutes = openHour * 60 + openMinute;
+      const closeMinutes = closeHour * 60 + closeMinute;
+
+      if (openMinutes >= closeMinutes) {
+        res.status(400).json({ error: 'La hora de apertura debe ser anterior a la hora de cierre' });
+        return;
+      }
+
+      // Validar daysOfWeek si se proporciona
+      if (daysOfWeek !== undefined) {
+        if (!Array.isArray(daysOfWeek)) {
+          res.status(400).json({ error: 'daysOfWeek debe ser un array' });
+          return;
+        }
+
+        const validDays = daysOfWeek.every(day => 
+          typeof day === 'number' && day >= 0 && day <= 6
+        );
+
+        if (!validDays) {
+          res.status(400).json({ error: 'daysOfWeek debe contener números del 0 al 6 (0=Domingo, 6=Sábado)' });
+          return;
+        }
+      }
+
+      // Obtener tenant actual
+      const tenant = await TenantModel.findById(tenantAdmin.tenantId);
+      if (!tenant) {
+        res.status(404).json({ error: 'Tenant no encontrado' });
+        return;
+      }
+
+      // Actualizar operatingHours en la configuración
+      const updatedConfig = {
+        ...tenant.config,
+        operatingHours: {
+          open,
+          close,
+          ...(daysOfWeek !== undefined && { daysOfWeek }),
+        },
+      };
+
+      const input: UpdateTenantInput = {
+        config: updatedConfig,
+      };
+
+      const updatedTenant = await this.tenantService.updateTenant(
+        tenantAdmin.tenantId.toString(),
+        input,
+        userId,
+        'tenant_admin',
+      );
+
+      if (!updatedTenant) {
+        res.status(404).json({ error: 'Tenant no encontrado' });
+        return;
+      }
+
+      logger.info('Horarios de operación actualizados', { 
+        tenantId: tenantAdmin.tenantId.toString(), 
+        open, 
+        close,
+        updatedBy: userId 
+      });
+
+      res.json({
+        id: updatedTenant._id.toString(),
+        operatingHours: updatedTenant.config?.operatingHours,
+        updatedAt: updatedTenant.updatedAt,
+      });
+    } catch (error) {
+      logger.error('Error actualizando horarios de operación', { error: (error as Error).message });
+      const message = (error as Error).message;
+      if (message.includes('no encontrado')) {
+        res.status(404).json({ error: message });
+      } else if (message.includes('permisos')) {
+        res.status(403).json({ error: message });
+      } else {
+        res.status(500).json({ error: 'Error interno del servidor' });
+      }
+    }
+  };
+
+  /**
    * GET /api/tenant/professors
    * Listar profesores del tenant
    */

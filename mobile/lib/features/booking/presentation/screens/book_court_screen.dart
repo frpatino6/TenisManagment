@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../domain/models/court_model.dart';
+import '../../domain/services/court_service.dart';
 import '../providers/booking_provider.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../../tenant/domain/services/tenant_service.dart' as tenant_domain;
@@ -468,6 +469,15 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               _selectedDate = picked;
               _selectedTime = null;
             });
+            // Invalidate available slots provider to reload for new date
+            if (_selectedCourt != null) {
+              ref.invalidate(
+                courtAvailableSlotsProvider((
+                  courtId: _selectedCourt!.id,
+                  date: picked,
+                )),
+              );
+            }
           }
         },
         child: Padding(
@@ -516,62 +526,215 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   }
 
   Widget _buildTimeSelector(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: () async {
-          final picked = await showTimePicker(
-            context: context,
-            initialTime: _selectedTime ?? TimeOfDay.now(),
-          );
+    if (_selectedCourt == null || _selectedDate == null) {
+      return const SizedBox.shrink();
+    }
 
-          if (picked != null) {
-            setState(() {
-              _selectedTime = picked;
-            });
-          }
-        },
+    final availableSlotsAsync = ref.watch(
+      courtAvailableSlotsProvider((
+        courtId: _selectedCourt!.id,
+        date: _selectedDate!,
+      )),
+    );
+
+    return availableSlotsAsync.when(
+      data: (data) {
+        final availableSlots =
+            (data['availableSlots'] as List<dynamic>?)
+                ?.map((e) => e as String)
+                .toList() ??
+            [];
+        final bookedSlots =
+            (data['bookedSlots'] as List<dynamic>?)
+                ?.map((e) => e as String)
+                .toList() ??
+            [];
+
+        if (availableSlots.isEmpty) {
+          return Card(
+            color: Theme.of(
+              context,
+            ).colorScheme.errorContainer.withValues(alpha: 0.3),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const Gap(12),
+                  Expanded(
+                    child: Text(
+                      'No hay horarios disponibles para esta fecha',
+                      style: GoogleFonts.inter(
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Selecciona un horario disponible',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Gap(8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: availableSlots.map((slot) {
+                final timeParts = slot.split(':');
+                final hour = int.parse(timeParts[0]);
+                final minute = int.parse(timeParts[1]);
+
+                // Slots from backend are in local time (matching operatingHours)
+                // Display them directly without conversion
+                final timeOfDay = TimeOfDay(hour: hour, minute: minute);
+
+                final isSelected =
+                    _selectedTime?.hour == timeOfDay.hour &&
+                    _selectedTime?.minute == timeOfDay.minute;
+
+                return FilterChip(
+                  label: Text(
+                    timeOfDay.format(context),
+                    style: GoogleFonts.inter(
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
+                  ),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() {
+                        _selectedTime = timeOfDay;
+                      });
+                    }
+                  },
+                  selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                  checkmarkColor: Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer,
+                );
+              }).toList(),
+            ),
+            if (bookedSlots.isNotEmpty) ...[
+              const Gap(12),
+              Text(
+                'Horarios ocupados: ${bookedSlots.join(", ")}',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+      loading: () => Card(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
-              Icon(
-                Icons.access_time,
-                color: Theme.of(context).colorScheme.primary,
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
               ),
-              const Gap(16),
+              const Gap(12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Hora',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const Gap(4),
-                    Text(
-                      _selectedTime != null
-                          ? _selectedTime!.format(context)
-                          : 'Selecciona una hora',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  'Cargando horarios disponibles...',
+                  style: GoogleFonts.inter(),
                 ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
           ),
         ),
       ),
+      error: (error, stack) {
+        final errorMessage = error.toString();
+        final isConfigError =
+            errorMessage.contains('horarios de operación configurados') ||
+            errorMessage.contains('no tiene horarios');
+
+        return Card(
+          color: Theme.of(
+            context,
+          ).colorScheme.errorContainer.withValues(alpha: 0.3),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      isConfigError ? Icons.settings : Icons.error_outline,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const Gap(12),
+                    Expanded(
+                      child: Text(
+                        isConfigError
+                            ? 'El centro no tiene horarios configurados'
+                            : 'Error al cargar horarios',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: () {
+                        ref.invalidate(
+                          courtAvailableSlotsProvider((
+                            courtId: _selectedCourt!.id,
+                            date: _selectedDate!,
+                          )),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+                if (!isConfigError) ...[
+                  const Gap(8),
+                  Text(
+                    errorMessage,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                    ),
+                  ),
+                ] else ...[
+                  const Gap(8),
+                  Text(
+                    'Contacta al administrador del centro para configurar los horarios de operación.',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -714,8 +877,42 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     });
 
     try {
-      // TODO: Implement actual booking logic
-      await Future.delayed(const Duration(seconds: 1));
+      // Build start and end times using the selected local time
+      // Convert to UTC when sending to backend
+      if (_selectedTime == null) {
+        throw Exception('Error: No se pudo determinar la hora seleccionada');
+      }
+
+      // The selected time is in the server's local timezone (matching operatingHours)
+      // operatingHours are configured in the server's local time, so we create UTC directly
+      // This ensures that 10:00 selected = 10:00 UTC stored (not 15:00 UTC)
+      final startDateTime = DateTime.utc(
+        _selectedDate!.year,
+        _selectedDate!.month,
+        _selectedDate!.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
+      );
+
+      // Default to 1 hour duration for court rental
+      final endDateTime = startDateTime.add(const Duration(hours: 1));
+
+      // Calculate price based on duration and price per hour
+      final durationInHours = endDateTime.difference(startDateTime).inHours;
+      final totalPrice = _selectedCourt!.pricePerHour * durationInHours;
+
+      // Get court service and make booking
+      final courtService = ref.read(courtServiceProvider);
+
+      await courtService.bookCourt(
+        courtId: _selectedCourt!.id,
+        startTime: startDateTime,
+        endTime: endDateTime,
+        price: totalPrice,
+      );
+
+      // Invalidate courts provider to refresh the list
+      ref.invalidate(courtsProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -725,6 +922,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               style: GoogleFonts.inter(),
             ),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
           ),
         );
 
@@ -734,16 +932,23 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           _selectedDate = null;
           _selectedTime = null;
         });
+
+        // Navigate back after a short delay
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (mounted) {
+          context.pop();
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Error al realizar la reserva: $e',
+              'Error al realizar la reserva: ${e.toString()}',
               style: GoogleFonts.inter(),
             ),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }

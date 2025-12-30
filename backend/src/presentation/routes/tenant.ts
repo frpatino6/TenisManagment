@@ -28,6 +28,7 @@ router.use(requireTenantAccess(tenantService));
 // Configuración del centro
 router.get('/me', controller.getTenantInfo);
 router.put('/me', controller.updateTenantConfig);
+router.put('/operating-hours', controller.updateOperatingHours);
 
 // Gestión de profesores
 router.get('/professors', controller.listProfessors);

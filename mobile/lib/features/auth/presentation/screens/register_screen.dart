@@ -61,36 +61,29 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               children: [
                 const Gap(16),
 
-
                 _buildHeader(context),
 
                 const Gap(32),
-
 
                 _buildForm(context),
 
                 const Gap(24),
 
-
                 _buildRegisterButton(context, isLoading),
 
                 const Gap(16),
-
 
                 _buildDivider(context),
 
                 const Gap(16),
 
-
                 _buildGoogleButton(context, isLoading),
 
                 const Gap(24),
 
-
                 _buildLinks(context),
 
                 const Gap(24),
-
 
                 if (error != null) _buildErrorWidget(context, error),
               ],
@@ -104,7 +97,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget _buildHeader(BuildContext context) {
     return Column(
       children: [
-
         Container(
               width: 60,
               height: 60,
@@ -124,7 +116,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
         const Gap(16),
 
-
         Text(
               'Crear Cuenta',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -137,7 +128,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             .slideY(begin: 0.2, end: 0),
 
         const Gap(8),
-
 
         Text(
               'Únete a nuestra comunidad de tenis',
@@ -155,7 +145,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget _buildForm(BuildContext context) {
     return Column(
       children: [
-
         CustomTextField(
               controller: _nameController,
               label: 'Nombre completo',
@@ -177,7 +166,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             .slideX(begin: -0.2, end: 0),
 
         const Gap(16),
-
 
         CustomTextField(
               controller: _emailController,
@@ -202,7 +190,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             .slideX(begin: -0.2, end: 0),
 
         const Gap(16),
-
 
         CustomTextField(
               controller: _phoneController,
@@ -230,11 +217,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
         const Gap(16),
 
-
         _buildRoleSelector(context),
 
         const Gap(16),
-
 
         CustomTextField(
               controller: _passwordController,
@@ -270,7 +255,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
         const Gap(16),
 
-
         CustomTextField(
               controller: _confirmPasswordController,
               label: 'Confirmar contraseña',
@@ -304,7 +288,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             .slideX(begin: -0.2, end: 0),
 
         const Gap(16),
-
 
         _buildTermsCheckbox(context),
       ],

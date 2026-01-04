@@ -26,6 +26,9 @@ import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../providers/tenant_provider.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
+  // Use authNotifierProvider (updated immediately after login) as primary source
+  final authNotifierState = ref.watch(authNotifierProvider);
+  // Also watch authStateProvider as fallback (stream-based)
   final authState = ref.watch(authStateProvider);
   // Use select to only rebuild when hasTenant actually changes value, not state
   final hasTenant = ref.watch(hasTenantProvider);
@@ -58,11 +61,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       final currentPath = matchedPath;
 
-      final user = authState.when(
+      // Get user from authNotifierProvider first (updated immediately), fallback to authStateProvider
+      final userFromNotifier = authNotifierState.value;
+      final userFromStream = authState.when(
         data: (user) => user,
         loading: () => null,
         error: (error, stackTrace) => null,
       );
+      final user = userFromNotifier ?? userFromStream;
 
       final isAuthenticated = user != null;
       final isLoggingIn = currentPath == '/login' || currentPath == '/register';
@@ -87,7 +93,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
         // If tenant is configured, redirect to home
         if (hasTenant) {
-          return user.role == 'professor' ? '/professor-home' : '/home';
+          final route = user.role == 'professor' ? '/professor-home' : '/home';
+          return route;
         }
       }
 

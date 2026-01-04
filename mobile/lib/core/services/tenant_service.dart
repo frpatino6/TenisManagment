@@ -7,8 +7,11 @@ import '../config/app_config.dart';
 /// Now uses MongoDB backend instead of SharedPreferences
 /// Stateless service - all state is managed by Riverpod providers
 class TenantService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseAuth _auth;
   final String _baseUrl = AppConfig.apiBaseUrl;
+
+  /// Constructor with optional FirebaseAuth for testing
+  TenantService({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
 
   /// Load the saved tenant ID from backend
   /// Returns the tenant ID if found, null otherwise

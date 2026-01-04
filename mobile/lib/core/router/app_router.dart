@@ -19,6 +19,7 @@ import '../../features/booking/presentation/screens/confirm_booking_screen.dart'
 import '../../features/booking/domain/models/schedule_model.dart';
 import '../../features/student/presentation/screens/my_bookings_screen.dart';
 import '../../features/student/presentation/screens/my_balance_screen.dart';
+import '../../features/student/presentation/screens/recent_activity_screen.dart';
 import '../../features/student/presentation/screens/request_service_screen.dart';
 import '../../features/settings/presentation/screens/theme_settings_screen.dart';
 import '../../features/tenant/presentation/screens/select_tenant_screen.dart';
@@ -175,6 +176,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/my-bookings',
         name: 'my-bookings',
         builder: (context, state) => const MyBookingsScreen(),
+      ),
+      GoRoute(
+        path: '/recent-activity',
+        name: 'recent-activity',
+        builder: (context, state) => const RecentActivityScreen(),
       ),
       GoRoute(
         path: '/my-balance',

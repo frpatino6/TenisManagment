@@ -186,6 +186,15 @@ class QuickActionsGrid extends StatelessWidget {
         },
       ),
       QuickAction(
+        title: 'Actividad Reciente',
+        subtitle: 'Consulta tu historial',
+        icon: Icons.history,
+        color: Colors.purple,
+        onTap: () {
+          context.push('/recent-activity');
+        },
+      ),
+      QuickAction(
         title: 'Mi Balance',
         subtitle: 'Revisa tu saldo',
         icon: Icons.account_balance_wallet,

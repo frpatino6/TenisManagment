@@ -7,7 +7,6 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/widgets/version_widget.dart';
 import '../../../../core/widgets/update_check_wrapper.dart';
 import '../widgets/user_profile_card.dart';
-import '../widgets/recent_activity_list.dart';
 import '../widgets/quick_actions_grid.dart';
 import '../widgets/favorite_professor_card.dart';
 import '../widgets/favorite_tenant_card.dart';
@@ -198,23 +197,6 @@ class HomeScreen extends ConsumerWidget {
                 QuickActionsGrid(user: user)
                     .animate()
                     .fadeIn(duration: 300.ms, delay: 300.ms)
-                    .slideY(begin: 0.1, end: 0),
-
-                const Gap(24),
-                Text(
-                      'Actividad Reciente',
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    )
-                    .animate()
-                    .fadeIn(duration: 300.ms, delay: 400.ms)
-                    .slideX(begin: -0.1, end: 0),
-
-                const Gap(16),
-
-                RecentActivityList(user: user)
-                    .animate()
-                    .fadeIn(duration: 300.ms, delay: 500.ms)
                     .slideY(begin: 0.1, end: 0),
 
                 const Gap(24),

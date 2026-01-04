@@ -24,7 +24,7 @@ Este proyecto implementa **Semantic Versioning (SemVer)** siguiendo los estánda
 
 ```bash
 # Incrementar versión patch (1.2.0 -> 1.2.1)
-node scripts/version.js patch
+node scripts/R
 
 # Incrementar versión minor (1.2.0 -> 1.3.0)
 node scripts/version.js minor

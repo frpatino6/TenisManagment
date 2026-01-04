@@ -20,11 +20,27 @@ export class FirebaseAuthController {
       const { idToken } = req.body;
 
       if (!idToken) {
+        this.logger.warn('verifyToken called without idToken');
         return res.status(400).json({ error: 'ID token is required' });
       }
 
+      this.logger.info('Verifying Firebase token', { tokenLength: idToken.length });
+
       // Verificar token con Firebase Admin SDK
-      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      let decodedToken;
+      try {
+        decodedToken = await admin.auth().verifyIdToken(idToken);
+        this.logger.info('Token verified successfully', { uid: decodedToken.uid, email: decodedToken.email });
+      } catch (verifyError: any) {
+        this.logger.error('Token verification failed', { 
+          error: verifyError.message, 
+          code: verifyError.code 
+        });
+        return res.status(401).json({ 
+          error: 'Token inválido o expirado', 
+          details: verifyError.message || 'El token de Firebase no pudo ser verificado'
+        });
+      }
 
       // Buscar usuario existente por Firebase UID
       let user = await AuthUserModel.findOne({ firebaseUid: decodedToken.uid });
@@ -116,12 +132,27 @@ export class FirebaseAuthController {
       const message = error instanceof Error ? error.message : String(error);
       const code = (error as any)?.code || 'unknown';
       const stack = error instanceof Error ? error.stack : undefined;
-      this.logger.error('Firebase auth error', { 
+      this.logger.error('Firebase auth error in verifyToken', { 
         error: message, 
         code,
-        stack: stack?.split('\n').slice(0, 3).join('\n')
+        stack: stack?.split('\n').slice(0, 5).join('\n')
       });
-      res.status(401).json({ error: 'Invalid token', details: message });
+      
+      // Mensajes más específicos según el tipo de error
+      let errorMessage = 'Error de autenticación';
+      let statusCode = 401;
+      
+      if (code === 'auth/id-token-expired' || message.includes('expired')) {
+        errorMessage = 'El token ha expirado. Por favor, inicia sesión nuevamente.';
+      } else if (code === 'auth/argument-error' || message.includes('malformed')) {
+        errorMessage = 'El token es inválido o está malformado.';
+      } else if (code === 'auth/invalid-credential' || message.includes('credential')) {
+        errorMessage = 'Las credenciales son incorrectas o han expirado.';
+      } else {
+        errorMessage = `Error de autenticación: ${message}`;
+      }
+      
+      res.status(statusCode).json({ error: errorMessage, details: message });
     }
   };
 
@@ -156,26 +187,51 @@ export class FirebaseAuthController {
       // Crear perfil según el rol
       if (role === 'student') {
         this.logger.info('Creating Student profile for AuthUser');
-        const student = await StudentModel.create({
-          authUserId: user._id,
-          name: name,
-          email: email,
-          phone: phone,
-          membershipType: 'basic',
-          balance: 0,
-        });
-        this.logger.info('Student created');
+        try {
+          const student = await StudentModel.create({
+            authUserId: user._id,
+            name: name,
+            email: email,
+            phone: phone,
+            membershipType: 'basic',
+            balance: 0,
+          });
+          this.logger.info('Student created', { studentId: student._id.toString() });
+        } catch (error: any) {
+          this.logger.error('Error creating Student profile', { error: error.message, stack: error.stack });
+          // Rollback: delete AuthUser if student creation fails
+          await AuthUserModel.findByIdAndDelete(user._id);
+          return res.status(500).json({ error: 'Failed to create student profile', details: error.message });
+        }
       } else if (role === 'professor') {
-        this.logger.info('Creating Professor profile for AuthUser');
-        const professor = await ProfessorModel.create({
-          authUserId: user._id,
-          name: name,
-          email: email,
-          phone: phone,
-          specialties: [],
-          hourlyRate: 0,
-        });
-        this.logger.info('Professor created');
+        this.logger.info('Creating Professor profile for AuthUser', { authUserId: user._id.toString() });
+        try {
+          const professor = await ProfessorModel.create({
+            authUserId: user._id,
+            name: name,
+            email: email,
+            phone: phone,
+            specialties: [],
+            hourlyRate: 0,
+            experienceYears: 0, // Required field
+          });
+          this.logger.info('Professor created successfully', { professorId: professor._id.toString() });
+        } catch (error: any) {
+          this.logger.error('Error creating Professor profile', { 
+            error: error.message, 
+            stack: error.stack,
+            authUserId: user._id.toString(),
+            email: email,
+            role: role
+          });
+          // Rollback: delete AuthUser if professor creation fails
+          await AuthUserModel.findByIdAndDelete(user._id);
+          return res.status(500).json({ 
+            error: 'Failed to create professor profile', 
+            details: error.message,
+            code: error.code || 'UNKNOWN_ERROR'
+          });
+        }
       }
 
       // Generar tokens JWT

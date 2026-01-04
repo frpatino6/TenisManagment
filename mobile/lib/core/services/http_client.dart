@@ -16,33 +16,19 @@ class AppHttpClient {
 
   AppHttpClient(this._ref);
 
-  /// Get the current tenant ID from the provider or service
+  /// Get the current tenant ID from the provider
+  /// Service is stateless, so we only use the provider
   String? _getTenantId() {
     try {
-      // First try to get from provider
+      // Get from provider (which loads from backend)
       final tenantId = _ref.read(currentTenantIdProvider);
       if (tenantId != null && tenantId.isNotEmpty) {
         return tenantId;
       }
-
-      // If provider returns null, try to get directly from service
-      final service = _ref.read(tenantServiceProvider);
-      final serviceTenantId = service.currentTenantId;
-      if (serviceTenantId != null && serviceTenantId.isNotEmpty) {
-        // Update provider state
-        _ref.read(currentTenantIdProvider.notifier).update(serviceTenantId);
-        return serviceTenantId;
-      }
-
       return null;
     } catch (e) {
-      // Provider not available, try service directly
-      try {
-        final service = _ref.read(tenantServiceProvider);
-        return service.currentTenantId;
-      } catch (e) {
-        return null;
-      }
+      // Provider not available
+      return null;
     }
   }
 

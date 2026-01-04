@@ -8,6 +8,7 @@ export interface StudentDocument {
   phone?: string; // Made optional for Google Sign-In users
   membershipType: 'basic' | 'premium';
   balance: number;
+  activeTenantId?: Types.ObjectId; // Reference to Tenant - currently active tenant
 }
 
 const StudentSchema = new Schema<StudentDocument>(
@@ -18,6 +19,7 @@ const StudentSchema = new Schema<StudentDocument>(
     phone: { type: String }, // Made optional for Google Sign-In users
     membershipType: { type: String, enum: ['basic', 'premium'], required: true },
     balance: { type: Number, default: 0 },
+    activeTenantId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: false },
   },
   { timestamps: true },
 );

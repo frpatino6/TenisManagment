@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/tenant_service.dart';
-import '../../features/tenant/domain/services/tenant_service.dart' as tenant_domain;
+import '../../features/tenant/domain/services/tenant_service.dart'
+    as tenant_domain;
 import '../../features/tenant/domain/models/tenant_model.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
 
 /// Provider for TenantService singleton
 final tenantServiceProvider = Provider<TenantService>((ref) {
@@ -9,30 +11,17 @@ final tenantServiceProvider = Provider<TenantService>((ref) {
 });
 
 /// Notifier for the current active tenant ID
+/// State is managed here, not in the service
 class CurrentTenantIdNotifier extends Notifier<String?> {
   @override
   String? build() {
-    // Initialize by reading from service
-    final service = ref.read(tenantServiceProvider);
-    final tenantId = service.currentTenantId;
-    
-    // If service has tenant but state is null, update state
-    if (tenantId != null && tenantId.isNotEmpty && state != tenantId) {
-      // Use Future.microtask to avoid modifying state during build
-      Future.microtask(() => state = tenantId);
-    }
-    
-    return tenantId;
+    // Always return null initially, will be updated by loadTenant
+    // This prevents showing stale tenant data from previous user
+    return null;
   }
 
   void update(String? tenantId) {
     state = tenantId;
-  }
-  
-  /// Refresh from service
-  void refresh() {
-    final service = ref.read(tenantServiceProvider);
-    state = service.currentTenantId;
   }
 }
 
@@ -53,27 +42,51 @@ final hasTenantProvider = Provider<bool>((ref) {
 class TenantNotifier extends Notifier<AsyncValue<String?>> {
   @override
   AsyncValue<String?> build() {
-    final service = ref.read(tenantServiceProvider);
-    final tenantId = service.currentTenantId;
-    return AsyncValue.data(tenantId);
+    // Watch auth state - if user changes, clear tenant
+    ref.listen(authStateProvider, (previous, next) {
+      final previousUser = previous?.value;
+      final nextUser = next.value;
+      
+      // If user changed (logout or different user login), clear tenant
+      if (previousUser != null && (nextUser == null || previousUser.id != nextUser.id)) {
+        state = const AsyncValue.loading();
+        ref.read(currentTenantIdProvider.notifier).update(null);
+        // Reload tenant for new user
+        if (nextUser != null) {
+          Future.microtask(() => loadTenant());
+        } else {
+          state = const AsyncValue.data(null);
+        }
+      } else if (nextUser != null && (previousUser == null || previousUser.id != nextUser.id)) {
+        // New user logged in, load their tenant
+        Future.microtask(() => loadTenant());
+      }
+    });
+    
+    // Start with loading to ensure router waits for tenant to load
+    // This prevents showing select-tenant screen when tenant is still loading
+    Future.microtask(() => loadTenant());
+    return const AsyncValue.loading();
   }
 
-  /// Load tenant from storage
+  /// Load tenant from backend
+  /// Always clears state first to prevent showing stale data from previous user
   Future<void> loadTenant() async {
+    // CRITICAL: Always clear state FIRST to prevent showing stale data from previous user
+    // This must happen before any async operations
     state = const AsyncValue.loading();
+    ref.read(currentTenantIdProvider.notifier).update(null);
+
     try {
       final service = ref.read(tenantServiceProvider);
-      
-      // Ensure service is initialized by calling loadTenant which initializes _prefs if needed
-      // loadTenant() already handles _prefs ??= await SharedPreferences.getInstance()
-      
+
+      // Always load from backend - service is stateless, no cache
       final tenantId = await service.loadTenant();
       state = AsyncValue.data(tenantId);
-      // Update the state provider as well - ensure it's updated
+
+      // Update the state provider
       if (tenantId != null && tenantId.isNotEmpty) {
         ref.read(currentTenantIdProvider.notifier).update(tenantId);
-        // Also refresh to ensure consistency
-        ref.read(currentTenantIdProvider.notifier).refresh();
       } else {
         ref.read(currentTenantIdProvider.notifier).update(null);
       }
@@ -93,8 +106,6 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
         state = AsyncValue.data(tenantId);
         // Update the state provider as well - ensure it's updated
         ref.read(currentTenantIdProvider.notifier).update(tenantId);
-        // Also refresh to ensure consistency
-        ref.read(currentTenantIdProvider.notifier).refresh();
       } else {
         throw Exception('Failed to save tenant ID');
       }
@@ -108,15 +119,10 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
   Future<void> clearTenant() async {
     state = const AsyncValue.loading();
     try {
-      final service = ref.read(tenantServiceProvider);
-      final success = await service.clearTenant();
-      if (success) {
-        state = const AsyncValue.data(null);
-        // Update the state provider as well
-        ref.read(currentTenantIdProvider.notifier).update(null);
-      } else {
-        throw Exception('Failed to clear tenant ID');
-      }
+      // Only clear local state in Riverpod, service is stateless
+      state = const AsyncValue.data(null);
+      // Update the state provider as well
+      ref.read(currentTenantIdProvider.notifier).update(null);
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
     }
@@ -131,7 +137,9 @@ final tenantNotifierProvider =
 
 /// Provider to get the current tenant model (with name, etc.)
 /// This provider fetches the tenant details based on the current tenant ID
-final currentTenantProvider = FutureProvider.autoDispose<TenantModel?>((ref) async {
+final currentTenantProvider = FutureProvider.autoDispose<TenantModel?>((
+  ref,
+) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null || tenantId.isEmpty) {
     return null;

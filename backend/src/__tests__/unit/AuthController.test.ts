@@ -69,18 +69,22 @@ describe('AuthController', () => {
 
         mockRequest.body = professorData;
 
-        AuthUserModel.findOne.mockResolvedValue(null);
-        ProfessorModel.create.mockResolvedValue({
-          _id: 'prof-id',
-          ...professorData.profile,
-          email: professorData.email
-        });
-        AuthUserModel.create.mockResolvedValue({
+        const mockAuthUser = {
           _id: 'auth-id',
           email: professorData.email,
           role: 'professor',
-          linkedId: 'prof-id',
+          linkedId: undefined,
           save: jest.fn().mockResolvedValue(undefined)
+        };
+
+        AuthUserModel.findOne.mockResolvedValue(null);
+        AuthUserModel.create.mockResolvedValue(mockAuthUser);
+        ProfessorModel.create.mockResolvedValue({
+          _id: 'prof-id',
+          authUserId: 'auth-id',
+          ...professorData.profile,
+          email: professorData.email,
+          experienceYears: 0
         });
 
         await controller.register(mockRequest, mockResponse);
@@ -91,7 +95,22 @@ describe('AuthController', () => {
           refreshToken: 'mock-refresh-token'
         });
         expect(mockPasswordService.hash).toHaveBeenCalledWith('password123');
-        expect(ProfessorModel.create).toHaveBeenCalled();
+        expect(AuthUserModel.create).toHaveBeenCalledWith({
+          email: professorData.email,
+          passwordHash: 'hashed-password',
+          role: 'professor',
+          name: professorData.profile.name
+        });
+        expect(ProfessorModel.create).toHaveBeenCalledWith({
+          authUserId: 'auth-id',
+          name: professorData.profile.name,
+          email: professorData.email,
+          phone: professorData.profile.phone,
+          specialties: professorData.profile.specialties,
+          hourlyRate: professorData.profile.hourlyRate,
+          experienceYears: 0
+        });
+        expect(mockAuthUser.save).toHaveBeenCalled();
       });
 
       it('should register a new student successfully', async () => {
@@ -108,19 +127,22 @@ describe('AuthController', () => {
 
         mockRequest.body = studentData;
 
-        AuthUserModel.findOne.mockResolvedValue(null);
-        StudentModel.create.mockResolvedValue({
-          _id: 'student-id',
-          ...studentData.profile,
-          email: studentData.email,
-          balance: 0
-        });
-        AuthUserModel.create.mockResolvedValue({
+        const mockAuthUser = {
           _id: 'auth-id',
           email: studentData.email,
           role: 'student',
-          linkedId: 'student-id',
+          linkedId: undefined,
           save: jest.fn().mockResolvedValue(undefined)
+        };
+
+        AuthUserModel.findOne.mockResolvedValue(null);
+        AuthUserModel.create.mockResolvedValue(mockAuthUser);
+        StudentModel.create.mockResolvedValue({
+          _id: 'student-id',
+          authUserId: 'auth-id',
+          ...studentData.profile,
+          email: studentData.email,
+          balance: 0
         });
 
         await controller.register(mockRequest, mockResponse);
@@ -130,7 +152,21 @@ describe('AuthController', () => {
           accessToken: 'mock-access-token',
           refreshToken: 'mock-refresh-token'
         });
-        expect(StudentModel.create).toHaveBeenCalled();
+        expect(AuthUserModel.create).toHaveBeenCalledWith({
+          email: studentData.email,
+          passwordHash: 'hashed-password',
+          role: 'student',
+          name: studentData.profile.name
+        });
+        expect(StudentModel.create).toHaveBeenCalledWith({
+          authUserId: 'auth-id',
+          name: studentData.profile.name,
+          email: studentData.email,
+          phone: studentData.profile.phone,
+          membershipType: studentData.profile.membershipType,
+          balance: 0
+        });
+        expect(mockAuthUser.save).toHaveBeenCalled();
       });
     });
 

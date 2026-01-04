@@ -593,29 +593,48 @@ export class ProfessorDashboardController {
    */
   createSchedule = async (req: Request, res: Response) => {
     console.log('=== ProfessorDashboardController.createSchedule called ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('req.user:', JSON.stringify(req.user, null, 2));
+    console.log('Firebase UID:', req.user?.uid);
+    console.log('Step 1: Starting try block...');
     
     try {
+      console.log('Step 2: Getting firebaseUid...');
       const firebaseUid = req.user?.uid;
+      console.log('Step 3: firebaseUid =', firebaseUid);
+      
       if (!firebaseUid) {
+        console.log('ERROR: No firebaseUid found');
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
+      console.log('Step 4: Destructuring request body...');
       const { date, startTime, endTime, tenantId } = req.body;
+      console.log('Parsed body:', { date, startTime, endTime, tenantId });
       
       if (!date || !startTime || !endTime) {
+        console.log('ERROR: Missing required fields');
         return res.status(400).json({ error: 'Faltan campos requeridos: date, startTime, endTime' });
       }
+      
+      console.log('Step 5: All required fields present, continuing...');
 
       // Get professor
+      console.log('Looking for AuthUser with firebaseUid:', firebaseUid);
       const authUser = await AuthUserModel.findOne({ firebaseUid });
       if (!authUser) {
+        console.log('ERROR: AuthUser not found');
         return res.status(404).json({ error: 'Usuario no encontrado' });
       }
+      console.log('AuthUser found:', authUser._id);
 
+      console.log('Looking for Professor with authUserId:', authUser._id);
       const professor = await ProfessorModel.findOne({ authUserId: authUser._id });
       if (!professor) {
+        console.log('ERROR: Professor not found');
         return res.status(404).json({ error: 'Perfil de profesor no encontrado' });
       }
+      console.log('Professor found:', professor._id);
 
       // Determine tenantId: from body, header, or first active tenant
       let finalTenantId: Types.ObjectId | null = null;
@@ -676,11 +695,25 @@ export class ProfessorDashboardController {
       // The client creates DateTime.utc() with the selected local time components
       // So if user selects 10:00 AM local, client sends 10:00 UTC (not 15:00 UTC)
       // We can directly parse these as UTC dates
+      console.log('Parsing dates...');
       const parsedStartTime = new Date(startTime);
       const parsedEndTime = new Date(endTime);
       const parsedDate = new Date(date);
+      console.log('Parsed dates:', {
+        startTime: parsedStartTime.toISOString(),
+        endTime: parsedEndTime.toISOString(),
+        date: parsedDate.toISOString()
+      });
 
       // Create schedule with tenantId
+      console.log('Creating schedule with:', {
+        tenantId: finalTenantId.toString(),
+        professorId: professor._id.toString(),
+        date: parsedDate.toISOString(),
+        startTime: parsedStartTime.toISOString(),
+        endTime: parsedEndTime.toISOString()
+      });
+      
       const schedule = await ScheduleModel.create({
         tenantId: finalTenantId,
         professorId: professor._id,
@@ -691,7 +724,7 @@ export class ProfessorDashboardController {
         status: 'pending'
       });
 
-      console.log(`Schedule created: ${schedule._id} with tenantId: ${finalTenantId}`);
+      console.log(`Schedule created successfully: ${schedule._id} with tenantId: ${finalTenantId}`);
       
       res.status(201).json({
         id: schedule._id,
@@ -704,17 +737,30 @@ export class ProfessorDashboardController {
         status: schedule.status
       });
     } catch (error) {
-      console.error('Error creating schedule:', error);
+      console.error('=== ERROR in createSchedule ===');
+      console.error('Error type:', error?.constructor?.name);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      if (error && typeof error === 'object') {
+        try {
+          console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+        } catch (e) {
+          console.error('Could not stringify error object');
+        }
+      }
+      
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       
       // Check if it's a validation error (e.g., missing tenantId)
       if (errorMessage.includes('tenantId') || errorMessage.includes('required')) {
+        console.log('Returning 400 - Validation error');
         return res.status(400).json({ 
           error: 'Error de validación', 
           message: 'El horario requiere un centro (tenantId) asociado' 
         });
       }
       
+      console.log('Returning 500 - Internal server error');
       res.status(500).json({ error: 'Error interno del servidor', message: errorMessage });
     }
   };

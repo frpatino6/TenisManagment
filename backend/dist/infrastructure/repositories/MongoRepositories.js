@@ -216,12 +216,14 @@ class MongoBookingRepository {
         const created = await BookingModel_1.BookingModel.create({
             ...booking,
             studentId: new mongoose_1.Types.ObjectId(booking.studentId),
-            scheduleId: new mongoose_1.Types.ObjectId(booking.scheduleId),
+            scheduleId: booking.scheduleId ? new mongoose_1.Types.ObjectId(booking.scheduleId) : undefined,
+            courtId: booking.courtId ? new mongoose_1.Types.ObjectId(booking.courtId) : undefined,
         });
         return {
             id: created._id.toString(),
             studentId: created.studentId.toString(),
-            scheduleId: created.scheduleId.toString(),
+            scheduleId: created.scheduleId?.toString(),
+            courtId: created.courtId?.toString(),
             serviceType: created.serviceType,
             status: created.status,
             price: created.price,
@@ -235,7 +237,8 @@ class MongoBookingRepository {
         return docs.map((d) => ({
             id: d._id.toString(),
             studentId: d.studentId.toString(),
-            scheduleId: d.scheduleId.toString(),
+            scheduleId: d.scheduleId?.toString(),
+            courtId: d.courtId?.toString(),
             serviceType: d.serviceType,
             status: d.status,
             price: d.price,
@@ -249,7 +252,8 @@ class MongoBookingRepository {
         return docs.map((d) => ({
             id: d._id.toString(),
             studentId: d.studentId.toString(),
-            scheduleId: d.scheduleId.toString(),
+            scheduleId: d.scheduleId?.toString(),
+            courtId: d.courtId?.toString(),
             serviceType: d.serviceType,
             status: d.status,
             price: d.price,
@@ -264,7 +268,8 @@ class MongoBookingRepository {
             ? {
                 id: d._id.toString(),
                 studentId: d.studentId.toString(),
-                scheduleId: d.scheduleId.toString(),
+                scheduleId: d.scheduleId?.toString(),
+                courtId: d.courtId?.toString(),
                 serviceType: d.serviceType,
                 status: d.status,
                 price: d.price,

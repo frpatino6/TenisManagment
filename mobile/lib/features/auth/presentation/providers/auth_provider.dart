@@ -3,16 +3,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/models/user_model.dart';
 import '../../domain/services/auth_service.dart';
 
-
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService();
 });
 
-
 final firebaseAuthProvider = StreamProvider<User?>((ref) {
   return FirebaseAuth.instance.authStateChanges();
 });
-
 
 final authStateProvider = StreamProvider<UserModel?>((ref) {
   final authService = ref.watch(authServiceProvider);
@@ -40,7 +37,6 @@ final authStateProvider = StreamProvider<UserModel?>((ref) {
   );
 });
 
-
 class AuthLoadingNotifier extends Notifier<bool> {
   @override
   bool build() => false;
@@ -49,7 +45,6 @@ class AuthLoadingNotifier extends Notifier<bool> {
     state = loading;
   }
 }
-
 
 class AuthErrorNotifier extends Notifier<String?> {
   @override
@@ -64,16 +59,13 @@ class AuthErrorNotifier extends Notifier<String?> {
   }
 }
 
-
 final authLoadingProvider = NotifierProvider<AuthLoadingNotifier, bool>(
   () => AuthLoadingNotifier(),
 );
 
-
 final authErrorProvider = NotifierProvider<AuthErrorNotifier, String?>(
   () => AuthErrorNotifier(),
 );
-
 
 class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
   @override
@@ -114,7 +106,11 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
       ref.read(authErrorProvider.notifier).setError(null);
 
       final authService = ref.read(authServiceProvider);
-      await authService.signInWithEmail(email, password);
+      final userModel = await authService.signInWithEmail(email, password);
+
+      // After successful login, manually update the state
+      // This ensures the state is updated immediately instead of waiting for the stream
+      state = AsyncValue.data(userModel);
     } catch (e) {
       ref.read(authErrorProvider.notifier).setError(e.toString());
       rethrow;
@@ -185,12 +181,10 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
   }
 }
 
-
 final authNotifierProvider =
     NotifierProvider<AuthNotifier, AsyncValue<UserModel?>>(() {
       return AuthNotifier();
     });
-
 
 final isAuthenticatedProvider = Provider<bool>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -200,7 +194,6 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
     error: (error, stackTrace) => false,
   );
 });
-
 
 final currentUserProvider = Provider<UserModel?>((ref) {
   final authState = ref.watch(authStateProvider);

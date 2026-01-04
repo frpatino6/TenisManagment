@@ -49,12 +49,8 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
 
     try {
       final service = ref.read(tenant_domain.tenantDomainServiceProvider);
-      // First try to get user's tenants, if empty, get all available
-      var tenants = await service.getMyTenants();
-      if (tenants.isEmpty) {
-        // If user has no tenants, get all available tenants
-        tenants = await service.getAvailableTenants();
-      }
+      // Always get all available tenants so user can select any center
+      final tenants = await service.getAvailableTenants();
 
       setState(() {
         _allTenants = tenants;

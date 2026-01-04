@@ -19,7 +19,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
 
 
-    final authState = ref.watch(authStateProvider);
+    final authState = ref.watch(authNotifierProvider);
     final isLoading = ref.watch(authLoadingProvider);
 
     return Scaffold(
@@ -54,7 +54,7 @@ class HomeScreen extends ConsumerWidget {
               ),
               const Gap(24),
               ElevatedButton(
-                onPressed: () => ref.invalidate(authStateProvider),
+                onPressed: () => ref.invalidate(authNotifierProvider),
                 child: const Text('Reintentar'),
               ),
             ],

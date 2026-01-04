@@ -29,6 +29,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _acceptTerms = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Prellenar campos para pruebas
+    _nameController.text = 'cliente1';
+    _emailController.text = 'cliente1@gmail.com';
+    _phoneController.text = '3000000000';
+    _passwordController.text = 's4ntiago';
+    _confirmPasswordController.text = 's4ntiago';
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();

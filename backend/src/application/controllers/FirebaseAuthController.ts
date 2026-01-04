@@ -24,13 +24,11 @@ export class FirebaseAuthController {
         return res.status(400).json({ error: 'ID token is required' });
       }
 
-      this.logger.info('Verifying Firebase token', { tokenLength: idToken.length });
 
       // Verificar token con Firebase Admin SDK
       let decodedToken;
       try {
         decodedToken = await admin.auth().verifyIdToken(idToken);
-        this.logger.info('Token verified successfully', { uid: decodedToken.uid, email: decodedToken.email });
       } catch (verifyError: any) {
         this.logger.error('Token verification failed', { 
           error: verifyError.message, 
@@ -51,7 +49,6 @@ export class FirebaseAuthController {
           const existingStudent = await StudentModel.findOne({ authUserId: user._id });
 
           if (!existingStudent) {
-            this.logger.info('Creating missing Student profile for existing user');
             await StudentModel.create({
               authUserId: user._id,
               name: user.name || decodedToken.name || 'Usuario',
@@ -59,13 +56,11 @@ export class FirebaseAuthController {
               membershipType: 'basic',
               balance: 0,
             });
-            this.logger.info('Student profile created');
           }
         } else if (user.role === 'professor') {
           const existingProfessor = await ProfessorModel.findOne({ authUserId: user._id });
 
           if (!existingProfessor) {
-            this.logger.info('Creating missing Professor profile for existing user');
             await ProfessorModel.create({
               authUserId: user._id,
               name: user.name || decodedToken.name || 'Usuario',
@@ -73,41 +68,62 @@ export class FirebaseAuthController {
               phone: '',
               specialties: [],
               hourlyRate: 0,
+              experienceYears: 0,
             });
-            this.logger.info('Professor profile created');
           }
         }
-      } else if (!user) {
+      } else {
         // Buscar por email si no existe Firebase UID
         user = await AuthUserModel.findOne({ email: decodedToken.email });
 
         if (user) {
           // Vincular Firebase UID a usuario existente
-          this.logger.info('Linking Firebase UID to existing user');
           user.firebaseUid = decodedToken.uid;
           await user.save();
+          
+          // Verificar si tiene perfil de estudiante o profesor
+          if (user.role === 'student') {
+            const existingStudent = await StudentModel.findOne({ authUserId: user._id });
+            if (!existingStudent) {
+              await StudentModel.create({
+                authUserId: user._id,
+                name: user.name || decodedToken.name || 'Usuario',
+                email: user.email,
+                membershipType: 'basic',
+                balance: 0,
+              });
+            }
+          } else if (user.role === 'professor') {
+            const existingProfessor = await ProfessorModel.findOne({ authUserId: user._id });
+            if (!existingProfessor) {
+              await ProfessorModel.create({
+                authUserId: user._id,
+                name: user.name || decodedToken.name || 'Usuario',
+                email: user.email,
+                phone: '',
+                specialties: [],
+                hourlyRate: 0,
+                experienceYears: 0,
+              });
+            }
+          }
         } else {
           // Crear nuevo usuario
-          this.logger.info('Creating new AuthUser for Firebase UID');
           user = await AuthUserModel.create({
             firebaseUid: decodedToken.uid,
             email: decodedToken.email,
             name: decodedToken.name || 'Usuario',
             role: 'student', // Por defecto
           });
-          this.logger.info('AuthUser created');
 
           // Crear perfil de estudiante por defecto
-          this.logger.info('Creating Student profile for AuthUser');
-          const student = await StudentModel.create({
+          await StudentModel.create({
             authUserId: user._id,
             name: decodedToken.name || user.name || 'Usuario',
             email: decodedToken.email,
-            // phone is optional for Google Sign-In users
             membershipType: 'basic',
             balance: 0,
           });
-          this.logger.info('Student created');
         }
       }
 
@@ -261,11 +277,51 @@ export class FirebaseAuthController {
   // Obtener información del usuario autenticado
   getMe = async (req: Request, res: Response) => {
     try {
-      const user = await AuthUserModel.findById(req.user?.id);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
+      const userId = req.user?.id;
+      const firebaseUid = req.user?.uid;
+      
+      if (!userId) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
+      let user = await AuthUserModel.findById(userId);
+      
+      // Si no se encuentra por ID, intentar por firebaseUid
+      if (!user && firebaseUid) {
+        user = await AuthUserModel.findOne({ firebaseUid });
+      }
+      
+      if (!user) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+
+      // Verificar si tiene perfil de estudiante o profesor
+      if (user.role === 'student') {
+        const student = await StudentModel.findOne({ authUserId: user._id });
+        if (!student) {
+          await StudentModel.create({
+            authUserId: user._id,
+            name: user.name || 'Usuario',
+            email: user.email,
+            membershipType: 'basic',
+            balance: 0,
+          });
+        }
+      } else if (user.role === 'professor') {
+        const professor = await ProfessorModel.findOne({ authUserId: user._id });
+        if (!professor) {
+          await ProfessorModel.create({
+            authUserId: user._id,
+            name: user.name || 'Usuario',
+            email: user.email,
+            phone: '',
+            specialties: [],
+            hourlyRate: 0,
+            experienceYears: 0,
+          });
+        }
+      }
+      
       res.json({
         id: user._id,
         email: user.email,
@@ -273,7 +329,7 @@ export class FirebaseAuthController {
         role: user.role,
       });
     } catch (error) {
-      res.status(400).json({ error: (error as Error).message });
+      res.status(500).json({ error: 'Error interno del servidor', details: (error as Error).message });
     }
   };
 }

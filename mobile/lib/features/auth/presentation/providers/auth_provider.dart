@@ -146,13 +146,17 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
       ref.read(authErrorProvider.notifier).setError(null);
 
       final authService = ref.read(authServiceProvider);
-      await authService.registerWithEmail(
+      final userModel = await authService.registerWithEmail(
         name: name,
         email: email,
         password: password,
         phone: phone,
         role: role,
       );
+
+      // After successful registration, manually update the state
+      // This ensures the state is updated immediately instead of waiting for the stream
+      state = AsyncValue.data(userModel);
     } catch (e) {
       ref.read(authErrorProvider.notifier).setError(e.toString());
       rethrow;

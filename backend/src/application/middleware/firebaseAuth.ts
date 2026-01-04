@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import admin from '../../infrastructure/auth/firebase';
 import { config } from '../../infrastructure/config';
 import { AuthUserModel } from '../../infrastructure/database/models/AuthUserModel';
+import { StudentModel } from '../../infrastructure/database/models/StudentModel';
+import { ProfessorModel } from '../../infrastructure/database/models/ProfessorModel';
 import { Logger } from '../../infrastructure/services/Logger';
 const logger = new Logger({ module: 'firebaseAuthMiddleware' });
 
@@ -22,14 +24,75 @@ export const firebaseAuthMiddleware = async (req: Request, res: Response, next: 
 
     // Verificar token con Firebase
     const decodedToken = await admin.auth().verifyIdToken(idToken);
-    logger.info('Token verified');
 
     // Buscar usuario en la base de datos por firebaseUid
-    const user = await AuthUserModel.findOne({ firebaseUid: decodedToken.uid });
+    let user = await AuthUserModel.findOne({ firebaseUid: decodedToken.uid });
 
     if (!user) {
-      logger.warn('User not found for Firebase UID');
-      return res.status(404).json({ error: 'User not found' });
+      // Si no se encuentra por firebaseUid, intentar buscar por email
+      user = await AuthUserModel.findOne({ email: decodedToken.email });
+      
+      if (user) {
+        // Vincular el firebaseUid al usuario existente
+        user.firebaseUid = decodedToken.uid;
+        await user.save();
+        
+        // Asegurar que tenga perfil creado
+        if (user.role === 'student') {
+          const student = await StudentModel.findOne({ authUserId: user._id });
+          if (!student) {
+            await StudentModel.create({
+              authUserId: user._id,
+              name: user.name || decodedToken.name || 'Usuario',
+              email: user.email,
+              membershipType: 'basic',
+              balance: 0,
+            });
+          }
+        } else if (user.role === 'professor') {
+          const professor = await ProfessorModel.findOne({ authUserId: user._id });
+          if (!professor) {
+            await ProfessorModel.create({
+              authUserId: user._id,
+              name: user.name || decodedToken.name || 'Usuario',
+              email: user.email,
+              phone: '',
+              specialties: [],
+              hourlyRate: 0,
+              experienceYears: 0,
+            });
+          }
+        }
+      } else {
+        return res.status(404).json({ error: 'User not found' });
+      }
+    } else {
+      // Asegurar que tenga perfil creado
+      if (user.role === 'student') {
+        const student = await StudentModel.findOne({ authUserId: user._id });
+        if (!student) {
+          await StudentModel.create({
+            authUserId: user._id,
+            name: user.name || decodedToken.name || 'Usuario',
+            email: user.email,
+            membershipType: 'basic',
+            balance: 0,
+          });
+        }
+      } else if (user.role === 'professor') {
+        const professor = await ProfessorModel.findOne({ authUserId: user._id });
+        if (!professor) {
+          await ProfessorModel.create({
+            authUserId: user._id,
+            name: user.name || decodedToken.name || 'Usuario',
+            email: user.email,
+            phone: '',
+            specialties: [],
+            hourlyRate: 0,
+            experienceYears: 0,
+          });
+        }
+      }
     }
 
     // Agregar información del usuario a la request

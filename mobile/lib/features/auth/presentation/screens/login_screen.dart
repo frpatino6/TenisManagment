@@ -382,8 +382,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       await ref.read(authNotifierProvider.notifier).signInWithGoogle();
 
+      // The AuthNotifier now updates the state immediately after login
+      // So we can read it directly without waiting
       if (mounted) {
-        context.go('/home');
+        // Small delay to ensure state is updated
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        // Read the state from authNotifierProvider (which is updated immediately)
+        final authNotifierState = ref.read(authNotifierProvider);
+        final user = authNotifierState.value;
+
+        // Fallback: also check authStateProvider
+        final authState = ref.read(authStateProvider);
+        final userFromStream = authState.value ?? user;
+
+        final finalUser = userFromStream ?? user;
+
+        if (mounted && finalUser != null) {
+          final hasTenant = ref.read(hasTenantProvider);
+          if (hasTenant) {
+            final route = finalUser.role == 'professor'
+                ? '/professor-home'
+                : '/home';
+            context.go(route);
+          } else {
+            context.go('/select-tenant');
+          }
+        }
       }
     } catch (_) {
       // Error handled by provider

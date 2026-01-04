@@ -7,6 +7,7 @@ import student from './student';
 import pricing from './pricing';
 import admin from './admin';
 import tenant from './tenant';
+import config from './config';
 
 const router = Router();
 
@@ -23,5 +24,6 @@ router.use('/student', student);
 router.use('/pricing', pricing);
 router.use('/admin', admin);
 router.use('/tenant', tenant);
+router.use('/config', config);
 
 export default router;

@@ -19,19 +19,30 @@ class AuthController {
             if (existing)
                 return res.status(409).json({ error: 'Email already used' });
             const passwordHash = await this.passwordSvc.hash(password);
+            // Create AuthUser first (required for Professor/Student models)
+            const user = await AuthUserModel_1.AuthUserModel.create({
+                email,
+                passwordHash,
+                role,
+                name: profile.name,
+            });
+            // Create profile with authUserId reference
             let linkedId;
             if (role === 'professor') {
                 const prof = await ProfessorModel_1.ProfessorModel.create({
+                    authUserId: user._id, // Required field
                     name: profile.name,
                     email,
                     phone: profile.phone,
                     specialties: profile.specialties ?? [],
                     hourlyRate: profile.hourlyRate ?? 0,
+                    experienceYears: 0, // Default value
                 });
                 linkedId = prof._id;
             }
             else {
                 const student = await StudentModel_1.StudentModel.create({
+                    authUserId: user._id, // Required field
                     name: profile.name,
                     email,
                     phone: profile.phone,
@@ -40,7 +51,8 @@ class AuthController {
                 });
                 linkedId = student._id;
             }
-            const user = await AuthUserModel_1.AuthUserModel.create({ email, passwordHash, role, linkedId });
+            // Update AuthUser with linkedId (optional, for backward compatibility)
+            user.linkedId = linkedId;
             const access = this.jwt.signAccess({ sub: user._id.toString(), role });
             const refresh = this.jwt.signRefresh({ sub: user._id.toString(), role });
             user.refreshToken = refresh;

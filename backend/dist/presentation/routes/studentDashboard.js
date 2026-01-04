@@ -3,10 +3,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const StudentDashboardController_1 = require("../../application/controllers/StudentDashboardController");
 const firebaseAuth_1 = require("../../application/middleware/firebaseAuth");
+const tenant_1 = require("../../application/middleware/tenant");
 const router = (0, express_1.Router)();
 const controller = new StudentDashboardController_1.StudentDashboardController();
 // All routes use Firebase authentication
 router.use(firebaseAuth_1.firebaseAuthMiddleware);
+// Extract tenant ID from X-Tenant-ID header
+router.use(tenant_1.extractTenantId);
 // Student dashboard endpoints
 router.get('/activities', controller.getRecentActivities);
 router.get('/me', controller.getStudentInfo);
@@ -18,6 +21,7 @@ router.get('/all-available-schedules', controller.getAllAvailableSchedules); // 
 router.get('/tenants', controller.getMyTenants); // TEN-91: Tenants del estudiante
 router.get('/tenants/available', controller.getAvailableTenants); // TEN-91: Todos los centros disponibles
 router.get('/courts', controller.getCourts); // TEN-96: Canchas disponibles del centro activo
+router.get('/courts/:courtId/available-slots', controller.getCourtAvailableSlots); // Horarios disponibles de una cancha
 router.get('/bookings', controller.getBookings);
 router.post('/book-lesson', controller.bookLesson);
 router.post('/book-court', controller.bookCourt);

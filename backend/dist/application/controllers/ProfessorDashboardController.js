@@ -507,42 +507,112 @@ class ProfessorDashboardController {
          */
         this.createSchedule = async (req, res) => {
             console.log('=== ProfessorDashboardController.createSchedule called ===');
+            console.log('Request body:', JSON.stringify(req.body, null, 2));
+            console.log('req.user:', JSON.stringify(req.user, null, 2));
+            console.log('Firebase UID:', req.user?.uid);
+            console.log('Step 1: Starting try block...');
             try {
+                console.log('Step 2: Getting firebaseUid...');
                 const firebaseUid = req.user?.uid;
+                console.log('Step 3: firebaseUid =', firebaseUid);
                 if (!firebaseUid) {
+                    console.log('ERROR: No firebaseUid found');
                     return res.status(401).json({ error: 'Usuario no autenticado' });
                 }
-                const { date, startTime, endTime } = req.body;
+                console.log('Step 4: Destructuring request body...');
+                const { date, startTime, endTime, tenantId } = req.body;
+                console.log('Parsed body:', { date, startTime, endTime, tenantId });
                 if (!date || !startTime || !endTime) {
+                    console.log('ERROR: Missing required fields');
                     return res.status(400).json({ error: 'Faltan campos requeridos: date, startTime, endTime' });
                 }
+                console.log('Step 5: All required fields present, continuing...');
                 // Get professor
+                console.log('Looking for AuthUser with firebaseUid:', firebaseUid);
                 const authUser = await AuthUserModel_1.AuthUserModel.findOne({ firebaseUid });
                 if (!authUser) {
+                    console.log('ERROR: AuthUser not found');
                     return res.status(404).json({ error: 'Usuario no encontrado' });
                 }
+                console.log('AuthUser found:', authUser._id);
+                console.log('Looking for Professor with authUserId:', authUser._id);
                 const professor = await ProfessorModel_1.ProfessorModel.findOne({ authUserId: authUser._id });
                 if (!professor) {
+                    console.log('ERROR: Professor not found');
                     return res.status(404).json({ error: 'Perfil de profesor no encontrado' });
                 }
-                // Parse dates - they come in ISO format but we need to preserve local time
-                // The client sends dates in local timezone, but when parsed as Date they become UTC
-                // We need to adjust by adding the timezone offset
+                console.log('Professor found:', professor._id);
+                // Determine tenantId: from body, header, or first active tenant
+                let finalTenantId = null;
+                // 1. Try from request body
+                if (tenantId) {
+                    if (!mongoose_1.Types.ObjectId.isValid(tenantId)) {
+                        return res.status(400).json({ error: 'tenantId inválido' });
+                    }
+                    finalTenantId = new mongoose_1.Types.ObjectId(tenantId);
+                    // Verify professor has access to this tenant
+                    const professorTenant = await ProfessorTenantModel_1.ProfessorTenantModel.findOne({
+                        professorId: professor._id,
+                        tenantId: finalTenantId,
+                        isActive: true
+                    });
+                    if (!professorTenant) {
+                        return res.status(403).json({ error: 'El profesor no tiene acceso a este centro' });
+                    }
+                }
+                else if (req.tenantId) {
+                    // 2. Try from header (X-Tenant-ID)
+                    finalTenantId = new mongoose_1.Types.ObjectId(req.tenantId);
+                    // Verify professor has access to this tenant
+                    const professorTenant = await ProfessorTenantModel_1.ProfessorTenantModel.findOne({
+                        professorId: professor._id,
+                        tenantId: finalTenantId,
+                        isActive: true
+                    });
+                    if (!professorTenant) {
+                        return res.status(403).json({ error: 'El profesor no tiene acceso a este centro' });
+                    }
+                }
+                else {
+                    // 3. Get first active tenant for the professor
+                    const professorTenant = await ProfessorTenantModel_1.ProfessorTenantModel.findOne({
+                        professorId: professor._id,
+                        isActive: true
+                    }).sort({ joinedAt: -1 }); // Get most recently joined tenant
+                    if (!professorTenant) {
+                        return res.status(400).json({
+                            error: 'El profesor no está asociado a ningún centro. Debe estar asociado a un centro para crear horarios.'
+                        });
+                    }
+                    finalTenantId = professorTenant.tenantId;
+                    console.log(`Using default tenant for professor: ${finalTenantId}`);
+                }
+                if (!finalTenantId) {
+                    return res.status(400).json({ error: 'No se pudo determinar el centro (tenantId) para el horario' });
+                }
+                // Parse dates - the client now sends UTC DateTime with the exact hour/minute selected
+                // The client creates DateTime.utc() with the selected local time components
+                // So if user selects 10:00 AM local, client sends 10:00 UTC (not 15:00 UTC)
+                // We can directly parse these as UTC dates
+                console.log('Parsing dates...');
                 const parsedStartTime = new Date(startTime);
                 const parsedEndTime = new Date(endTime);
                 const parsedDate = new Date(date);
-                console.log('Received dates (from client):', { date, startTime, endTime });
-                console.log('Parsed as UTC:', {
-                    parsedDate: parsedDate.toISOString(),
-                    parsedStartTime: parsedStartTime.toISOString(),
-                    parsedEndTime: parsedEndTime.toISOString()
+                console.log('Parsed dates:', {
+                    startTime: parsedStartTime.toISOString(),
+                    endTime: parsedEndTime.toISOString(),
+                    date: parsedDate.toISOString()
                 });
-                console.log('Local time interpretation:', {
-                    startHour: parsedStartTime.getUTCHours(),
-                    endHour: parsedEndTime.getUTCHours(),
+                // Create schedule with tenantId
+                console.log('Creating schedule with:', {
+                    tenantId: finalTenantId.toString(),
+                    professorId: professor._id.toString(),
+                    date: parsedDate.toISOString(),
+                    startTime: parsedStartTime.toISOString(),
+                    endTime: parsedEndTime.toISOString()
                 });
-                // Create schedule
                 const schedule = await ScheduleModel_1.ScheduleModel.create({
+                    tenantId: finalTenantId,
                     professorId: professor._id,
                     date: parsedDate,
                     startTime: parsedStartTime,
@@ -550,9 +620,10 @@ class ProfessorDashboardController {
                     isAvailable: true,
                     status: 'pending'
                 });
-                console.log(`Schedule created: ${schedule._id}`);
+                console.log(`Schedule created successfully: ${schedule._id} with tenantId: ${finalTenantId}`);
                 res.status(201).json({
                     id: schedule._id,
+                    tenantId: schedule.tenantId,
                     professorId: schedule.professorId,
                     date: schedule.date,
                     startTime: schedule.startTime,
@@ -562,8 +633,29 @@ class ProfessorDashboardController {
                 });
             }
             catch (error) {
-                console.error('Error creating schedule:', error);
-                res.status(500).json({ error: 'Error interno del servidor' });
+                console.error('=== ERROR in createSchedule ===');
+                console.error('Error type:', error?.constructor?.name);
+                console.error('Error message:', error instanceof Error ? error.message : String(error));
+                console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+                if (error && typeof error === 'object') {
+                    try {
+                        console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+                    }
+                    catch (e) {
+                        console.error('Could not stringify error object');
+                    }
+                }
+                const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+                // Check if it's a validation error (e.g., missing tenantId)
+                if (errorMessage.includes('tenantId') || errorMessage.includes('required')) {
+                    console.log('Returning 400 - Validation error');
+                    return res.status(400).json({
+                        error: 'Error de validación',
+                        message: 'El horario requiere un centro (tenantId) asociado'
+                    });
+                }
+                console.log('Returning 500 - Internal server error');
+                res.status(500).json({ error: 'Error interno del servidor', message: errorMessage });
             }
         };
         /**
@@ -590,14 +682,16 @@ class ProfessorDashboardController {
                 if (!professor) {
                     return res.status(404).json({ error: 'Perfil de profesor no encontrado' });
                 }
-                // Get all schedules for the professor
+                // Get all schedules for the professor - only future schedules
+                const now = new Date();
                 const schedules = await ScheduleModel_1.ScheduleModel.find({
                     professorId: professor._id,
-                    startTime: { $gte: new Date() } // Only future schedules
+                    startTime: { $gte: now } // Only future schedules
                 })
                     .populate('studentId', 'name email')
+                    .populate('tenantId', 'name slug')
                     .sort({ startTime: 1 })
-                    .limit(100);
+                    .limit(200);
                 const schedulesData = schedules.map(schedule => {
                     const hasStudent = !!schedule.studentId;
                     // Debug: Log raw studentId
@@ -610,17 +704,20 @@ class ProfessorDashboardController {
                             isAvailable: schedule.isAvailable
                         });
                     }
+                    const tenant = schedule.tenantId;
                     return {
                         id: schedule._id.toString(),
-                        date: schedule.date,
-                        startTime: schedule.startTime,
-                        endTime: schedule.endTime,
+                        date: schedule.date.toISOString(),
+                        startTime: schedule.startTime.toISOString(),
+                        endTime: schedule.endTime.toISOString(),
                         isAvailable: schedule.isAvailable,
                         isBlocked: schedule.isBlocked || false,
                         blockReason: schedule.blockReason || null,
-                        status: schedule.status,
+                        status: schedule.status || 'pending',
                         studentName: hasStudent ? schedule.studentId.name : null,
-                        studentEmail: hasStudent ? schedule.studentId.email : null
+                        studentEmail: hasStudent ? schedule.studentId.email : null,
+                        tenantId: tenant ? tenant._id.toString() : null,
+                        tenantName: tenant ? tenant.name : null
                     };
                 });
                 // Log booked schedules for debugging

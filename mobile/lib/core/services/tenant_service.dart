@@ -13,8 +13,9 @@ class TenantService {
   /// Constructor with optional FirebaseAuth for testing
   TenantService({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
 
-  /// Load the saved tenant ID from backend
-  /// Returns the tenant ID if found, null otherwise
+  /// Load the tenant ID from backend
+  /// Returns the first favorite tenant ID (no longer uses activeTenantId)
+  /// Returns null if no favorite tenant is configured
   /// Stateless - always loads fresh from backend
   Future<String?> loadTenant() async {
     try {
@@ -55,8 +56,8 @@ class TenantService {
     }
   }
 
-  /// Set the active tenant ID
-  /// Saves to backend
+  /// Set the tenant (adds to favorites and makes it first)
+  /// No longer uses activeTenantId, uses favorites instead
   /// Returns true if successful, false otherwise
   Future<bool> setTenant(String tenantId) async {
     try {

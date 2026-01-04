@@ -1646,6 +1646,7 @@ export class StudentDashboardController {
 
   /**
    * Get the active tenant for the current student
+   * Returns the first favorite tenant (no longer uses activeTenantId)
    * GET /api/student-dashboard/active-tenant
    */
   getActiveTenant = async (req: Request, res: Response): Promise<void> => {
@@ -1662,30 +1663,32 @@ export class StudentDashboardController {
         return;
       }
 
-      const student = await StudentModel.findOne({ authUserId: authUser._id });
-      if (!student) {
-        res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
+      // Get preferences and find first favorite tenant
+      const preferences = await UserPreferencesModel.findOne({ userId: authUser._id })
+        .populate({
+          path: 'favoriteTenants',
+          select: 'name slug config isActive',
+        });
+
+      if (!preferences || !preferences.favoriteTenants || preferences.favoriteTenants.length === 0) {
+        res.status(404).json({ error: 'No hay centro favorito configurado' });
         return;
       }
 
-      if (student.activeTenantId) {
-        const tenant = await TenantModel.findById(student.activeTenantId)
-          .select('name slug config isActive')
-          .lean();
-
-        if (tenant) {
-          res.json({
-            tenantId: student.activeTenantId.toString(),
-            tenantName: tenant.name,
-            tenantSlug: tenant.slug,
-            logo: tenant.config?.logo || null,
-            isActive: tenant.isActive,
-          });
-          return;
-        }
+      // Get first favorite tenant
+      const firstFavorite = preferences.favoriteTenants[0] as any;
+      if (!firstFavorite || !firstFavorite.isActive) {
+        res.status(404).json({ error: 'No hay centro favorito activo' });
+        return;
       }
 
-      res.status(404).json({ error: 'No hay centro activo configurado' });
+      res.json({
+        tenantId: firstFavorite._id.toString(),
+        tenantName: firstFavorite.name,
+        tenantSlug: firstFavorite.slug,
+        logo: firstFavorite.config?.logo || null,
+        isActive: firstFavorite.isActive,
+      });
     } catch (error) {
       console.error('Error getting active tenant:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
@@ -1694,6 +1697,7 @@ export class StudentDashboardController {
 
   /**
    * Set the active tenant for the current student
+   * Adds tenant to favorites and moves it to the first position (no longer uses activeTenantId)
    * POST /api/student-dashboard/active-tenant
    * Body: { tenantId: string }
    */
@@ -1735,15 +1739,28 @@ export class StudentDashboardController {
         return;
       }
 
-      // Update activeTenantId in Student model
-      student.activeTenantId = new Types.ObjectId(tenantId);
-      await student.save();
+      // Get or create preferences
+      let preferences = await UserPreferencesModel.findOne({ userId: authUser._id });
+      if (!preferences) {
+        preferences = await UserPreferencesModel.create({
+          userId: authUser._id,
+          favoriteProfessors: [],
+          favoriteTenants: [],
+        });
+      }
+
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
+      // When selecting a tenant, it becomes the ONLY favorite
+      // This ensures only one center has the heart icon at a time
+      preferences.favoriteTenants = [tenantObjectId];
+      await preferences.save();
 
       // Ensure StudentTenant relationship exists
       await this.tenantService.addStudentToTenant(student._id.toString(), tenantId);
 
       res.json({
-        message: 'Centro activo configurado',
+        message: 'Centro configurado',
         tenantId,
         tenantName: tenant.name,
       });

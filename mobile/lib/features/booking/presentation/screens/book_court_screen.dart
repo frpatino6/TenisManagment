@@ -10,6 +10,14 @@ import '../../../../core/providers/tenant_provider.dart';
 import '../../../tenant/domain/services/tenant_service.dart' as tenant_domain;
 import '../../../tenant/domain/models/tenant_model.dart';
 
+/// Provider for available tenants for dropdown selection
+final availableTenantsProvider = FutureProvider.autoDispose<List<TenantModel>>((
+  ref,
+) async {
+  final service = ref.watch(tenant_domain.tenantDomainServiceProvider);
+  return service.getAvailableTenants();
+});
+
 class BookCourtScreen extends ConsumerStatefulWidget {
   const BookCourtScreen({super.key});
 
@@ -231,60 +239,11 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Tenant info card
+          // Tenant dropdown selector
           tenantAsync.when(
-            data: (tenant) {
-              if (tenant == null) return const SizedBox.shrink();
-              return Card(
-                margin: const EdgeInsets.only(bottom: 16),
-                color: Theme.of(
-                  context,
-                ).colorScheme.primaryContainer.withValues(alpha: 0.3),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.business,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const Gap(12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Centro',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const Gap(4),
-                            Text(
-                              tenant.name,
-                              style: GoogleFonts.inter(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.swap_horiz,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        tooltip: 'Cambiar centro',
-                        onPressed: () => _showChangeTenantDialog(context),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+            data: (currentTenant) {
+              if (currentTenant == null) return const SizedBox.shrink();
+              return _buildTenantDropdown(context, currentTenant);
             },
             loading: () => const SizedBox.shrink(),
             error: (error, stackTrace) => const SizedBox.shrink(),
@@ -339,6 +298,234 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             _buildBookButton(context),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildTenantDropdown(BuildContext context, TenantModel currentTenant) {
+    final currentTenantId = ref.watch(currentTenantIdProvider);
+    final tenantsAsync = ref.watch(availableTenantsProvider);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      color: Theme.of(
+        context,
+      ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: tenantsAsync.when(
+          data: (tenants) {
+            if (tenants.isEmpty) {
+              return Row(
+                children: [
+                  Icon(
+                    Icons.business,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const Gap(12),
+                  Expanded(
+                    child: Text(
+                      currentTenant.name,
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            return DropdownButtonFormField<String>(
+              value: currentTenantId,
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: 'Centro',
+                prefixIcon: Icon(
+                  Icons.business,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+              selectedItemBuilder: (BuildContext context) {
+                return tenants.map<Widget>((tenant) {
+                  return Row(
+                    children: [
+                      Icon(
+                        Icons.business,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const Gap(12),
+                      Expanded(
+                        child: Text(
+                          tenant.name,
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList();
+              },
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              dropdownColor: Theme.of(context).colorScheme.surface,
+              icon: Icon(
+                Icons.arrow_drop_down,
+                color: Theme.of(context).colorScheme.primary,
+                size: 28,
+              ),
+              iconSize: 28,
+              borderRadius: BorderRadius.circular(12),
+              items: tenants.map((tenant) {
+                final isSelected = tenant.id == currentTenantId;
+                return DropdownMenuItem<String>(
+                  value: tenant.id,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primaryContainer
+                                .withValues(alpha: 0.2)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.business,
+                          size: 20,
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const Gap(12),
+                        Expanded(
+                          child: Text(
+                            tenant.name,
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isSelected)
+                          Icon(
+                            Icons.check_circle,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+              onChanged: (String? newTenantId) async {
+                if (newTenantId == null || newTenantId == currentTenantId) {
+                  return;
+                }
+
+                try {
+                  // Change tenant
+                  await ref
+                      .read(tenantNotifierProvider.notifier)
+                      .setTenant(newTenantId);
+
+                  // Reset selection
+                  if (mounted) {
+                    setState(() {
+                      _selectedCourt = null;
+                      _selectedDate = null;
+                      _selectedTime = null;
+                    });
+                  }
+
+                  // Invalidate courts provider to reload data with new tenant
+                  ref.invalidate(courtsProvider);
+
+                  if (mounted && context.mounted) {
+                    final selectedTenant = tenants.firstWhere(
+                      (t) => t.id == newTenantId,
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Centro cambiado a ${selectedTenant.name}',
+                        ),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Error al cambiar centro: ${e.toString()}',
+                        ),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              },
+            );
+          },
+          loading: () => Row(
+            children: [
+              Icon(
+                Icons.business,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const Gap(12),
+              Expanded(
+                child: Text(
+                  currentTenant.name,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ],
+          ),
+          error: (error, stackTrace) => Row(
+            children: [
+              Icon(
+                Icons.business,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const Gap(12),
+              Expanded(
+                child: Text(
+                  currentTenant.name,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -958,155 +1145,6 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           _isBooking = false;
         });
       }
-    }
-  }
-
-  /// Show dialog to change tenant without modifying favorites
-  Future<void> _showChangeTenantDialog(BuildContext context) async {
-    try {
-      // Load available tenants
-      final service = ref.read(tenant_domain.tenantDomainServiceProvider);
-      final tenants = await service.getAvailableTenants();
-
-      if (tenants.isEmpty) {
-        if (!mounted) return;
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No hay centros disponibles'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-
-      final currentTenantId = ref.read(currentTenantIdProvider);
-
-      if (!mounted) return;
-      if (!context.mounted) return;
-
-      // Show dialog with tenant list
-      final selectedTenant = await showDialog<TenantModel>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(
-            'Cambiar Centro',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: tenants.length,
-              itemBuilder: (context, index) {
-                final tenant = tenants[index];
-                final isSelected = tenant.id == currentTenantId;
-
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: isSelected
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.surfaceContainerHighest,
-                    child: tenant.logo != null
-                        ? ClipOval(
-                            child: Image.network(
-                              tenant.logo!,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Icon(
-                                  Icons.business,
-                                  color: isSelected
-                                      ? Theme.of(context).colorScheme.onPrimary
-                                      : Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                );
-                              },
-                            ),
-                          )
-                        : Icon(
-                            Icons.business,
-                            color: isSelected
-                                ? Theme.of(context).colorScheme.onPrimary
-                                : Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                          ),
-                  ),
-                  title: Text(
-                    tenant.name,
-                    style: GoogleFonts.inter(
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
-                  ),
-                  subtitle: tenant.slug.isNotEmpty
-                      ? Text(
-                          tenant.slug,
-                          style: GoogleFonts.inter(fontSize: 12),
-                        )
-                      : null,
-                  trailing: isSelected
-                      ? Icon(
-                          Icons.check_circle,
-                          color: Theme.of(context).colorScheme.primary,
-                        )
-                      : null,
-                  onTap: () {
-                    Navigator.of(context).pop(tenant);
-                  },
-                  selected: isSelected,
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
-            ),
-          ],
-        ),
-      );
-
-      if (selectedTenant != null && selectedTenant.id != currentTenantId) {
-        // Change tenant without modifying favorites
-        await ref
-            .read(tenantNotifierProvider.notifier)
-            .setTenant(selectedTenant.id);
-
-        // Reset selection
-        if (mounted) {
-          setState(() {
-            _selectedCourt = null;
-            _selectedDate = null;
-            _selectedTime = null;
-          });
-        }
-
-        // Invalidate courts provider to reload data with new tenant
-        // The widget will automatically rebuild because it's watching courtsProvider
-        // currentTenantProvider will update automatically when currentTenantIdProvider changes
-        if (!mounted) return;
-        if (!context.mounted) return;
-        ref.invalidate(courtsProvider);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Centro cambiado a ${selectedTenant.name}'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al cambiar centro: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 }

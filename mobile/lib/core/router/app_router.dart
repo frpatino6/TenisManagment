@@ -37,9 +37,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/login',
     redirect: (context, state) {
-      // CRITICAL: NEVER redirect from /book-court
+      // CRITICAL: NEVER redirect from /book-court or /select-tenant
       final currentPath = state.matchedLocation;
       if (currentPath == '/book-court' || currentPath.startsWith('/book-court')) {
+        return null;
+      }
+      // Don't redirect from select-tenant screen when user is selecting/changing tenant
+      if (currentPath == '/select-tenant') {
         return null;
       }
 

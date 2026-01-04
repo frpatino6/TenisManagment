@@ -51,7 +51,8 @@ export class SystemConfigController {
       const items = tenants.map((tenant) => ({
         id: tenant._id.toString(),
         name: tenant.name,
-        slug: tenant.slug || null,
+        slug: tenant.slug || '',
+        isActive: true, // Todos los tenants retornados están activos
       }));
 
       res.json({ items });

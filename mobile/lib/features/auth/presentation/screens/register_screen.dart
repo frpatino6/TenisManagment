@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -61,8 +62,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     } catch (e) {
       setState(() {
         _loadingTenants = false;
+        _availableTenants = []; // Asegurar que esté vacío en caso de error
       });
-      // Silenciar error por ahora, el usuario puede no tener acceso aún
+      // Mostrar error en consola para debugging
+      if (kDebugMode) {
+        print('Error cargando tenants: $e');
+      }
     }
   }
 
@@ -468,11 +473,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
             const Gap(8),
             if (_loadingTenants)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: CircularProgressIndicator(),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.3),
+                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                child: const Center(child: CircularProgressIndicator()),
               )
             else if (_availableTenants.isEmpty)
               Container(
@@ -481,48 +492,190 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   border: Border.all(
                     color: Theme.of(context).colorScheme.error,
                   ),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  'No hay centros disponibles. Contacta al administrador.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: Theme.of(context).colorScheme.error,
+                      size: 20,
+                    ),
+                    const Gap(12),
+                    Expanded(
+                      child: Text(
+                        'No hay centros disponibles. Contacta al administrador.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               )
             else
-              DropdownButtonFormField<String>(
-                value: _selectedTenantId,
-                decoration: InputDecoration(
-                  labelText: 'Selecciona un centro',
-                  hintText: 'Selecciona un centro',
-                  prefixIcon: const Icon(Icons.business),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+              Container(
+                key: ValueKey(_selectedTenantId),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: _selectedTenantId != null
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(
+                            context,
+                          ).colorScheme.outline.withValues(alpha: 0.3),
+                    width: 1.5,
                   ),
-                  errorText:
-                      _selectedRole == 'professor' && _selectedTenantId == null
-                      ? 'Debes seleccionar un centro'
-                      : null,
+                  color: Theme.of(context).colorScheme.surface,
                 ),
-                items: _availableTenants.map((tenant) {
-                  return DropdownMenuItem<String>(
-                    value: tenant.id,
-                    child: Text(tenant.name),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedTenantId = value;
-                  });
-                },
-                validator: (value) {
-                  if (_selectedRole == 'professor' &&
-                      (value == null || value.isEmpty)) {
-                    return 'Debes seleccionar un centro';
-                  }
-                  return null;
-                },
+                child: DropdownButtonFormField<String>(
+                  key: ValueKey('tenant_${_selectedTenantId ?? 'none'}'),
+                  initialValue: _selectedTenantId,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: 'Selecciona un centro',
+                    hintText: 'Elige el centro donde trabajarás',
+                    hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.business,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    focusedErrorBorder: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    errorText:
+                        _selectedRole == 'professor' &&
+                            _selectedTenantId == null
+                        ? 'Debes seleccionar un centro'
+                        : null,
+                    errorStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                  selectedItemBuilder: (BuildContext context) {
+                    return _availableTenants.map<Widget>((tenant) {
+                      return Row(
+                        children: [
+                          Icon(
+                            Icons.business,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const Gap(8),
+                          Expanded(
+                            child: Text(
+                              tenant.name,
+                              style: Theme.of(context).textTheme.bodyLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                  ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList();
+                  },
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 16,
+                  ),
+                  dropdownColor: Theme.of(context).colorScheme.surface,
+                  icon: Icon(
+                    Icons.arrow_drop_down,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 28,
+                  ),
+                  iconSize: 28,
+                  borderRadius: BorderRadius.circular(12),
+                  items: _availableTenants.map((tenant) {
+                    final isSelected = tenant.id == _selectedTenantId;
+                    return DropdownMenuItem<String>(
+                      value: tenant.id,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primaryContainer
+                                    .withValues(alpha: 0.2)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer
+                                    .withValues(alpha: 0.3),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.sports_tennis,
+                                size: 20,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const Gap(12),
+                            Expanded(
+                              child: Text(
+                                tenant.name,
+                                style: Theme.of(context).textTheme.bodyLarge
+                                    ?.copyWith(
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
+                                    ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                            if (isSelected) ...[
+                              const Gap(8),
+                              Icon(
+                                Icons.check_circle,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 20,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedTenantId = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (_selectedRole == 'professor' &&
+                        (value == null || value.isEmpty)) {
+                      return 'Debes seleccionar un centro';
+                    }
+                    return null;
+                  },
+                ),
               ),
           ],
         )

@@ -144,6 +144,7 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
     required String password,
     required String phone,
     required String role,
+    String? tenantId,
   }) async {
     try {
       ref.read(authLoadingProvider.notifier).setLoading(true);
@@ -156,6 +157,7 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
         password: password,
         phone: phone,
         role: role,
+        tenantId: tenantId,
       );
 
       // After successful registration, manually update the state

@@ -173,6 +173,7 @@ class AuthService {
     required String password,
     required String phone,
     required String role,
+    String? tenantId,
   }) async {
     try {
       UserCredential userCredential;
@@ -253,6 +254,7 @@ class AuthService {
         phone: phone,
         role: role,
         firebaseUid: user.uid,
+        tenantId: tenantId,
       );
       return userModel;
     } catch (e) {
@@ -388,6 +390,7 @@ class AuthService {
     required String phone,
     required String role,
     required String firebaseUid,
+    String? tenantId,
   }) async {
     // Primero verificar si el usuario ya existe para evitar peticiones innecesarias
     try {
@@ -409,6 +412,7 @@ class AuthService {
           'phone': phone,
           'role': role,
           'firebaseUid': firebaseUid,
+          if (tenantId != null) 'tenantId': tenantId,
         }),
       );
 

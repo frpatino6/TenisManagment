@@ -7,6 +7,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
+import '../../../tenant/domain/models/tenant_model.dart';
+import '../../../tenant/domain/services/tenant_service.dart' as tenant_domain;
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -27,16 +29,41 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscureConfirmPassword = true;
   String _selectedRole = 'student';
   bool _acceptTerms = false;
+  String? _selectedTenantId;
+  List<TenantModel> _availableTenants = [];
+  bool _loadingTenants = false;
 
   @override
   void initState() {
     super.initState();
     // Prellenar campos para pruebas
-    _nameController.text = 'cliente1';
-    _emailController.text = 'cliente1@gmail.com';
-    _phoneController.text = '3000000000';
-    _passwordController.text = 's4ntiago';
-    _confirmPasswordController.text = 's4ntiago';
+    _nameController.text = '';
+    _emailController.text = '';
+    _phoneController.text = '';
+    _passwordController.text = '';
+    _confirmPasswordController.text = '';
+  }
+
+  Future<void> _loadTenants() async {
+    setState(() {
+      _loadingTenants = true;
+    });
+
+    try {
+      // Obtener tenants disponibles usando endpoint público (no requiere autenticación)
+      final service = ref.read(tenant_domain.tenantDomainServiceProvider);
+      final tenants = await service.getAvailableTenants();
+
+      setState(() {
+        _availableTenants = tenants;
+        _loadingTenants = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loadingTenants = false;
+      });
+      // Silenciar error por ahora, el usuario puede no tener acceso aún
+    }
   }
 
   @override
@@ -232,6 +259,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
         const Gap(16),
 
+        // Mostrar selector de tenant solo si es profesor
+        if (_selectedRole == 'professor') ...[
+          _buildTenantSelector(context),
+          const Gap(16),
+        ],
+
         CustomTextField(
               controller: _passwordController,
               label: 'Contraseña',
@@ -321,6 +354,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               onChanged: (value) {
                 setState(() {
                   _selectedRole = value!;
+                  if (value == 'professor' && _availableTenants.isEmpty) {
+                    _loadTenants();
+                  }
+                  if (value == 'student') {
+                    _selectedTenantId = null;
+                  }
                 });
               },
               child: Row(
@@ -370,6 +409,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       onTap: () {
                         setState(() {
                           _selectedRole = 'professor';
+                          if (_availableTenants.isEmpty) {
+                            _loadTenants();
+                          }
                         });
                       },
                       child: Container(
@@ -411,6 +453,81 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         )
         .animate()
         .fadeIn(duration: 400.ms, delay: 1100.ms)
+        .slideY(begin: 0.2, end: 0);
+  }
+
+  Widget _buildTenantSelector(BuildContext context) {
+    return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Centro *',
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500),
+            ),
+            const Gap(8),
+            if (_loadingTenants)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (_availableTenants.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'No hay centros disponibles. Contacta al administrador.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              )
+            else
+              DropdownButtonFormField<String>(
+                value: _selectedTenantId,
+                decoration: InputDecoration(
+                  labelText: 'Selecciona un centro',
+                  hintText: 'Selecciona un centro',
+                  prefixIcon: const Icon(Icons.business),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  errorText:
+                      _selectedRole == 'professor' && _selectedTenantId == null
+                      ? 'Debes seleccionar un centro'
+                      : null,
+                ),
+                items: _availableTenants.map((tenant) {
+                  return DropdownMenuItem<String>(
+                    value: tenant.id,
+                    child: Text(tenant.name),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedTenantId = value;
+                  });
+                },
+                validator: (value) {
+                  if (_selectedRole == 'professor' &&
+                      (value == null || value.isEmpty)) {
+                    return 'Debes seleccionar un centro';
+                  }
+                  return null;
+                },
+              ),
+          ],
+        )
+        .animate()
+        .fadeIn(duration: 400.ms, delay: 1200.ms)
         .slideY(begin: 0.2, end: 0);
   }
 
@@ -580,6 +697,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
 
+    // Validar que si es profesor, tenga centro seleccionado
+    if (_selectedRole == 'professor' &&
+        (_selectedTenantId == null || _selectedTenantId!.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Debes seleccionar un centro para registrarte como profesor',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     try {
       await ref
           .read(authNotifierProvider.notifier)
@@ -589,6 +720,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             password: _passwordController.text,
             phone: _phoneController.text.trim(),
             role: _selectedRole,
+            tenantId: _selectedRole == 'professor' ? _selectedTenantId : null,
           );
 
       if (mounted) {

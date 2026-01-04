@@ -152,21 +152,27 @@ class TenantService {
   }
 
   /// Search for a tenant by code/slug
-  /// This would typically search in the list of available tenants
+  /// Searches in all available tenants, not just user's tenants
   Future<TenantModel?> searchTenantByCode(String code) async {
     try {
-      final tenants = await getMyTenants();
+      // Search in all available tenants, not just user's tenants
+      final tenants = await getAvailableTenants();
 
       // Search by slug (most common)
-      final found = tenants.firstWhere(
-        (tenant) => tenant.slug.toLowerCase() == code.toLowerCase(),
-        orElse: () => tenants.firstWhere(
-          (tenant) => tenant.id == code,
-          orElse: () => throw Exception('Centro no encontrado'),
-        ),
-      );
-
-      return found;
+      try {
+        return tenants.firstWhere(
+          (tenant) => tenant.slug.toLowerCase() == code.toLowerCase(),
+        );
+      } catch (e) {
+        // If not found by slug, try by ID
+        try {
+          return tenants.firstWhere(
+            (tenant) => tenant.id == code,
+          );
+        } catch (e) {
+          return null;
+        }
+      }
     } catch (e) {
       return null;
     }

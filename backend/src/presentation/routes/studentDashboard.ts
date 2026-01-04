@@ -34,4 +34,8 @@ router.delete('/preferences/favorite-professor/:professorId', controller.removeF
 router.post('/preferences/favorite-tenant', controller.addFavoriteTenant);
 router.delete('/preferences/favorite-tenant/:tenantId', controller.removeFavoriteTenant);
 
+// Active Tenant endpoints
+router.get('/active-tenant', controller.getActiveTenant);
+router.post('/active-tenant', controller.setActiveTenant);
+
 export default router;

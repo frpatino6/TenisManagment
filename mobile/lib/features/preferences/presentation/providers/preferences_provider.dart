@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/user_preferences_model.dart';
 import '../../domain/services/preferences_service.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 /// Notifier for managing user preferences
 class PreferencesNotifier extends Notifier<AsyncValue<UserPreferencesModel>> {
@@ -8,6 +9,29 @@ class PreferencesNotifier extends Notifier<AsyncValue<UserPreferencesModel>> {
 
   @override
   AsyncValue<UserPreferencesModel> build() {
+    // Watch auth state - if user changes, invalidate preferences
+    ref.listen(authStateProvider, (previous, next) {
+      final previousUser = previous?.value;
+      final nextUser = next.value;
+      
+      // If user changed (logout or different user login), clear preferences
+      if (previousUser != null && (nextUser == null || previousUser.id != nextUser.id)) {
+        state = const AsyncValue.loading();
+        // Reload preferences for new user
+        if (nextUser != null) {
+          Future.microtask(() => loadPreferences());
+        } else {
+          state = AsyncValue.data(UserPreferencesModel(
+            favoriteProfessors: [],
+            favoriteTenants: [],
+          ));
+        }
+      } else if (nextUser != null && (previousUser == null || previousUser.id != nextUser.id)) {
+        // New user logged in, load their preferences
+        Future.microtask(() => loadPreferences());
+      }
+    });
+    
     // Load preferences on initialization
     Future.microtask(() => loadPreferences());
     return const AsyncValue.loading();

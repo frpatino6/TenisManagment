@@ -1,84 +1,98 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 
 /// Service responsible for managing tenant (center) configuration
-/// Handles persistence and retrieval of the active tenant ID
-/// Singleton pattern for global access
+/// Now uses MongoDB backend instead of SharedPreferences
+/// Stateless service - all state is managed by Riverpod providers
 class TenantService {
-  static const String _tenantIdKey = 'active_tenant_id';
-  static const String _lastTenantIdKey = 'last_tenant_id';
+  final FirebaseAuth _auth;
+  final String _baseUrl = AppConfig.apiBaseUrl;
 
-  static final TenantService _instance = TenantService._internal();
-  factory TenantService() => _instance;
-  TenantService._internal();
+  /// Constructor with optional FirebaseAuth for testing
+  TenantService({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
 
-  String? _currentTenantId;
-  SharedPreferences? _prefs;
-
-  /// Initialize the service and load the saved tenant ID
-  /// Should be called at app startup
-  Future<void> initialize() async {
-    _prefs = await SharedPreferences.getInstance();
-    await loadTenant();
-  }
-
-  /// Load the saved tenant ID from SharedPreferences
+  /// Load the saved tenant ID from backend
   /// Returns the tenant ID if found, null otherwise
+  /// Stateless - always loads fresh from backend
   Future<String?> loadTenant() async {
-    _prefs ??= await SharedPreferences.getInstance();
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        return null;
+      }
 
-    final tenantId = _prefs!.getString(_tenantIdKey);
-    _currentTenantId = tenantId;
-    return tenantId;
+      final idToken = await user.getIdToken(true);
+      if (idToken == null) {
+        return null;
+      }
+
+      final response = await http
+          .get(
+            Uri.parse('$_baseUrl/student-dashboard/active-tenant'),
+            headers: {
+              'Authorization': 'Bearer $idToken',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final tenantId = data['tenantId'] as String?;
+        return tenantId;
+      } else if (response.statusCode == 404) {
+        // Student not found or no tenant set
+        return null;
+      } else {
+        // Error response, return null
+        return null;
+      }
+    } catch (e) {
+      // On error, return null (no tenant configured)
+      return null;
+    }
   }
-
-  /// Get the current active tenant ID
-  /// Returns null if no tenant is set
-  String? get currentTenantId => _currentTenantId;
-
-  /// Check if a tenant is currently configured
-  bool get hasTenant =>
-      _currentTenantId != null && _currentTenantId!.isNotEmpty;
 
   /// Set the active tenant ID
-  /// Saves to SharedPreferences and updates the current value
+  /// Saves to backend
   /// Returns true if successful, false otherwise
   Future<bool> setTenant(String tenantId) async {
-    _prefs ??= await SharedPreferences.getInstance();
-
     try {
-      // Save as current tenant
-      final saved = await _prefs!.setString(_tenantIdKey, tenantId);
-      if (saved) {
-        // Also save as last tenant for quick access
-        await _prefs!.setString(_lastTenantIdKey, tenantId);
-        _currentTenantId = tenantId;
+      final user = _auth.currentUser;
+      if (user == null) {
+        return false;
       }
-      return saved;
+
+      final idToken = await user.getIdToken(true);
+      if (idToken == null) {
+        return false;
+      }
+
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/student-dashboard/active-tenant'),
+            headers: {
+              'Authorization': 'Bearer $idToken',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({'tenantId': tenantId}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      return response.statusCode == 200;
     } catch (e) {
       return false;
     }
   }
 
   /// Clear the active tenant ID
-  /// Useful when logging out or switching accounts
+  /// Note: This is not implemented in backend, but we can set it to null
+  /// For now, we'll just return false as clearing is not needed
   Future<bool> clearTenant() async {
-    _prefs ??= await SharedPreferences.getInstance();
-
-    try {
-      final cleared = await _prefs!.remove(_tenantIdKey);
-      if (cleared) {
-        _currentTenantId = null;
-      }
-      return cleared;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  /// Get the last tenant ID used (for quick selection)
-  Future<String?> getLastTenantId() async {
-    _prefs ??= await SharedPreferences.getInstance();
-
-    return _prefs!.getString(_lastTenantIdKey);
+    // Backend doesn't have a clear endpoint, but we can handle this
+    // by not setting a tenant. For logout, the state will be cleared in provider.
+    return true;
   }
 }

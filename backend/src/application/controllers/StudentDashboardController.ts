@@ -1643,4 +1643,113 @@ export class StudentDashboardController {
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
+
+  /**
+   * Get the active tenant for the current student
+   * GET /api/student-dashboard/active-tenant
+   */
+  getActiveTenant = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const firebaseUid = req.user?.uid;
+      if (!firebaseUid) {
+        res.status(401).json({ error: 'Usuario no autenticado' });
+        return;
+      }
+
+      const authUser = await AuthUserModel.findOne({ firebaseUid });
+      if (!authUser) {
+        res.status(404).json({ error: 'Usuario no encontrado' });
+        return;
+      }
+
+      const student = await StudentModel.findOne({ authUserId: authUser._id });
+      if (!student) {
+        res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
+        return;
+      }
+
+      if (student.activeTenantId) {
+        const tenant = await TenantModel.findById(student.activeTenantId)
+          .select('name slug config isActive')
+          .lean();
+
+        if (tenant) {
+          res.json({
+            tenantId: student.activeTenantId.toString(),
+            tenantName: tenant.name,
+            tenantSlug: tenant.slug,
+            logo: tenant.config?.logo || null,
+            isActive: tenant.isActive,
+          });
+          return;
+        }
+      }
+
+      res.status(404).json({ error: 'No hay centro activo configurado' });
+    } catch (error) {
+      console.error('Error getting active tenant:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * Set the active tenant for the current student
+   * POST /api/student-dashboard/active-tenant
+   * Body: { tenantId: string }
+   */
+  setActiveTenant = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const firebaseUid = req.user?.uid;
+      if (!firebaseUid) {
+        res.status(401).json({ error: 'Usuario no autenticado' });
+        return;
+      }
+
+      const { tenantId } = req.body;
+      if (!tenantId) {
+        res.status(400).json({ error: 'tenantId es requerido' });
+        return;
+      }
+
+      const authUser = await AuthUserModel.findOne({ firebaseUid });
+      if (!authUser) {
+        res.status(404).json({ error: 'Usuario no encontrado' });
+        return;
+      }
+
+      const student = await StudentModel.findOne({ authUserId: authUser._id });
+      if (!student) {
+        res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
+        return;
+      }
+
+      // Validate tenant exists
+      const tenant = await TenantModel.findById(tenantId);
+      if (!tenant) {
+        res.status(404).json({ error: 'Centro no encontrado' });
+        return;
+      }
+
+      if (!tenant.isActive) {
+        res.status(400).json({ error: 'El centro no está activo' });
+        return;
+      }
+
+      // Update activeTenantId in Student model
+      student.activeTenantId = new Types.ObjectId(tenantId);
+      await student.save();
+
+      // Ensure StudentTenant relationship exists
+      await this.tenantService.addStudentToTenant(student._id.toString(), tenantId);
+
+      res.json({
+        message: 'Centro activo configurado',
+        tenantId,
+        tenantName: tenant.name,
+      });
+    } catch (error) {
+      console.error('Error setting active tenant:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
 }

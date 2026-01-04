@@ -27,85 +27,55 @@ import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../providers/tenant_provider.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  // Use authNotifierProvider (updated immediately after login) as primary source
+  // Watch auth state
   final authNotifierState = ref.watch(authNotifierProvider);
-  // Also watch authStateProvider as fallback (stream-based)
   final authState = ref.watch(authStateProvider);
-  // Use select to only rebuild when hasTenant actually changes value, not state
+  // Watch tenant state to trigger router rebuild when tenant changes
+  final tenantState = ref.watch(tenantNotifierProvider);
   final hasTenant = ref.watch(hasTenantProvider);
-  // Capture ref to use inside redirect callback
-  // Don't watch tenantState here to prevent router rebuilds when tenant changes
 
   return GoRouter(
     initialLocation: '/login',
     redirect: (context, state) {
-      // Read tenantState fresh each time redirect is called
-      // This prevents router from rebuilding when tenant changes
-      final tenantState = ref.read(tenantNotifierProvider);
-      // CRITICAL: NEVER redirect from /book-court, check this FIRST
-      // Check multiple ways to detect if we're on /book-court
-      final uriPath = state.uri.path;
-      final matchedPath = state.matchedLocation;
-      final fullPath = state.fullPath;
-
-      // If we're on /book-court in ANY way, NEVER redirect - return null immediately
-      // This check must be FIRST before any other logic
-      if (uriPath == '/book-court' ||
-          uriPath.startsWith('/book-court') ||
-          matchedPath == '/book-court' ||
-          matchedPath.startsWith('/book-court') ||
-          (fullPath != null &&
-              (fullPath == '/book-court' ||
-                  fullPath.startsWith('/book-court')))) {
-        return null; // Stay on book-court no matter what - DO NOT REDIRECT
+      // CRITICAL: NEVER redirect from /book-court
+      final currentPath = state.matchedLocation;
+      if (currentPath == '/book-court' || currentPath.startsWith('/book-court')) {
+        return null;
       }
 
-      final currentPath = matchedPath;
-
-      // Get user from authNotifierProvider first (updated immediately), fallback to authStateProvider
+      // Get user from auth providers
       final userFromNotifier = authNotifierState.value;
       final userFromStream = authState.when(
         data: (user) => user,
         loading: () => null,
-        error: (error, stackTrace) => null,
+        error: (_, __) => null,
       );
       final user = userFromNotifier ?? userFromStream;
-
       final isAuthenticated = user != null;
       final isLoggingIn = currentPath == '/login' || currentPath == '/register';
       final isSelectingTenant = currentPath == '/select-tenant';
 
-      // If not authenticated, redirect to login (unless already there)
+      // If not authenticated, redirect to login
       if (!isAuthenticated && !isLoggingIn) {
         return '/login';
       }
 
-      // If authenticated and logging in, check tenant before redirecting
-      if (isAuthenticated && isLoggingIn) {
-        // Wait for tenant state to load
+      // If authenticated, check tenant
+      if (isAuthenticated) {
+        // Wait for tenant to load
         if (tenantState.isLoading) {
-          return null; // Wait for tenant to load
+          return null;
         }
 
-        // If no tenant configured, redirect to tenant selection
+        // If no tenant, redirect to selection (unless already there)
         if (!hasTenant && !isSelectingTenant) {
           return '/select-tenant';
         }
 
-        // If tenant is configured, redirect to home
-        if (hasTenant) {
-          final route = user.role == 'professor' ? '/professor-home' : '/home';
-          return route;
+        // If on login/register and has tenant, redirect to home
+        if (isLoggingIn && hasTenant) {
+          return user.role == 'professor' ? '/professor-home' : '/home';
         }
-      }
-
-      // If authenticated and trying to access protected routes without tenant
-      if (isAuthenticated &&
-          !isLoggingIn &&
-          !isSelectingTenant &&
-          !hasTenant &&
-          !tenantState.isLoading) {
-        return '/select-tenant';
       }
 
       return null;

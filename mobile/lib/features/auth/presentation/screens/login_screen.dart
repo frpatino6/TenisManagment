@@ -345,11 +345,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             _passwordController.text,
           );
 
-      // The AuthNotifier now updates the state immediately after login
-      // So we can read it directly without waiting
       if (mounted) {
+        // Load tenant from backend after login
+        await ref.read(tenantNotifierProvider.notifier).loadTenant();
+
         // Small delay to ensure state is updated
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future.delayed(const Duration(milliseconds: 200));
 
         // Read the state from authNotifierProvider (which is updated immediately)
         final authNotifierState = ref.read(authNotifierProvider);
@@ -382,11 +383,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       await ref.read(authNotifierProvider.notifier).signInWithGoogle();
 
-      // The AuthNotifier now updates the state immediately after login
-      // So we can read it directly without waiting
       if (mounted) {
+        // Load tenant from backend after login
+        await ref.read(tenantNotifierProvider.notifier).loadTenant();
+
         // Small delay to ensure state is updated
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future.delayed(const Duration(milliseconds: 200));
 
         // Read the state from authNotifierProvider (which is updated immediately)
         final authNotifierState = ref.read(authNotifierProvider);

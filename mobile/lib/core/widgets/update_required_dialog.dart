@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+// Import condicional - Flutter usará el archivo correcto según la plataforma
+import '../utils/web_utils_stub.dart'
+    if (dart.library.html) '../utils/web_utils_web.dart';
 
 class UpdateRequiredDialog extends StatelessWidget {
   final bool forceUpdate;
@@ -23,9 +28,7 @@ class UpdateRequiredDialog extends StatelessWidget {
               color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(width: 12),
-            const Expanded(
-              child: Text('Actualización Requerida'),
-            ),
+            const Expanded(child: Text('Actualización Requerida')),
           ],
         ),
         content: Column(
@@ -45,9 +48,11 @@ class UpdateRequiredDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Por favor, actualiza la aplicación para continuar usando el servicio.',
-              style: TextStyle(fontSize: 14),
+            Text(
+              kIsWeb
+                  ? 'Por favor, recarga la página para obtener la nueva versión.'
+                  : 'Por favor, actualiza la aplicación para continuar usando el servicio.',
+              style: const TextStyle(fontSize: 14),
             ),
           ],
         ),
@@ -58,15 +63,26 @@ class UpdateRequiredDialog extends StatelessWidget {
               child: const Text('Más tarde'),
             ),
           ElevatedButton(
-            onPressed: () {
-              // Cerrar la aplicación
-              SystemNavigator.pop();
+            onPressed: () async {
+              // Cerrar el diálogo primero
+              Navigator.of(context).pop();
+              
+              // Pequeño delay para que el diálogo se cierre antes de la acción
+              await Future.delayed(const Duration(milliseconds: 300));
+              
+              if (kIsWeb) {
+                WebUtils.reloadPage();
+              } else {
+                // En móvil, cerrar la aplicación
+                // El usuario deberá actualizar desde la tienda
+                SystemNavigator.pop();
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Theme.of(context).colorScheme.onPrimary,
             ),
-            child: const Text('Actualizar'),
+            child: Text(kIsWeb ? 'Recargar' : 'Actualizar'),
           ),
         ],
       ),
@@ -74,7 +90,8 @@ class UpdateRequiredDialog extends StatelessWidget {
   }
 
   /// Muestra el diálogo de actualización requerida
-  static Future<bool?> show(BuildContext context, {
+  static Future<bool?> show(
+    BuildContext context, {
     required bool forceUpdate,
     required String minVersion,
   }) {
@@ -88,4 +105,3 @@ class UpdateRequiredDialog extends StatelessWidget {
     );
   }
 }
-

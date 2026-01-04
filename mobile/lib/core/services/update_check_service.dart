@@ -66,8 +66,8 @@ class UpdateCheckService {
         await prefs.setString(_lastCheckKey, DateTime.now().toIso8601String());
         await prefs.setString(_lastCheckVersionKey, currentVersion);
 
-        // Comparar versiones
-        final updateRequired = versionService.isVersionGreaterThan(minVersion) == false;
+        // Comparar versiones: se requiere actualización si la versión actual es MENOR que la mínima requerida
+        final updateRequired = versionService.isVersionLessThan(minVersion);
 
         return UpdateCheckResult(
           updateRequired: updateRequired,

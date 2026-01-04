@@ -18,7 +18,7 @@ class VersionService {
   }
 
   /// Obtiene la versión de la aplicación
-  String get version => _packageInfo?.version ?? '2.3.0';
+  String get version => _packageInfo?.version ?? '2.4.0';
 
   /// Obtiene el número de build
   String get buildNumber => _packageInfo?.buildNumber ?? '1';
@@ -56,6 +56,18 @@ class VersionService {
       if (current[i] < other[i]) return false;
     }
     return false;
+  }
+
+  /// Verifica si la versión actual es menor que la especificada
+  bool isVersionLessThan(String otherVersion) {
+    final current = _parseVersion(version);
+    final other = _parseVersion(otherVersion);
+
+    for (int i = 0; i < 3; i++) {
+      if (current[i] < other[i]) return true;
+      if (current[i] > other[i]) return false;
+    }
+    return false; // Son iguales
   }
 
   /// Parsea una versión en formato "1.2.3" a lista de enteros

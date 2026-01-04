@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/widgets/version_widget.dart';
+import '../../../../core/widgets/update_check_wrapper.dart';
 import '../widgets/professor_profile_card.dart';
 import '../widgets/schedule_widget.dart';
 import '../widgets/earnings_widget.dart';
@@ -27,7 +28,8 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
     final colorScheme = theme.colorScheme;
     final professorInfo = ref.watch(professorInfoProvider);
 
-    return Scaffold(
+    return UpdateCheckWrapper(
+      child: Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: Text(
@@ -61,6 +63,7 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(child: Text('Error: $error')),
+      ),
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/widgets/version_widget.dart';
+import '../../../../core/widgets/update_check_wrapper.dart';
 import '../widgets/user_profile_card.dart';
 import '../widgets/recent_activity_list.dart';
 import '../widgets/quick_actions_grid.dart';
@@ -22,8 +23,9 @@ class HomeScreen extends ConsumerWidget {
     final authState = ref.watch(authNotifierProvider);
     final isLoading = ref.watch(authLoadingProvider);
 
-    return Scaffold(
-      body: authState.when(
+    return UpdateCheckWrapper(
+      child: Scaffold(
+        body: authState.when(
         data: (user) {
           if (user == null) {
             return const Center(child: Text('Usuario no encontrado'));
@@ -60,6 +62,7 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

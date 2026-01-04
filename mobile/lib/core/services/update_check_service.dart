@@ -24,7 +24,8 @@ class UpdateCheckService {
   static const Duration _checkInterval = Duration(hours: 24);
 
   static UpdateCheckService? _instance;
-  static UpdateCheckService get instance => _instance ??= UpdateCheckService._();
+  static UpdateCheckService get instance =>
+      _instance ??= UpdateCheckService._();
 
   UpdateCheckService._();
 
@@ -40,12 +41,15 @@ class UpdateCheckService {
       final lastCheck = prefs.getString(_lastCheckKey);
       final lastCheckVersion = prefs.getString(_lastCheckVersionKey);
 
+      // Si cambió la versión de la app, forzar nueva verificación
       if (lastCheck != null && lastCheckVersion == currentVersion) {
         final lastCheckTime = DateTime.parse(lastCheck);
         final now = DateTime.now();
         if (now.difference(lastCheckTime) < _checkInterval) {
           // Ya se verificó recientemente, no hacer otra petición
-          return null;
+          // PERO: si hay una actualización pendiente, debemos verificar de nuevo
+          // Por ahora, permitimos verificar siempre para asegurar que se detecten actualizaciones
+          // return null;
         }
       }
 
@@ -59,15 +63,22 @@ class UpdateCheckService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         final minVersion = data['minVersion'] as String? ?? currentVersion;
-        final serverVersion = data['currentVersion'] as String? ?? currentVersion;
+        final serverVersion =
+            data['currentVersion'] as String? ?? currentVersion;
         final forceUpdate = data['forceUpdate'] as bool? ?? false;
-
-        // Guardar que se hizo el check
-        await prefs.setString(_lastCheckKey, DateTime.now().toIso8601String());
-        await prefs.setString(_lastCheckVersionKey, currentVersion);
 
         // Comparar versiones: se requiere actualización si la versión actual es MENOR que la mínima requerida
         final updateRequired = versionService.isVersionLessThan(minVersion);
+
+        // Guardar que se hizo el check SOLO si NO se requiere actualización
+        // Si se requiere actualización, no guardamos el cache para que siga verificando
+        if (!updateRequired) {
+          await prefs.setString(
+            _lastCheckKey,
+            DateTime.now().toIso8601String(),
+          );
+          await prefs.setString(_lastCheckVersionKey, currentVersion);
+        }
 
         return UpdateCheckResult(
           updateRequired: updateRequired,
@@ -92,4 +103,3 @@ class UpdateCheckService {
     await prefs.remove(_lastCheckVersionKey);
   }
 }
-

@@ -6,6 +6,7 @@ import { JwtService } from '../../infrastructure/services/JwtService';
 import { config } from '../../infrastructure/config';
 import { Logger } from '../../infrastructure/services/Logger';
 import admin from '../../infrastructure/auth/firebase';
+import { TenantService } from '../services/TenantService';
 
 export class FirebaseAuthController {
   private jwtService = new JwtService(config.jwtSecret);
@@ -175,7 +176,7 @@ export class FirebaseAuthController {
   // Registrar usuario con email/contraseña
   registerUser = async (req: Request, res: Response) => {
     try {
-      const { name, email, phone, role, firebaseUid } = req.body;
+      const { name, email, phone, role, firebaseUid, tenantId } = req.body;
 
       if (!name || !email || !role || !firebaseUid) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -221,8 +222,9 @@ export class FirebaseAuthController {
         }
       } else if (role === 'professor') {
         this.logger.info('Creating Professor profile for AuthUser', { authUserId: user._id.toString() });
+        let professor;
         try {
-          const professor = await ProfessorModel.create({
+          professor = await ProfessorModel.create({
             authUserId: user._id,
             name: name,
             email: email,
@@ -247,6 +249,29 @@ export class FirebaseAuthController {
             details: error.message,
             code: error.code || 'UNKNOWN_ERROR'
           });
+        }
+
+        // Si se proporciona tenantId, crear la relación ProfessorTenant
+        if (tenantId) {
+          try {
+            const tenantService = new TenantService();
+            await tenantService.addProfessorToTenant(
+              professor._id.toString(),
+              tenantId,
+            );
+            this.logger.info('Professor added to tenant', { 
+              professorId: professor._id.toString(), 
+              tenantId 
+            });
+          } catch (error: any) {
+            this.logger.error('Error adding professor to tenant', { 
+              error: error.message,
+              professorId: professor._id.toString(),
+              tenantId
+            });
+            // No hacemos rollback aquí, el profesor ya está creado
+            // Solo logueamos el error pero permitimos que el registro continúe
+          }
         }
       }
 

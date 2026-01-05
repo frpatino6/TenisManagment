@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/tenant_provider.dart';
+import '../constants/timeouts.dart';
+import '../exceptions/exceptions.dart';
 
 /// HTTP Client wrapper that automatically adds X-Tenant-ID header
 /// to all requests based on the current tenant configuration
@@ -47,74 +49,128 @@ class AppHttpClient {
     return headers;
   }
 
-  /// GET request with automatic X-Tenant-ID header
-  Future<http.Response> get(Uri url, {Map<String, String>? headers}) async {
-    return http.get(url, headers: _buildHeaders(headers));
+  /// GET request with automatic X-Tenant-ID header and timeout
+  Future<http.Response> get(
+    Uri url, {
+    Map<String, String>? headers,
+    Duration? timeout,
+  }) async {
+    return http
+        .get(url, headers: _buildHeaders(headers))
+        .timeout(
+          timeout ?? Timeouts.httpRequest,
+          onTimeout: () {
+            throw NetworkException.timeout();
+          },
+        );
   }
 
-  /// POST request with automatic X-Tenant-ID header
+  /// POST request with automatic X-Tenant-ID header and timeout
   Future<http.Response> post(
     Uri url, {
     Map<String, String>? headers,
     Object? body,
     Encoding? encoding,
+    Duration? timeout,
   }) async {
-    return http.post(
-      url,
-      headers: _buildHeaders(headers),
-      body: body,
-      encoding: encoding,
-    );
+    return http
+        .post(
+          url,
+          headers: _buildHeaders(headers),
+          body: body,
+          encoding: encoding,
+        )
+        .timeout(
+          timeout ?? Timeouts.httpRequest,
+          onTimeout: () {
+            throw NetworkException.timeout();
+          },
+        );
   }
 
-  /// PUT request with automatic X-Tenant-ID header
+  /// PUT request with automatic X-Tenant-ID header and timeout
   Future<http.Response> put(
     Uri url, {
     Map<String, String>? headers,
     Object? body,
     Encoding? encoding,
+    Duration? timeout,
   }) async {
-    return http.put(
-      url,
-      headers: _buildHeaders(headers),
-      body: body,
-      encoding: encoding,
-    );
+    return http
+        .put(
+          url,
+          headers: _buildHeaders(headers),
+          body: body,
+          encoding: encoding,
+        )
+        .timeout(
+          timeout ?? Timeouts.httpRequest,
+          onTimeout: () {
+            throw NetworkException.timeout();
+          },
+        );
   }
 
-  /// PATCH request with automatic X-Tenant-ID header
+  /// PATCH request with automatic X-Tenant-ID header and timeout
   Future<http.Response> patch(
     Uri url, {
     Map<String, String>? headers,
     Object? body,
     Encoding? encoding,
+    Duration? timeout,
   }) async {
-    return http.patch(
-      url,
-      headers: _buildHeaders(headers),
-      body: body,
-      encoding: encoding,
-    );
+    return http
+        .patch(
+          url,
+          headers: _buildHeaders(headers),
+          body: body,
+          encoding: encoding,
+        )
+        .timeout(
+          timeout ?? Timeouts.httpRequest,
+          onTimeout: () {
+            throw NetworkException.timeout();
+          },
+        );
   }
 
-  /// DELETE request with automatic X-Tenant-ID header
+  /// DELETE request with automatic X-Tenant-ID header and timeout
   Future<http.Response> delete(
     Uri url, {
     Map<String, String>? headers,
     Object? body,
     Encoding? encoding,
+    Duration? timeout,
   }) async {
-    return http.delete(
-      url,
-      headers: _buildHeaders(headers),
-      body: body,
-      encoding: encoding,
-    );
+    return http
+        .delete(
+          url,
+          headers: _buildHeaders(headers),
+          body: body,
+          encoding: encoding,
+        )
+        .timeout(
+          timeout ?? Timeouts.httpRequest,
+          onTimeout: () {
+            throw NetworkException.timeout();
+          },
+        );
   }
 
-  /// HEAD request with automatic X-Tenant-ID header
-  Future<http.Response> head(Uri url, {Map<String, String>? headers}) async {
-    return http.head(url, headers: _buildHeaders(headers));
+  /// HEAD request with automatic X-Tenant-ID header and timeout
+  Future<http.Response> head(
+    Uri url, {
+    Map<String, String>? headers,
+    Duration? timeout,
+  }) async {
+    return http
+        .head(url, headers: _buildHeaders(headers))
+        .timeout(
+          timeout ?? Timeouts.httpRequest,
+          onTimeout: () {
+            throw NetworkException.timeout();
+          },
+        );
   }
 }
 

@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
+import '../constants/timeouts.dart';
+import '../exceptions/exceptions.dart';
 
 /// Service responsible for managing tenant (center) configuration
 /// Now uses MongoDB backend instead of SharedPreferences
@@ -40,7 +42,12 @@ class TenantService {
               'Content-Type': 'application/json',
             },
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(
+            Timeouts.httpRequest,
+            onTimeout: () {
+              throw NetworkException.timeout();
+            },
+          );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
@@ -58,7 +65,12 @@ class TenantService {
                 'Content-Type': 'application/json',
               },
             )
-            .timeout(const Duration(seconds: 10));
+            .timeout(
+              Timeouts.httpRequest,
+              onTimeout: () {
+                throw NetworkException.timeout();
+              },
+            );
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body) as Map<String, dynamic>;
@@ -86,8 +98,20 @@ class TenantService {
         }
       }
 
+      // Si no es 404, puede ser un error de autenticación o servidor
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      }
+
       return null;
+    } on AppException {
+      // Re-lanzar excepciones de la aplicación
+      rethrow;
     } catch (e) {
+      // Para otros errores (timeout, network, etc.), retornar null
+      // El provider manejará el error apropiadamente
       return null;
     }
   }
@@ -118,7 +142,12 @@ class TenantService {
             },
             body: json.encode({'tenantId': tenantId}),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(
+            Timeouts.httpRequest,
+            onTimeout: () {
+              throw NetworkException.timeout();
+            },
+          );
 
       if (response.statusCode == 200) {
         return true;
@@ -135,13 +164,38 @@ class TenantService {
               },
               body: json.encode({'tenantId': tenantId}),
             )
-            .timeout(const Duration(seconds: 10));
+            .timeout(
+              Timeouts.httpRequest,
+              onTimeout: () {
+                throw NetworkException.timeout();
+              },
+            );
 
-        return response.statusCode == 200;
+        if (response.statusCode == 200) {
+          return true;
+        }
+      }
+
+      // Manejar errores específicos
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw TenantException.notFound(tenantId: tenantId);
+      } else if (response.statusCode == 400 || response.statusCode == 422) {
+        throw ValidationException(
+          'El ID del centro no es válido',
+          code: 'INVALID_TENANT_ID',
+        );
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
       }
 
       return false;
+    } on AppException {
+      // Re-lanzar excepciones de la aplicación
+      rethrow;
     } catch (e) {
+      // Para otros errores, retornar false
       return false;
     }
   }

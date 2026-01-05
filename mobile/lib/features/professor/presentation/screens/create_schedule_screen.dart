@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/exceptions/exceptions.dart';
+import '../../../../core/constants/timeouts.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../providers/professor_provider.dart';
-import '../../domain/services/professor_service.dart';
 
 class CreateScheduleScreen extends ConsumerStatefulWidget {
   const CreateScheduleScreen({super.key});
@@ -23,7 +25,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
 
   bool _isCreating = false;
   bool _generateMultipleSlots = false;
-  int _slotDuration = 60; // Duración en minutos
+  int _slotDuration = 60; // Duration in minutes
 
   @override
   void dispose() {
@@ -38,7 +40,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Crear Horario Disponible',
+          AppStrings.createScheduleTitle,
           style: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
@@ -70,7 +72,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                     ),
                     const Gap(16),
                     Text(
-                      'Define tu disponibilidad',
+                      AppStrings.defineAvailability,
                       style: GoogleFonts.inter(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
@@ -78,7 +80,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                     ),
                     const Gap(8),
                     Text(
-                      'Los estudiantes podrán reservar en estos horarios',
+                      AppStrings.studentsCanBookMessage,
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         color: colorScheme.onSurfaceVariant,
@@ -92,7 +94,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
               const Gap(32),
 
               Text(
-                'Fecha',
+                AppStrings.scheduleDate,
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -133,7 +135,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Hora inicio',
+                          AppStrings.startTime,
                           style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -177,7 +179,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Hora fin',
+                          AppStrings.endTime,
                           style: GoogleFonts.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -241,7 +243,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                           const Gap(8),
                           Expanded(
                             child: Text(
-                              'Generar horarios automáticos',
+                              AppStrings.generateAutomaticSchedules,
                               style: GoogleFonts.inter(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -261,7 +263,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                       if (_generateMultipleSlots) ...[
                         const Gap(16),
                         Text(
-                          'Duración de cada slot',
+                          AppStrings.slotDuration,
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -332,7 +334,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                     const Gap(12),
                     Expanded(
                       child: Text(
-                        'Los estudiantes podrán elegir el tipo de servicio (clase individual, grupal o alquiler de cancha) al reservar este horario.',
+                        AppStrings.studentsCanChooseServiceMessage,
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           color: colorScheme.onSurfaceVariant,
@@ -363,7 +365,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                             const Icon(Icons.check_circle),
                             const Gap(8),
                             Text(
-                              'Crear Horario',
+                              AppStrings.createScheduleButton,
                               style: GoogleFonts.inter(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -424,14 +426,14 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
 
     if (endDateTime.isBefore(startDateTime) ||
         endDateTime.isAtSameMomentAs(startDateTime)) {
-      return 'Ajusta las horas de inicio y fin';
+      return AppStrings.adjustStartEndTimes;
     }
 
     final totalMinutes = endDateTime.difference(startDateTime).inMinutes;
     final numberOfSlots = (totalMinutes / _slotDuration).floor();
 
     if (numberOfSlots == 0) {
-      return 'El rango es muy corto para generar slots';
+      return AppStrings.rangeTooShortForSlots;
     }
 
     return 'Se generarán $numberOfSlots horarios de ${_slotDuration ~/ 60}h ${_slotDuration % 60 > 0 ? '${_slotDuration % 60}min' : ''}';
@@ -521,7 +523,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
       context: context,
       initialTime: isStartTime ? _startTime : _endTime,
       helpText: isToday && isStartTime
-          ? 'No puedes seleccionar horas pasadas'
+          ? AppStrings.cannotSelectPastHours
           : null,
     );
 
@@ -536,8 +538,8 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
             SnackBar(
               content: Text(
                 isToday
-                    ? 'No puedes seleccionar horas pasadas'
-                    : 'La hora debe ser después de la hora de inicio',
+                    ? AppStrings.cannotSelectPastHours
+                    : AppStrings.endTimeMustBeAfterStartTime,
                 style: GoogleFonts.inter(),
               ),
               backgroundColor: Colors.orange,
@@ -577,7 +579,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'No puedes crear horarios en fechas pasadas',
+            AppStrings.cannotCreatePastDates,
             style: GoogleFonts.inter(),
           ),
           backgroundColor: Colors.red,
@@ -614,7 +616,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'No puedes crear horarios en horas pasadas',
+            AppStrings.cannotCreatePastHours,
             style: GoogleFonts.inter(),
           ),
           backgroundColor: Colors.red,
@@ -628,7 +630,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'La hora de fin debe ser después de la hora de inicio',
+            AppStrings.endTimeAfterStartTime,
             style: GoogleFonts.inter(),
           ),
           backgroundColor: Colors.red,
@@ -648,9 +650,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
         final slots = _generateTimeSlots(startDateTime, endDateTime);
 
         if (slots.isEmpty) {
-          throw Exception(
-            'No se pudieron generar slots con la configuración actual',
-          );
+          throw Exception(AppStrings.couldNotGenerateSlots);
         }
 
         final nowUtc = DateTime.utc(
@@ -681,7 +681,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
               endTime: slot['end']!,
             );
             createdCount++;
-          } on ScheduleConflictException catch (e) {
+          } on ScheduleException catch (e) {
             conflicts.add(e.message);
           } catch (e) {
             conflicts.add('Error al crear horario: ${e.toString()}');
@@ -700,7 +700,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                   const Gap(8),
                   Expanded(
                     child: Text(
-                      'Error al Crear Horarios',
+                      AppStrings.errorCreatingSchedules,
                       style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -723,7 +723,10 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text('Entendido', style: GoogleFonts.inter()),
+                  child: Text(
+                    AppStrings.understood,
+                    style: GoogleFonts.inter(),
+                  ),
                 ),
               ],
             ),
@@ -736,7 +739,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                 style: GoogleFonts.inter(),
               ),
               backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 5),
+              duration: Timeouts.snackbarError,
             ),
           );
         } else {
@@ -823,7 +826,10 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Entendido', style: GoogleFonts.inter()),
+                    child: Text(
+                      AppStrings.understood,
+                      style: GoogleFonts.inter(),
+                    ),
                   ),
                 ],
               ),
@@ -839,7 +845,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
               ),
             );
           }
-        } on ScheduleConflictException catch (e) {
+        } on ScheduleException catch (e) {
           if (!mounted) return;
 
           await showDialog(
@@ -861,12 +867,16 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text('Entendido', style: GoogleFonts.inter()),
+                  child: Text(
+                    AppStrings.understood,
+                    style: GoogleFonts.inter(),
+                  ),
                 ),
               ],
             ),
           );
 
+          if (!mounted) return;
           setState(() {
             _isCreating = false;
           });
@@ -874,6 +884,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
         }
       }
 
+      if (!mounted) return;
       Navigator.of(context).pop(true); // Return true to indicate success
     } catch (error) {
       if (!mounted) return;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/constants/timeouts.dart';
 import '../../domain/models/schedule_model.dart';
 import '../providers/booking_provider.dart';
 
@@ -48,7 +49,7 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
 
     try {
       final service = ref.read(bookingServiceProvider);
-      
+
       await service.bookLesson(
         widget.schedule.id,
         serviceType: 'individual_class', // Default service type
@@ -62,7 +63,7 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
         const SnackBar(
           content: Text('¡Clase reservada exitosamente!'),
           backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
+          duration: Timeouts.snackbarSuccess,
         ),
       );
 
@@ -87,9 +88,7 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Confirmar Reserva'),
-      ),
+      appBar: AppBar(title: const Text('Confirmar Reserva')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -106,8 +105,8 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                     Text(
                       'Detalles de la Reserva',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     _buildDetailRow(
@@ -160,12 +159,13 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                     Text(
                       'Precio',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       '\$${_price.toStringAsFixed(0)}',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).colorScheme.primary,
                           ),
@@ -201,8 +201,9 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           )
                         : const Text('Confirmar Reserva'),
@@ -227,16 +228,16 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
             children: [
               Text(
                 label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey.shade600,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
               ),
               const SizedBox(height: 2),
               Text(
                 value,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -245,4 +246,3 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
     );
   }
 }
-

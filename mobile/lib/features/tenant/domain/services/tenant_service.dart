@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/services/http_client.dart';
+import '../../../../core/exceptions/exceptions.dart';
 import '../models/tenant_model.dart';
 
 /// Service for managing tenant (center) operations
@@ -20,7 +21,7 @@ class TenantService {
     try {
       final user = _auth.currentUser;
 
-      // Si el usuario no está autenticado, usar endpoint público (para registro)
+      // If user is not authenticated, use public endpoint (for registration)
       if (user == null) {
         final response = await _http.get(
           Uri.parse('$_baseUrl/config/tenants/public'),
@@ -35,16 +36,19 @@ class TenantService {
               .map((item) => TenantModel.fromJson(item as Map<String, dynamic>))
               .toList();
         } else {
-          throw Exception(
-            'Error al obtener centros disponibles: ${response.statusCode}',
+          throw NetworkException.serverError(
+            message: 'Error al obtener centros disponibles',
+            statusCode: response.statusCode,
           );
         }
       }
 
-      // Si el usuario está autenticado, usar endpoint con autenticación
+      // If user is authenticated, use endpoint with authentication
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        throw Exception('No se pudo obtener el token de autenticación');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
       }
 
       final response = await _http.get(
@@ -76,12 +80,14 @@ class TenantService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        throw Exception('No se pudo obtener el token de autenticación');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
       }
 
       // Determine user role from token or user info
@@ -121,7 +127,14 @@ class TenantService {
           }
         }
 
-        throw Exception('Error al obtener centros: ${response.statusCode}');
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else {
+          throw NetworkException.serverError(
+            message: 'Error al obtener centros',
+            statusCode: response.statusCode,
+          );
+        }
       } catch (e) {
         // If student endpoint fails, try professor endpoint
         try {
@@ -166,9 +179,7 @@ class TenantService {
       } catch (e) {
         // If not found by slug, try by ID
         try {
-          return tenants.firstWhere(
-            (tenant) => tenant.id == code,
-          );
+          return tenants.firstWhere((tenant) => tenant.id == code);
         } catch (e) {
           return null;
         }

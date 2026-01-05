@@ -43,7 +43,7 @@ class AnalyticsMetricCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Icon(
-                      _getIconData(metric.icon),
+                      AnalyticsMetricCard._getIconData(metric.icon),
                       color: cardColor,
                       size: 16,
                     ),
@@ -145,7 +145,7 @@ class AnalyticsMetricCard extends StatelessWidget {
     );
   }
 
-  IconData _getIconData(String iconName) {
+  static IconData _getIconData(String iconName) {
     switch (iconName.toLowerCase()) {
       case 'money':
       case 'revenue':

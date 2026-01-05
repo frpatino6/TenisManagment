@@ -6,6 +6,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/widgets/version_widget.dart';
 import '../../../../core/widgets/update_check_wrapper.dart';
+import '../../../../core/widgets/loading_widget.dart';
+import '../../../../core/widgets/error_widget.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../widgets/professor_profile_card.dart';
 import '../widgets/schedule_widget.dart';
 import '../widgets/earnings_widget.dart';
@@ -30,40 +33,43 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
 
     return UpdateCheckWrapper(
       child: Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        title: Text(
-          'Panel del Profesor',
-          style: GoogleFonts.inter(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: colorScheme.onSurface,
-          ),
-        ),
         backgroundColor: colorScheme.surface,
-        elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: () => context.push('/manage-schedules'),
-            icon: Icon(Icons.calendar_month, color: colorScheme.onSurface),
-            tooltip: 'Ver mis horarios',
-          ),
-          IconButton(
-            onPressed: () => _showProfileMenu(context),
-            icon: Icon(
-              Icons.account_circle_outlined,
+        appBar: AppBar(
+          title: Text(
+            AppStrings.professorPanel,
+            style: GoogleFonts.inter(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
               color: colorScheme.onSurface,
             ),
           ),
-        ],
-      ),
-      body: professorInfo.when(
-        data: (professor) {
-          return _buildProfessorContent(context, professor);
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(child: Text('Error: $error')),
-      ),
+          backgroundColor: colorScheme.surface,
+          elevation: 0,
+          actions: [
+            IconButton(
+              onPressed: () => context.push('/manage-schedules'),
+              icon: Icon(Icons.calendar_month, color: colorScheme.onSurface),
+              tooltip: AppStrings.viewMySchedules,
+            ),
+            IconButton(
+              onPressed: () => _showProfileMenu(context),
+              icon: Icon(
+                Icons.account_circle_outlined,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        body: professorInfo.when(
+          data: (professor) {
+            return _buildProfessorContent(context, professor);
+          },
+          loading: () => const LoadingWidget(message: AppStrings.loading),
+          error: (error, stackTrace) => AppErrorWidget.fromError(
+            error,
+            onRetry: () => ref.invalidate(professorInfoProvider),
+          ),
+        ),
       ),
     );
   }
@@ -147,7 +153,7 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '¡Bienvenido, ${professor.name}!',
+            AppStrings.welcomeProfessorWithName(professor.name),
             style: GoogleFonts.inter(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -559,7 +565,10 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.person_outline),
+              leading: Icon(
+                Icons.person_outline,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               title: const Text('Perfil'),
               onTap: () {
                 Navigator.pop(context);
@@ -567,7 +576,10 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.palette_outlined),
+              leading: Icon(
+                Icons.palette_outlined,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               title: const Text('Tema'),
               onTap: () {
                 Navigator.pop(context);
@@ -575,8 +587,16 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Cerrar Sesión'),
+              leading: Icon(
+                Icons.logout,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
+                'Cerrar Sesión',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _handleLogout(context);

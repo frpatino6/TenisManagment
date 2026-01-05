@@ -28,7 +28,7 @@ class AnalyticsChartWidget extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  _getChartIcon(chartData.type),
+                  AnalyticsChartWidget._getChartIcon(chartData.type),
                   color: colorScheme.primary,
                   size: 20,
                 ),
@@ -56,9 +56,7 @@ class AnalyticsChartWidget extends StatelessWidget {
             const Gap(16),
             SizedBox(
               height: height,
-              child: RepaintBoundary(
-                child: _buildChart(context),
-              ),
+              child: RepaintBoundary(child: _buildChart(context)),
             ),
             if (chartData.xAxisLabel != null ||
                 chartData.yAxisLabel != null) ...[
@@ -278,7 +276,7 @@ class AnalyticsChartWidget extends StatelessWidget {
     );
   }
 
-  IconData _getChartIcon(ChartType type) {
+  static IconData _getChartIcon(ChartType type) {
     switch (type) {
       case ChartType.line:
         return Icons.show_chart;
@@ -292,7 +290,6 @@ class AnalyticsChartWidget extends StatelessWidget {
   }
 }
 
-
 class LineChartPainter extends CustomPainter {
   final List<ChartDataPoint> data;
   final Color color;
@@ -302,7 +299,6 @@ class LineChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
-
 
     final validData = data
         .where((e) => e.value.isFinite && !e.value.isNaN)
@@ -318,7 +314,6 @@ class LineChartPainter extends CustomPainter {
     final maxValue = validData
         .map((e) => e.value)
         .reduce((a, b) => a > b ? a : b);
-
 
     final stepX = validData.length > 1
         ? size.width / (validData.length - 1)
@@ -338,7 +333,6 @@ class LineChartPainter extends CustomPainter {
     }
 
     canvas.drawPath(path, paint);
-
 
     final pointPaint = Paint()
       ..color = color
@@ -366,7 +360,6 @@ class PieChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
-
 
     final validData = data
         .where((e) => e.value.isFinite && !e.value.isNaN && e.value > 0)
@@ -438,13 +431,11 @@ class AreaChartPainter extends CustomPainter {
     fillPath.lineTo(size.width, size.height);
     fillPath.close();
 
-
     final fillPaint = Paint()
       ..color = color.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
 
     canvas.drawPath(fillPath, fillPaint);
-
 
     final linePaint = Paint()
       ..color = color

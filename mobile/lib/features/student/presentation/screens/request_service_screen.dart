@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/constants/timeouts.dart';
 
 class RequestServiceScreen extends ConsumerStatefulWidget {
   const RequestServiceScreen({super.key});
@@ -440,8 +441,8 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
     });
 
     try {
-      // TODO: Implement actual API call
-      await Future.delayed(const Duration(seconds: 2));
+      // TODO: TEN-112 - Implement actual API call
+      await Future.delayed(Timeouts.snackbarSuccess);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -452,7 +453,7 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
               label: 'Ver Solicitudes',
               textColor: Colors.white,
               onPressed: () {
-                // TODO: Navigate to requests list
+                // TODO: TEN-113 - Navigate to requests list
               },
             ),
           ),

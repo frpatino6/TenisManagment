@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/providers/tenant_provider.dart';
+import '../../../../core/constants/timeouts.dart';
 import '../../../../features/tenant/domain/models/tenant_model.dart';
 import '../../../../features/tenant/domain/services/tenant_service.dart'
     as tenant_domain;
@@ -207,12 +208,12 @@ class TenantSelectorWidget extends ConsumerWidget {
                                 height: 40,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
-                                  return _buildDefaultIcon(colorScheme);
+                                  return TenantSelectorWidget._buildDefaultIcon(colorScheme);
                                 },
                               ),
                             )
                           else
-                            _buildDefaultIcon(colorScheme),
+                            TenantSelectorWidget._buildDefaultIcon(colorScheme),
                           const Gap(12),
                           Expanded(
                             child: Column(
@@ -320,7 +321,7 @@ class TenantSelectorWidget extends ConsumerWidget {
     ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0);
   }
 
-  Widget _buildDefaultIcon(ColorScheme colorScheme) {
+  static Widget _buildDefaultIcon(ColorScheme colorScheme) {
     return Container(
       width: 40,
       height: 40,
@@ -416,7 +417,7 @@ class TenantSelectorWidget extends ConsumerWidget {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text('Centro cambiado a ${tenant.name}'),
-                              duration: const Duration(seconds: 2),
+                              duration: Timeouts.snackbarSuccess,
                             ),
                           );
                         }
@@ -606,7 +607,7 @@ class TenantSelectorWidget extends ConsumerWidget {
               style: GoogleFonts.inter(),
             ),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
+            duration: Timeouts.snackbarError,
           ),
         );
       }
@@ -623,7 +624,7 @@ class TenantSelectorWidget extends ConsumerWidget {
               style: GoogleFonts.inter(),
             ),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
+            duration: Timeouts.snackbarError,
           ),
         );
       }

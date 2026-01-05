@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import '../constants/timeouts.dart';
 
 // Import condicional - Flutter usará el archivo correcto según la plataforma
 import '../utils/web_utils_stub.dart'
@@ -19,7 +20,7 @@ class UpdateRequiredDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: !forceUpdate, // No permitir cerrar si es forzado
+      canPop: !forceUpdate, // Don't allow closing if forced
       child: AlertDialog(
         title: Row(
           children: [
@@ -64,12 +65,12 @@ class UpdateRequiredDialog extends StatelessWidget {
             ),
           ElevatedButton(
             onPressed: () async {
-              // Cerrar el diálogo primero
+              // Close dialog first
               Navigator.of(context).pop();
-              
-              // Pequeño delay para que el diálogo se cierre antes de la acción
-              await Future.delayed(const Duration(milliseconds: 300));
-              
+
+              // Small delay so dialog closes before action
+              await Future.delayed(Timeouts.animationLong);
+
               if (kIsWeb) {
                 WebUtils.reloadPage();
               } else {

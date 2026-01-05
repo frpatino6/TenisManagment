@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
@@ -32,12 +33,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch authState to detect when user logs in
     final authState = ref.watch(authStateProvider);
     final isLoading = ref.watch(authLoadingProvider);
     final error = ref.watch(authErrorProvider);
+    final tenantState = ref.watch(tenantNotifierProvider);
 
-    if (authState.isLoading) {
-      return const LoadingScreen(message: 'Verificando autenticación...');
+    // Check if user is authenticated
+    final user = authState.when(
+      data: (user) => user,
+      loading: () => null,
+      error: (_, _) => null,
+    );
+    final isAuthenticated = user != null;
+
+    // Show loading screen if:
+    // 1. Auth is loading (initial load)
+    // 2. User is authenticated and tenant is loading (after login, waiting for tenant to load)
+    // This prevents briefly showing the select-tenant screen during login
+    if (authState.isLoading || (isAuthenticated && tenantState.isLoading)) {
+      return const LoadingScreen(message: AppStrings.verifyingAuth);
     }
 
     return Scaffold(
@@ -211,7 +226,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             TextButton(
               onPressed: () {
-                // TODO: Implementar recuperación de contraseña
+                // TODO: TEN-109 - Implementar recuperación de contraseña
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text(
@@ -347,6 +362,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (mounted) {
         // Load tenant from backend after login
+        // The router will automatically redirect based on auth state
         await ref.read(tenantNotifierProvider.notifier).loadTenant();
 
         // Small delay to ensure state is updated
@@ -368,8 +384,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             final route = finalUser.role == 'professor'
                 ? '/professor-home'
                 : finalUser.role == 'tenant_admin'
-                    ? '/tenant-admin-home'
-                    : '/home';
+                ? '/tenant-admin-home'
+                : '/home';
             context.go(route);
           } else {
             context.go('/select-tenant');
@@ -387,6 +403,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (mounted) {
         // Load tenant from backend after login
+        // The router will automatically redirect based on auth state
         await ref.read(tenantNotifierProvider.notifier).loadTenant();
 
         // Small delay to ensure state is updated
@@ -408,8 +425,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             final route = finalUser.role == 'professor'
                 ? '/professor-home'
                 : finalUser.role == 'tenant_admin'
-                    ? '/tenant-admin-home'
-                    : '/home';
+                ? '/tenant-admin-home'
+                : '/home';
             context.go(route);
           } else {
             context.go('/select-tenant');

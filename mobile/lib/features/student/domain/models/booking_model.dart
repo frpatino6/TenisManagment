@@ -1,3 +1,5 @@
+import '../../../../core/validation/model_validator.dart';
+
 class BookingModel {
   final String id;
   final ProfessorBookingModel professor;
@@ -17,11 +19,30 @@ class BookingModel {
     required this.price,
     required this.status,
     required this.createdAt,
-  });
+  }) {
+    // Validation in constructor
+    assert(id.isNotEmpty, 'Booking id must not be empty');
+    assert(
+      ['individual_class', 'group_class', 'court_rental'].contains(serviceType),
+      'Service type must be individual_class, group_class, or court_rental',
+    );
+    assert(
+      ['pending', 'confirmed', 'cancelled', 'completed'].contains(status),
+      'Status must be pending, confirmed, cancelled, or completed',
+    );
+    ModelValidator.validatePrice(price);
+  }
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
+    final id = json['id'] as String;
+    final price = ModelValidator.parseDouble(
+      json['price'],
+      'price',
+      defaultValue: 0.0,
+    );
+    
     return BookingModel(
-      id: json['id'] as String,
+      id: id,
       professor: json['professor'] != null
           ? ProfessorBookingModel.fromJson(
               json['professor'] as Map<String, dynamic>,
@@ -52,7 +73,7 @@ class BookingModel {
             )
           : null,
       serviceType: json['serviceType'] as String? ?? 'individual_class',
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      price: price,
       status: json['status'] as String? ?? 'pending',
       createdAt:
           json['createdAt'] as String? ?? DateTime.now().toIso8601String(),
@@ -84,14 +105,27 @@ class CourtBookingModel {
     required this.name,
     required this.type,
     required this.price,
-  });
+  }) {
+    // Validation in constructor
+    assert(
+      ['tennis', 'padel', 'multi'].contains(type),
+      'Court type must be tennis, padel, or multi',
+    );
+    ModelValidator.validatePrice(price);
+  }
 
   factory CourtBookingModel.fromJson(Map<String, dynamic> json) {
+    final price = ModelValidator.parseDouble(
+      json['price'],
+      'price',
+      defaultValue: 0.0,
+    );
+    
     return CourtBookingModel(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? 'Cancha',
       type: json['type'] as String? ?? 'tennis',
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      price: price,
     );
   }
 
@@ -178,13 +212,19 @@ class AvailableScheduleModel {
       }
     }
 
+    final price = ModelValidator.parseDouble(
+      json['price'],
+      'price',
+      defaultValue: 0.0,
+    );
+
     return AvailableScheduleModel(
       id: json['id'] as String? ?? '',
       professorId: json['professorId'] as String? ?? '',
       startTime: parseTime(json['startTime'] as String?),
       endTime: parseTime(json['endTime'] as String?),
       type: json['type'] as String? ?? 'individual_class',
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      price: price,
       status: json['status'] as String? ?? 'pending',
     );
   }

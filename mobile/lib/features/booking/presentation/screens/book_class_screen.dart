@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/constants/timeouts.dart';
 import '../../domain/models/professor_model.dart';
 import '../../domain/models/available_schedule_model.dart';
 import '../../domain/models/service_type.dart';
@@ -361,7 +362,7 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
                                                     ? 'Profesor eliminado de favoritos'
                                                     : 'Profesor agregado a favoritos',
                                               ),
-                                              duration: const Duration(seconds: 2),
+                                              duration: Timeouts.snackbarSuccess,
                                             ),
                                           );
                                         }
@@ -829,7 +830,7 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
             style: GoogleFonts.inter(),
           ),
           backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
+          duration: Timeouts.snackbarSuccess,
         ),
       );
 

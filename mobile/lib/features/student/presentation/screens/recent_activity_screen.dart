@@ -90,11 +90,7 @@ class RecentActivityScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildErrorState(
-    BuildContext context,
-    Object error,
-    WidgetRef ref,
-  ) {
+  Widget _buildErrorState(BuildContext context, Object error, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -104,11 +100,7 @@ class RecentActivityScreen extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: colorScheme.error,
-            ),
+            Icon(Icons.error_outline, size: 64, color: colorScheme.error),
             const Gap(16),
             Text(
               'Error al cargar actividades',
@@ -153,9 +145,7 @@ class RecentActivityScreen extends ConsumerWidget {
       key: ValueKey('activity_${activity.id}_$index'),
       elevation: 1,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
         leading: Container(
@@ -207,7 +197,7 @@ class RecentActivityScreen extends ConsumerWidget {
           ),
         ),
         onTap: () {
-          // TODO: Implement activity detail navigation
+          // TODO: TEN-114 - Implement activity detail navigation
         },
       ),
     );
@@ -283,4 +273,3 @@ class RecentActivityScreen extends ConsumerWidget {
     }
   }
 }
-

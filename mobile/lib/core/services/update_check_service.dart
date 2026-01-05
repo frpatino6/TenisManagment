@@ -1,6 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../config/app_config.dart';
+import '../constants/timeouts.dart';
 import 'version_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -58,7 +59,7 @@ class UpdateCheckService {
             Uri.parse('${AppConfig.apiBaseUrl}/config/version'),
             headers: {'Content-Type': 'application/json'},
           )
-          .timeout(const Duration(seconds: 5));
+          .timeout(Timeouts.httpRequestShort);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;

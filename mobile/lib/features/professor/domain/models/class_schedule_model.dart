@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../core/validation/model_validator.dart';
 
 class ClassScheduleModel extends Equatable {
   final String id;
@@ -13,7 +14,7 @@ class ClassScheduleModel extends Equatable {
   final String? tenantId;
   final String? tenantName;
 
-  const ClassScheduleModel({
+  ClassScheduleModel({
     required this.id,
     required this.studentName,
     required this.studentId,
@@ -25,7 +26,14 @@ class ClassScheduleModel extends Equatable {
     required this.price,
     this.tenantId,
     this.tenantName,
-  });
+  }) {
+    // Validation in constructor
+    assert(id.isNotEmpty, 'Schedule id must not be empty');
+    assert(studentName.isNotEmpty, 'Student name must not be empty');
+    assert(studentId.isNotEmpty, 'Student id must not be empty');
+    ModelValidator.validateTimeRange(startTime, endTime, 'schedule');
+    ModelValidator.validatePrice(price);
+  }
 
   factory ClassScheduleModel.fromJson(Map<String, dynamic> json) {
     // Parse dates as UTC - the backend sends UTC times that represent the local time selected
@@ -41,16 +49,25 @@ class ClassScheduleModel extends Equatable {
         ? DateTime.parse(endTimeStr).toUtc()
         : DateTime.now().toUtc();
     
+    final id = json['_id'] ?? json['id'] ?? '';
+    final studentName = json['studentName'] ?? '';
+    final studentId = json['studentId'] ?? '';
+    final price = ModelValidator.parseDouble(
+      json['price'],
+      'price',
+      defaultValue: 0.0,
+    );
+    
     return ClassScheduleModel(
-      id: json['_id'] ?? json['id'] ?? '',
-      studentName: json['studentName'] ?? '',
-      studentId: json['studentId'] ?? '',
+      id: id,
+      studentName: studentName,
+      studentId: studentId,
       startTime: startTime,
       endTime: endTime,
       type: json['serviceType'] ?? json['type'] ?? 'Clase individual',
       status: json['status'] ?? 'pending',
       notes: json['notes'],
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      price: price,
       tenantId: json['tenantId'] as String?,
       tenantName: json['tenantName'] as String?,
     );

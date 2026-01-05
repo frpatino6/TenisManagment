@@ -5,6 +5,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../../../core/config/app_config.dart';
+import '../../../../core/constants/timeouts.dart';
+import '../../../../core/exceptions/exceptions.dart';
+import '../../../../core/logging/logger.dart';
 import '../models/user_model.dart';
 
 /// Service responsible for user authentication operations
@@ -13,8 +16,18 @@ import '../models/user_model.dart';
 class AuthService {
   String get _baseUrl => AppConfig.authBaseUrl;
 
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FirebaseAuth _firebaseAuth;
+  final GoogleSignIn _googleSignIn;
+  final _logger = AppLogger.tag('AuthService');
+  final http.Client _httpClient;
+
+  AuthService({
+    FirebaseAuth? firebaseAuth,
+    GoogleSignIn? googleSignIn,
+    http.Client? httpClient,
+  })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+        _googleSignIn = googleSignIn ?? GoogleSignIn(),
+        _httpClient = httpClient ?? http.Client();
 
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
@@ -26,6 +39,7 @@ class AuthService {
   /// Returns [UserModel] with user data from backend
   /// Throws [Exception] if authentication fails or is cancelled
   Future<UserModel> signInWithGoogle() async {
+    _logger.info('Iniciando autenticación con Google');
     try {
       User? user;
 
@@ -38,14 +52,20 @@ class AuthService {
       } else {
         final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
         if (googleUser == null) {
-          throw Exception('Google Sign-In was cancelled');
+          throw AuthException(
+            'Inicio de sesión con Google cancelado',
+            code: 'GOOGLE_SIGN_IN_CANCELLED',
+          );
         }
 
         final GoogleSignInAuthentication googleAuth =
             await googleUser.authentication;
 
         if (googleAuth.idToken == null) {
-          throw Exception('Failed to get ID token from Google');
+          throw AuthException(
+            'No se pudo obtener el token de Google',
+            code: 'GOOGLE_TOKEN_ERROR',
+          );
         }
 
         final OAuthCredential credential = GoogleAuthProvider.credential(
@@ -59,17 +79,34 @@ class AuthService {
       }
 
       if (user == null) {
-        throw Exception('Failed to sign in with Google');
+        throw AuthException(
+          'No se pudo iniciar sesión con Google',
+          code: 'GOOGLE_SIGN_IN_FAILED',
+        );
       }
 
       final UserModel userModel = await _authenticateWithBackend(user);
+      _logger.info('Autenticación con Google exitosa', {'userId': user.uid});
       return userModel;
-    } catch (e) {
+    } on AppException catch (e, stackTrace) {
+      _logger.error(
+        'Error en autenticación con Google',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    } catch (e, stackTrace) {
+      _logger.error(
+        'Error inesperado en autenticación con Google',
+        error: e,
+        stackTrace: stackTrace,
+      );
       rethrow;
     }
   }
 
   Future<UserModel> signInWithEmail(String email, String password) async {
+    _logger.info('Iniciando autenticación con email', {'email': email});
     try {
       // Intentar el login
       UserCredential userCredential;
@@ -79,88 +116,101 @@ class AuthService {
           password: password,
         );
       } on FirebaseAuthException catch (e) {
-        // Si el error es invalid-credential, puede ser que:
-        // 1. El usuario no existe
-        // 2. La contraseña es incorrecta
-        // 3. El usuario se registró con Google (no tiene contraseña)
+        // If the error is invalid-credential, it could be:
+        // 1. User doesn't exist
+        // 2. Password is incorrect
+        // 3. User registered with Google (no password)
         if (e.code == 'invalid-credential' || e.code == 'user-not-found') {
-          // Intentar recuperar contraseña para verificar si el usuario existe
-          // Si el usuario existe, Firebase enviará el email de recuperación
-          // Si no existe, Firebase lanzará un error
+          // Try password recovery to verify if user exists
+          // If user exists, Firebase will send recovery email
+          // If not, Firebase will throw an error
           try {
             await _firebaseAuth.sendPasswordResetEmail(email: email);
-            throw Exception(
-              'La contraseña es incorrecta. Si te registraste con Google, usa "Continuar con Google". Si olvidaste tu contraseña, revisa tu email para restablecerla.',
+            throw AuthException.invalidCredentials(
+              message:
+                  'La contraseña es incorrecta. Si te registraste con Google, usa "Continuar con Google". Si olvidaste tu contraseña, revisa tu email para restablecerla.',
             );
           } catch (resetError) {
-            // Si el error es nuestro Exception personalizado, re-lanzarlo
-            if (resetError is Exception &&
-                (resetError.toString().contains('Contraseña') ||
-                    resetError.toString().contains('Google'))) {
+            // If error is our custom exception, re-throw it
+            if (resetError is AuthException) {
               rethrow;
             }
-            // Si falla el envío de recuperación, el usuario probablemente no existe
-            throw Exception(
-              'No existe una cuenta con este email. Por favor, regístrate primero.',
-            );
+            // If recovery email fails, user probably doesn't exist
+            throw AuthException.userNotFound();
           }
         }
-        rethrow; // Re-lanzar otros errores
+        rethrow; // Re-throw other errors
       }
 
       final User? user = userCredential.user;
       if (user == null) {
-        throw Exception('No se pudo obtener el usuario después del login');
+        throw AuthException(
+          'No se pudo obtener el usuario después del login',
+          code: 'USER_RETRIEVAL_FAILED',
+        );
       }
 
       try {
         final UserModel userModel = await _authenticateWithBackend(user);
+        _logger.info('Autenticación con email exitosa', {'userId': user.uid});
         return userModel;
       } catch (backendError) {
+        _logger.error('Error al autenticar con backend', error: backendError);
         rethrow;
       }
     } on FirebaseAuthException catch (e) {
-      String errorMessage;
+      _logger.warning('Error de Firebase Auth', {
+        'code': e.code,
+        'message': e.message,
+      });
       switch (e.code) {
         case 'wrong-password':
-          errorMessage = 'Contraseña incorrecta';
-          break;
+          throw AuthException.invalidCredentials();
         case 'user-not-found':
-          errorMessage = 'No existe una cuenta con este email';
-          break;
+          throw AuthException.userNotFound();
         case 'invalid-email':
-          errorMessage = 'El formato del email es inválido';
-          break;
+          throw ValidationException.invalidField(
+            field: 'email',
+            reason: 'El formato del email es inválido',
+          );
         case 'user-disabled':
-          errorMessage = 'Esta cuenta ha sido deshabilitada';
-          break;
+          throw AuthException(
+            'Esta cuenta ha sido deshabilitada',
+            code: 'USER_DISABLED',
+          );
         case 'too-many-requests':
-          errorMessage = 'Demasiados intentos fallidos. Intenta más tarde';
-          break;
+          throw AuthException(
+            'Demasiados intentos fallidos. Intenta más tarde',
+            code: 'TOO_MANY_REQUESTS',
+          );
         case 'operation-not-allowed':
-          errorMessage = 'El método de autenticación no está habilitado';
-          break;
+          throw AuthException(
+            'El método de autenticación no está habilitado',
+            code: 'OPERATION_NOT_ALLOWED',
+          );
         case 'network-request-failed':
-          errorMessage = 'Error de conexión. Verifica tu internet';
-          break;
+          throw NetworkException.noConnection();
         case 'invalid-credential':
-          // Este error puede significar:
-          // 1. Contraseña incorrecta
-          // 2. El usuario se registró con Google (no tiene contraseña)
-          errorMessage =
-              'Email o contraseña incorrectos. Si te registraste con Google, usa "Continuar con Google" para iniciar sesión.';
-          break;
+          throw AuthException.invalidCredentials(
+            message:
+                'Email o contraseña incorrectos. Si te registraste con Google, usa "Continuar con Google" para iniciar sesión.',
+          );
         default:
-          errorMessage = 'Error de autenticación: ${e.message ?? e.code}';
+          throw AuthException(
+            'Error de autenticación: ${e.message ?? e.code}',
+            code: e.code,
+          );
       }
-      throw Exception(errorMessage);
+    } on AppException {
+      rethrow;
     } catch (e) {
       final errorStr = e.toString();
       if (errorStr.contains('credential') ||
           errorStr.contains('incorrect') ||
           errorStr.contains('expired')) {
-        throw Exception(
-          'Las credenciales son incorrectas. Si te registraste con Google, usa "Continuar con Google" para iniciar sesión.',
+        throw AuthException.invalidCredentials(
+          message:
+              'Las credenciales son incorrectas. Si te registraste con Google, usa "Continuar con Google" para iniciar sesión.',
         );
       }
       rethrow;
@@ -187,8 +237,8 @@ class AuthService {
         user = userCredential.user;
       } on FirebaseAuthException catch (e) {
         if (e.code == 'email-already-in-use') {
-          // El email existe en Firebase, pero puede que no esté en el backend
-          // Intentar iniciar sesión para obtener el usuario y verificar en backend
+          // Email exists in Firebase, but may not be in backend
+          // Try to sign in to get user and verify in backend
           try {
             userCredential = await _firebaseAuth.signInWithEmailAndPassword(
               email: email,
@@ -196,52 +246,62 @@ class AuthService {
             );
             user = userCredential.user;
 
-            // Intentar obtener info del backend - si falla, el usuario no existe en backend
+            // Try to get info from backend - if it fails, user doesn't exist in backend
             try {
               await getUserInfo();
-              throw Exception(
-                'Este email ya está registrado. Por favor, usa la pantalla de inicio de sesión.',
+              throw AuthException.emailAlreadyExists(
+                message:
+                    'Este email ya está registrado. Por favor, usa la pantalla de inicio de sesión.',
               );
             } catch (backendError) {
-              // Si falla al obtener info, el usuario no existe en backend
-              // Continuar con el registro en backend
+              // If getting info fails, user doesn't exist in backend
+              // Continue with backend registration
             }
           } on FirebaseAuthException catch (loginError) {
-            // Si el login falla, la contraseña es incorrecta
+            // If login fails, password is incorrect
             if (loginError.code == 'wrong-password' ||
                 loginError.code == 'invalid-credential') {
-              throw Exception(
-                'Este email ya está registrado pero la contraseña es incorrecta. Por favor, usa la pantalla de inicio de sesión o recupera tu contraseña.',
+              throw AuthException.emailAlreadyExists(
+                message:
+                    'Este email ya está registrado pero la contraseña es incorrecta. Por favor, usa la pantalla de inicio de sesión o recupera tu contraseña.',
               );
             }
             rethrow;
           }
         } else {
-          String errorMessage;
           switch (e.code) {
             case 'weak-password':
-              errorMessage =
-                  'La contraseña es muy débil. Debe tener al menos 6 caracteres';
-              break;
+              throw ValidationException.invalidField(
+                field: 'password',
+                reason:
+                    'La contraseña es muy débil. Debe tener al menos 6 caracteres',
+              );
             case 'invalid-email':
-              errorMessage = 'El formato del email es inválido';
-              break;
+              throw ValidationException.invalidField(
+                field: 'email',
+                reason: 'El formato del email es inválido',
+              );
             case 'operation-not-allowed':
-              errorMessage =
-                  'El registro con email no está habilitado en Firebase';
-              break;
+              throw AuthException(
+                'El registro con email no está habilitado en Firebase',
+                code: 'OPERATION_NOT_ALLOWED',
+              );
             case 'network-request-failed':
-              errorMessage = 'Error de conexión. Verifica tu internet';
-              break;
+              throw NetworkException.noConnection();
             default:
-              errorMessage = 'Error al registrar: ${e.message ?? e.code}';
+              throw AuthException(
+                'Error al registrar: ${e.message ?? e.code}',
+                code: e.code,
+              );
           }
-          throw Exception(errorMessage);
         }
       }
 
       if (user == null) {
-        throw Exception('Failed to register or sign in with Firebase');
+        throw AuthException(
+          'No se pudo registrar o iniciar sesión con Firebase',
+          code: 'FIREBASE_REGISTRATION_FAILED',
+        );
       }
 
       if (user.displayName != name) {
@@ -278,15 +338,17 @@ class AuthService {
     try {
       final User? user = currentFirebaseUser;
       if (user == null) {
-        throw Exception('No user is currently signed in');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true) ?? '';
       if (idToken.isEmpty) {
-        throw Exception('No se pudo obtener el token de Firebase');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de Firebase',
+        );
       }
 
-      final response = await http
+      final response = await _httpClient
           .get(
             Uri.parse('$_baseUrl/firebase/me'),
             headers: {
@@ -295,17 +357,26 @@ class AuthService {
             },
           )
           .timeout(
-            const Duration(seconds: 10),
+            Timeouts.httpRequest,
             onTimeout: () {
-              throw Exception('Timeout al obtener información del usuario');
+              throw NetworkException.timeout(
+                message: 'Timeout al obtener información del usuario',
+              );
             },
           );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         return UserModel.fromJson(data);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw AuthException.userNotFound();
       } else {
-        throw Exception('Failed to get user info: ${response.statusCode}');
+        throw NetworkException.serverError(
+          message: 'Error al obtener información del usuario',
+          statusCode: response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;
@@ -313,9 +384,10 @@ class AuthService {
   }
 
   Future<UserModel> _authenticateWithBackend(User user) async {
+    _logger.debug('Autenticando con backend', {'userId': user.uid});
     try {
-      // Esperar un momento para asegurar que el token esté listo
-      await Future.delayed(const Duration(milliseconds: 100));
+      // Wait a moment to ensure token is ready
+      await Future.delayed(Timeouts.firebaseTokenDelay);
 
       String idToken;
       try {
@@ -326,61 +398,80 @@ class AuthService {
       }
 
       if (idToken.isEmpty) {
-        throw Exception(
-          'No se pudo obtener el token de Firebase. Por favor, intenta iniciar sesión nuevamente.',
+        throw AuthException.tokenExpired(
+          message:
+              'No se pudo obtener el token de Firebase. Por favor, intenta iniciar sesión nuevamente.',
         );
       }
 
       final url = Uri.parse('$_baseUrl/firebase/verify');
 
-      final response = await http
+      final response = await _httpClient
           .post(
             url,
             headers: {'Content-Type': 'application/json'},
             body: json.encode({'idToken': idToken}),
           )
           .timeout(
-            const Duration(seconds: 10),
+            Timeouts.httpRequest,
             onTimeout: () {
-              throw Exception('Timeout al conectar con el servidor');
+              throw NetworkException.timeout(
+                message: 'Timeout al conectar con el servidor',
+              );
             },
           );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
+        _logger.debug('Autenticación con backend exitosa');
         return UserModel.fromJson(data['user'] as Map<String, dynamic>);
       } else {
+        _logger.warning('Error en respuesta del backend', {
+          'statusCode': response.statusCode,
+        });
         final errorBody = response.body;
 
         String errorMessage;
         try {
-          final errorData = json.decode(errorBody);
+          final errorData = json.decode(errorBody) as Map<String, dynamic>;
           errorMessage =
-              errorData['error'] ??
-              errorData['details'] ??
+              errorData['error'] as String? ??
+              errorData['details'] as String? ??
               'Error de autenticación en el servidor';
         } catch (_) {
-          // Si no se puede parsear el JSON, usar el mensaje por defecto según el código
+          // If JSON cannot be parsed, use default message according to status code
           if (response.statusCode == 401) {
-            errorMessage =
-                'Token inválido o expirado. Por favor, intenta iniciar sesión nuevamente.';
+            throw AuthException.tokenExpired();
           } else if (response.statusCode == 404) {
-            errorMessage =
-                'Usuario no encontrado en el sistema. Por favor, regístrate primero.';
+            throw AuthException.userNotFound();
           } else if (response.statusCode == 503) {
-            errorMessage =
-                'Firebase está deshabilitado en el servidor. Contacta al administrador.';
+            throw NetworkException.serverError(
+              message:
+                  'Firebase está deshabilitado en el servidor. Contacta al administrador.',
+              statusCode: response.statusCode,
+            );
           } else {
             errorMessage = 'Error de autenticación: ${response.statusCode}';
           }
         }
 
-        throw Exception(errorMessage);
+        if (response.statusCode == 401) {
+          throw AuthException.tokenExpired();
+        } else if (response.statusCode == 404) {
+          throw AuthException.userNotFound();
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
-    } on Exception {
+    } on AppException {
       rethrow;
     } catch (e) {
-      throw Exception('Error al autenticar con el servidor: ${e.toString()}');
+      throw NetworkException.serverError(
+        message: 'Error al autenticar con el servidor: ${e.toString()}',
+      );
     }
   }
 
@@ -397,13 +488,13 @@ class AuthService {
       final existingUser = await getUserInfo();
       return existingUser;
     } catch (_) {
-      // Si getUserInfo falla, el usuario no existe, continuar con el registro
+      // If getUserInfo fails, user doesn't exist, continue with registration
     }
 
-    // Solo hacer UN intento de registro para evitar rate limiting
-    // Si falla, mejor mostrar un error claro que hacer múltiples reintentos
+    // Only make ONE registration attempt to avoid rate limiting
+    // If it fails, better to show a clear error than multiple retries
     try {
-      final response = await http.post(
+      final response = await _httpClient.post(
         Uri.parse('$_baseUrl/firebase/register'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -420,17 +511,19 @@ class AuthService {
         final Map<String, dynamic> data = json.decode(response.body);
         return UserModel.fromJson(data['user'] as Map<String, dynamic>);
       } else if (response.statusCode == 429) {
-        // Rate limiting - no reintentar, mostrar mensaje claro
-        throw Exception(
-          'El servidor está recibiendo demasiadas peticiones. Por favor, espera unos minutos e intenta nuevamente.',
+        throw NetworkException.serverError(
+          message:
+              'El servidor está recibiendo demasiadas peticiones. Por favor, espera unos minutos e intenta nuevamente.',
+          statusCode: response.statusCode,
         );
       } else if (response.statusCode == 409) {
-        // User already exists - obtener información del usuario existente
+        // User already exists - get information from existing user
         try {
           return await getUserInfo();
         } catch (e) {
-          throw Exception(
-            'El usuario ya existe pero no se pudo obtener su información. Por favor, intenta iniciar sesión.',
+          throw AuthException.emailAlreadyExists(
+            message:
+                'El usuario ya existe pero no se pudo obtener su información. Por favor, intenta iniciar sesión.',
           );
         }
       } else {
@@ -438,20 +531,30 @@ class AuthService {
         String errorMessage =
             'Error al registrar usuario: ${response.statusCode}';
         try {
-          final errorData = json.decode(errorBody);
+          final errorData = json.decode(errorBody) as Map<String, dynamic>;
           errorMessage =
-              errorData['error'] ?? errorData['details'] ?? errorMessage;
+              errorData['error'] as String? ??
+              errorData['details'] as String? ??
+              errorMessage;
         } catch (_) {
           // Use default error message
         }
-        throw Exception(errorMessage);
+
+        if (response.statusCode == 400 || response.statusCode == 422) {
+          throw ValidationException(errorMessage, code: 'VALIDATION_ERROR');
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
+    } on AppException {
+      rethrow;
     } catch (e) {
-      // Si es nuestro Exception personalizado, re-lanzarlo
-      if (e is Exception) {
-        rethrow;
-      }
-      throw Exception('Error al registrar usuario: ${e.toString()}');
+      throw NetworkException.serverError(
+        message: 'Error al registrar usuario: ${e.toString()}',
+      );
     }
   }
 

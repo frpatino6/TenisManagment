@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
 import '../../domain/models/professor_schedule_model.dart';
 import '../providers/professor_provider.dart';
 
@@ -68,6 +69,8 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
               filteredSchedules = schedules;
           }
 
+          final schedulesByDay = _groupSchedulesByDay(filteredSchedules);
+
           return RefreshIndicator(
             onRefresh: () async {
               ref.invalidate(professorSchedulesProvider);
@@ -95,23 +98,16 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
                       _getFilterColor(),
                       filteredSchedules.length,
                     ),
-                    const Gap(12),
-                    ...filteredSchedules.asMap().entries.map((entry) {
-                      final schedule = entry.value;
-                      String category = 'available';
-                      if (schedule.isBlocked) {
-                        category = 'blocked';
-                      } else if (!schedule.isAvailable &&
-                          schedule.studentName != null) {
-                        category = 'booked';
-                      }
+                    const Gap(16),
+                    ...schedulesByDay.entries.map((dayEntry) {
+                      final dayDate = dayEntry.key;
+                      final daySchedules = dayEntry.value;
 
-                      return _buildScheduleCard(
+                      return _buildDayAccordion(
                         context,
                         ref,
-                        schedule,
-                        entry.key,
-                        category,
+                        dayDate,
+                        daySchedules,
                       );
                     }),
                   ],
@@ -803,6 +799,197 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Map<DateTime, List<ProfessorScheduleModel>> _groupSchedulesByDay(
+    List<ProfessorScheduleModel> schedules,
+  ) {
+    final Map<DateTime, List<ProfessorScheduleModel>> grouped = {};
+
+    for (final schedule in schedules) {
+      final dayDate = DateTime(
+        schedule.date.year,
+        schedule.date.month,
+        schedule.date.day,
+      );
+
+      if (!grouped.containsKey(dayDate)) {
+        grouped[dayDate] = [];
+      }
+      grouped[dayDate]!.add(schedule);
+    }
+
+    for (final daySchedules in grouped.values) {
+      daySchedules.sort((a, b) => a.startTime.compareTo(b.startTime));
+    }
+
+    final sortedDays = grouped.keys.toList()..sort((a, b) => a.compareTo(b));
+
+    return Map.fromEntries(
+      sortedDays.map((day) => MapEntry(day, grouped[day]!)),
+    );
+  }
+
+  Widget _buildDayAccordion(
+    BuildContext context,
+    WidgetRef ref,
+    DateTime dayDate,
+    List<ProfessorScheduleModel> daySchedules,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final isToday = dayDate == today;
+    final isTomorrow = dayDate == today.add(const Duration(days: 1));
+
+    String dayLabel;
+    if (isToday) {
+      dayLabel = 'Hoy';
+    } else if (isTomorrow) {
+      dayLabel = 'Mañana';
+    } else {
+      dayLabel = DateFormat('EEEE', 'es_ES').format(dayDate);
+      dayLabel = dayLabel[0].toUpperCase() + dayLabel.substring(1);
+    }
+
+    final dateFormat = DateFormat('d MMM yyyy', 'es_ES');
+    final formattedDate = dateFormat.format(dayDate);
+
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isToday
+            ? BorderSide(
+                color: colorScheme.primary.withValues(alpha: 0.3),
+                width: 1.5,
+              )
+            : BorderSide.none,
+      ),
+      child: ExpansionTile(
+        initiallyExpanded: isToday,
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        backgroundColor: isToday
+            ? colorScheme.primaryContainer.withValues(alpha: 0.3)
+            : Colors.transparent,
+        collapsedBackgroundColor: isToday
+            ? colorScheme.primaryContainer.withValues(alpha: 0.1)
+            : colorScheme.surfaceContainerHighest,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        collapsedShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        leading: Container(
+          width: 4,
+          height: 40,
+          decoration: BoxDecoration(
+            color: isToday
+                ? colorScheme.primary
+                : colorScheme.primary.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        title: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        dayLabel,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: isToday
+                              ? colorScheme.onPrimaryContainer
+                              : colorScheme.onSurface,
+                        ),
+                      ),
+                      if (isToday) ...[
+                        const Gap(8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'HOY',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const Gap(2),
+                  Text(
+                    formattedDate,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: isToday
+                          ? colorScheme.onPrimaryContainer.withValues(
+                              alpha: 0.7,
+                            )
+                          : colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color:
+                    (isToday
+                            ? colorScheme.primary
+                            : colorScheme.primary.withValues(alpha: 0.1))
+                        .withValues(alpha: isToday ? 1.0 : 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${daySchedules.length} ${daySchedules.length == 1 ? 'horario' : 'horarios'}',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isToday ? colorScheme.onPrimary : colorScheme.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        children: [
+          const Gap(8),
+          ...daySchedules.asMap().entries.map((entry) {
+            final schedule = entry.value;
+            String category = 'available';
+            if (schedule.isBlocked) {
+              category = 'blocked';
+            } else if (!schedule.isAvailable && schedule.studentName != null) {
+              category = 'booked';
+            }
+
+            return _buildScheduleCard(
+              context,
+              ref,
+              schedule,
+              entry.key,
+              category,
+            );
+          }),
+        ],
       ),
     );
   }

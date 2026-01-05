@@ -367,7 +367,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           if (hasTenant) {
             final route = finalUser.role == 'professor'
                 ? '/professor-home'
-                : '/home';
+                : finalUser.role == 'tenant_admin'
+                    ? '/tenant-admin-home'
+                    : '/home';
             context.go(route);
           } else {
             context.go('/select-tenant');
@@ -405,7 +407,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           if (hasTenant) {
             final route = finalUser.role == 'professor'
                 ? '/professor-home'
-                : '/home';
+                : finalUser.role == 'tenant_admin'
+                    ? '/tenant-admin-home'
+                    : '/home';
             context.go(route);
           } else {
             context.go('/select-tenant');

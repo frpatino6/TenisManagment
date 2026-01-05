@@ -23,6 +23,16 @@ import '../../features/student/presentation/screens/recent_activity_screen.dart'
 import '../../features/student/presentation/screens/request_service_screen.dart';
 import '../../features/settings/presentation/screens/theme_settings_screen.dart';
 import '../../features/tenant/presentation/screens/select_tenant_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_admin_home_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_config_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_branding_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_pricing_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_operating_hours_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_professors_list_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_invite_professor_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_courts_list_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_create_court_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_edit_court_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../providers/tenant_provider.dart';
 
@@ -74,7 +84,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         }
 
         if (isLoggingIn && hasTenant) {
-          return user.role == 'professor' ? '/professor-home' : '/home';
+          if (user.role == 'professor') {
+            return '/professor-home';
+          } else if (user.role == 'tenant_admin') {
+            return '/tenant-admin-home';
+          } else {
+            return '/home';
+          }
         }
       }
 
@@ -100,6 +116,59 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/professor-home',
         name: 'professor-home',
         builder: (context, state) => const ProfessorHomeScreen(),
+      ),
+      GoRoute(
+        path: '/tenant-admin-home',
+        name: 'tenant-admin-home',
+        builder: (context, state) => const TenantAdminHomeScreen(),
+      ),
+      GoRoute(
+        path: '/tenant-config',
+        name: 'tenant-config',
+        builder: (context, state) => const TenantConfigScreen(),
+      ),
+      GoRoute(
+        path: '/tenant-branding',
+        name: 'tenant-branding',
+        builder: (context, state) => const TenantBrandingScreen(),
+      ),
+      GoRoute(
+        path: '/tenant-pricing',
+        name: 'tenant-pricing',
+        builder: (context, state) => const TenantPricingScreen(),
+      ),
+      GoRoute(
+        path: '/tenant-operating-hours',
+        name: 'tenant-operating-hours',
+        builder: (context, state) => const TenantOperatingHoursScreen(),
+      ),
+      GoRoute(
+        path: '/tenant-professors',
+        name: 'tenant-professors',
+        builder: (context, state) => const TenantProfessorsListScreen(),
+      ),
+      GoRoute(
+        path: '/tenant-invite-professor',
+        name: 'tenant-invite-professor',
+        builder: (context, state) => const TenantInviteProfessorScreen(),
+      ),
+      GoRoute(
+        path: '/tenant-courts',
+        name: 'tenant-courts',
+        builder: (context, state) => const TenantCourtsListScreen(),
+      ),
+      GoRoute(
+        path: '/tenant-create-court',
+        name: 'tenant-create-court',
+        builder: (context, state) => const TenantCreateCourtScreen(),
+      ),
+      GoRoute(
+        path: '/tenant-edit-court/:courtId',
+        name: 'tenant-edit-court',
+        builder: (context, state) {
+          final courtId = state.pathParameters['courtId']!;
+          return TenantEditCourtScreen(courtId: courtId);
+        },
       ),
       GoRoute(
         path: '/book-class',

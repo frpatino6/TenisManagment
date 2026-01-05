@@ -19,14 +19,16 @@ const jwtService = new JwtService(config.jwtSecret);
 const tenantService = new TenantService();
 const controller = new TenantAdminController(tenantService);
 
-// Todas las rutas requieren autenticación, rol tenant_admin, y acceso al tenant
+// Todas las rutas requieren autenticación y rol tenant_admin
 router.use(authMiddleware(jwtService));
 router.use(requireRole('tenant_admin'));
+
+// GET /me no requiere X-Tenant-ID porque obtiene el tenant directamente del admin
+router.get('/me', controller.getTenantInfo);
+
+// Las demás rutas requieren X-Tenant-ID header
 router.use(extractTenantId);
 router.use(requireTenantAccess(tenantService));
-
-// Configuración del centro
-router.get('/me', controller.getTenantInfo);
 router.put('/me', controller.updateTenantConfig);
 router.put('/operating-hours', controller.updateOperatingHours);
 

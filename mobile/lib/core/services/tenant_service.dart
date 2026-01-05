@@ -17,7 +17,7 @@ class TenantService {
   /// Returns the first favorite tenant ID (no longer uses activeTenantId)
   /// Returns null if no favorite tenant is configured
   /// Stateless - always loads fresh from backend
-  /// Tries professor endpoint first, then student endpoint
+  /// Tries tenant admin endpoint first, then professor, then student endpoint
   Future<String?> loadTenant() async {
     try {
       final user = _auth.currentUser;
@@ -30,10 +30,11 @@ class TenantService {
         return null;
       }
 
-      // Try professor endpoint first
+      // Try tenant admin endpoint first (GET /api/tenant/me)
+      // This endpoint doesn't require X-Tenant-ID header
       var response = await http
           .get(
-            Uri.parse('$_baseUrl/professor-dashboard/active-tenant'),
+            Uri.parse('$_baseUrl/tenant/me'),
             headers: {
               'Authorization': 'Bearer $idToken',
               'Content-Type': 'application/json',
@@ -43,15 +44,15 @@ class TenantService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
-        final tenantId = data['tenantId'] as String?;
+        final tenantId = data['id'] as String?;
         return tenantId;
       }
 
-      // If professor endpoint returns 404, try student endpoint
-      if (response.statusCode == 404) {
+      // If tenant admin endpoint returns 404 or 403, try professor endpoint
+      if (response.statusCode == 404 || response.statusCode == 403) {
         response = await http
             .get(
-              Uri.parse('$_baseUrl/student-dashboard/active-tenant'),
+              Uri.parse('$_baseUrl/professor-dashboard/active-tenant'),
               headers: {
                 'Authorization': 'Bearer $idToken',
                 'Content-Type': 'application/json',
@@ -63,6 +64,25 @@ class TenantService {
           final data = json.decode(response.body) as Map<String, dynamic>;
           final tenantId = data['tenantId'] as String?;
           return tenantId;
+        }
+
+        // If professor endpoint returns 404, try student endpoint
+        if (response.statusCode == 404) {
+          response = await http
+              .get(
+                Uri.parse('$_baseUrl/student-dashboard/active-tenant'),
+                headers: {
+                  'Authorization': 'Bearer $idToken',
+                  'Content-Type': 'application/json',
+                },
+              )
+              .timeout(const Duration(seconds: 10));
+
+          if (response.statusCode == 200) {
+            final data = json.decode(response.body) as Map<String, dynamic>;
+            final tenantId = data['tenantId'] as String?;
+            return tenantId;
+          }
         }
       }
 

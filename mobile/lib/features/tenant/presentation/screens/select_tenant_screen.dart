@@ -106,7 +106,11 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
         // Navigate to home based on user role
         final user = ref.read(authStateProvider).value;
         if (user != null) {
-          final route = user.role == 'professor' ? '/professor-home' : '/home';
+          final route = user.role == 'professor'
+              ? '/professor-home'
+              : user.role == 'tenant_admin'
+                  ? '/tenant-admin-home'
+                  : '/home';
           context.go(route);
         } else {
           context.go('/home');

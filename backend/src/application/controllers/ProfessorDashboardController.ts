@@ -187,14 +187,14 @@ export class ProfessorDashboardController {
       const endOfDay = new Date(targetDate);
       endOfDay.setUTCHours(23, 59, 59, 999);
       
-      // First, find all schedules for the date
+      // First, find all schedules for the date (populate tenantId)
       const allSchedules = await ScheduleModel.find({
         professorId: professor._id,
         startTime: {
           $gte: startOfDay,
           $lte: endOfDay
         }
-      }).sort({ startTime: 1 });
+      }).populate('tenantId', 'name').sort({ startTime: 1 });
 
       // Then filter to only include schedules that have bookings
       const schedulesWithBookings = [];
@@ -238,6 +238,9 @@ export class ProfessorDashboardController {
           
           const booking = await BookingModel.findOne(bookingQuery);
           
+          // Get tenant info from populated schedule
+          const tenant = schedule.tenantId as any;
+          
           return {
             id: schedule._id.toString(),
             studentName: schedule.studentInfo?.name || 'Estudiante',
@@ -248,6 +251,8 @@ export class ProfessorDashboardController {
             notes: schedule.notes,
             serviceType: booking?.serviceType,
             price: booking?.price,
+            tenantId: tenant?._id?.toString() || schedule.tenantId?.toString() || null,
+            tenantName: tenant?.name || null,
           };
         })
       );

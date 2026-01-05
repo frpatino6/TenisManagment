@@ -166,15 +166,17 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
       } else {
         // Add as favorite - this will make it the ONLY favorite
         // Use setTenant backend call to ensure it's the only one
-        // But don't update local state to avoid navigation
         final service = ref.read(tenantServiceProvider);
-        await service.setTenant(tenant.id);
+        final success = await service.setTenant(tenant.id);
 
-        // Invalidate to reload state (this will update favorites but won't navigate)
+        if (success) {
+          // Update tenant state directly without going through loading state
+          // This prevents router from redirecting to login/dashboard
+          ref.read(tenantNotifierProvider.notifier).updateTenantDirectly(tenant.id);
+        }
+
+        // Invalidate to reload favorites (this will update the heart icon)
         ref.invalidate(preferencesNotifierProvider);
-        
-        // Reload tenant to get updated state, but don't navigate
-        await ref.read(tenantNotifierProvider.notifier).loadTenant();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

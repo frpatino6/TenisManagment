@@ -127,6 +127,13 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
       state = AsyncValue.error(e, stackTrace);
     }
   }
+
+  /// Update tenant state directly without loading state
+  /// This is used when updating from select-tenant screen to avoid navigation
+  void updateTenantDirectly(String? tenantId) {
+    state = AsyncValue.data(tenantId);
+    ref.read(currentTenantIdProvider.notifier).update(tenantId);
+  }
 }
 
 /// Provider for TenantNotifier

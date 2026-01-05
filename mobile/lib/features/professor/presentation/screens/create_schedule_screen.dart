@@ -437,30 +437,128 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
   }
 
   Future<void> _selectDate() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 90)),
+      initialDate: _selectedDate.isBefore(today) ? today : _selectedDate,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 90)),
     );
 
     if (picked != null) {
       setState(() {
         _selectedDate = picked;
+        
+        final selectedDateOnly = DateTime(picked.year, picked.month, picked.day);
+        final isToday = selectedDateOnly == today;
+        
+        if (isToday) {
+          final currentTime = TimeOfDay.fromDateTime(now);
+          if (_startTime.hour < currentTime.hour ||
+              (_startTime.hour == currentTime.hour &&
+                  _startTime.minute < currentTime.minute)) {
+            _startTime = TimeOfDay(
+              hour: currentTime.hour,
+              minute: currentTime.minute,
+            );
+          }
+          if (_endTime.hour < _startTime.hour ||
+              (_endTime.hour == _startTime.hour &&
+                  _endTime.minute <= _startTime.minute)) {
+            _endTime = TimeOfDay(
+              hour: _startTime.hour,
+              minute: _startTime.minute + 30,
+            );
+          }
+        }
       });
     }
   }
 
   Future<void> _selectTime(bool isStartTime) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final selectedDateOnly = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+    );
+    final isToday = selectedDateOnly == today;
+    
+    TimeOfDay? minTime;
+    if (isStartTime && isToday) {
+      final currentTime = TimeOfDay.fromDateTime(now);
+      minTime = TimeOfDay(
+        hour: currentTime.hour,
+        minute: currentTime.minute,
+      );
+    } else if (!isStartTime && isToday) {
+      final currentTime = TimeOfDay.fromDateTime(now);
+      final minEndTime = TimeOfDay(
+        hour: _startTime.hour,
+        minute: _startTime.minute + 1,
+      );
+      
+      if (minEndTime.hour < currentTime.hour ||
+          (minEndTime.hour == currentTime.hour &&
+              minEndTime.minute < currentTime.minute)) {
+        minTime = TimeOfDay(
+          hour: currentTime.hour,
+          minute: currentTime.minute + 1,
+        );
+      } else {
+        minTime = minEndTime;
+      }
+    } else if (!isStartTime) {
+      minTime = TimeOfDay(
+        hour: _startTime.hour,
+        minute: _startTime.minute + 1,
+      );
+    }
+
     final picked = await showTimePicker(
       context: context,
       initialTime: isStartTime ? _startTime : _endTime,
+      helpText: isToday && isStartTime
+          ? 'No puedes seleccionar horas pasadas'
+          : null,
     );
 
     if (picked != null) {
+      if (minTime != null) {
+        final pickedMinutes = picked.hour * 60 + picked.minute;
+        final minMinutes = minTime.hour * 60 + minTime.minute;
+        
+        if (pickedMinutes < minMinutes) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isToday
+                    ? 'No puedes seleccionar horas pasadas'
+                    : 'La hora debe ser después de la hora de inicio',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          return;
+        }
+      }
+
       setState(() {
         if (isStartTime) {
           _startTime = picked;
+          if (_endTime.hour < picked.hour ||
+              (_endTime.hour == picked.hour &&
+                  _endTime.minute <= picked.minute)) {
+            _endTime = TimeOfDay(
+              hour: picked.hour,
+              minute: picked.minute + 30,
+            );
+          }
         } else {
           _endTime = picked;
         }
@@ -471,8 +569,27 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
   Future<void> _handleCreate() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Create UTC DateTime with the selected local time components
-    // This ensures we send the exact hour/minute the user selected, not adjusted for timezone
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final selectedDateOnly = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+    );
+
+    if (selectedDateOnly.isBefore(today)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No puedes crear horarios en fechas pasadas',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     final startDateTime = DateTime.utc(
       _selectedDate.year,
       _selectedDate.month,
@@ -488,6 +605,27 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
       _endTime.hour,
       _endTime.minute,
     );
+
+    final nowUtc = DateTime.utc(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute,
+    );
+
+    if (selectedDateOnly == today && startDateTime.isBefore(nowUtc)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No puedes crear horarios en horas pasadas',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     if (endDateTime.isBefore(startDateTime) ||
         endDateTime.isAtSameMomentAs(startDateTime)) {
@@ -519,8 +657,20 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           );
         }
 
+        final nowUtc = DateTime.utc(
+          now.year,
+          now.month,
+          now.day,
+          now.hour,
+          now.minute,
+        );
+
         for (final slot in slots) {
-          // Create UTC date at midnight for the selected date
+          if (selectedDateOnly == today &&
+              slot['start']!.isBefore(nowUtc)) {
+            continue;
+          }
+
           final utcDate = DateTime.utc(
             _selectedDate.year,
             _selectedDate.month,

@@ -30,6 +30,44 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isBooking = false;
+  String? _originalTenantId;
+
+  @override
+  void initState() {
+    super.initState();
+    // Get favorite tenant from tenantNotifierProvider (which has the backend value)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final tenantState = ref.read(tenantNotifierProvider);
+      tenantState.when(
+        data: (favoriteTenantId) {
+          if (favoriteTenantId != null) {
+            _originalTenantId = favoriteTenantId;
+            // Restore favorite tenant when entering the screen
+            final currentTenantId = ref.read(currentTenantIdProvider);
+            if (currentTenantId != favoriteTenantId) {
+              ref
+                  .read(currentTenantIdProvider.notifier)
+                  .update(favoriteTenantId);
+            }
+          }
+        },
+        loading: () {},
+        error: (_, __) {},
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    // Restore original favorite tenant when leaving the screen
+    if (_originalTenantId != null && mounted) {
+      final currentTenantId = ref.read(currentTenantIdProvider);
+      if (currentTenantId != _originalTenantId) {
+        ref.read(currentTenantIdProvider.notifier).update(_originalTenantId);
+      }
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -439,22 +477,18 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                 }
 
                 try {
-                  // Change tenant
-                  await ref
-                      .read(tenantNotifierProvider.notifier)
-                      .setTenant(newTenantId);
+                  ref
+                      .read(currentTenantIdProvider.notifier)
+                      .update(newTenantId);
 
-                  // Reset selection
                   if (mounted) {
                     setState(() {
                       _selectedCourt = null;
                       _selectedDate = null;
                       _selectedTime = null;
                     });
+                    ref.invalidate(courtsProvider);
                   }
-
-                  // Invalidate courts provider to reload data with new tenant
-                  ref.invalidate(courtsProvider);
 
                   if (mounted && context.mounted) {
                     final selectedTenant = tenants.firstWhere(
@@ -477,6 +511,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                           'Error al cambiar centro: ${e.toString()}',
                         ),
                         backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 3),
                       ),
                     );
                   }

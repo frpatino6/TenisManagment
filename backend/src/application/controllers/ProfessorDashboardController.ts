@@ -6,6 +6,7 @@ import { ScheduleModel } from '../../infrastructure/database/models/ScheduleMode
 import { BookingModel } from '../../infrastructure/database/models/BookingModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
 import { ProfessorTenantModel } from '../../infrastructure/database/models/ProfessorTenantModel';
+import { TenantService } from '../services/TenantService';
 import { Logger } from '../../infrastructure/services/Logger';
 import { Types } from 'mongoose';
 const logger = new Logger({ controller: 'ProfessorDashboardController' });
@@ -1202,6 +1203,53 @@ export class ProfessorDashboardController {
       res.json({ items: tenantsWithActivity });
     } catch (error) {
       console.error('Error getting professor tenants:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * Join a tenant (center) as a professor
+   * TODO: TEN-108 - This will change when tenant admin module is implemented.
+   * Currently allows self-service join, but will require admin approval in the future.
+   * POST /api/professor-dashboard/tenants/join
+   */
+  joinTenant = async (req: Request, res: Response) => {
+    try {
+      const firebaseUid = req.user?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+
+      const { tenantId } = req.body;
+      if (!tenantId) {
+        return res.status(400).json({ error: 'tenantId es requerido' });
+      }
+
+      const authUser = await AuthUserModel.findOne({ firebaseUid });
+      if (!authUser) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+
+      const professor = await ProfessorModel.findOne({ authUserId: authUser._id });
+      if (!professor) {
+        return res.status(404).json({ error: 'Perfil de profesor no encontrado' });
+      }
+
+      const tenantService = new TenantService();
+      await tenantService.addProfessorToTenant(
+        professor._id.toString(),
+        tenantId,
+      );
+
+      res.json({
+        message: 'Te has unido al centro exitosamente',
+        tenantId,
+      });
+    } catch (error: any) {
+      console.error('Error joining tenant:', error);
+      if (error.message === 'El profesor ya está activo en este tenant') {
+        return res.status(409).json({ error: error.message });
+      }
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

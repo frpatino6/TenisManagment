@@ -29,6 +29,10 @@ router.get('/earnings', professorDashboardController.getEarningsStats);
 // Obtener tenants del profesor
 router.get('/tenants', professorDashboardController.getMyTenants); // TEN-91: Tenants del profesor
 
+// Unirse a un centro (self-service)
+// TODO: TEN-108 - This will change when tenant admin module is implemented
+router.post('/tenants/join', professorDashboardController.joinTenant);
+
 // Actualizar perfil del profesor
 router.put('/profile', professorDashboardController.updateProfile);
 

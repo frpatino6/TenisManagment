@@ -7,6 +7,24 @@ import '../models/professor_model.dart';
 import '../models/student_summary_model.dart';
 import '../models/class_schedule_model.dart';
 
+/// Exception thrown when there's a schedule conflict (same time in different center)
+class ScheduleConflictException implements Exception {
+  final String message;
+  final String? conflictingTenantId;
+  final String? conflictingTenantName;
+  final List<dynamic>? warnings;
+
+  ScheduleConflictException(
+    this.message, {
+    this.conflictingTenantId,
+    this.conflictingTenantName,
+    this.warnings,
+  });
+
+  @override
+  String toString() => message;
+}
+
 /// Service responsible for professor-related operations
 /// Handles professor dashboard data, schedules, and student management
 /// Manages API communication for professor-specific endpoints
@@ -348,7 +366,27 @@ class ProfessorService {
       print('📅 [ProfessorService] Response body: ${response.body}');
 
       if (response.statusCode == 201) {
-        return json.decode(response.body) as Map<String, dynamic>;
+        final responseData = json.decode(response.body) as Map<String, dynamic>;
+        return responseData;
+      } else if (response.statusCode == 409) {
+        // Conflict error - same time in different center
+        final errorBody = json.decode(response.body) as Map<String, dynamic>;
+        final error = errorBody['error'] as String?;
+        final message = errorBody['message'] as String?;
+
+        if (error == 'CONFLICT_SAME_TIME') {
+          throw ScheduleConflictException(
+            message ?? 'Ya tienes un horario a esta hora en otro centro',
+            conflictingTenantId: errorBody['conflictingTenantId'] as String?,
+            conflictingTenantName:
+                errorBody['conflictingTenantName'] as String?,
+            warnings: errorBody['warnings'] as List<dynamic>?,
+          );
+        }
+
+        throw Exception(
+          message ?? 'Error al crear horario: conflicto de horarios',
+        );
       } else {
         final errorBody = json.decode(response.body) as Map<String, dynamic>?;
         final errorMessage =

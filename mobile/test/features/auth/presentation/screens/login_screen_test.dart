@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tennis_management/features/auth/presentation/screens/login_screen.dart';
-import 'package:tennis_management/features/auth/presentation/providers/auth_provider.dart';
-import 'package:tennis_management/features/auth/domain/models/user_model.dart';
 
 void main() {
   group('LoginScreen', () {

@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../domain/models/professor_schedule_model.dart';
 import '../providers/professor_provider.dart';
 import '../../../../core/providers/tenant_provider.dart';
+import '../../../../core/constants/app_strings.dart';
 
 enum ScheduleFilter { all, available, blocked, booked }
 
@@ -33,7 +34,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
         title: Column(
           children: [
             Text(
-              'Mis Horarios',
+              AppStrings.mySchedulesTitle,
               style: GoogleFonts.inter(fontWeight: FontWeight.w600),
             ),
             currentTenant.when(
@@ -149,7 +150,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Filtrar por estado',
+          AppStrings.filterByStatus,
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -163,7 +164,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
             children: [
               _buildFilterChip(
                 context,
-                'Reservados',
+                AppStrings.booked,
                 booked,
                 Colors.blue,
                 Icons.event_available,
@@ -172,7 +173,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
               const Gap(8),
               _buildFilterChip(
                 context,
-                'Disponibles',
+                AppStrings.available,
                 available,
                 Colors.green,
                 Icons.check_circle,
@@ -181,7 +182,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
               const Gap(8),
               _buildFilterChip(
                 context,
-                'Bloqueados',
+                AppStrings.blocked,
                 blocked,
                 Colors.orange,
                 Icons.block,
@@ -190,7 +191,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
               const Gap(8),
               _buildFilterChip(
                 context,
-                'Todos',
+                AppStrings.all,
                 total,
                 Colors.grey,
                 Icons.list,
@@ -243,13 +244,13 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
   String _getFilterTitle() {
     switch (_selectedFilter) {
       case ScheduleFilter.available:
-        return 'Disponibles';
+        return AppStrings.available;
       case ScheduleFilter.blocked:
-        return 'Bloqueados';
+        return AppStrings.blocked;
       case ScheduleFilter.booked:
-        return 'Reservados';
+        return AppStrings.booked;
       case ScheduleFilter.all:
-        return 'Todos los Horarios';
+        return AppStrings.allSchedules;
     }
   }
 
@@ -276,7 +277,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
             Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
             const Gap(16),
             Text(
-              'No hay horarios',
+              AppStrings.noSchedules,
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -285,7 +286,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
             ),
             const Gap(8),
             Text(
-              'No se encontraron horarios con este filtro',
+              AppStrings.noSchedulesWithFilter,
               style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
@@ -409,7 +410,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
                           if (schedule.studentName != null) ...[
                             const Gap(4),
                             Text(
-                              'Estudiante: ${schedule.studentName}',
+                              '${AppStrings.student}: ${schedule.studentName}',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: colorScheme.onSurfaceVariant,
@@ -476,7 +477,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
                               _showBlockDialog(context, ref, schedule),
                           icon: const Icon(Icons.block, size: 16),
                           label: Text(
-                            'Bloquear',
+                            AppStrings.block,
                             style: GoogleFonts.inter(fontSize: 12),
                           ),
                           style: OutlinedButton.styleFrom(
@@ -554,7 +555,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          'Bloquear Horario',
+          AppStrings.blockSchedule,
           style: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
         content: Column(

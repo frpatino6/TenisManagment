@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tennis_management/features/professor/domain/models/student_model.dart';
-import 'package:tennis_management/core/exceptions/validation_exception.dart';
 
 void main() {
   group('StudentModel', () {

@@ -32,6 +32,10 @@ class AppStrings {
   static const String processing = 'Procesando...';
   static const String success = 'Éxito';
   static const String error = 'Error';
+  static const String understood = 'Entendido';
+  static const String filterByStatus = 'Filtrar por estado';
+  static const String mySchedulesTitle = 'Mis Horarios';
+  static const String allSchedules = 'Todos los Horarios';
 
   // ============================================
   // Authentication
@@ -112,6 +116,36 @@ class AppStrings {
   static const String scheduleDeleted = 'Horario eliminado exitosamente';
   static const String scheduleConflict = 'Conflicto de horarios';
   static const String generateMultipleSlots = 'Generar múltiples horarios';
+  static const String generateAutomaticSchedules =
+      'Generar horarios automáticos';
+  static const String slotDuration = 'Duración de cada slot';
+  static const String createScheduleButton = 'Crear Horario';
+  static const String errorCreatingSchedules = 'Error al Crear Horarios';
+  static const String studentsCanBookMessage =
+      'Los estudiantes podrán reservar en estos horarios';
+  static const String studentsCanChooseServiceMessage =
+      'Los estudiantes podrán elegir el tipo de servicio (clase individual, grupal o alquiler de cancha) al reservar este horario.';
+  static const String adjustStartEndTimes = 'Ajusta las horas de inicio y fin';
+  static const String rangeTooShortForSlots =
+      'El rango es muy corto para generar slots';
+  static const String cannotSelectPastHours =
+      'No puedes seleccionar horas pasadas';
+  static const String endTimeMustBeAfterStartTime =
+      'La hora debe ser después de la hora de inicio';
+  static const String cannotCreatePastDates =
+      'No puedes crear horarios en fechas pasadas';
+  static const String cannotCreatePastHours =
+      'No puedes crear horarios en horas pasadas';
+  static const String endTimeAfterStartTime =
+      'La hora de fin debe ser después de la hora de inicio';
+  static const String couldNotGenerateSlots =
+      'No se pudieron generar slots con la configuración actual';
+  static const String noSchedules = 'No hay horarios';
+  static const String noSchedulesWithFilter =
+      'No se encontraron horarios con este filtro';
+  static const String student = 'Estudiante';
+  static const String block = 'Bloquear';
+  static const String blockSchedule = 'Bloquear Horario';
 
   // ============================================
   // Tenant
@@ -197,6 +231,10 @@ class AppStrings {
   static const String confirmed = 'Confirmado';
   static const String cancelled = 'Cancelado';
   static const String completed = 'Completado';
+  static const String booked = 'Reservados';
+  static const String available = 'Disponibles';
+  static const String blocked = 'Bloqueados';
+  static const String all = 'Todos';
 
   // ============================================
   // Priority

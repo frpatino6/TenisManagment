@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tennis_management/features/booking/domain/models/court_model.dart';
-import 'package:tennis_management/core/exceptions/validation_exception.dart';
 
 void main() {
   group('CourtModel', () {

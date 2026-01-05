@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tennis_management/features/professor/presentation/widgets/tenant_selector_widget.dart';
-import 'package:tennis_management/core/providers/tenant_provider.dart';
 
 void main() {
   group('TenantSelectorWidget', () {

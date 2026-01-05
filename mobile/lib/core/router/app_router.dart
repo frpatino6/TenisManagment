@@ -65,14 +65,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       if (isAuthenticated) {
+        // If tenant is loading, don't redirect yet (wait for it to complete)
         if (tenantState.isLoading) {
           return null;
         }
 
+        // If user doesn't have a tenant, redirect to select tenant
         if (!hasTenant && !isSelectingTenant) {
           return '/select-tenant';
         }
 
+        // If user is on login/register screen and has tenant, redirect to home
         if (isLoggingIn && hasTenant) {
           return user.role == 'professor' ? '/professor-home' : '/home';
         }

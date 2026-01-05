@@ -38,9 +38,6 @@ void main() {
         ),
       );
 
-      final indicator = tester.widget<CircularProgressIndicator>(
-        find.byType(CircularProgressIndicator),
-      );
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 

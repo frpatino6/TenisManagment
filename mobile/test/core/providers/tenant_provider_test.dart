@@ -6,7 +6,6 @@ void main() {
   group('CurrentTenantIdNotifier', () {
     test('should initialize with null', () {
       final container = ProviderContainer();
-      final notifier = container.read(currentTenantIdProvider.notifier);
       final state = container.read(currentTenantIdProvider);
 
       expect(state, isNull);

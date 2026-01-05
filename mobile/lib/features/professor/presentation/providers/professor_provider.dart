@@ -55,10 +55,10 @@ final professorSchedulesProvider = FutureProvider.autoDispose<List<dynamic>>((
   ref,
 ) async {
   ref.watch(currentTenantIdProvider);
-  
+
   final httpClient = ref.read(appHttpClientProvider);
   final firebaseUser = FirebaseAuth.instance.currentUser;
-  
+
   if (firebaseUser == null) {
     throw Exception('Usuario no autenticado');
   }
@@ -68,9 +68,7 @@ final professorSchedulesProvider = FutureProvider.autoDispose<List<dynamic>>((
 
   final response = await httpClient.get(
     Uri.parse('$baseUrl/professor-dashboard/schedules'),
-    headers: {
-      'Authorization': 'Bearer $idToken',
-    },
+    headers: {'Authorization': 'Bearer $idToken'},
   );
 
   if (response.statusCode == 200) {
@@ -157,12 +155,13 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     try {
       final service = ref.read(professorServiceProvider);
       final tenantId = ref.read(currentTenantIdProvider);
-      
+
       final result = await service.createSchedule(
         date: date,
         startTime: startTime,
         endTime: endTime,
-        tenantId: tenantId, // Pass tenantId if available, backend will use first active tenant if null
+        tenantId:
+            tenantId, // Pass tenantId if available, backend will use first active tenant if null
       );
 
       ref.invalidate(professorSchedulesProvider);

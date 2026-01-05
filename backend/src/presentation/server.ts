@@ -28,11 +28,31 @@ if (config.nodeEnv !== 'development') {
 // CORS with allowlist
 const allowedOrigins = new Set(config.http.corsOrigins);
 const isProd = config.nodeEnv === 'production';
+
+// Mobile apps typically don't send an Origin header, or send null
+// We allow requests without origin (mobile apps) and from allowed origins (web apps)
 const corsOptions: cors.CorsOptions = {
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.has(origin)) return callback(null, true);
-    if (!isProd && allowedOrigins.size === 0) return callback(null, true);
+    // Allow requests without origin (mobile apps, Postman, curl, etc.)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Allow requests from explicitly allowed origins (web apps)
+    if (allowedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+    
+    // In development, if no origins are configured, allow all
+    if (!isProd && allowedOrigins.size === 0) {
+      return callback(null, true);
+    }
+    
+    // In production, log the rejected origin for debugging
+    if (isProd) {
+      logger.warn('CORS request rejected', { origin, allowedOrigins: Array.from(allowedOrigins) });
+    }
+    
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,

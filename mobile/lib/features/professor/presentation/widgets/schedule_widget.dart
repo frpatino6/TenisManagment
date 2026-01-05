@@ -465,12 +465,50 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
                   ),
                 ),
                 const Gap(2),
-                Text(
-                  '${classData.type} • ${classData.formattedDuration}',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      '${classData.type} • ${classData.formattedDuration}',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (classData.tenantName != null)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '•',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const Gap(4),
+                          Icon(
+                            Icons.business,
+                            size: 12,
+                            color: colorScheme.primary,
+                          ),
+                          const Gap(4),
+                          Flexible(
+                            child: Text(
+                              classData.tenantName!,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: colorScheme.primary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
                 ),
               ],
             ),

@@ -10,6 +10,8 @@ class ClassScheduleModel extends Equatable {
   final String status;
   final String? notes;
   final double price;
+  final String? tenantId;
+  final String? tenantName;
 
   const ClassScheduleModel({
     required this.id,
@@ -21,6 +23,8 @@ class ClassScheduleModel extends Equatable {
     required this.status,
     this.notes,
     required this.price,
+    this.tenantId,
+    this.tenantName,
   });
 
   factory ClassScheduleModel.fromJson(Map<String, dynamic> json) {
@@ -47,6 +51,8 @@ class ClassScheduleModel extends Equatable {
       status: json['status'] ?? 'pending',
       notes: json['notes'],
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      tenantId: json['tenantId'] as String?,
+      tenantName: json['tenantName'] as String?,
     );
   }
 
@@ -61,6 +67,8 @@ class ClassScheduleModel extends Equatable {
       'status': status,
       'notes': notes,
       'price': price,
+      'tenantId': tenantId,
+      'tenantName': tenantName,
     };
   }
 
@@ -103,5 +111,7 @@ class ClassScheduleModel extends Equatable {
     status,
     notes,
     price,
+    tenantId,
+    tenantName,
   ];
 }

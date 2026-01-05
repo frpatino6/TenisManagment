@@ -33,14 +33,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Use read instead of watch to avoid unnecessary rebuilds
-    // The router will handle navigation automatically via redirect
-    final authState = ref.read(authStateProvider);
+    // Watch authState to detect when user logs in
+    final authState = ref.watch(authStateProvider);
     final isLoading = ref.watch(authLoadingProvider);
     final error = ref.watch(authErrorProvider);
+    final tenantState = ref.watch(tenantNotifierProvider);
+    
+    // Check if user is authenticated
+    final user = authState.when(
+      data: (user) => user,
+      loading: () => null,
+      error: (_, _) => null,
+    );
+    final isAuthenticated = user != null;
 
-    // Only show loading on initial load, not during login process
-    if (authState.isLoading && !isLoading) {
+    // Show loading screen if:
+    // 1. Auth is loading (initial load)
+    // 2. User is authenticated and tenant is loading (after login, waiting for tenant to load)
+    // This prevents briefly showing the select-tenant screen during login
+    if (authState.isLoading || 
+        (isAuthenticated && tenantState.isLoading)) {
       return const LoadingScreen(message: AppStrings.verifyingAuth);
     }
 

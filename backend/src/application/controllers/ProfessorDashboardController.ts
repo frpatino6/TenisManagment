@@ -6,6 +6,8 @@ import { ScheduleModel } from '../../infrastructure/database/models/ScheduleMode
 import { BookingModel } from '../../infrastructure/database/models/BookingModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
 import { ProfessorTenantModel } from '../../infrastructure/database/models/ProfessorTenantModel';
+import { TenantModel } from '../../infrastructure/database/models/TenantModel';
+import { UserPreferencesModel } from '../../infrastructure/database/models/UserPreferencesModel';
 import { TenantService } from '../services/TenantService';
 import { Logger } from '../../infrastructure/services/Logger';
 import { Types } from 'mongoose';
@@ -1253,6 +1255,141 @@ export class ProfessorDashboardController {
       if (error.message === 'El profesor ya está activo en este tenant') {
         return res.status(409).json({ error: error.message });
       }
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * Get the active tenant for the current professor
+   * Returns the first favorite tenant (uses UserPreferences like students)
+   * GET /api/professor-dashboard/active-tenant
+   */
+  getActiveTenant = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const firebaseUid = req.user?.uid;
+      if (!firebaseUid) {
+        res.status(401).json({ error: 'Usuario no autenticado' });
+        return;
+      }
+
+      const authUser = await AuthUserModel.findOne({ firebaseUid });
+      if (!authUser) {
+        res.status(404).json({ error: 'Usuario no encontrado' });
+        return;
+      }
+
+      // Get preferences and find first favorite tenant
+      const preferences = await UserPreferencesModel.findOne({ userId: authUser._id })
+        .populate({
+          path: 'favoriteTenants',
+          select: 'name slug config isActive',
+        });
+
+      if (!preferences || !preferences.favoriteTenants || preferences.favoriteTenants.length === 0) {
+        res.status(404).json({ error: 'No hay centro favorito configurado' });
+        return;
+      }
+
+      // Get first favorite tenant
+      const firstFavorite = preferences.favoriteTenants[0] as any;
+      if (!firstFavorite || !firstFavorite.isActive) {
+        res.status(404).json({ error: 'No hay centro favorito activo' });
+        return;
+      }
+
+      res.json({
+        tenantId: firstFavorite._id.toString(),
+        tenantName: firstFavorite.name,
+        tenantSlug: firstFavorite.slug,
+        logo: firstFavorite.config?.logo || null,
+        isActive: firstFavorite.isActive,
+      });
+    } catch (error) {
+      console.error('Error getting active tenant:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * Set the active tenant for the current professor
+   * Adds tenant to favorites and moves it to the first position (uses UserPreferences like students)
+   * POST /api/professor-dashboard/active-tenant
+   * Body: { tenantId: string }
+   */
+  setActiveTenant = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const firebaseUid = req.user?.uid;
+      if (!firebaseUid) {
+        res.status(401).json({ error: 'Usuario no autenticado' });
+        return;
+      }
+
+      const { tenantId } = req.body;
+      if (!tenantId) {
+        res.status(400).json({ error: 'tenantId es requerido' });
+        return;
+      }
+
+      const authUser = await AuthUserModel.findOne({ firebaseUid });
+      if (!authUser) {
+        res.status(404).json({ error: 'Usuario no encontrado' });
+        return;
+      }
+
+      const professor = await ProfessorModel.findOne({ authUserId: authUser._id });
+      if (!professor) {
+        res.status(404).json({ error: 'Perfil de profesor no encontrado' });
+        return;
+      }
+
+      // Validate tenant exists
+      const tenant = await TenantModel.findById(tenantId);
+      if (!tenant) {
+        res.status(404).json({ error: 'Centro no encontrado' });
+        return;
+      }
+
+      if (!tenant.isActive) {
+        res.status(400).json({ error: 'El centro no está activo' });
+        return;
+      }
+
+      // Verify professor has access to this tenant
+      const professorTenant = await ProfessorTenantModel.findOne({
+        professorId: professor._id,
+        tenantId: new Types.ObjectId(tenantId),
+        isActive: true,
+      });
+
+      if (!professorTenant) {
+        res.status(403).json({ error: 'El profesor no tiene acceso a este centro' });
+        return;
+      }
+
+      // Get or create preferences
+      let preferences = await UserPreferencesModel.findOne({ userId: authUser._id });
+      if (!preferences) {
+        preferences = await UserPreferencesModel.create({
+          userId: authUser._id,
+          favoriteProfessors: [],
+          favoriteTenants: [],
+        });
+      }
+
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
+      // When selecting a tenant, it becomes the ONLY favorite
+      // This ensures only one center has the heart icon at a time
+      preferences.favoriteTenants = [tenantObjectId];
+      await preferences.save();
+
+      res.json({
+        message: 'Centro configurado',
+        tenantId,
+        tenantName: tenant.name,
+      });
+    } catch (error) {
+      console.error('Error setting active tenant:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

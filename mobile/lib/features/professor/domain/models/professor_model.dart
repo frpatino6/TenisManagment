@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../core/validation/model_validator.dart';
 
 class ProfessorModel extends Equatable {
   final String id;
@@ -14,7 +15,7 @@ class ProfessorModel extends Equatable {
   final double monthlyEarnings;
   final double weeklyEarnings;
 
-  const ProfessorModel({
+  ProfessorModel({
     required this.id,
     required this.name,
     required this.email,
@@ -27,22 +28,65 @@ class ProfessorModel extends Equatable {
     required this.totalClasses,
     required this.monthlyEarnings,
     required this.weeklyEarnings,
-  });
+  }) {
+    // Validation in constructor
+    assert(id.isNotEmpty, 'Professor id must not be empty');
+    assert(name.isNotEmpty, 'Professor name must not be empty');
+    ModelValidator.validateEmail(email, 'email');
+    ModelValidator.validatePrice(hourlyRate);
+    ModelValidator.validateNonNegativeInt(experienceYears, 'experienceYears');
+    ModelValidator.validateRating(rating, 'rating');
+    ModelValidator.validateNonNegativeInt(totalStudents, 'totalStudents');
+    ModelValidator.validateNonNegativeInt(totalClasses, 'totalClasses');
+    ModelValidator.validateNonNegative(monthlyEarnings, 'monthlyEarnings');
+    ModelValidator.validateNonNegative(weeklyEarnings, 'weeklyEarnings');
+  }
 
   factory ProfessorModel.fromJson(Map<String, dynamic> json) {
+    final id = json['_id'] ?? json['id'] ?? '';
+    final name = json['name'] ?? '';
+    final email = json['email'] ?? '';
+    
     return ProfessorModel(
-      id: json['_id'] ?? json['id'] ?? '',
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
+      id: id,
+      name: name,
+      email: email,
       phone: json['phone'],
       specialties: List<String>.from(json['specialties'] ?? []),
-      hourlyRate: (json['hourlyRate'] ?? 0).toDouble(),
-      experienceYears: json['experienceYears'] ?? 0,
-      rating: (json['rating'] ?? 0.0).toDouble(),
-      totalStudents: json['totalStudents'] ?? 0,
-      totalClasses: json['totalClasses'] ?? 0,
-      monthlyEarnings: (json['monthlyEarnings'] ?? 0.0).toDouble(),
-      weeklyEarnings: (json['weeklyEarnings'] ?? 0.0).toDouble(),
+      hourlyRate: ModelValidator.parseDouble(
+        json['hourlyRate'],
+        'hourlyRate',
+        defaultValue: 0.0,
+      ),
+      experienceYears: ModelValidator.parseInt(
+        json['experienceYears'],
+        'experienceYears',
+        defaultValue: 0,
+      ),
+      rating: ModelValidator.validateRating(
+        ModelValidator.parseDouble(json['rating'], 'rating', defaultValue: 0.0),
+        'rating',
+      ),
+      totalStudents: ModelValidator.parseInt(
+        json['totalStudents'],
+        'totalStudents',
+        defaultValue: 0,
+      ),
+      totalClasses: ModelValidator.parseInt(
+        json['totalClasses'],
+        'totalClasses',
+        defaultValue: 0,
+      ),
+      monthlyEarnings: ModelValidator.parseDouble(
+        json['monthlyEarnings'],
+        'monthlyEarnings',
+        defaultValue: 0.0,
+      ),
+      weeklyEarnings: ModelValidator.parseDouble(
+        json['weeklyEarnings'],
+        'weeklyEarnings',
+        defaultValue: 0.0,
+      ),
     );
   }
 

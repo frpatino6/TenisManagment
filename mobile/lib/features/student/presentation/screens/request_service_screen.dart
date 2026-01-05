@@ -441,7 +441,7 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
     });
 
     try {
-      // TODO: Implement actual API call
+      // TODO: TEN-112 - Implement actual API call
       await Future.delayed(Timeouts.snackbarSuccess);
 
       if (mounted) {
@@ -453,7 +453,7 @@ class _RequestServiceScreenState extends ConsumerState<RequestServiceScreen> {
               label: 'Ver Solicitudes',
               textColor: Colors.white,
               onPressed: () {
-                // TODO: Navigate to requests list
+                // TODO: TEN-113 - Navigate to requests list
               },
             ),
           ),

@@ -1,3 +1,5 @@
+import '../../../../core/validation/model_validator.dart';
+
 /// Model for representing a court (cancha) in the system
 class CourtModel {
   final String id;
@@ -14,14 +16,32 @@ class CourtModel {
     required this.pricePerHour,
     this.description,
     this.features = const [],
-  });
+  }) {
+    // Validation in constructor
+    assert(id.isNotEmpty, 'Court id must not be empty');
+    assert(name.isNotEmpty, 'Court name must not be empty');
+    assert(
+      ['tennis', 'padel', 'multi'].contains(type),
+      'Court type must be tennis, padel, or multi',
+    );
+    ModelValidator.validatePrice(pricePerHour);
+  }
 
   factory CourtModel.fromJson(Map<String, dynamic> json) {
+    final id = json['id'] as String? ?? json['_id'] as String? ?? '';
+    final name = json['name'] as String? ?? '';
+    final type = json['type'] as String? ?? 'tennis';
+    final pricePerHour = ModelValidator.parseDouble(
+      json['pricePerHour'],
+      'pricePerHour',
+      defaultValue: 0.0,
+    );
+    
     return CourtModel(
-      id: json['id'] as String? ?? json['_id'] as String? ?? '',
-      name: json['name'] as String? ?? '',
-      type: json['type'] as String? ?? 'tennis',
-      pricePerHour: (json['pricePerHour'] as num?)?.toDouble() ?? 0.0,
+      id: id,
+      name: name,
+      type: type,
+      pricePerHour: pricePerHour,
       description: json['description'] as String?,
       features: (json['features'] as List<dynamic>?)
               ?.map((e) => e as String)

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/exceptions/exceptions.dart';
 import '../../../../core/constants/timeouts.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../providers/professor_provider.dart';
 
 class CreateScheduleScreen extends ConsumerStatefulWidget {
@@ -39,7 +40,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Crear Horario Disponible',
+          AppStrings.createScheduleTitle,
           style: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
@@ -71,7 +72,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                     ),
                     const Gap(16),
                     Text(
-                      'Define tu disponibilidad',
+                      AppStrings.defineAvailability,
                       style: GoogleFonts.inter(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,

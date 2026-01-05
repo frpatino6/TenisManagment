@@ -112,13 +112,20 @@ class AnalyticsService {
         '$_baseUrl/professor-dashboard/analytics/revenue',
       ).replace(queryParameters: {'period': period});
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
-      );
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $idToken',
+            },
+          )
+          .timeout(
+            Timeouts.httpRequestLong,
+            onTimeout: () {
+              throw NetworkException.timeout();
+            },
+          );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
@@ -155,13 +162,20 @@ class AnalyticsService {
         '$_baseUrl/professor-dashboard/analytics/bookings',
       ).replace(queryParameters: {'period': period});
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
-      );
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $idToken',
+            },
+          )
+          .timeout(
+            Timeouts.httpRequestLong,
+            onTimeout: () {
+              throw NetworkException.timeout();
+            },
+          );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
@@ -198,13 +212,20 @@ class AnalyticsService {
         '$_baseUrl/professor-dashboard/analytics/students',
       ).replace(queryParameters: {'period': period});
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
-      );
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $idToken',
+            },
+          )
+          .timeout(
+            Timeouts.httpRequestLong,
+            onTimeout: () {
+              throw NetworkException.timeout();
+            },
+          );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
@@ -249,13 +270,20 @@ class AnalyticsService {
         '$_baseUrl/professor-dashboard/analytics/revenue/breakdown',
       ).replace(queryParameters: queryParams);
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
-      );
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $idToken',
+            },
+          )
+          .timeout(
+            Timeouts.httpRequestLong,
+            onTimeout: () {
+              throw NetworkException.timeout();
+            },
+          );
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -299,13 +327,20 @@ class AnalyticsService {
         '$_baseUrl/professor-dashboard/analytics/bookings/breakdown',
       ).replace(queryParameters: queryParams);
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
-      );
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $idToken',
+            },
+          )
+          .timeout(
+            Timeouts.httpRequestLong,
+            onTimeout: () {
+              throw NetworkException.timeout();
+            },
+          );
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -349,13 +384,20 @@ class AnalyticsService {
         '$_baseUrl/professor-dashboard/analytics/revenue/trend',
       ).replace(queryParameters: queryParams);
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
-      );
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $idToken',
+            },
+          )
+          .timeout(
+            Timeouts.httpRequestLong,
+            onTimeout: () {
+              throw NetworkException.timeout();
+            },
+          );
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -399,13 +441,20 @@ class AnalyticsService {
         '$_baseUrl/professor-dashboard/analytics/bookings/trend',
       ).replace(queryParameters: queryParams);
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
-      );
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $idToken',
+            },
+          )
+          .timeout(
+            Timeouts.httpRequestLong,
+            onTimeout: () {
+              throw NetworkException.timeout();
+            },
+          );
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -449,13 +498,20 @@ class AnalyticsService {
         '$_baseUrl/professor-dashboard/analytics/students/breakdown',
       ).replace(queryParameters: queryParams);
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
-      );
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $idToken',
+            },
+          )
+          .timeout(
+            Timeouts.httpRequestLong,
+            onTimeout: () {
+              throw NetworkException.timeout();
+            },
+          );
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -499,13 +555,20 @@ class AnalyticsService {
         '$_baseUrl/professor-dashboard/analytics/students/trend',
       ).replace(queryParameters: queryParams);
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
-      );
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $idToken',
+            },
+          )
+          .timeout(
+            Timeouts.httpRequestLong,
+            onTimeout: () {
+              throw NetworkException.timeout();
+            },
+          );
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -543,13 +606,20 @@ class AnalyticsService {
         '$_baseUrl/professor-dashboard/analytics/occupancy/details',
       ).replace(queryParameters: {'period': period});
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
-      );
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $idToken',
+            },
+          )
+          .timeout(
+            Timeouts.httpRequestLong,
+            onTimeout: () {
+              throw NetworkException.timeout();
+            },
+          );
 
       if (response.statusCode == 200) {
         return json.decode(response.body);

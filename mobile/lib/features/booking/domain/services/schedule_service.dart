@@ -14,8 +14,16 @@ class ScheduleService {
 
   ScheduleService(this._ref);
 
-  /// Get professor schedules grouped by tenant (center)
-  /// GET /api/student-dashboard/professors/:professorId/schedules
+  /// Retrieves professor schedules grouped by tenant (center)
+  ///
+  /// [professorId] The ID of the professor to get schedules for
+  ///
+  /// Returns [ProfessorSchedulesResponse] containing schedules organized by tenant
+  ///
+  /// Throws [AuthException.notAuthenticated] if user is not authenticated
+  /// Throws [AuthException.tokenExpired] if authentication token is invalid
+  /// Throws [DomainException.notFound] if the professor does not exist
+  /// Throws [NetworkException] if the API request fails
   Future<ProfessorSchedulesResponse> getProfessorSchedules(
     String professorId,
   ) async {

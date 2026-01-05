@@ -2,16 +2,10 @@ import 'package:flutter/foundation.dart';
 import '../config/app_config.dart';
 
 /// Niveles de logging
-enum LogLevel {
-  debug,
-  info,
-  warning,
-  error,
-  fatal,
-}
+enum LogLevel { debug, info, warning, error, fatal }
 
 /// Logger estructurado para la aplicación
-/// 
+///
 /// Proporciona logging estructurado con diferentes niveles
 /// y solo muestra logs en desarrollo por defecto.
 class AppLogger {
@@ -22,18 +16,12 @@ class AppLogger {
 
   /// Crea un logger con el tag especificado
   factory AppLogger.tag(String tag) {
-    return AppLogger._(
-      tag,
-      AppConfig.enableDebugLogs,
-    );
+    return AppLogger._(tag, AppConfig.enableDebugLogs);
   }
 
   /// Crea un logger para una clase
   factory AppLogger.forClass(Type classType) {
-    return AppLogger._(
-      classType.toString(),
-      AppConfig.enableDebugLogs,
-    );
+    return AppLogger._(classType.toString(), AppConfig.enableDebugLogs);
   }
 
   /// Log de debug (solo en desarrollo)
@@ -62,15 +50,11 @@ class AppLogger {
     Map<String, dynamic>? context,
   }) {
     if (!_enabled) return;
-    _log(
-      LogLevel.error,
-      message,
-      {
-        if (error != null) 'error': error.toString(),
-        if (stackTrace != null) 'stackTrace': stackTrace.toString(),
-        ...?context,
-      },
-    );
+    _log(LogLevel.error, message, {
+      if (error != null) 'error': error.toString(),
+      if (stackTrace != null) 'stackTrace': stackTrace.toString(),
+      ...?context,
+    });
   }
 
   /// Log fatal (siempre se muestra)
@@ -80,15 +64,11 @@ class AppLogger {
     StackTrace? stackTrace,
     Map<String, dynamic>? context,
   }) {
-    _log(
-      LogLevel.fatal,
-      message,
-      {
-        if (error != null) 'error': error.toString(),
-        if (stackTrace != null) 'stackTrace': stackTrace.toString(),
-        ...?context,
-      },
-    );
+    _log(LogLevel.fatal, message, {
+      if (error != null) 'error': error.toString(),
+      if (stackTrace != null) 'stackTrace': stackTrace.toString(),
+      ...?context,
+    });
   }
 
   void _log(LogLevel level, String message, Map<String, dynamic>? context) {
@@ -110,7 +90,7 @@ class AppLogger {
     // En producción, los errores fatales deberían enviarse a un servicio de crash reporting
     if (level == LogLevel.fatal && AppConfig.enableCrashReporting) {
       // Aquí se podría integrar con Firebase Crashlytics, Sentry, etc.
-      // TODO: Integrar con servicio de crash reporting
+      // TODO: TEN-111 - Integrar con servicio de crash reporting
     }
   }
 }
@@ -119,4 +99,3 @@ class AppLogger {
 extension LoggerExtension on Object {
   AppLogger get logger => AppLogger.forClass(runtimeType);
 }
-

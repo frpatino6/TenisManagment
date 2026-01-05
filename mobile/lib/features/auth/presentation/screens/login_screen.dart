@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/constants/timeouts.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
@@ -38,7 +39,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final error = ref.watch(authErrorProvider);
 
     if (authState.isLoading) {
-      return const LoadingScreen(message: 'Verificando autenticación...');
+      return const LoadingScreen(message: AppStrings.verifyingAuth);
     }
 
     return Scaffold(
@@ -212,7 +213,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             TextButton(
               onPressed: () {
-                // TODO: Implementar recuperación de contraseña
+                // TODO: TEN-109 - Implementar recuperación de contraseña
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text(

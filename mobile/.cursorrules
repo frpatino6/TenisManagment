@@ -1,0 +1,247 @@
+# Cursor Rules - Tennis Management Mobile App
+
+## 📋 Reglas Generales
+
+### Arquitectura
+- **Clean Architecture**: Separación clara de capas (domain, presentation, data)
+- **Organización por features**: Cada feature tiene su propia carpeta con domain, presentation, data
+- **Riverpod para state management**: Usar providers para gestión de estado
+- **Separación de responsabilidades**: Servicios para lógica de negocio, providers para orquestación
+
+### Estándares de Código
+- **Sin `print` statements**: Usar `AppLogger` para logging estructurado
+- **Sin comentarios innecesarios**: El código debe ser autoexplicativo
+- **Imports no usados**: Eliminar siempre
+- **Documentación**: Agregar `///` a métodos públicos
+
+---
+
+## 🚨 REGLAS CRÍTICAS - Manejo de Errores
+
+### 1. Jerarquía de Excepciones OBLIGATORIA
+
+**NUNCA usar `Exception` genérico. SIEMPRE usar excepciones específicas:**
+
+```dart
+// ❌ PROHIBIDO
+throw Exception('Error al obtener datos');
+
+// ✅ CORRECTO
+throw NetworkException.serverError(
+  message: 'Error al obtener datos',
+  statusCode: response.statusCode,
+);
+```
+
+**Excepciones disponibles:**
+- `AppException` (base abstracta - no instanciar directamente)
+- `NetworkException` - Para errores de red, timeout, conexión
+- `AuthException` - Para errores de autenticación
+- `ValidationException` - Para errores de validación de datos
+- `DomainException` - Para errores de lógica de negocio
+  - `ScheduleException` - Para errores de horarios
+  - `TenantException` - Para errores de centros
+
+**Ubicación:** `lib/core/exceptions/`
+
+### 2. Mensajes de Error Centralizados OBLIGATORIO
+
+**NUNCA hardcodear mensajes de error. SIEMPRE usar `ErrorMessages`:**
+
+```dart
+// ❌ PROHIBIDO
+throw AuthException('Usuario no autenticado');
+
+// ✅ CORRECTO
+throw AuthException.notAuthenticated(); // Usa ErrorMessages internamente
+
+// O si necesitas mensaje personalizado:
+throw AuthException(
+  ErrorMessages.notAuthenticated,
+  code: 'NOT_AUTHENTICATED',
+);
+```
+
+**Ubicación:** `lib/core/constants/error_messages.dart`
+
+### 3. Logging Estructurado OBLIGATORIO
+
+**NUNCA usar `print()`. SIEMPRE usar `AppLogger`:**
+
+```dart
+// ❌ PROHIBIDO
+print('Error: $e');
+print('Usuario: $user');
+
+// ✅ CORRECTO
+final _logger = AppLogger.tag('MyService');
+_logger.info('Operación iniciada');
+_logger.debug('Detalles', {'userId': user.id});
+_logger.error('Error en operación', error: e, stackTrace: stackTrace);
+```
+
+**O usando la extensión:**
+```dart
+class MyService {
+  Future<void> doSomething() async {
+    logger.info('Iniciando'); // logger es automático
+  }
+}
+```
+
+**Niveles disponibles:**
+- `debug()` - Solo desarrollo, información detallada
+- `info()` - Información general
+- `warning()` - Advertencias
+- `error()` - Errores con contexto
+- `fatal()` - Errores críticos (siempre se muestran)
+
+**Ubicación:** `lib/core/logging/logger.dart`
+
+### 4. Timeouts Centralizados OBLIGATORIO
+
+**NUNCA hardcodear timeouts. SIEMPRE usar `Timeouts`:**
+
+```dart
+// ❌ PROHIBIDO
+.timeout(const Duration(seconds: 10))
+await Future.delayed(const Duration(seconds: 2));
+
+// ✅ CORRECTO
+.timeout(Timeouts.httpRequest)
+await Future.delayed(Timeouts.snackbarSuccess);
+```
+
+**Constantes disponibles:**
+- `Timeouts.httpRequest` - Requests HTTP estándar (10s)
+- `Timeouts.httpRequestLong` - Requests largos (30s)
+- `Timeouts.httpRequestShort` - Requests cortos (5s)
+- `Timeouts.snackbarSuccess` - Mensajes de éxito (2s)
+- `Timeouts.snackbarError` - Mensajes de error (3s)
+- `Timeouts.animationShort/Medium/Long` - Animaciones
+- Y más... ver `lib/core/constants/timeouts.dart`
+
+**Ubicación:** `lib/core/constants/timeouts.dart`
+
+### 5. Result<T> Pattern (Opcional pero Recomendado)
+
+**Para errores esperados, considerar usar `Result<T>`:**
+
+```dart
+// ✅ BUENO: Para validaciones, búsquedas opcionales
+Future<Result<FormData>> validateForm(Map<String, dynamic> data) async {
+  // Validación...
+  if (errors.isNotEmpty) {
+    return Result.failure(ValidationException(...));
+  }
+  return Result.success(FormData.fromMap(data));
+}
+```
+
+**Cuándo usar:**
+- ✅ Validación de formularios
+- ✅ Búsquedas que pueden no encontrar resultados
+- ✅ Operaciones que fallan frecuentemente
+
+**Cuándo NO usar:**
+- ❌ Errores realmente excepcionales (usar excepciones)
+- ❌ Errores de programación (usar excepciones)
+
+**Ubicación:** `lib/core/result/result.dart`
+
+---
+
+## 📝 Estructura de Servicios
+
+### Servicios de Dominio
+- Deben estar en `lib/features/{feature}/domain/services/`
+- Deben usar `AppLogger` para logging
+- Deben usar excepciones específicas de la jerarquía
+- Deben usar `Timeouts` para timeouts
+- Deben usar `ErrorMessages` para mensajes
+
+**Ejemplo:**
+```dart
+class MyService {
+  final _logger = AppLogger.tag('MyService');
+  
+  Future<Data> getData() async {
+    _logger.debug('Obteniendo datos');
+    try {
+      // ... código
+      _logger.info('Datos obtenidos exitosamente');
+      return data;
+    } on AppException catch (e, stackTrace) {
+      _logger.error('Error al obtener datos', 
+        error: e, 
+        stackTrace: stackTrace,
+      );
+      rethrow;
+    }
+  }
+}
+```
+
+---
+
+## 🎯 Imports Estándar
+
+### Para Excepciones
+```dart
+import '../../../../core/exceptions/exceptions.dart';
+```
+
+### Para Logging
+```dart
+import '../../../../core/logging/logger.dart';
+```
+
+### Para Constantes
+```dart
+import '../../../../core/constants/error_messages.dart';
+import '../../../../core/constants/timeouts.dart';
+```
+
+### Para Result
+```dart
+import '../../../../core/result/result.dart';
+```
+
+---
+
+## ✅ Checklist para Nuevo Código
+
+Antes de crear un nuevo servicio o modificar uno existente:
+
+- [ ] ¿Usa excepciones específicas de la jerarquía? (NO `Exception` genérico)
+- [ ] ¿Usa `ErrorMessages` para mensajes? (NO strings hardcodeados)
+- [ ] ¿Usa `AppLogger` para logging? (NO `print`)
+- [ ] ¿Usa `Timeouts` para timeouts? (NO `Duration` hardcodeado)
+- [ ] ¿Tiene documentación `///` en métodos públicos?
+- [ ] ¿Maneja errores apropiadamente con try/catch?
+
+---
+
+## 🚫 Prohibiciones Absolutas
+
+1. **NUNCA** usar `throw Exception('mensaje')`
+2. **NUNCA** usar `print()` para logging
+3. **NUNCA** hardcodear mensajes de error
+4. **NUNCA** hardcodear timeouts con `Duration(seconds: X)`
+5. **NUNCA** usar `dynamic` cuando se puede usar un tipo específico
+6. **NUNCA** mezclar lógica HTTP en providers (debe estar en servicios)
+
+---
+
+## 📚 Referencias
+
+- Excepciones: `lib/core/exceptions/`
+- Constantes: `lib/core/constants/`
+- Logging: `lib/core/logging/`
+- Result: `lib/core/result/`
+- Documentación: `lib/core/README.md`
+
+---
+
+**Estas reglas son OBLIGATORIAS y deben seguirse en TODO el código nuevo y refactorizado.**
+

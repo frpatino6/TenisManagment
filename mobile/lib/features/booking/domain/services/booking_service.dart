@@ -6,6 +6,8 @@ import '../../../../core/exceptions/exceptions.dart';
 import '../models/professor_model.dart';
 import '../models/available_schedule_model.dart';
 
+/// Service for managing booking operations for students
+/// Handles professor selection, schedule availability, and lesson booking
 class BookingService {
   final String _baseUrl = AppConfig.apiBaseUrl;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -13,7 +15,16 @@ class BookingService {
 
   BookingService(this._http);
 
-  /// Get list of all professors
+  /// Retrieves the list of all available professors
+  ///
+  /// Returns a list of [ProfessorBookingModel] containing professor information
+  /// such as name, email, specialties, and pricing.
+  ///
+  /// Throws [AuthException.notAuthenticated] if user is not authenticated
+  /// Throws [AuthException.tokenExpired] if authentication token is invalid
+  /// Throws [NetworkException] if the API request fails
+  ///
+  /// Returns an empty list if no professors are available
   Future<List<ProfessorBookingModel>> getProfessors() async {
     try {
       final user = _auth.currentUser;
@@ -38,10 +49,8 @@ class BookingService {
         final items = data['items'] as List<dynamic>;
 
         return items
-            .map(
-              (item) =>
-                  ProfessorBookingModel.fromJson(item as Map<String, dynamic>),
-            )
+            .cast<Map<String, dynamic>>()
+            .map((item) => ProfessorBookingModel.fromJson(item))
             .toList();
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         throw AuthException.tokenExpired();
@@ -56,7 +65,19 @@ class BookingService {
     }
   }
 
-  /// Get available schedules for a specific professor
+  /// Retrieves available schedules for a specific professor
+  ///
+  /// [professorId] The ID of the professor to get schedules for
+  ///
+  /// Returns a list of [AvailableScheduleModel] representing available
+  /// time slots that can be booked.
+  ///
+  /// Throws [AuthException.notAuthenticated] if user is not authenticated
+  /// Throws [AuthException.tokenExpired] if authentication token is invalid
+  /// Throws [DomainException.notFound] if the professor does not exist
+  /// Throws [NetworkException] if the API request fails
+  ///
+  /// Returns an empty list if no schedules are available
   Future<List<AvailableScheduleModel>> getAvailableSchedules(
     String professorId,
   ) async {
@@ -85,10 +106,8 @@ class BookingService {
         final items = data['items'] as List<dynamic>;
 
         return items
-            .map(
-              (item) =>
-                  AvailableScheduleModel.fromJson(item as Map<String, dynamic>),
-            )
+            .cast<Map<String, dynamic>>()
+            .map((item) => AvailableScheduleModel.fromJson(item))
             .toList();
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         throw AuthException.tokenExpired();
@@ -105,7 +124,20 @@ class BookingService {
     }
   }
 
-  /// Book a lesson
+  /// Books a lesson with a professor
+  ///
+  /// [scheduleId] The ID of the schedule slot to book
+  /// [serviceType] Type of service (e.g., 'individual_class', 'group_class')
+  /// [price] The price for the lesson
+  ///
+  /// Returns a [Map] containing the booking confirmation data including booking ID
+  ///
+  /// Throws [AuthException.notAuthenticated] if user is not authenticated
+  /// Throws [AuthException.tokenExpired] if authentication token is invalid
+  /// Throws [ValidationException] if the booking data is invalid
+  /// Throws [ScheduleException.notFound] if the schedule does not exist
+  /// Throws [ScheduleException.conflict] if the schedule is already booked
+  /// Throws [NetworkException] if the API request fails
   Future<Map<String, dynamic>> bookLesson(
     String scheduleId, {
     required String serviceType,

@@ -14,7 +14,17 @@ class CourtService {
 
   CourtService(this._http);
 
-  /// Get list of available courts for the active tenant
+  /// Retrieves the list of available courts for the active tenant
+  ///
+  /// Returns a list of [CourtModel] containing court information
+  /// such as name, type, price per hour, and features.
+  ///
+  /// Throws [AuthException.notAuthenticated] if user is not authenticated
+  /// Throws [AuthException.tokenExpired] if authentication token is invalid
+  /// Throws [ValidationException] if tenant configuration is invalid
+  /// Throws [NetworkException] if the API request fails
+  ///
+  /// Returns an empty list if no courts are available
   Future<List<CourtModel>> getCourts() async {
     try {
       final user = _auth.currentUser;
@@ -60,7 +70,17 @@ class CourtService {
     }
   }
 
-  /// Get available time slots for a court on a specific date
+  /// Retrieves available time slots for a court on a specific date
+  ///
+  /// [courtId] The ID of the court
+  /// [date] The date to check availability for
+  ///
+  /// Returns a [Map] containing available time slots and booking information
+  ///
+  /// Throws [AuthException.notAuthenticated] if user is not authenticated
+  /// Throws [AuthException.tokenExpired] if authentication token is invalid
+  /// Throws [ValidationException] if court ID or date is invalid
+  /// Throws [NetworkException] if the API request fails
   Future<Map<String, dynamic>> getAvailableSlots({
     required String courtId,
     required DateTime date,
@@ -121,7 +141,20 @@ class CourtService {
     }
   }
 
-  /// Book a court
+  /// Books a court for a specific time period
+  ///
+  /// [courtId] The ID of the court to book
+  /// [startTime] The start time of the booking
+  /// [endTime] The end time of the booking
+  /// [price] The total price for the booking
+  ///
+  /// Returns a [Map] containing the booking confirmation data including booking ID
+  ///
+  /// Throws [AuthException.notAuthenticated] if user is not authenticated
+  /// Throws [AuthException.tokenExpired] if authentication token is invalid
+  /// Throws [ValidationException] if booking data is invalid
+  /// Throws [DomainException.conflict] if the court is already booked for that time
+  /// Throws [NetworkException] if the API request fails
   Future<Map<String, dynamic>> bookCourt({
     required String courtId,
     required DateTime startTime,

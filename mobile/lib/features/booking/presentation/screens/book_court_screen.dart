@@ -31,20 +31,17 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isBooking = false;
-  String? _originalTenantId;
-  String? _currentTenantIdAtDispose;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final tenantState = ref.read(tenantNotifierProvider);
       tenantState.when(
         data: (favoriteTenantId) {
           if (favoriteTenantId != null) {
-            _originalTenantId = favoriteTenantId;
             final currentTenantId = ref.read(currentTenantIdProvider);
-            _currentTenantIdAtDispose = currentTenantId;
             if (currentTenantId != favoriteTenantId) {
               ref
                   .read(currentTenantIdProvider.notifier)
@@ -60,26 +57,10 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
 
   @override
   void dispose() {
-    // Save the current tenant ID before dispose to avoid using ref
-    if (mounted) {
-      _currentTenantIdAtDispose = ref.read(currentTenantIdProvider);
-    }
-    
-    // Restore original tenant if needed, but only if we have the values saved
-    if (_originalTenantId != null && 
-        _currentTenantIdAtDispose != null &&
-        _currentTenantIdAtDispose != _originalTenantId) {
-      // Use WidgetsBinding to defer the update until after dispose completes
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Access the provider container directly through the widget tree
-        // This is safe because we're deferring the execution
-        final container = ProviderScope.containerOf(context);
-        final currentTenantId = container.read(currentTenantIdProvider);
-        if (currentTenantId != _originalTenantId) {
-          container.read(currentTenantIdProvider.notifier).update(_originalTenantId);
-        }
-      });
-    }
+    // Don't use ref in dispose - it's unsafe when the widget is being unmounted
+    // The tenant will remain as the user selected it, which is acceptable behavior
+    // If we need to restore the original tenant, it should be done before dispose
+    // or through a different mechanism that doesn't rely on ref
     super.dispose();
   }
 

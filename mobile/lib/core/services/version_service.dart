@@ -18,7 +18,7 @@ class VersionService {
   }
 
   /// Obtiene la versión de la aplicación
-  String get version => _packageInfo?.version ?? '2.4.1';
+  String get version => _packageInfo?.version ?? '2.5.0';
 
   /// Obtiene el número de build
   String get buildNumber => _packageInfo?.buildNumber ?? '1';

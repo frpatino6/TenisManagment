@@ -31,17 +31,16 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isBooking = false;
-  String? _originalTenantId;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final tenantState = ref.read(tenantNotifierProvider);
       tenantState.when(
         data: (favoriteTenantId) {
           if (favoriteTenantId != null) {
-            _originalTenantId = favoriteTenantId;
             final currentTenantId = ref.read(currentTenantIdProvider);
             if (currentTenantId != favoriteTenantId) {
               ref
@@ -58,12 +57,10 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
 
   @override
   void dispose() {
-    if (_originalTenantId != null && mounted) {
-      final currentTenantId = ref.read(currentTenantIdProvider);
-      if (currentTenantId != _originalTenantId) {
-        ref.read(currentTenantIdProvider.notifier).update(_originalTenantId);
-      }
-    }
+    // Don't use ref in dispose - it's unsafe when the widget is being unmounted
+    // The tenant will remain as the user selected it, which is acceptable behavior
+    // If we need to restore the original tenant, it should be done before dispose
+    // or through a different mechanism that doesn't rely on ref
     super.dispose();
   }
 
@@ -371,10 +368,6 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               isExpanded: true,
               decoration: InputDecoration(
                 labelText: 'Centro',
-                prefixIcon: Icon(
-                  Icons.business,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,

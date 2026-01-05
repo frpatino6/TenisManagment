@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import '../../../../core/constants/timeouts.dart';
 
 /// Enhanced loading widget for analytics with specific indicators and better UX
 class AnalyticsLoadingWidget extends StatefulWidget {
@@ -38,17 +39,17 @@ class _AnalyticsLoadingWidgetState extends State<AnalyticsLoadingWidget>
     super.initState();
 
     _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: Timeouts.shimmerAnimation,
       vsync: this,
     );
 
     _rotationController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+      duration: Timeouts.metricAnimation,
       vsync: this,
     );
 
     _progressController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: Timeouts.chartAnimation,
       vsync: this,
     );
 
@@ -396,7 +397,7 @@ class _AnalyticsLoadingCompactState extends State<AnalyticsLoadingCompact>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: Timeouts.widgetAnimation,
       vsync: this,
     );
     _animation = Tween<double>(
@@ -478,7 +479,7 @@ class _AnalyticsSkeletonLoadingState extends State<AnalyticsSkeletonLoading>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: Timeouts.shimmerAnimation,
       vsync: this,
     );
     _animation = Tween<double>(

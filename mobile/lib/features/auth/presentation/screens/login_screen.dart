@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../../../core/constants/timeouts.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
@@ -37,7 +39,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final error = ref.watch(authErrorProvider);
 
     if (authState.isLoading) {
-      return const LoadingScreen(message: 'Verificando autenticación...');
+      return const LoadingScreen(message: AppStrings.verifyingAuth);
     }
 
     return Scaffold(
@@ -211,7 +213,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             TextButton(
               onPressed: () {
-                // TODO: Implementar recuperación de contraseña
+                // TODO: TEN-109 - Implementar recuperación de contraseña
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text(
@@ -350,7 +352,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await ref.read(tenantNotifierProvider.notifier).loadTenant();
 
         // Small delay to ensure state is updated
-        await Future.delayed(const Duration(milliseconds: 200));
+        await Future.delayed(Timeouts.animationMedium);
 
         // Read the state from authNotifierProvider (which is updated immediately)
         final authNotifierState = ref.read(authNotifierProvider);
@@ -388,7 +390,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await ref.read(tenantNotifierProvider.notifier).loadTenant();
 
         // Small delay to ensure state is updated
-        await Future.delayed(const Duration(milliseconds: 200));
+        await Future.delayed(Timeouts.animationMedium);
 
         // Read the state from authNotifierProvider (which is updated immediately)
         final authNotifierState = ref.read(authNotifierProvider);

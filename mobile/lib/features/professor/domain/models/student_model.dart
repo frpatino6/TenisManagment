@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../core/validation/model_validator.dart';
 
 enum MembershipType {
   basic,
@@ -15,7 +16,7 @@ class StudentModel extends Equatable {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  const StudentModel({
+  StudentModel({
     required this.id,
     required this.name,
     required this.email,
@@ -24,9 +25,21 @@ class StudentModel extends Equatable {
     required this.balance,
     this.createdAt,
     this.updatedAt,
-  });
+  }) {
+    // Validation in constructor
+    assert(id.isNotEmpty, 'Student id must not be empty');
+    assert(name.isNotEmpty, 'Student name must not be empty');
+    ModelValidator.validateEmail(email, 'email');
+    ModelValidator.validateNonNegative(balance, 'balance');
+  }
 
   factory StudentModel.fromJson(Map<String, dynamic> json) {
+    final balance = ModelValidator.parseDouble(
+      json['balance'],
+      'balance',
+      defaultValue: 0.0,
+    );
+    
     return StudentModel(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -36,7 +49,7 @@ class StudentModel extends Equatable {
         (e) => e.name == json['membershipType'],
         orElse: () => MembershipType.basic,
       ),
-      balance: (json['balance'] as num).toDouble(),
+      balance: balance,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : null,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/providers/tenant_provider.dart';
+import '../../../../core/constants/timeouts.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/services/tenant_service.dart' as tenant_domain;
 import '../../domain/models/tenant_model.dart';
@@ -144,14 +145,14 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
         await ref
             .read(preferencesNotifierProvider.notifier)
             .removeFavoriteTenant(tenant.id);
-        
+
         // Check if this was the active tenant
         final currentTenantId = ref.read(currentTenantIdProvider);
         if (currentTenantId == tenant.id) {
           // Clear the active tenant since it's no longer a favorite
           await ref.read(tenantNotifierProvider.notifier).clearTenant();
         }
-        
+
         // Invalidate to reload state
         ref.invalidate(preferencesNotifierProvider);
 
@@ -159,7 +160,7 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Centro ${tenant.name} eliminado de favoritos'),
-              duration: const Duration(seconds: 2),
+              duration: Timeouts.snackbarSuccess,
             ),
           );
         }
@@ -172,7 +173,9 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
         if (success) {
           // Update tenant state directly without going through loading state
           // This prevents router from redirecting to login/dashboard
-          ref.read(tenantNotifierProvider.notifier).updateTenantDirectly(tenant.id);
+          ref
+              .read(tenantNotifierProvider.notifier)
+              .updateTenantDirectly(tenant.id);
         }
 
         // Invalidate to reload favorites (this will update the heart icon)
@@ -182,7 +185,7 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Centro ${tenant.name} agregado a favoritos'),
-              duration: const Duration(seconds: 2),
+              duration: Timeouts.snackbarSuccess,
             ),
           );
         }
@@ -259,7 +262,7 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Ya tienes un centro seleccionado'),
-                    duration: Duration(seconds: 2),
+                    duration: Timeouts.snackbarSuccess,
                   ),
                 );
               },

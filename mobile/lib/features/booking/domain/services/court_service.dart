@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/services/http_client.dart';
+import '../../../../core/exceptions/exceptions.dart';
 import '../models/court_model.dart';
 
 /// Service for managing court bookings
@@ -13,17 +14,29 @@ class CourtService {
 
   CourtService(this._http);
 
-  /// Get list of available courts for the active tenant
+  /// Retrieves the list of available courts for the active tenant
+  ///
+  /// Returns a list of [CourtModel] containing court information
+  /// such as name, type, price per hour, and features.
+  ///
+  /// Throws [AuthException.notAuthenticated] if user is not authenticated
+  /// Throws [AuthException.tokenExpired] if authentication token is invalid
+  /// Throws [ValidationException] if tenant configuration is invalid
+  /// Throws [NetworkException] if the API request fails
+  ///
+  /// Returns an empty list if no courts are available
   Future<List<CourtModel>> getCourts() async {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        throw Exception('No se pudo obtener el token de autenticación');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
       }
 
       final response = await _http.get(
@@ -38,20 +51,36 @@ class CourtService {
         return items
             .map((item) => CourtModel.fromJson(item as Map<String, dynamic>))
             .toList();
-      } else if (response.statusCode == 400) {
+      } else if (response.statusCode == 400 || response.statusCode == 422) {
         final error = json.decode(response.body) as Map<String, dynamic>;
-        throw Exception(
+        throw ValidationException(
           error['error'] as String? ?? 'Error al obtener canchas',
+          code: 'VALIDATION_ERROR',
         );
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception('Error al obtener canchas: ${response.statusCode}');
+        throw NetworkException.serverError(
+          message: 'Error al obtener canchas',
+          statusCode: response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;
     }
   }
 
-  /// Get available time slots for a court on a specific date
+  /// Retrieves available time slots for a court on a specific date
+  ///
+  /// [courtId] The ID of the court
+  /// [date] The date to check availability for
+  ///
+  /// Returns a [Map] containing available time slots and booking information
+  ///
+  /// Throws [AuthException.notAuthenticated] if user is not authenticated
+  /// Throws [AuthException.tokenExpired] if authentication token is invalid
+  /// Throws [ValidationException] if court ID or date is invalid
+  /// Throws [NetworkException] if the API request fails
   Future<Map<String, dynamic>> getAvailableSlots({
     required String courtId,
     required DateTime date,
@@ -59,12 +88,14 @@ class CourtService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        throw Exception('No se pudo obtener el token de autenticación');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
       }
 
       final dateStr = date.toIso8601String().split('T')[0]; // YYYY-MM-DD format
@@ -85,12 +116,23 @@ class CourtService {
           final errorMessage =
               error['error'] as String? ??
               'Error al obtener horarios disponibles';
-          throw Exception(errorMessage);
+
+          if (response.statusCode == 400 || response.statusCode == 422) {
+            throw ValidationException(errorMessage, code: 'VALIDATION_ERROR');
+          } else if (response.statusCode == 401 || response.statusCode == 403) {
+            throw AuthException.tokenExpired();
+          } else {
+            throw NetworkException.serverError(
+              message: errorMessage,
+              statusCode: response.statusCode,
+            );
+          }
+        } on AppException {
+          rethrow;
         } catch (e) {
-          // If parsing fails, throw generic error
-          if (e is Exception) rethrow;
-          throw Exception(
-            'Error al obtener horarios disponibles: ${response.statusCode}',
+          throw NetworkException.serverError(
+            message: 'Error al obtener horarios disponibles',
+            statusCode: response.statusCode,
           );
         }
       }
@@ -99,7 +141,20 @@ class CourtService {
     }
   }
 
-  /// Book a court
+  /// Books a court for a specific time period
+  ///
+  /// [courtId] The ID of the court to book
+  /// [startTime] The start time of the booking
+  /// [endTime] The end time of the booking
+  /// [price] The total price for the booking
+  ///
+  /// Returns a [Map] containing the booking confirmation data including booking ID
+  ///
+  /// Throws [AuthException.notAuthenticated] if user is not authenticated
+  /// Throws [AuthException.tokenExpired] if authentication token is invalid
+  /// Throws [ValidationException] if booking data is invalid
+  /// Throws [DomainException.conflict] if the court is already booked for that time
+  /// Throws [NetworkException] if the API request fails
   Future<Map<String, dynamic>> bookCourt({
     required String courtId,
     required DateTime startTime,
@@ -109,12 +164,14 @@ class CourtService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        throw Exception('No se pudo obtener el token de autenticación');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
       }
 
       final response = await _http.post(
@@ -135,9 +192,21 @@ class CourtService {
         return json.decode(response.body) as Map<String, dynamic>;
       } else {
         final error = json.decode(response.body) as Map<String, dynamic>;
-        throw Exception(
-          error['error'] as String? ?? 'Error al reservar cancha',
-        );
+        final errorMessage =
+            error['error'] as String? ?? 'Error al reservar cancha';
+
+        if (response.statusCode == 400 || response.statusCode == 422) {
+          throw ValidationException(errorMessage, code: 'VALIDATION_ERROR');
+        } else if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else if (response.statusCode == 409) {
+          throw DomainException.conflict(message: errorMessage);
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;

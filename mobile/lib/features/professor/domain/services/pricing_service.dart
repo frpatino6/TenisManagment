@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import '../../../../core/config/app_config.dart';
+import '../../../../core/exceptions/exceptions.dart';
 
 class PricingConfig {
   final double individualClass;
@@ -48,7 +49,6 @@ class PricingResponse {
     final customPricingMap = json['customPricing'] as Map<String, dynamic>;
     final basePricingMap = json['basePricing'] as Map<String, dynamic>;
 
-
     final effectiveCustomPricing = customPricingMap.isEmpty
         ? basePricingMap
         : {
@@ -80,12 +80,14 @@ class PricingService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        throw Exception('No se pudo obtener el token de autenticación');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
       }
 
       final response = await http.get(
@@ -99,8 +101,13 @@ class PricingService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         return PricingResponse.fromJson(data);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception('Error al obtener precios: ${response.statusCode}');
+        throw NetworkException.serverError(
+          message: 'Error al obtener precios',
+          statusCode: response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;
@@ -116,12 +123,14 @@ class PricingService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        throw Exception('No se pudo obtener el token de autenticación');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
       }
 
       final body = <String, dynamic>{};
@@ -142,8 +151,20 @@ class PricingService {
         final data = json.decode(response.body) as Map<String, dynamic>;
         return PricingResponse.fromJson(data);
       } else {
-        final error = json.decode(response.body);
-        throw Exception(error['error'] ?? 'Error al actualizar precios');
+        final error = json.decode(response.body) as Map<String, dynamic>;
+        final errorMessage =
+            error['error'] as String? ?? 'Error al actualizar precios';
+
+        if (response.statusCode == 400 || response.statusCode == 422) {
+          throw ValidationException(errorMessage, code: 'VALIDATION_ERROR');
+        } else if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;
@@ -155,12 +176,14 @@ class PricingService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        throw Exception('No se pudo obtener el token de autenticación');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
       }
 
       final response = await http.delete(
@@ -174,8 +197,13 @@ class PricingService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         return PricingResponse.fromJson(data);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception('Error al restablecer precios: ${response.statusCode}');
+        throw NetworkException.serverError(
+          message: 'Error al restablecer precios',
+          statusCode: response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;

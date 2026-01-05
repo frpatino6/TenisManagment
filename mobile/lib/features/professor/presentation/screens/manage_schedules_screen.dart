@@ -60,13 +60,8 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
             return _buildEmptyState(context);
           }
 
-          final schedules = schedulesData
-              .map(
-                (data) => ProfessorScheduleModel.fromJson(
-                  data as Map<String, dynamic>,
-                ),
-              )
-              .toList();
+          // schedulesData is already List<ProfessorScheduleModel>
+          final schedules = schedulesData;
 
           final available = schedules
               .where((s) => s.isAvailable && !s.isBlocked)

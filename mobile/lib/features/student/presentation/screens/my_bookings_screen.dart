@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/widgets/loading_widget.dart';
+import '../../../../core/widgets/error_widget.dart';
+import '../../../../core/widgets/empty_state_widget.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../domain/models/booking_model.dart';
 import '../providers/student_provider.dart';
 
@@ -19,7 +23,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Mis Reservas',
+          AppStrings.myBookings,
           style: GoogleFonts.inter(fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
@@ -37,91 +41,29 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
           .when(
             data: (bookings) {
               if (bookings.isEmpty) {
-                return _buildEmptyState(context);
+                return EmptyStateWidget.booking(
+                  action: ElevatedButton.icon(
+                    onPressed: () => context.push('/book-class'),
+                    icon: const Icon(Icons.book_online),
+                    label: Text(AppStrings.bookClass),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
+                );
               }
               return _buildBookingsList(context, bookings);
             },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stack) =>
-                _buildErrorState(context, error.toString()),
+            loading: () => const LoadingWidget(),
+            error: (error, stack) => AppErrorWidget.fromError(
+              error,
+              onRetry: () => ref.invalidate(studentBookingsProvider),
+            ),
           ),
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.calendar_today_outlined,
-            size: 80,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const Gap(24),
-          Text(
-            'No tienes reservas',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const Gap(8),
-          Text(
-            'Reserva tu primera clase de tenis',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const Gap(32),
-          ElevatedButton.icon(
-            onPressed: () => context.push('/book-class'),
-            icon: const Icon(Icons.book_online),
-            label: const Text('Reservar Clase'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState(BuildContext context, String error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 80,
-            color: Theme.of(context).colorScheme.error,
-          ),
-          const Gap(24),
-          Text(
-            'Error al cargar reservas',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const Gap(8),
-          Text(
-            error,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const Gap(32),
-          ElevatedButton.icon(
-            onPressed: () => ref.invalidate(studentBookingsProvider),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Reintentar'),
-          ),
-        ],
-      ),
-    );
-  }
+  // Empty and error states are now handled by reusable widgets
 
   Widget _buildBookingsList(BuildContext context, List<BookingModel> bookings) {
     final upcomingBookings = bookings
@@ -518,7 +460,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
   }
 
   void _cancelBooking(BookingModel booking) {
-    // TODO: Implement cancel booking functionality
+    // TODO: TEN-110 - Implement cancel booking functionality
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Funcionalidad de cancelación en desarrollo'),

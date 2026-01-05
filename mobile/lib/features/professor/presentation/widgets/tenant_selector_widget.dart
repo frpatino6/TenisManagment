@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/providers/tenant_provider.dart';
+import '../../../../core/constants/timeouts.dart';
 import '../../../../features/tenant/domain/models/tenant_model.dart';
 import '../../../../features/tenant/domain/services/tenant_service.dart'
     as tenant_domain;
@@ -416,7 +417,7 @@ class TenantSelectorWidget extends ConsumerWidget {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text('Centro cambiado a ${tenant.name}'),
-                              duration: const Duration(seconds: 2),
+                              duration: Timeouts.snackbarSuccess,
                             ),
                           );
                         }
@@ -606,7 +607,7 @@ class TenantSelectorWidget extends ConsumerWidget {
               style: GoogleFonts.inter(),
             ),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
+            duration: Timeouts.snackbarError,
           ),
         );
       }
@@ -623,7 +624,7 @@ class TenantSelectorWidget extends ConsumerWidget {
               style: GoogleFonts.inter(),
             ),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
+            duration: Timeouts.snackbarError,
           ),
         );
       }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -37,7 +36,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   void initState() {
     super.initState();
-    // Prellenar campos para pruebas
     _nameController.text = '';
     _emailController.text = '';
     _phoneController.text = '';
@@ -51,7 +49,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     });
 
     try {
-      // Obtener tenants disponibles usando endpoint público (no requiere autenticación)
       final service = ref.read(tenant_domain.tenantDomainServiceProvider);
       final tenants = await service.getAvailableTenants();
 
@@ -62,12 +59,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     } catch (e) {
       setState(() {
         _loadingTenants = false;
-        _availableTenants = []; // Asegurar que esté vacío en caso de error
+        _availableTenants = [];
       });
-      // Mostrar error en consola para debugging
-      if (kDebugMode) {
-        print('Error cargando tenants: $e');
-      }
     }
   }
 
@@ -264,7 +257,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
         const Gap(16),
 
-        // Mostrar selector de tenant solo si es profesor
         if (_selectedRole == 'professor') ...[
           _buildTenantSelector(context),
           const Gap(16),
@@ -850,7 +842,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
 
-    // Validar que si es profesor, tenga centro seleccionado
     if (_selectedRole == 'professor' &&
         (_selectedTenantId == null || _selectedTenantId!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -879,9 +870,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (mounted) {
         context.go('/home');
       }
-    } catch (_) {
-      // Error handled by provider
-    }
+    } catch (_) {}
   }
 
   Future<void> _handleGoogleRegister() async {
@@ -891,8 +880,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (mounted) {
         context.go('/home');
       }
-    } catch (_) {
-      // Error handled by provider
-    }
+    } catch (_) {}
   }
 }

@@ -178,7 +178,6 @@ class TenantSelectorWidget extends ConsumerWidget {
                   );
                 }
 
-                // Highlight current tenant
                 final currentTenantModel = tenants.firstWhere(
                   (t) => t.id == currentTenantId,
                   orElse: () => tenants.first,
@@ -397,15 +396,11 @@ class TenantSelectorWidget extends ConsumerWidget {
                     ),
                     onTap: () async {
                       if (!isSelected) {
-                        // Change tenant and save as favorite without going through loading state
-                        // This prevents router redirection while still persisting the selection
                         await ref
                             .read(tenantNotifierProvider.notifier)
                             .setTenantWithoutLoading(tenant.id);
 
-                        // Invalidate all professor data to refresh with new tenant context
                         ref.invalidate(professorTenantsProvider);
-                        // Invalidate all professor providers to reload data for new tenant
                         ref.invalidate(professorInfoProvider);
                         ref.invalidate(professorStudentsProvider);
                         ref.invalidate(todayScheduleProvider);
@@ -417,7 +412,6 @@ class TenantSelectorWidget extends ConsumerWidget {
                           Navigator.of(dialogContext).pop();
                         }
 
-                        // Show success message
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -427,7 +421,6 @@ class TenantSelectorWidget extends ConsumerWidget {
                           );
                         }
                       } else {
-                        // Already selected, just close
                         if (dialogContext.mounted) {
                           Navigator.of(dialogContext).pop();
                         }

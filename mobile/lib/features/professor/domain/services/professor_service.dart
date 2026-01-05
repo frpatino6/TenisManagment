@@ -323,12 +323,6 @@ class ProfessorService {
     tenantId, // Optional tenantId - if not provided, backend will use first active tenant
   }) async {
     try {
-      print('📅 [ProfessorService] Creating schedule...');
-      print('📅 [ProfessorService] Date: ${date.toIso8601String()}');
-      print('📅 [ProfessorService] StartTime: ${startTime.toIso8601String()}');
-      print('📅 [ProfessorService] EndTime: ${endTime.toIso8601String()}');
-      print('📅 [ProfessorService] TenantId: $tenantId');
-
       final user = _firebaseAuth.currentUser;
       if (user == null) {
         throw Exception('Usuario no autenticado');
@@ -336,22 +330,15 @@ class ProfessorService {
 
       final idToken = await user.getIdToken(true);
 
-      // Build request body with optional tenantId
       final requestBody = <String, dynamic>{
         'date': date.toIso8601String(),
         'startTime': startTime.toIso8601String(),
         'endTime': endTime.toIso8601String(),
       };
 
-      // Add tenantId if provided
       if (tenantId != null && tenantId.isNotEmpty) {
         requestBody['tenantId'] = tenantId;
       }
-
-      print('📅 [ProfessorService] Request body: ${json.encode(requestBody)}');
-      print(
-        '📅 [ProfessorService] URL: $_baseUrl/professor-dashboard/schedules',
-      );
 
       final response = await http.post(
         Uri.parse('$_baseUrl/professor-dashboard/schedules'),
@@ -361,9 +348,6 @@ class ProfessorService {
         },
         body: json.encode(requestBody),
       );
-
-      print('📅 [ProfessorService] Response status: ${response.statusCode}');
-      print('📅 [ProfessorService] Response body: ${response.body}');
 
       if (response.statusCode == 201) {
         final responseData = json.decode(response.body) as Map<String, dynamic>;

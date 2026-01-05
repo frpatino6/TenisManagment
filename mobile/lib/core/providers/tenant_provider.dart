@@ -84,7 +84,6 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
       final tenantId = await service.loadTenant();
       state = AsyncValue.data(tenantId);
 
-      // Update the state provider
       if (tenantId != null && tenantId.isNotEmpty) {
         ref.read(currentTenantIdProvider.notifier).update(tenantId);
       } else {
@@ -104,7 +103,6 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
       final success = await service.setTenant(tenantId);
       if (success) {
         state = AsyncValue.data(tenantId);
-        // Update the state provider as well - ensure it's updated
         ref.read(currentTenantIdProvider.notifier).update(tenantId);
       } else {
         throw Exception('Failed to save tenant ID');
@@ -119,9 +117,7 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
   Future<void> clearTenant() async {
     state = const AsyncValue.loading();
     try {
-      // Only clear local state in Riverpod, service is stateless
       state = const AsyncValue.data(null);
-      // Update the state provider as well
       ref.read(currentTenantIdProvider.notifier).update(null);
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
@@ -152,9 +148,7 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
         state = AsyncValue.data(tenantId);
       }
     } catch (e) {
-      // If save fails, keep the local state but log the error
-      // The user can still use the tenant locally
-      print('Error saving tenant to backend: $e');
+      // If save fails, keep the local state
     }
   }
 }
@@ -177,7 +171,6 @@ final currentTenantProvider = FutureProvider.autoDispose<TenantModel?>((
 
   try {
     final service = ref.watch(tenant_domain.tenantDomainServiceProvider);
-    // Get all available tenants and find the one matching the current ID
     final tenants = await service.getAvailableTenants();
     return tenants.firstWhere(
       (tenant) => tenant.id == tenantId,

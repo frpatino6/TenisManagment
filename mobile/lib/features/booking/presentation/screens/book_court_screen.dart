@@ -35,14 +35,12 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   @override
   void initState() {
     super.initState();
-    // Get favorite tenant from tenantNotifierProvider (which has the backend value)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final tenantState = ref.read(tenantNotifierProvider);
       tenantState.when(
         data: (favoriteTenantId) {
           if (favoriteTenantId != null) {
             _originalTenantId = favoriteTenantId;
-            // Restore favorite tenant when entering the screen
             final currentTenantId = ref.read(currentTenantIdProvider);
             if (currentTenantId != favoriteTenantId) {
               ref
@@ -59,7 +57,6 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
 
   @override
   void dispose() {
-    // Restore original favorite tenant when leaving the screen
     if (_originalTenantId != null && mounted) {
       final currentTenantId = ref.read(currentTenantIdProvider);
       if (currentTenantId != _originalTenantId) {
@@ -75,7 +72,6 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     final tenantState = ref.watch(tenantNotifierProvider);
     final courtsAsync = ref.watch(courtsProvider);
 
-    // Wait for tenant state to load before showing error
     if (tenantState.isLoading) {
       return Scaffold(
         appBar: AppBar(
@@ -89,13 +85,10 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       );
     }
 
-    // Check if tenant state has error (e.g., tenant was cleared)
     if (tenantState.hasError) {
-      // If error, treat as no tenant
       return _buildNoTenantScreen(context);
     }
 
-    // Validate tenant first
     if (!hasTenant) {
       return _buildNoTenantScreen(context);
     }
@@ -277,7 +270,6 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Tenant dropdown selector
           tenantAsync.when(
             data: (currentTenant) {
               if (currentTenant == null) return const SizedBox.shrink();
@@ -287,7 +279,6 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             error: (error, stackTrace) => const SizedBox.shrink(),
           ),
 
-          // Court selection
           Text(
             'Selecciona una cancha',
             style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600),

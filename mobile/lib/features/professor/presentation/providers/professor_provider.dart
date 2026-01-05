@@ -54,11 +54,8 @@ final earningsStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
 final professorSchedulesProvider = FutureProvider.autoDispose<List<dynamic>>((
   ref,
 ) async {
-  // Watch currentTenantIdProvider to invalidate when tenant changes
-  // This ensures schedules are reloaded when tenant changes
   ref.watch(currentTenantIdProvider);
   
-  // Use AppHttpClient to automatically add X-Tenant-ID header
   final httpClient = ref.read(appHttpClientProvider);
   final firebaseUser = FirebaseAuth.instance.currentUser;
   
@@ -159,7 +156,6 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
 
     try {
       final service = ref.read(professorServiceProvider);
-      // Get current tenantId if available
       final tenantId = ref.read(currentTenantIdProvider);
       
       final result = await service.createSchedule(

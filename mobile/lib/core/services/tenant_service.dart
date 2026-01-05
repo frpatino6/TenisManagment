@@ -66,10 +66,8 @@ class TenantService {
         }
       }
 
-      // Both endpoints returned 404 or error
       return null;
     } catch (e) {
-      // On error, return null (no tenant configured)
       return null;
     }
   }

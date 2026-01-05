@@ -439,22 +439,25 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                 }
 
                 try {
-                  // Change tenant
-                  await ref
-                      .read(tenantNotifierProvider.notifier)
-                      .setTenant(newTenantId);
+                  final service = ref.read(tenantServiceProvider);
+                  final success = await service.setTenant(newTenantId);
 
-                  // Reset selection
+                  if (!success) {
+                    throw Exception('No se pudo cambiar el centro');
+                  }
+
+                  ref
+                      .read(currentTenantIdProvider.notifier)
+                      .update(newTenantId);
+
                   if (mounted) {
                     setState(() {
                       _selectedCourt = null;
                       _selectedDate = null;
                       _selectedTime = null;
                     });
+                    ref.invalidate(courtsProvider);
                   }
-
-                  // Invalidate courts provider to reload data with new tenant
-                  ref.invalidate(courtsProvider);
 
                   if (mounted && context.mounted) {
                     final selectedTenant = tenants.firstWhere(
@@ -477,6 +480,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                           'Error al cambiar centro: ${e.toString()}',
                         ),
                         backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 3),
                       ),
                     );
                   }

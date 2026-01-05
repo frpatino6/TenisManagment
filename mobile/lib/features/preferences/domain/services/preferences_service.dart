@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/services/http_client.dart';
+import '../../../../core/exceptions/exceptions.dart';
 import '../models/user_preferences_model.dart';
 
 /// Service for managing user preferences (favorites)
@@ -19,27 +20,37 @@ class PreferencesService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        throw Exception('No se pudo obtener el token de autenticación');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
       }
 
       final response = await _http.get(
         Uri.parse('$_baseUrl/student-dashboard/preferences'),
-        headers: {
-          'Authorization': 'Bearer $idToken',
-        },
+        headers: {'Authorization': 'Bearer $idToken'},
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         return UserPreferencesModel.fromJson(data);
       } else {
-        final error = json.decode(response.body);
-        throw Exception(error['error'] ?? 'Error al obtener preferencias');
+        final error = json.decode(response.body) as Map<String, dynamic>;
+        final errorMessage =
+            error['error'] as String? ?? 'Error al obtener preferencias';
+
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;
@@ -52,12 +63,14 @@ class PreferencesService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        throw Exception('No se pudo obtener el token de autenticación');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
       }
 
       final response = await _http.post(
@@ -70,8 +83,20 @@ class PreferencesService {
       );
 
       if (response.statusCode != 200 && response.statusCode != 201) {
-        final error = json.decode(response.body);
-        throw Exception(error['error'] ?? 'Error al agregar profesor favorito');
+        final error = json.decode(response.body) as Map<String, dynamic>;
+        final errorMessage =
+            error['error'] as String? ?? 'Error al agregar profesor favorito';
+
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else if (response.statusCode == 404) {
+          throw DomainException.notFound(resource: 'Profesor');
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;
@@ -84,24 +109,38 @@ class PreferencesService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        throw Exception('No se pudo obtener el token de autenticación');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
       }
 
       final response = await _http.delete(
-        Uri.parse('$_baseUrl/student-dashboard/preferences/favorite-professor/$professorId'),
-        headers: {
-          'Authorization': 'Bearer $idToken',
-        },
+        Uri.parse(
+          '$_baseUrl/student-dashboard/preferences/favorite-professor/$professorId',
+        ),
+        headers: {'Authorization': 'Bearer $idToken'},
       );
 
       if (response.statusCode != 200 && response.statusCode != 204) {
-        final error = json.decode(response.body);
-        throw Exception(error['error'] ?? 'Error al eliminar profesor favorito');
+        final error = json.decode(response.body) as Map<String, dynamic>;
+        final errorMessage =
+            error['error'] as String? ?? 'Error al eliminar profesor favorito';
+
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else if (response.statusCode == 404) {
+          throw DomainException.notFound(resource: 'Profesor favorito');
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;
@@ -114,12 +153,14 @@ class PreferencesService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        throw Exception('No se pudo obtener el token de autenticación');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
       }
 
       final response = await _http.post(
@@ -132,8 +173,20 @@ class PreferencesService {
       );
 
       if (response.statusCode != 200 && response.statusCode != 201) {
-        final error = json.decode(response.body);
-        throw Exception(error['error'] ?? 'Error al agregar centro favorito');
+        final error = json.decode(response.body) as Map<String, dynamic>;
+        final errorMessage =
+            error['error'] as String? ?? 'Error al agregar centro favorito';
+
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else if (response.statusCode == 404) {
+          throw TenantException.notFound();
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;
@@ -146,24 +199,38 @@ class PreferencesService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        throw Exception('No se pudo obtener el token de autenticación');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
       }
 
       final response = await _http.delete(
-        Uri.parse('$_baseUrl/student-dashboard/preferences/favorite-tenant/$tenantId'),
-        headers: {
-          'Authorization': 'Bearer $idToken',
-        },
+        Uri.parse(
+          '$_baseUrl/student-dashboard/preferences/favorite-tenant/$tenantId',
+        ),
+        headers: {'Authorization': 'Bearer $idToken'},
       );
 
       if (response.statusCode != 200 && response.statusCode != 204) {
-        final error = json.decode(response.body);
-        throw Exception(error['error'] ?? 'Error al eliminar centro favorito');
+        final error = json.decode(response.body) as Map<String, dynamic>;
+        final errorMessage =
+            error['error'] as String? ?? 'Error al eliminar centro favorito';
+
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else if (response.statusCode == 404) {
+          throw TenantException.notFound();
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;
@@ -195,4 +262,3 @@ class PreferencesService {
 final preferencesServiceProvider = Provider<PreferencesService>((ref) {
   return PreferencesService(ref.watch(appHttpClientProvider));
 });
-

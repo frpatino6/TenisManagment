@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import '../constants/timeouts.dart';
 
 // Import condicional - Flutter usará el archivo correcto según la plataforma
 import '../utils/web_utils_stub.dart'
@@ -66,10 +67,10 @@ class UpdateRequiredDialog extends StatelessWidget {
             onPressed: () async {
               // Cerrar el diálogo primero
               Navigator.of(context).pop();
-              
+
               // Pequeño delay para que el diálogo se cierre antes de la acción
-              await Future.delayed(const Duration(milliseconds: 300));
-              
+              await Future.delayed(Timeouts.animationLong);
+
               if (kIsWeb) {
                 WebUtils.reloadPage();
               } else {

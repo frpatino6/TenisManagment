@@ -3,26 +3,22 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/config/app_config.dart';
+import '../../../../core/exceptions/exceptions.dart';
+import '../../../../core/logging/logger.dart';
 import '../models/professor_model.dart';
 import '../models/student_summary_model.dart';
 import '../models/class_schedule_model.dart';
 
-/// Exception thrown when there's a schedule conflict (same time in different center)
-class ScheduleConflictException implements Exception {
-  final String message;
-  final String? conflictingTenantId;
-  final String? conflictingTenantName;
-  final List<dynamic>? warnings;
-
+/// Legacy exception - kept for backward compatibility
+/// Use [ScheduleException] instead
+@Deprecated('Use ScheduleException.conflict() instead')
+class ScheduleConflictException extends ScheduleException {
   ScheduleConflictException(
-    this.message, {
-    this.conflictingTenantId,
-    this.conflictingTenantName,
-    this.warnings,
-  });
-
-  @override
-  String toString() => message;
+    super.message, {
+    super.conflictingTenantId,
+    super.conflictingTenantName,
+    super.warnings,
+  }) : super(code: 'SCHEDULE_CONFLICT');
 }
 
 /// Service responsible for professor-related operations
@@ -32,6 +28,7 @@ class ProfessorService {
   String get _baseUrl => AppConfig.apiBaseUrl;
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final _logger = AppLogger.tag('ProfessorService');
 
   /// Retrieves professor information and dashboard data
   /// Returns [ProfessorModel] with complete professor details
@@ -40,7 +37,7 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true); // Force refresh
@@ -57,10 +54,19 @@ class ProfessorService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
+        _logger.debug('Información del profesor obtenida exitosamente');
         return ProfessorModel.fromJson(data);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        _logger.warning('Error de autenticación al obtener información', {
+          'statusCode': response.statusCode,
+        });
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw DomainException.notFound(resource: 'Profesor');
       } else {
-        throw Exception(
-          'Error al obtener información del profesor: ${response.statusCode}',
+        throw NetworkException.serverError(
+          message: 'Error al obtener información del profesor',
+          statusCode: response.statusCode,
         );
       }
     } catch (e) {
@@ -72,7 +78,7 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true); // Force refresh
@@ -90,8 +96,13 @@ class ProfessorService {
         return studentsJson
             .map((json) => StudentSummaryModel.fromJson(json))
             .toList();
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception('Error al obtener estudiantes: ${response.statusCode}');
+        throw NetworkException.serverError(
+          message: 'Error al obtener estudiantes',
+          statusCode: response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;
@@ -102,7 +113,7 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true); // Force refresh
@@ -120,8 +131,13 @@ class ProfessorService {
         return classesJson
             .map((json) => ClassScheduleModel.fromJson(json))
             .toList();
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception('Error al obtener horarios: ${response.statusCode}');
+        throw NetworkException.serverError(
+          message: 'Error al obtener horarios',
+          statusCode: response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;
@@ -132,7 +148,7 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -157,8 +173,13 @@ class ProfessorService {
         return classesJson
             .map((json) => ClassScheduleModel.fromJson(json))
             .toList();
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception('Error al obtener horarios: ${response.statusCode}');
+        throw NetworkException.serverError(
+          message: 'Error al obtener horarios',
+          statusCode: response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;
@@ -169,7 +190,7 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true); // Force refresh
@@ -201,7 +222,7 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true); // Force refresh
@@ -215,9 +236,12 @@ class ProfessorService {
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception(
-          'Error al obtener estadísticas de ganancias: ${response.statusCode}',
+        throw NetworkException.serverError(
+          message: 'Error al obtener estadísticas de ganancias',
+          statusCode: response.statusCode,
         );
       }
     } catch (e) {
@@ -235,7 +259,7 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true); // Force refresh
@@ -257,8 +281,18 @@ class ProfessorService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         return ProfessorModel.fromJson(data);
+      } else if (response.statusCode == 400 || response.statusCode == 422) {
+        throw ValidationException(
+          'Error de validación al actualizar perfil',
+          code: 'VALIDATION_ERROR',
+        );
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception('Error al actualizar perfil: ${response.statusCode}');
+        throw NetworkException.serverError(
+          message: 'Error al actualizar perfil',
+          statusCode: response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;
@@ -269,7 +303,7 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true); // Force refresh
@@ -282,7 +316,16 @@ class ProfessorService {
       );
 
       if (response.statusCode != 200) {
-        throw Exception('Error al confirmar clase: ${response.statusCode}');
+        if (response.statusCode == 404) {
+          throw ScheduleException.notFound();
+        } else if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else {
+          throw NetworkException.serverError(
+            message: 'Error al confirmar clase',
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;
@@ -293,7 +336,7 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true); // Force refresh
@@ -307,7 +350,16 @@ class ProfessorService {
       );
 
       if (response.statusCode != 200) {
-        throw Exception('Error al cancelar clase: ${response.statusCode}');
+        if (response.statusCode == 404) {
+          throw ScheduleException.notFound();
+        } else if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else {
+          throw NetworkException.serverError(
+            message: 'Error al cancelar clase',
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;
@@ -322,10 +374,16 @@ class ProfessorService {
     String?
     tenantId, // Optional tenantId - if not provided, backend will use first active tenant
   }) async {
+    _logger.info('Creando horario', {
+      'date': date.toIso8601String(),
+      'startTime': startTime.toIso8601String(),
+      'endTime': endTime.toIso8601String(),
+      'tenantId': tenantId,
+    });
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -350,17 +408,25 @@ class ProfessorService {
       );
 
       if (response.statusCode == 201) {
+        _logger.info('Horario creado exitosamente');
         final responseData = json.decode(response.body) as Map<String, dynamic>;
         return responseData;
       } else if (response.statusCode == 409) {
+        _logger.warning('Conflicto de horarios detectado', {
+          'statusCode': response.statusCode,
+        });
         // Conflict error - same time in different center
         final errorBody = json.decode(response.body) as Map<String, dynamic>;
         final error = errorBody['error'] as String?;
         final message = errorBody['message'] as String?;
 
         if (error == 'CONFLICT_SAME_TIME') {
-          throw ScheduleConflictException(
-            message ?? 'Ya tienes un horario a esta hora en otro centro',
+          _logger.warning('Conflicto de horarios detectado', {
+            'conflictingTenantId': errorBody['conflictingTenantId'],
+          });
+          throw ScheduleException.conflict(
+            message:
+                message ?? 'Ya tienes un horario a esta hora en otro centro',
             conflictingTenantId: errorBody['conflictingTenantId'] as String?,
             conflictingTenantName:
                 errorBody['conflictingTenantName'] as String?,
@@ -368,8 +434,8 @@ class ProfessorService {
           );
         }
 
-        throw Exception(
-          message ?? 'Error al crear horario: conflicto de horarios',
+        throw ScheduleException.conflict(
+          message: message ?? 'Error al crear horario: conflicto de horarios',
         );
       } else {
         final errorBody = json.decode(response.body) as Map<String, dynamic>?;
@@ -377,7 +443,15 @@ class ProfessorService {
             errorBody?['error'] as String? ??
             errorBody?['message'] as String? ??
             'Error al crear horario: ${response.statusCode}';
-        throw Exception(errorMessage);
+
+        if (response.statusCode >= 400 && response.statusCode < 500) {
+          throw ValidationException(errorMessage, code: 'VALIDATION_ERROR');
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;
@@ -389,7 +463,7 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -407,8 +481,13 @@ class ProfessorService {
         final items = data['items'] as List<dynamic>;
 
         return items;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception('Error al obtener horarios: ${response.statusCode}');
+        throw NetworkException.serverError(
+          message: 'Error al obtener horarios',
+          statusCode: response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;
@@ -420,7 +499,7 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -434,8 +513,20 @@ class ProfessorService {
       );
 
       if (response.statusCode != 200) {
-        final error = json.decode(response.body);
-        throw Exception(error['error'] ?? 'Error al eliminar horario');
+        final error = json.decode(response.body) as Map<String, dynamic>;
+        final errorMessage =
+            error['error'] as String? ?? 'Error al eliminar horario';
+
+        if (response.statusCode == 404) {
+          throw ScheduleException.notFound();
+        } else if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;
@@ -447,7 +538,7 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -462,8 +553,20 @@ class ProfessorService {
       );
 
       if (response.statusCode != 200) {
-        final error = json.decode(response.body);
-        throw Exception(error['error'] ?? 'Error al bloquear horario');
+        final error = json.decode(response.body) as Map<String, dynamic>;
+        final errorMessage =
+            error['error'] as String? ?? 'Error al bloquear horario';
+
+        if (response.statusCode == 404) {
+          throw ScheduleException.notFound();
+        } else if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;
@@ -475,7 +578,7 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -491,8 +594,20 @@ class ProfessorService {
       );
 
       if (response.statusCode != 200) {
-        final error = json.decode(response.body);
-        throw Exception(error['error'] ?? 'Error al desbloquear horario');
+        final error = json.decode(response.body) as Map<String, dynamic>;
+        final errorMessage =
+            error['error'] as String? ?? 'Error al desbloquear horario';
+
+        if (response.statusCode == 404) {
+          throw ScheduleException.notFound();
+        } else if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;
@@ -504,7 +619,7 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -521,8 +636,20 @@ class ProfessorService {
       );
 
       if (response.statusCode != 200) {
-        final error = json.decode(response.body);
-        throw Exception(error['error'] ?? 'Error al completar clase');
+        final error = json.decode(response.body) as Map<String, dynamic>;
+        final errorMessage =
+            error['error'] as String? ?? 'Error al completar clase';
+
+        if (response.statusCode == 404) {
+          throw ScheduleException.notFound();
+        } else if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;
@@ -538,7 +665,7 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -555,8 +682,20 @@ class ProfessorService {
       );
 
       if (response.statusCode != 200) {
-        final error = json.decode(response.body);
-        throw Exception(error['error'] ?? 'Error al cancelar reserva');
+        final error = json.decode(response.body) as Map<String, dynamic>;
+        final errorMessage =
+            error['error'] as String? ?? 'Error al cancelar reserva';
+
+        if (response.statusCode == 404) {
+          throw ScheduleException.notFound();
+        } else if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;
@@ -570,7 +709,7 @@ class ProfessorService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -591,7 +730,21 @@ class ProfessorService {
         final errorMessage =
             errorBody?['error'] as String? ??
             'Error al unirse al centro: ${response.statusCode}';
-        throw Exception(errorMessage);
+
+        if (response.statusCode == 404) {
+          throw TenantException.notFound();
+        } else if (response.statusCode == 409) {
+          throw TenantException.alreadyJoined(
+            tenantName: errorBody?['tenantName'] as String?,
+          );
+        } else if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;

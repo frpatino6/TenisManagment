@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/config/app_config.dart';
+import '../../../../core/constants/timeouts.dart';
+import '../../../../core/exceptions/exceptions.dart';
 import '../models/analytics_overview.dart';
 import '../models/analytics_chart_data.dart';
 import '../models/analytics_error.dart';
@@ -31,7 +33,6 @@ class AnalyticsService {
 
       final idToken = await user.getIdToken(true);
 
-
       final queryParams = <String, String>{'period': period};
       if (serviceType != null) queryParams['serviceType'] = serviceType;
       if (status != null) queryParams['status'] = status;
@@ -48,7 +49,7 @@ class AnalyticsService {
               'Authorization': 'Bearer $idToken',
             },
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(Timeouts.httpRequestLong);
 
       if (response.statusCode == 200) {
         try {
@@ -102,7 +103,7 @@ class AnalyticsService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -122,13 +123,20 @@ class AnalyticsService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         return AnalyticsChartData.fromJson(data);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception(
-          'Error al cargar datos de ingresos: ${response.statusCode}',
+        throw NetworkException.serverError(
+          message: 'Error al cargar datos de ingresos',
+          statusCode: response.statusCode,
         );
       }
+    } on AppException {
+      rethrow;
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      throw NetworkException.serverError(
+        message: 'Error de conexión: ${e.toString()}',
+      );
     }
   }
 
@@ -138,7 +146,7 @@ class AnalyticsService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -158,13 +166,20 @@ class AnalyticsService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         return AnalyticsChartData.fromJson(data);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception(
-          'Error al cargar datos de clases: ${response.statusCode}',
+        throw NetworkException.serverError(
+          message: 'Error al cargar datos de clases',
+          statusCode: response.statusCode,
         );
       }
+    } on AppException {
+      rethrow;
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      throw NetworkException.serverError(
+        message: 'Error de conexión: ${e.toString()}',
+      );
     }
   }
 
@@ -174,7 +189,7 @@ class AnalyticsService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -194,13 +209,20 @@ class AnalyticsService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         return AnalyticsChartData.fromJson(data);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception(
-          'Error al cargar datos de estudiantes: ${response.statusCode}',
+        throw NetworkException.serverError(
+          message: 'Error al cargar datos de estudiantes',
+          statusCode: response.statusCode,
         );
       }
+    } on AppException {
+      rethrow;
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      throw NetworkException.serverError(
+        message: 'Error de conexión: ${e.toString()}',
+      );
     }
   }
 
@@ -214,7 +236,7 @@ class AnalyticsService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -237,13 +259,20 @@ class AnalyticsService {
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception(
-          'Error al cargar desglose de ingresos: ${response.statusCode}',
+        throw NetworkException.serverError(
+          message: 'Error al cargar desglose de ingresos',
+          statusCode: response.statusCode,
         );
       }
+    } on AppException {
+      rethrow;
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      throw NetworkException.serverError(
+        message: 'Error de conexión: ${e.toString()}',
+      );
     }
   }
 
@@ -257,7 +286,7 @@ class AnalyticsService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -280,13 +309,20 @@ class AnalyticsService {
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception(
-          'Error al cargar desglose de clases: ${response.statusCode}',
+        throw NetworkException.serverError(
+          message: 'Error al cargar desglose de clases',
+          statusCode: response.statusCode,
         );
       }
+    } on AppException {
+      rethrow;
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      throw NetworkException.serverError(
+        message: 'Error de conexión: ${e.toString()}',
+      );
     }
   }
 
@@ -300,7 +336,7 @@ class AnalyticsService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -323,13 +359,20 @@ class AnalyticsService {
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception(
-          'Error al cargar tendencia de ingresos: ${response.statusCode}',
+        throw NetworkException.serverError(
+          message: 'Error al cargar tendencia de ingresos',
+          statusCode: response.statusCode,
         );
       }
+    } on AppException {
+      rethrow;
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      throw NetworkException.serverError(
+        message: 'Error de conexión: ${e.toString()}',
+      );
     }
   }
 
@@ -343,7 +386,7 @@ class AnalyticsService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -366,13 +409,20 @@ class AnalyticsService {
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception(
-          'Error al cargar tendencia de clases: ${response.statusCode}',
+        throw NetworkException.serverError(
+          message: 'Error al cargar tendencia de clases',
+          statusCode: response.statusCode,
         );
       }
+    } on AppException {
+      rethrow;
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      throw NetworkException.serverError(
+        message: 'Error de conexión: ${e.toString()}',
+      );
     }
   }
 
@@ -386,7 +436,7 @@ class AnalyticsService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -409,13 +459,20 @@ class AnalyticsService {
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception(
-          'Error al cargar desglose de estudiantes: ${response.statusCode}',
+        throw NetworkException.serverError(
+          message: 'Error al cargar desglose de estudiantes',
+          statusCode: response.statusCode,
         );
       }
+    } on AppException {
+      rethrow;
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      throw NetworkException.serverError(
+        message: 'Error de conexión: ${e.toString()}',
+      );
     }
   }
 
@@ -429,7 +486,7 @@ class AnalyticsService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
@@ -452,13 +509,20 @@ class AnalyticsService {
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception(
-          'Error al cargar tendencia de estudiantes: ${response.statusCode}',
+        throw NetworkException.serverError(
+          message: 'Error al cargar tendencia de estudiantes',
+          statusCode: response.statusCode,
         );
       }
+    } on AppException {
+      rethrow;
     } catch (e) {
-      throw Exception('Error de conexión: $e');
+      throw NetworkException.serverError(
+        message: 'Error de conexión: ${e.toString()}',
+      );
     }
   }
 
@@ -470,7 +534,7 @@ class AnalyticsService {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);

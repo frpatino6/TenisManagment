@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
+import '../../../../core/constants/timeouts.dart';
 import '../../data/providers/students_provider.dart';
 import '../widgets/student_card.dart';
 
@@ -80,9 +81,9 @@ class _StudentsListScreenState extends ConsumerState<StudentsListScreen> {
               ),
               onChanged: (value) {
                 _debounceTimer?.cancel();
-                _debounceTimer = Timer(const Duration(milliseconds: 400), () {
-                setState(() {
-                  _searchQuery = value;
+                _debounceTimer = Timer(Timeouts.debounceSearch, () {
+                  setState(() {
+                    _searchQuery = value;
                   });
                 });
               },

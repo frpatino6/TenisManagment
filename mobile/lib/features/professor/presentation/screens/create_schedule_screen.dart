@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/exceptions/exceptions.dart';
+import '../../../../core/constants/timeouts.dart';
 import '../providers/professor_provider.dart';
-import '../../domain/services/professor_service.dart';
 
 class CreateScheduleScreen extends ConsumerStatefulWidget {
   const CreateScheduleScreen({super.key});
@@ -681,7 +682,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
               endTime: slot['end']!,
             );
             createdCount++;
-          } on ScheduleConflictException catch (e) {
+          } on ScheduleException catch (e) {
             conflicts.add(e.message);
           } catch (e) {
             conflicts.add('Error al crear horario: ${e.toString()}');
@@ -736,7 +737,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                 style: GoogleFonts.inter(),
               ),
               backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 5),
+              duration: Timeouts.snackbarError,
             ),
           );
         } else {
@@ -839,7 +840,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
               ),
             );
           }
-        } on ScheduleConflictException catch (e) {
+        } on ScheduleException catch (e) {
           if (!mounted) return;
 
           await showDialog(

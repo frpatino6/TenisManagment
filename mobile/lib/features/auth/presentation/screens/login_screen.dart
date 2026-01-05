@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../../../../core/constants/timeouts.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
@@ -350,7 +351,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await ref.read(tenantNotifierProvider.notifier).loadTenant();
 
         // Small delay to ensure state is updated
-        await Future.delayed(const Duration(milliseconds: 200));
+        await Future.delayed(Timeouts.animationMedium);
 
         // Read the state from authNotifierProvider (which is updated immediately)
         final authNotifierState = ref.read(authNotifierProvider);
@@ -388,7 +389,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await ref.read(tenantNotifierProvider.notifier).loadTenant();
 
         // Small delay to ensure state is updated
-        await Future.delayed(const Duration(milliseconds: 200));
+        await Future.delayed(Timeouts.animationMedium);
 
         // Read the state from authNotifierProvider (which is updated immediately)
         final authNotifierState = ref.read(authNotifierProvider);

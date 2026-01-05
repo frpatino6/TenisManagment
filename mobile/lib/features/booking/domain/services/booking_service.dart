@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/services/http_client.dart';
+import '../../../../core/exceptions/exceptions.dart';
 import '../models/professor_model.dart';
 import '../models/available_schedule_model.dart';
 
@@ -17,19 +18,19 @@ class BookingService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        throw Exception('No se pudo obtener el token de autenticación');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
       }
 
       final response = await _http.get(
         Uri.parse('$_baseUrl/student-dashboard/professors'),
-        headers: {
-          'Authorization': 'Bearer $idToken',
-        },
+        headers: {'Authorization': 'Bearer $idToken'},
       );
 
       if (response.statusCode == 200) {
@@ -42,8 +43,13 @@ class BookingService {
                   ProfessorBookingModel.fromJson(item as Map<String, dynamic>),
             )
             .toList();
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
       } else {
-        throw Exception('Error al obtener profesores: ${response.statusCode}');
+        throw NetworkException.serverError(
+          message: 'Error al obtener profesores',
+          statusCode: response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;
@@ -57,21 +63,21 @@ class BookingService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        throw Exception('No se pudo obtener el token de autenticación');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
       }
 
       final response = await _http.get(
         Uri.parse(
           '$_baseUrl/student-dashboard/available-schedules?professorId=$professorId',
         ),
-        headers: {
-          'Authorization': 'Bearer $idToken',
-        },
+        headers: {'Authorization': 'Bearer $idToken'},
       );
 
       if (response.statusCode == 200) {
@@ -84,9 +90,14 @@ class BookingService {
                   AvailableScheduleModel.fromJson(item as Map<String, dynamic>),
             )
             .toList();
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw DomainException.notFound(resource: 'Profesor', id: professorId);
       } else {
-        throw Exception(
-          'Error al obtener horarios disponibles: ${response.statusCode}',
+        throw NetworkException.serverError(
+          message: 'Error al obtener horarios disponibles',
+          statusCode: response.statusCode,
         );
       }
     } catch (e) {
@@ -103,12 +114,14 @@ class BookingService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        throw Exception('Usuario no autenticado');
+        throw AuthException.notAuthenticated();
       }
 
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
-        throw Exception('No se pudo obtener el token de autenticación');
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
       }
 
       final response = await _http.post(
@@ -127,8 +140,24 @@ class BookingService {
       if (response.statusCode == 201) {
         return json.decode(response.body) as Map<String, dynamic>;
       } else {
-        final error = json.decode(response.body);
-        throw Exception(error['error'] ?? 'Error al reservar clase');
+        final error = json.decode(response.body) as Map<String, dynamic>;
+        final errorMessage =
+            error['error'] as String? ?? 'Error al reservar clase';
+
+        if (response.statusCode == 400 || response.statusCode == 422) {
+          throw ValidationException(errorMessage, code: 'VALIDATION_ERROR');
+        } else if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else if (response.statusCode == 404) {
+          throw ScheduleException.notFound();
+        } else if (response.statusCode == 409) {
+          throw ScheduleException.conflict(message: errorMessage);
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
       }
     } catch (e) {
       rethrow;

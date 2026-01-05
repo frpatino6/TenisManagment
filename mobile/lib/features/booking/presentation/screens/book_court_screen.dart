@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/constants/timeouts.dart';
 import '../../domain/models/court_model.dart';
 import '../../domain/services/court_service.dart';
 import '../providers/booking_provider.dart';
@@ -490,7 +491,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                         content: Text(
                           'Centro cambiado a ${selectedTenant.name}',
                         ),
-                        duration: const Duration(seconds: 2),
+                        duration: Timeouts.snackbarSuccess,
                       ),
                     );
                   }
@@ -502,7 +503,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                           'Error al cambiar centro: ${e.toString()}',
                         ),
                         backgroundColor: Colors.red,
-                        duration: const Duration(seconds: 3),
+                        duration: Timeouts.snackbarError,
                       ),
                     );
                   }
@@ -1135,7 +1136,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               style: GoogleFonts.inter(),
             ),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
+            duration: Timeouts.snackbarSuccess,
           ),
         );
 
@@ -1147,7 +1148,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         });
 
         // Navigate back after a short delay
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(Timeouts.animationExtraLong);
         if (mounted) {
           context.pop();
         }
@@ -1161,7 +1162,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               style: GoogleFonts.inter(),
             ),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
+            duration: Timeouts.snackbarError,
           ),
         );
       }

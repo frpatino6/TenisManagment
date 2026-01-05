@@ -770,11 +770,6 @@ export class ProfessorDashboardController {
    * Get all schedules for the professor
    */
   getMySchedules = async (req: Request, res: Response) => {
-    console.log('');
-    console.log('========================================');
-    console.log('=== GET MY SCHEDULES CALLED ===');
-    console.log('========================================');
-    console.log('');
     
     try {
       const firebaseUid = req.user?.uid;
@@ -796,12 +791,20 @@ export class ProfessorDashboardController {
       }
 
       // Get all schedules for the professor - only future schedules
+      // Filter by tenantId if provided (from X-Tenant-ID header)
       const now = new Date();
       
-      const schedules = await ScheduleModel.find({
+      const query: any = {
         professorId: professor._id,
         startTime: { $gte: now } // Only future schedules
-      })
+      };
+
+      // Filter by tenantId if provided in header
+      if (req.tenantId) {
+        query.tenantId = new Types.ObjectId(req.tenantId);
+      }
+      
+      const schedules = await ScheduleModel.find(query)
         .populate('studentId', 'name email')
         .populate('tenantId', 'name slug')
         .sort({ startTime: 1 })

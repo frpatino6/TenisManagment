@@ -1,12 +1,15 @@
 import { Router } from 'express';
 import { ProfessorDashboardController } from '../../application/controllers/ProfessorDashboardController';
 import { firebaseAuthMiddleware } from '../../application/middleware/firebaseAuth';
+import { extractTenantId } from '../../application/middleware/tenant';
 
 const router = Router();
 const professorDashboardController = new ProfessorDashboardController();
 
 // Aplicar middleware de autenticación a todas las rutas
 router.use(firebaseAuthMiddleware);
+// Extract tenant ID from X-Tenant-ID header
+router.use(extractTenantId);
 
 // Obtener información del profesor
 router.get('/me', professorDashboardController.getProfessorInfo);

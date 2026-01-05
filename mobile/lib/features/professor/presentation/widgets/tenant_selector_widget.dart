@@ -397,11 +397,11 @@ class TenantSelectorWidget extends ConsumerWidget {
                     ),
                     onTap: () async {
                       if (!isSelected) {
-                        // Change tenant locally without saving as favorite
-                        // This prevents router redirection to select-tenant screen
-                        ref
+                        // Change tenant and save as favorite without going through loading state
+                        // This prevents router redirection while still persisting the selection
+                        await ref
                             .read(tenantNotifierProvider.notifier)
-                            .updateTenantDirectly(tenant.id);
+                            .setTenantWithoutLoading(tenant.id);
 
                         // Invalidate all professor data to refresh with new tenant context
                         ref.invalidate(professorTenantsProvider);

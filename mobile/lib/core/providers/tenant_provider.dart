@@ -134,6 +134,29 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
     state = AsyncValue.data(tenantId);
     ref.read(currentTenantIdProvider.notifier).update(tenantId);
   }
+
+  /// Set tenant and save to backend without going through loading state
+  /// Updates local state immediately, then saves to backend asynchronously
+  /// This prevents router redirections while still persisting the selection
+  Future<void> setTenantWithoutLoading(String tenantId) async {
+    // Update local state immediately without loading
+    state = AsyncValue.data(tenantId);
+    ref.read(currentTenantIdProvider.notifier).update(tenantId);
+    
+    // Save to backend asynchronously without affecting state
+    try {
+      final service = ref.read(tenantServiceProvider);
+      await service.setTenant(tenantId);
+      // If successful, ensure state is still data (not loading)
+      if (state.value != tenantId) {
+        state = AsyncValue.data(tenantId);
+      }
+    } catch (e) {
+      // If save fails, keep the local state but log the error
+      // The user can still use the tenant locally
+      print('Error saving tenant to backend: $e');
+    }
+  }
 }
 
 /// Provider for TenantNotifier

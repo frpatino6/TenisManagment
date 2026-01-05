@@ -40,11 +40,12 @@ final availableSchedulesProvider = FutureProvider.autoDispose
 
 /// Provider for courts list
 /// Waits for tenant to be available before making the request
+/// Watches currentTenantIdProvider to invalidate when tenant changes
 final courtsProvider =
     FutureProvider.autoDispose<List<CourtModel>>((ref) async {
-      // Wait for tenant to be available
-      final hasTenant = ref.watch(hasTenantProvider);
-      if (!hasTenant) {
+      // Watch currentTenantIdProvider to invalidate when tenant changes
+      final tenantId = ref.watch(currentTenantIdProvider);
+      if (tenantId == null || tenantId.isEmpty) {
         throw Exception('Tenant ID requerido. Selecciona un centro primero.');
       }
       

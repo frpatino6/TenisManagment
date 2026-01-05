@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 import '../../domain/models/professor_schedule_model.dart';
 import '../providers/professor_provider.dart';
+import '../../../../core/providers/tenant_provider.dart';
 
 enum ScheduleFilter { all, available, blocked, booked }
 
@@ -24,12 +25,32 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
   @override
   Widget build(BuildContext context) {
     final schedulesAsync = ref.watch(professorSchedulesProvider);
+    final currentTenant = ref.watch(currentTenantProvider);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Mis Horarios',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        title: Column(
+          children: [
+            Text(
+              'Mis Horarios',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            ),
+            currentTenant.when(
+              data: (tenant) => tenant != null
+                  ? Text(
+                      tenant.name,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.normal,
+                        color: colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+              loading: () => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
+            ),
+          ],
         ),
         centerTitle: true,
       ),

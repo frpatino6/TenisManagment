@@ -1,12 +1,15 @@
 import { Router } from 'express';
 import { ProfessorDashboardController } from '../../application/controllers/ProfessorDashboardController';
 import { firebaseAuthMiddleware } from '../../application/middleware/firebaseAuth';
+import { extractTenantId } from '../../application/middleware/tenant';
 
 const router = Router();
 const professorDashboardController = new ProfessorDashboardController();
 
 // Aplicar middleware de autenticación a todas las rutas
 router.use(firebaseAuthMiddleware);
+// Extract tenant ID from X-Tenant-ID header
+router.use(extractTenantId);
 
 // Obtener información del profesor
 router.get('/me', professorDashboardController.getProfessorInfo);
@@ -28,6 +31,14 @@ router.get('/earnings', professorDashboardController.getEarningsStats);
 
 // Obtener tenants del profesor
 router.get('/tenants', professorDashboardController.getMyTenants); // TEN-91: Tenants del profesor
+
+// Obtener y configurar tenant favorito
+router.get('/active-tenant', professorDashboardController.getActiveTenant);
+router.post('/active-tenant', professorDashboardController.setActiveTenant);
+
+// Unirse a un centro (self-service)
+// TODO: TEN-108 - This will change when tenant admin module is implemented
+router.post('/tenants/join', professorDashboardController.joinTenant);
 
 // Actualizar perfil del profesor
 router.put('/profile', professorDashboardController.updateProfile);

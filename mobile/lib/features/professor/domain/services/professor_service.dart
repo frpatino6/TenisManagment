@@ -50,7 +50,6 @@ class ProfessorService {
     }
   }
 
-
   Future<List<StudentSummaryModel>> getStudents() async {
     try {
       final user = _firebaseAuth.currentUser;
@@ -80,7 +79,6 @@ class ProfessorService {
       rethrow;
     }
   }
-
 
   Future<List<ClassScheduleModel>> getTodaySchedule() async {
     try {
@@ -121,7 +119,6 @@ class ProfessorService {
 
       final idToken = await user.getIdToken(true);
 
-
       final localDate = DateTime(date.year, date.month, date.day);
       final dateStr =
           '${localDate.year}-${localDate.month.toString().padLeft(2, '0')}-${localDate.day.toString().padLeft(2, '0')}';
@@ -149,7 +146,6 @@ class ProfessorService {
       rethrow;
     }
   }
-
 
   Future<List<ClassScheduleModel>> getWeekSchedule() async {
     try {
@@ -183,7 +179,6 @@ class ProfessorService {
     }
   }
 
-
   Future<Map<String, dynamic>> getEarningsStats() async {
     try {
       final user = _firebaseAuth.currentUser;
@@ -211,7 +206,6 @@ class ProfessorService {
       rethrow;
     }
   }
-
 
   Future<ProfessorModel> updateProfile({
     required String name,
@@ -253,7 +247,6 @@ class ProfessorService {
     }
   }
 
-
   Future<void> confirmClass(String classId) async {
     try {
       final user = _firebaseAuth.currentUser;
@@ -277,7 +270,6 @@ class ProfessorService {
       rethrow;
     }
   }
-
 
   Future<void> cancelClass(String classId, String reason) async {
     try {
@@ -309,7 +301,8 @@ class ProfessorService {
     required DateTime date,
     required DateTime startTime,
     required DateTime endTime,
-    String? tenantId, // Optional tenantId - if not provided, backend will use first active tenant
+    String?
+    tenantId, // Optional tenantId - if not provided, backend will use first active tenant
   }) async {
     try {
       print('📅 [ProfessorService] Creating schedule...');
@@ -317,7 +310,7 @@ class ProfessorService {
       print('📅 [ProfessorService] StartTime: ${startTime.toIso8601String()}');
       print('📅 [ProfessorService] EndTime: ${endTime.toIso8601String()}');
       print('📅 [ProfessorService] TenantId: $tenantId');
-      
+
       final user = _firebaseAuth.currentUser;
       if (user == null) {
         throw Exception('Usuario no autenticado');
@@ -331,14 +324,16 @@ class ProfessorService {
         'startTime': startTime.toIso8601String(),
         'endTime': endTime.toIso8601String(),
       };
-      
+
       // Add tenantId if provided
       if (tenantId != null && tenantId.isNotEmpty) {
         requestBody['tenantId'] = tenantId;
       }
 
       print('📅 [ProfessorService] Request body: ${json.encode(requestBody)}');
-      print('📅 [ProfessorService] URL: $_baseUrl/professor-dashboard/schedules');
+      print(
+        '📅 [ProfessorService] URL: $_baseUrl/professor-dashboard/schedules',
+      );
 
       final response = await http.post(
         Uri.parse('$_baseUrl/professor-dashboard/schedules'),
@@ -356,9 +351,10 @@ class ProfessorService {
         return json.decode(response.body) as Map<String, dynamic>;
       } else {
         final errorBody = json.decode(response.body) as Map<String, dynamic>?;
-        final errorMessage = errorBody?['error'] as String? ?? 
-                            errorBody?['message'] as String? ?? 
-                            'Error al crear horario: ${response.statusCode}';
+        final errorMessage =
+            errorBody?['error'] as String? ??
+            errorBody?['message'] as String? ??
+            'Error al crear horario: ${response.statusCode}';
         throw Exception(errorMessage);
       }
     } catch (e) {
@@ -539,6 +535,41 @@ class ProfessorService {
       if (response.statusCode != 200) {
         final error = json.decode(response.body);
         throw Exception(error['error'] ?? 'Error al cancelar reserva');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Join a tenant (center) as a professor
+  /// TODO: TEN-108 - This will change when tenant admin module is implemented.
+  /// Currently allows self-service join, but will require admin approval in the future.
+  Future<void> joinTenant(String tenantId) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final idToken = await user.getIdToken(true);
+
+      final response = await http.post(
+        Uri.parse('$_baseUrl/professor-dashboard/tenants/join'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+        body: json.encode({'tenantId': tenantId}),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return;
+      } else {
+        final errorBody = json.decode(response.body) as Map<String, dynamic>?;
+        final errorMessage =
+            errorBody?['error'] as String? ??
+            'Error al unirse al centro: ${response.statusCode}';
+        throw Exception(errorMessage);
       }
     } catch (e) {
       rethrow;

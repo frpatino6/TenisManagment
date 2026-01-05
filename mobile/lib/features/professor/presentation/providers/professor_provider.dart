@@ -1,9 +1,13 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/services/professor_service.dart';
 import '../../domain/models/professor_model.dart';
 import '../../domain/models/student_summary_model.dart';
 import '../../domain/models/class_schedule_model.dart';
 import '../../../../core/providers/tenant_provider.dart';
+import '../../../../core/services/http_client.dart';
+import '../../../../core/config/app_config.dart';
 
 final professorServiceProvider = Provider<ProfessorService>((ref) {
   return ProfessorService();
@@ -50,8 +54,35 @@ final earningsStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
 final professorSchedulesProvider = FutureProvider.autoDispose<List<dynamic>>((
   ref,
 ) async {
-  final service = ref.read(professorServiceProvider);
-  return await service.getMySchedules();
+  // Watch currentTenantIdProvider to invalidate when tenant changes
+  // This ensures schedules are reloaded when tenant changes
+  ref.watch(currentTenantIdProvider);
+  
+  // Use AppHttpClient to automatically add X-Tenant-ID header
+  final httpClient = ref.read(appHttpClientProvider);
+  final firebaseUser = FirebaseAuth.instance.currentUser;
+  
+  if (firebaseUser == null) {
+    throw Exception('Usuario no autenticado');
+  }
+
+  final idToken = await firebaseUser.getIdToken(true);
+  final baseUrl = AppConfig.apiBaseUrl;
+
+  final response = await httpClient.get(
+    Uri.parse('$baseUrl/professor-dashboard/schedules'),
+    headers: {
+      'Authorization': 'Bearer $idToken',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body) as Map<String, dynamic>;
+    final items = data['items'] as List<dynamic>;
+    return items;
+  } else {
+    throw Exception('Error al obtener horarios: ${response.statusCode}');
+  }
 });
 
 class ProfessorNotifier extends Notifier<AsyncValue<void>> {

@@ -25,7 +25,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
 
   bool _isCreating = false;
   bool _generateMultipleSlots = false;
-  int _slotDuration = 60; // Duración en minutos
+  int _slotDuration = 60; // Duration in minutes
 
   @override
   void dispose() {

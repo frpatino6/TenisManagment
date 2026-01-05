@@ -1,48 +1,48 @@
 import 'package:flutter/foundation.dart';
 import '../config/app_config.dart';
 
-/// Niveles de logging
+/// Logging levels
 enum LogLevel { debug, info, warning, error, fatal }
 
-/// Logger estructurado para la aplicación
+/// Structured logger for the application
 ///
-/// Proporciona logging estructurado con diferentes niveles
-/// y solo muestra logs en desarrollo por defecto.
+/// Provides structured logging with different levels
+/// and only shows logs in development by default.
 class AppLogger {
   final String _tag;
   final bool _enabled;
 
   AppLogger._(this._tag, this._enabled);
 
-  /// Crea un logger con el tag especificado
+  /// Creates a logger with the specified tag
   factory AppLogger.tag(String tag) {
     return AppLogger._(tag, AppConfig.enableDebugLogs);
   }
 
-  /// Crea un logger para una clase
+  /// Creates a logger for a class
   factory AppLogger.forClass(Type classType) {
     return AppLogger._(classType.toString(), AppConfig.enableDebugLogs);
   }
 
-  /// Log de debug (solo en desarrollo)
+  /// Debug log (only in development)
   void debug(String message, [Map<String, dynamic>? context]) {
     if (!_enabled) return;
     _log(LogLevel.debug, message, context);
   }
 
-  /// Log informativo
+  /// Info log
   void info(String message, [Map<String, dynamic>? context]) {
     if (!_enabled) return;
     _log(LogLevel.info, message, context);
   }
 
-  /// Log de advertencia
+  /// Warning log
   void warning(String message, [Map<String, dynamic>? context]) {
     if (!_enabled) return;
     _log(LogLevel.warning, message, context);
   }
 
-  /// Log de error
+  /// Error log
   void error(
     String message, {
     Object? error,
@@ -57,7 +57,7 @@ class AppLogger {
     });
   }
 
-  /// Log fatal (siempre se muestra)
+  /// Fatal log (always shown)
   void fatal(
     String message, {
     Object? error,
@@ -87,15 +87,15 @@ class AppLogger {
       debugPrint(logMessage);
     }
 
-    // En producción, los errores fatales deberían enviarse a un servicio de crash reporting
+    // In production, fatal errors should be sent to a crash reporting service
     if (level == LogLevel.fatal && AppConfig.enableCrashReporting) {
-      // Aquí se podría integrar con Firebase Crashlytics, Sentry, etc.
-      // TODO: TEN-111 - Integrar con servicio de crash reporting
+      // Here we could integrate with Firebase Crashlytics, Sentry, etc.
+      // TODO: TEN-111 - Integrate with crash reporting service
     }
   }
 }
 
-/// Extension para facilitar el uso del logger en clases
+/// Extension to facilitate logger usage in classes
 extension LoggerExtension on Object {
   AppLogger get logger => AppLogger.forClass(runtimeType);
 }

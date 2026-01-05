@@ -32,6 +32,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   TimeOfDay? _selectedTime;
   bool _isBooking = false;
   String? _originalTenantId;
+  String? _currentTenantIdAtDispose;
 
   @override
   void initState() {
@@ -43,6 +44,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           if (favoriteTenantId != null) {
             _originalTenantId = favoriteTenantId;
             final currentTenantId = ref.read(currentTenantIdProvider);
+            _currentTenantIdAtDispose = currentTenantId;
             if (currentTenantId != favoriteTenantId) {
               ref
                   .read(currentTenantIdProvider.notifier)
@@ -58,11 +60,25 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
 
   @override
   void dispose() {
-    if (_originalTenantId != null && mounted) {
-      final currentTenantId = ref.read(currentTenantIdProvider);
-      if (currentTenantId != _originalTenantId) {
-        ref.read(currentTenantIdProvider.notifier).update(_originalTenantId);
-      }
+    // Save the current tenant ID before dispose to avoid using ref
+    if (mounted) {
+      _currentTenantIdAtDispose = ref.read(currentTenantIdProvider);
+    }
+    
+    // Restore original tenant if needed, but only if we have the values saved
+    if (_originalTenantId != null && 
+        _currentTenantIdAtDispose != null &&
+        _currentTenantIdAtDispose != _originalTenantId) {
+      // Use WidgetsBinding to defer the update until after dispose completes
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Access the provider container directly through the widget tree
+        // This is safe because we're deferring the execution
+        final container = ProviderScope.containerOf(context);
+        final currentTenantId = container.read(currentTenantIdProvider);
+        if (currentTenantId != _originalTenantId) {
+          container.read(currentTenantIdProvider.notifier).update(_originalTenantId);
+        }
+      });
     }
     super.dispose();
   }
@@ -371,10 +387,6 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               isExpanded: true,
               decoration: InputDecoration(
                 labelText: 'Centro',
-                prefixIcon: Icon(
-                  Icons.business,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,

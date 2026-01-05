@@ -691,7 +691,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
         if (!mounted) return;
 
         if (conflicts.isNotEmpty && createdCount == 0) {
-          // All failed
           await showDialog(
             context: context,
             builder: (context) => AlertDialog(
@@ -730,7 +729,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
             ),
           );
         } else if (conflicts.isNotEmpty) {
-          // Some failed
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -742,7 +740,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
             ),
           );
         } else {
-          // All succeeded
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -754,7 +751,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           );
         }
       } else {
-        // Create UTC date at midnight for the selected date
         final utcDate = DateTime.utc(
           _selectedDate.year,
           _selectedDate.month,
@@ -774,7 +770,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           final warnings = result?['warnings'] as List<dynamic>?;
 
           if (warnings != null && warnings.isNotEmpty) {
-            // Show dialog with warnings
             await showDialog(
               context: context,
               builder: (context) => AlertDialog(
@@ -847,7 +842,6 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
         } on ScheduleConflictException catch (e) {
           if (!mounted) return;
 
-          // Show error dialog for conflict
           await showDialog(
             context: context,
             builder: (context) => AlertDialog(

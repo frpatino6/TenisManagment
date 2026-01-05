@@ -16,9 +16,18 @@ import '../models/user_model.dart';
 class AuthService {
   String get _baseUrl => AppConfig.authBaseUrl;
 
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FirebaseAuth _firebaseAuth;
+  final GoogleSignIn _googleSignIn;
   final _logger = AppLogger.tag('AuthService');
+  final http.Client _httpClient;
+
+  AuthService({
+    FirebaseAuth? firebaseAuth,
+    GoogleSignIn? googleSignIn,
+    http.Client? httpClient,
+  })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+        _googleSignIn = googleSignIn ?? GoogleSignIn(),
+        _httpClient = httpClient ?? http.Client();
 
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
@@ -107,14 +116,14 @@ class AuthService {
           password: password,
         );
       } on FirebaseAuthException catch (e) {
-        // Si el error es invalid-credential, puede ser que:
-        // 1. El usuario no existe
-        // 2. La contraseña es incorrecta
-        // 3. El usuario se registró con Google (no tiene contraseña)
+        // If the error is invalid-credential, it could be:
+        // 1. User doesn't exist
+        // 2. Password is incorrect
+        // 3. User registered with Google (no password)
         if (e.code == 'invalid-credential' || e.code == 'user-not-found') {
-          // Intentar recuperar contraseña para verificar si el usuario existe
-          // Si el usuario existe, Firebase enviará el email de recuperación
-          // Si no existe, Firebase lanzará un error
+          // Try password recovery to verify if user exists
+          // If user exists, Firebase will send recovery email
+          // If not, Firebase will throw an error
           try {
             await _firebaseAuth.sendPasswordResetEmail(email: email);
             throw AuthException.invalidCredentials(
@@ -122,15 +131,15 @@ class AuthService {
                   'La contraseña es incorrecta. Si te registraste con Google, usa "Continuar con Google". Si olvidaste tu contraseña, revisa tu email para restablecerla.',
             );
           } catch (resetError) {
-            // Si el error es nuestra excepción personalizada, re-lanzarlo
+            // If error is our custom exception, re-throw it
             if (resetError is AuthException) {
               rethrow;
             }
-            // Si falla el envío de recuperación, el usuario probablemente no existe
+            // If recovery email fails, user probably doesn't exist
             throw AuthException.userNotFound();
           }
         }
-        rethrow; // Re-lanzar otros errores
+        rethrow; // Re-throw other errors
       }
 
       final User? user = userCredential.user;
@@ -228,8 +237,8 @@ class AuthService {
         user = userCredential.user;
       } on FirebaseAuthException catch (e) {
         if (e.code == 'email-already-in-use') {
-          // El email existe en Firebase, pero puede que no esté en el backend
-          // Intentar iniciar sesión para obtener el usuario y verificar en backend
+          // Email exists in Firebase, but may not be in backend
+          // Try to sign in to get user and verify in backend
           try {
             userCredential = await _firebaseAuth.signInWithEmailAndPassword(
               email: email,
@@ -237,7 +246,7 @@ class AuthService {
             );
             user = userCredential.user;
 
-            // Intentar obtener info del backend - si falla, el usuario no existe en backend
+            // Try to get info from backend - if it fails, user doesn't exist in backend
             try {
               await getUserInfo();
               throw AuthException.emailAlreadyExists(
@@ -245,11 +254,11 @@ class AuthService {
                     'Este email ya está registrado. Por favor, usa la pantalla de inicio de sesión.',
               );
             } catch (backendError) {
-              // Si falla al obtener info, el usuario no existe en backend
-              // Continuar con el registro en backend
+              // If getting info fails, user doesn't exist in backend
+              // Continue with backend registration
             }
           } on FirebaseAuthException catch (loginError) {
-            // Si el login falla, la contraseña es incorrecta
+            // If login fails, password is incorrect
             if (loginError.code == 'wrong-password' ||
                 loginError.code == 'invalid-credential') {
               throw AuthException.emailAlreadyExists(
@@ -339,7 +348,7 @@ class AuthService {
         );
       }
 
-      final response = await http
+      final response = await _httpClient
           .get(
             Uri.parse('$_baseUrl/firebase/me'),
             headers: {
@@ -377,7 +386,7 @@ class AuthService {
   Future<UserModel> _authenticateWithBackend(User user) async {
     _logger.debug('Autenticando con backend', {'userId': user.uid});
     try {
-      // Esperar un momento para asegurar que el token esté listo
+      // Wait a moment to ensure token is ready
       await Future.delayed(Timeouts.firebaseTokenDelay);
 
       String idToken;
@@ -397,7 +406,7 @@ class AuthService {
 
       final url = Uri.parse('$_baseUrl/firebase/verify');
 
-      final response = await http
+      final response = await _httpClient
           .post(
             url,
             headers: {'Content-Type': 'application/json'},
@@ -430,7 +439,7 @@ class AuthService {
               errorData['details'] as String? ??
               'Error de autenticación en el servidor';
         } catch (_) {
-          // Si no se puede parsear el JSON, usar el mensaje por defecto según el código
+          // If JSON cannot be parsed, use default message according to status code
           if (response.statusCode == 401) {
             throw AuthException.tokenExpired();
           } else if (response.statusCode == 404) {
@@ -479,13 +488,13 @@ class AuthService {
       final existingUser = await getUserInfo();
       return existingUser;
     } catch (_) {
-      // Si getUserInfo falla, el usuario no existe, continuar con el registro
+      // If getUserInfo fails, user doesn't exist, continue with registration
     }
 
-    // Solo hacer UN intento de registro para evitar rate limiting
-    // Si falla, mejor mostrar un error claro que hacer múltiples reintentos
+    // Only make ONE registration attempt to avoid rate limiting
+    // If it fails, better to show a clear error than multiple retries
     try {
-      final response = await http.post(
+      final response = await _httpClient.post(
         Uri.parse('$_baseUrl/firebase/register'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -508,7 +517,7 @@ class AuthService {
           statusCode: response.statusCode,
         );
       } else if (response.statusCode == 409) {
-        // User already exists - obtener información del usuario existente
+        // User already exists - get information from existing user
         try {
           return await getUserInfo();
         } catch (e) {

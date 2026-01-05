@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../../core/constants/timeouts.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/custom_text_field.dart';
@@ -34,11 +33,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authStateProvider);
+    // Use read instead of watch to avoid unnecessary rebuilds
+    // The router will handle navigation automatically via redirect
+    final authState = ref.read(authStateProvider);
     final isLoading = ref.watch(authLoadingProvider);
     final error = ref.watch(authErrorProvider);
 
-    if (authState.isLoading) {
+    // Only show loading on initial load, not during login process
+    if (authState.isLoading && !isLoading) {
       return const LoadingScreen(message: AppStrings.verifyingAuth);
     }
 
@@ -349,32 +351,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (mounted) {
         // Load tenant from backend after login
+        // The router will automatically redirect based on auth state
         await ref.read(tenantNotifierProvider.notifier).loadTenant();
-
-        // Small delay to ensure state is updated
-        await Future.delayed(Timeouts.animationMedium);
-
-        // Read the state from authNotifierProvider (which is updated immediately)
-        final authNotifierState = ref.read(authNotifierProvider);
-        final user = authNotifierState.value;
-
-        // Fallback: also check authStateProvider
-        final authState = ref.read(authStateProvider);
-        final userFromStream = authState.value ?? user;
-
-        final finalUser = userFromStream ?? user;
-
-        if (mounted && finalUser != null) {
-          final hasTenant = ref.read(hasTenantProvider);
-          if (hasTenant) {
-            final route = finalUser.role == 'professor'
-                ? '/professor-home'
-                : '/home';
-            context.go(route);
-          } else {
-            context.go('/select-tenant');
-          }
-        }
+        // No need for manual navigation - router redirect handles it
       }
     } catch (_) {
       // Error handled by provider
@@ -387,32 +366,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (mounted) {
         // Load tenant from backend after login
+        // The router will automatically redirect based on auth state
         await ref.read(tenantNotifierProvider.notifier).loadTenant();
-
-        // Small delay to ensure state is updated
-        await Future.delayed(Timeouts.animationMedium);
-
-        // Read the state from authNotifierProvider (which is updated immediately)
-        final authNotifierState = ref.read(authNotifierProvider);
-        final user = authNotifierState.value;
-
-        // Fallback: also check authStateProvider
-        final authState = ref.read(authStateProvider);
-        final userFromStream = authState.value ?? user;
-
-        final finalUser = userFromStream ?? user;
-
-        if (mounted && finalUser != null) {
-          final hasTenant = ref.read(hasTenantProvider);
-          if (hasTenant) {
-            final route = finalUser.role == 'professor'
-                ? '/professor-home'
-                : '/home';
-            context.go(route);
-          } else {
-            context.go('/select-tenant');
-          }
-        }
+        // No need for manual navigation - router redirect handles it
       }
     } catch (_) {
       // Error handled by provider

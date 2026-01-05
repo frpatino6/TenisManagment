@@ -208,12 +208,12 @@ class TenantSelectorWidget extends ConsumerWidget {
                                 height: 40,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
-                                  return _buildDefaultIcon(colorScheme);
+                                  return TenantSelectorWidget._buildDefaultIcon(colorScheme);
                                 },
                               ),
                             )
                           else
-                            _buildDefaultIcon(colorScheme),
+                            TenantSelectorWidget._buildDefaultIcon(colorScheme),
                           const Gap(12),
                           Expanded(
                             child: Column(
@@ -321,7 +321,7 @@ class TenantSelectorWidget extends ConsumerWidget {
     ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0);
   }
 
-  Widget _buildDefaultIcon(ColorScheme colorScheme) {
+  static Widget _buildDefaultIcon(ColorScheme colorScheme) {
     return Container(
       width: 40,
       height: 40,

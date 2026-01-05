@@ -1,38 +1,38 @@
 import '../exceptions/app_exception.dart';
 import '../exceptions/network_exception.dart';
 
-/// Result pattern para manejo funcional de errores
+/// Result pattern for functional error handling
 /// 
-/// Permite manejar errores de forma explícita sin usar excepciones
-/// Útil para operaciones que pueden fallar de forma esperada
+/// Allows explicit error handling without using exceptions
+/// Useful for operations that can fail in an expected way
 sealed class Result<T> {
   const Result();
 
-  /// Crea un Result exitoso
+  /// Creates a successful Result
   const factory Result.success(T value) = Success<T>;
 
-  /// Crea un Result con error
+  /// Creates a Result with error
   const factory Result.failure(AppException error) = Failure<T>;
 
-  /// Verifica si el resultado es exitoso
+  /// Checks if the result is successful
   bool get isSuccess => this is Success<T>;
 
-  /// Verifica si el resultado es un error
+  /// Checks if the result is an error
   bool get isFailure => this is Failure<T>;
 
-  /// Obtiene el valor si es exitoso, null si es error
+  /// Gets the value if successful, null if error
   T? get valueOrNull => switch (this) {
         Success<T>(:final value) => value,
         Failure<T>() => null,
       };
 
-  /// Obtiene el error si es fallo, null si es exitoso
+  /// Gets the error if failure, null if successful
   AppException? get errorOrNull => switch (this) {
         Success<T>() => null,
         Failure<T>(:final error) => error,
       };
 
-  /// Ejecuta una función si es exitoso
+  /// Executes a function if successful
   Result<U> map<U>(U Function(T value) mapper) {
     return switch (this) {
       Success<T>(:final value) => Result.success(mapper(value)),
@@ -40,7 +40,7 @@ sealed class Result<T> {
     };
   }
 
-  /// Ejecuta una función asíncrona si es exitoso
+  /// Executes an async function if successful
   Future<Result<U>> mapAsync<U>(Future<U> Function(T value) mapper) async {
     return switch (this) {
       Success<T>(:final value) => Result.success(await mapper(value)),
@@ -48,7 +48,7 @@ sealed class Result<T> {
     };
   }
 
-  /// Ejecuta una función si es error
+  /// Executes a function if error
   Result<T> mapError(AppException Function(AppException error) mapper) {
     return switch (this) {
       Success<T>() => this,
@@ -56,7 +56,7 @@ sealed class Result<T> {
     };
   }
 
-  /// Ejecuta una función si es exitoso, otra si es error
+  /// Executes a function if successful, another if error
   R fold<R>({
     required R Function(T value) onSuccess,
     required R Function(AppException error) onFailure,
@@ -67,7 +67,7 @@ sealed class Result<T> {
     };
   }
 
-  /// Ejecuta una función si es exitoso
+  /// Executes a function if successful
   Result<T> onSuccess(void Function(T value) action) {
     if (this case Success<T>(:final value)) {
       action(value);
@@ -75,7 +75,7 @@ sealed class Result<T> {
     return this;
   }
 
-  /// Ejecuta una función si es error
+  /// Executes a function if error
   Result<T> onFailure(void Function(AppException error) action) {
     if (this case Failure<T>(:final error)) {
       action(error);
@@ -83,7 +83,7 @@ sealed class Result<T> {
     return this;
   }
 
-  /// Lanza la excepción si es error, retorna el valor si es exitoso
+  /// Throws the exception if error, returns the value if successful
   T getOrThrow() {
     return switch (this) {
       Success<T>(:final value) => value,
@@ -91,7 +91,7 @@ sealed class Result<T> {
     };
   }
 
-  /// Retorna el valor si es exitoso, o un valor por defecto si es error
+  /// Returns the value if successful, or a default value if error
   T getOrElse(T defaultValue) {
     return switch (this) {
       Success<T>(:final value) => value,
@@ -100,7 +100,7 @@ sealed class Result<T> {
   }
 }
 
-/// Result exitoso
+/// Successful Result
 final class Success<T> extends Result<T> {
   final T value;
 
@@ -118,7 +118,7 @@ final class Success<T> extends Result<T> {
   int get hashCode => value.hashCode;
 }
 
-/// Result con error
+/// Result with error
 final class Failure<T> extends Result<T> {
   final AppException error;
 
@@ -136,9 +136,9 @@ final class Failure<T> extends Result<T> {
   int get hashCode => error.hashCode;
 }
 
-/// Extension para convertir excepciones a Result
+/// Extension to convert exceptions to Result
 extension ResultExtension<T> on Future<T> Function() {
-  /// Ejecuta la función y convierte excepciones a Result
+  /// Executes the function and converts exceptions to Result
   Future<Result<T>> toResult() async {
     try {
       final value = await this();
@@ -146,7 +146,7 @@ extension ResultExtension<T> on Future<T> Function() {
     } on AppException catch (e) {
       return Result.failure(e);
     } catch (e, stackTrace) {
-      // Convierte excepciones genéricas a NetworkException
+      // Converts generic exceptions to NetworkException
       return Result.failure(
         NetworkException(
           e.toString(),
@@ -159,9 +159,9 @@ extension ResultExtension<T> on Future<T> Function() {
   }
 }
 
-/// Extension para convertir Result a excepciones (para compatibilidad)
+/// Extension to convert Result to exceptions (for compatibility)
 extension ResultToException<T> on Result<T> {
-  /// Convierte el Result a un Future que lanza excepción si es error
+  /// Converts the Result to a Future that throws exception if error
   Future<T> toFuture() async {
     return switch (this) {
       Success<T>(:final value) => value,

@@ -1,4 +1,4 @@
-/// Barrel export for all exceptions
+// Barrel export for all exceptions
 export 'app_exception.dart';
 export 'auth_exception.dart';
 export 'domain_exception.dart';

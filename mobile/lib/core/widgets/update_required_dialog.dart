@@ -20,7 +20,7 @@ class UpdateRequiredDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: !forceUpdate, // No permitir cerrar si es forzado
+      canPop: !forceUpdate, // Don't allow closing if forced
       child: AlertDialog(
         title: Row(
           children: [
@@ -65,10 +65,10 @@ class UpdateRequiredDialog extends StatelessWidget {
             ),
           ElevatedButton(
             onPressed: () async {
-              // Cerrar el diálogo primero
+              // Close dialog first
               Navigator.of(context).pop();
 
-              // Pequeño delay para que el diálogo se cierre antes de la acción
+              // Small delay so dialog closes before action
               await Future.delayed(Timeouts.animationLong);
 
               if (kIsWeb) {

@@ -21,7 +21,7 @@ class TenantService {
     try {
       final user = _auth.currentUser;
 
-      // Si el usuario no está autenticado, usar endpoint público (para registro)
+      // If user is not authenticated, use public endpoint (for registration)
       if (user == null) {
         final response = await _http.get(
           Uri.parse('$_baseUrl/config/tenants/public'),
@@ -43,7 +43,7 @@ class TenantService {
         }
       }
 
-      // Si el usuario está autenticado, usar endpoint con autenticación
+      // If user is authenticated, use endpoint with authentication
       final idToken = await user.getIdToken(true);
       if (idToken == null) {
         throw AuthException.tokenExpired(

@@ -13,7 +13,7 @@ class LoadingWidget extends StatelessWidget {
   /// Full screen loading widget with message
   const LoadingWidget.fullScreen({
     super.key,
-    required String this.message,
+    required this.message,
     this.size,
     this.color,
   });
@@ -22,7 +22,7 @@ class LoadingWidget extends StatelessWidget {
   const LoadingWidget.small({
     super.key,
     this.message,
-    double? this.size = 20,
+    this.size = 20,
     this.color,
   });
 

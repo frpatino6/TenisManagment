@@ -21,36 +21,36 @@ class EmptyStateWidget extends StatelessWidget {
   /// Empty state for lists
   const EmptyStateWidget.list({
     super.key,
-    String? this.title = AppStrings.emptyListTitle,
-    String? this.message = AppStrings.emptyListMessage,
-    IconData? this.icon = Icons.inbox_outlined,
+    this.title = AppStrings.emptyListTitle,
+    this.message = AppStrings.emptyListMessage,
+    this.icon = Icons.inbox_outlined,
     this.action,
   });
 
   /// Empty state for search results
   const EmptyStateWidget.search({
     super.key,
-    String? this.title = AppStrings.emptySearchTitle,
-    String? this.message = AppStrings.emptySearchMessage,
-    IconData? this.icon = Icons.search_off,
+    this.title = AppStrings.emptySearchTitle,
+    this.message = AppStrings.emptySearchMessage,
+    this.icon = Icons.search_off,
     this.action,
   });
 
   /// Empty state for schedules
   const EmptyStateWidget.schedule({
     super.key,
-    String? this.title = AppStrings.emptyScheduleTitle,
-    String? this.message = AppStrings.emptyScheduleMessage,
-    IconData? this.icon = Icons.event_busy,
+    this.title = AppStrings.emptyScheduleTitle,
+    this.message = AppStrings.emptyScheduleMessage,
+    this.icon = Icons.event_busy,
     this.action,
   });
 
   /// Empty state for bookings
   const EmptyStateWidget.booking({
     super.key,
-    String? this.title = AppStrings.emptyBookingTitle,
-    String? this.message = AppStrings.emptyBookingMessage,
-    IconData? this.icon = Icons.calendar_today_outlined,
+    this.title = AppStrings.emptyBookingTitle,
+    this.message = AppStrings.emptyBookingMessage,
+    this.icon = Icons.calendar_today_outlined,
     this.action,
   });
 

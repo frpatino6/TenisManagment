@@ -98,6 +98,10 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
     try {
       await ref.read(tenantNotifierProvider.notifier).setTenant(tenant.id);
 
+      // Invalidate preferences provider to reload favorites
+      // Since setTenant now automatically adds the tenant to favorites (first position)
+      ref.invalidate(preferencesNotifierProvider);
+
       if (mounted) {
         // Navigate to home based on user role
         final user = ref.read(authStateProvider).value;
@@ -121,7 +125,11 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
   }
 
   Future<void> _toggleFavoriteTenant(TenantModel tenant) async {
+    // The heart button toggles favorite status
+    // Only ONE center can be favorite at a time
+    // It should NOT navigate
     try {
+      // Check if this tenant is already a favorite
       final isFavorite = ref
           .read(preferencesNotifierProvider)
           .when(
@@ -132,26 +140,47 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
           );
 
       if (isFavorite) {
+        // Remove from favorites - this will clear all favorites
         await ref
             .read(preferencesNotifierProvider.notifier)
             .removeFavoriteTenant(tenant.id);
+        
+        // Check if this was the active tenant
+        final currentTenantId = ref.read(currentTenantIdProvider);
+        if (currentTenantId == tenant.id) {
+          // Clear the active tenant since it's no longer a favorite
+          await ref.read(tenantNotifierProvider.notifier).clearTenant();
+        }
+        
+        // Invalidate to reload state
+        ref.invalidate(preferencesNotifierProvider);
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Centro eliminado de favoritos'),
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: Text('Centro ${tenant.name} eliminado de favoritos'),
+              duration: const Duration(seconds: 2),
             ),
           );
         }
       } else {
-        await ref
-            .read(preferencesNotifierProvider.notifier)
-            .addFavoriteTenant(tenant.id);
+        // Add as favorite - this will make it the ONLY favorite
+        // Use setTenant backend call to ensure it's the only one
+        // But don't update local state to avoid navigation
+        final service = ref.read(tenantServiceProvider);
+        await service.setTenant(tenant.id);
+
+        // Invalidate to reload state (this will update favorites but won't navigate)
+        ref.invalidate(preferencesNotifierProvider);
+        
+        // Reload tenant to get updated state, but don't navigate
+        await ref.read(tenantNotifierProvider.notifier).loadTenant();
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Centro agregado a favoritos'),
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: Text('Centro ${tenant.name} agregado a favoritos'),
+              duration: const Duration(seconds: 2),
             ),
           );
         }

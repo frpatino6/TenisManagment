@@ -95,6 +95,7 @@ feature/TEN-004-endpoints-chat
 - Controllers handle HTTP concerns
 - Repositories abstract data access
 - Use dependency injection for loose coupling
+- **CRITICAL: Maintain clean architecture in all code** - Apply when creating AND editing files
 
 #### TypeScript
 - Use strict TypeScript configuration
@@ -106,6 +107,15 @@ feature/TEN-004-endpoints-chat
 - **ALWAYS run `tsc --noEmit` before committing** - Check TypeScript compilation
 - **ALWAYS fix TypeScript errors** - No commits with type errors
 - **ALWAYS validate imports and exports** - Ensure module resolution works
+
+#### SOLID Principles
+- **CRITICAL: Apply SOLID principles when creating OR modifying backend files (.ts)**
+- **Single Responsibility**: Each class/function should have one reason to change
+- **Open/Closed**: Open for extension, closed for modification
+- **Liskov Substitution**: Derived classes must be substitutable for their base classes
+- **Interface Segregation**: Clients should not depend on interfaces they don't use
+- **Dependency Inversion**: Depend on abstractions, not concretions
+- Apply these principles consistently in all TypeScript code
 
 #### Database & Models
 - Use Mongoose schemas with proper validation
@@ -143,6 +153,7 @@ feature/TEN-004-endpoints-chat
 - Use Provider or Riverpod for state management
 - Separate UI, business logic, and data layers
 - Use repositories for data access abstraction
+- **CRITICAL: Maintain clean architecture in all code** - Apply when creating AND editing files
 
 #### Flutter Best Practices
 - Use const constructors where possible
@@ -162,6 +173,15 @@ feature/TEN-004-endpoints-chat
 - **ALWAYS run `dart format` before committing** - Ensure consistent code formatting
 - **ALWAYS fix Dart analyzer warnings** - No commits with analyzer issues
 - **ALWAYS validate pubspec.yaml dependencies** - Ensure all packages are properly declared
+
+#### SOLID Principles
+- **CRITICAL: Apply SOLID principles when creating OR modifying frontend files (.dart)**
+- **Single Responsibility**: Each class/function should have one reason to change
+- **Open/Closed**: Open for extension, closed for modification
+- **Liskov Substitution**: Derived classes must be substitutable for their base classes
+- **Interface Segregation**: Clients should not depend on interfaces they don't use
+- **Dependency Inversion**: Depend on abstractions, not concretions
+- Apply these principles consistently in all Dart code
 
 #### State Management
 - Keep UI state separate from business logic
@@ -188,6 +208,9 @@ feature/TEN-004-endpoints-chat
 - Write widget tests for Flutter components
 - Aim for high test coverage
 - Use proper mocking for external dependencies
+- **CRITICAL: When modifying backend code, ALWAYS review related tests and update them accordingly**
+- **ALWAYS update tests when making backend changes** - Ensure test coverage is maintained or improved
+- **ALWAYS run tests after backend modifications** - Verify all tests pass before committing
 
 ### Performance
 - Optimize database queries
@@ -204,12 +227,19 @@ feature/TEN-004-endpoints-chat
 - Use proper commit messages
 
 ### Code Comments Guidelines
+- **CRITICAL: For ALL .dart and .ts files (when creating OR editing files)**
 - **Backend (TypeScript)**: Add comments only for complex business logic in headers
+  - Do NOT add inline comments between lines of code
+  - Only add comments at the class level (class documentation)
+  - Use meaningful class names and method names instead of inline comments
+  - This rule applies to file creation AND code modification
 - **Mobile (Dart)**: 
   - NO comments inside widget methods - code should be self-explanatory
   - NO comments inside UI/widget code - use meaningful variable and method names
-  - ONLY add header comments for business logic methods and classes
+  - NO inline comments between lines of code
+  - ONLY add header comments for business logic methods and classes (class-level documentation)
   - Focus on clear, self-documenting code with proper naming conventions
+  - This rule applies to file creation AND code modification
   - **ALWAYS use modern Flutter APIs** - Replace `color.withOpacity(value)` with `color.withValues(alpha: value)`
 
 ### Debug and Development Rules
@@ -420,6 +450,10 @@ curl -s https://tennis-management-fcd54.web.app/main.dart.js | grep -o "1\.3\.[0
 - Has old version references in PackageInfo objects
 
 ### MCP Usage Guidelines
+- **CRITICAL: Review active MCP (Model Context Protocol) tools before starting tasks**
+- **ALWAYS check available MCP tools** - Review active MCP servers and use them when necessary
+- **Use MCP tools when available and appropriate** - Leverage MCP to improve code quality and development efficiency
+
 **ALWAYS use MCP when:**
 - Creating or modifying database schemas
 - Writing database queries or aggregations

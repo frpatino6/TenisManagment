@@ -65,6 +65,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       if (isAuthenticated) {
+        // CRITICAL: When user is on login/register screen after authentication,
+        // wait for tenant to finish loading before making any navigation decisions.
+        // This prevents briefly showing the select-tenant screen.
+        if (isLoggingIn) {
+          // If tenant is still loading, stay on login screen (it will show loading state)
+          if (tenantState.isLoading) {
+            return null;
+          }
+          
+          // Tenant finished loading, now decide where to go
+          if (hasTenant) {
+            // User has tenant, go directly to home
+            return user.role == 'professor' ? '/professor-home' : '/home';
+          } else {
+            // User doesn't have tenant, go to select tenant
+            return '/select-tenant';
+          }
+        }
+
+        // For other screens (not login/register), handle tenant state
         // If tenant is loading, don't redirect yet (wait for it to complete)
         if (tenantState.isLoading) {
           return null;
@@ -73,11 +93,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         // If user doesn't have a tenant, redirect to select tenant
         if (!hasTenant && !isSelectingTenant) {
           return '/select-tenant';
-        }
-
-        // If user is on login/register screen and has tenant, redirect to home
-        if (isLoggingIn && hasTenant) {
-          return user.role == 'professor' ? '/professor-home' : '/home';
         }
       }
 

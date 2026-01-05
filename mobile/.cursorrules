@@ -209,6 +209,41 @@ import '../../../../core/result/result.dart';
 
 ---
 
+## 🧪 Testing OBLIGATORIO
+
+### Regla de Testing
+**TODO código Dart DEBE tener tests correspondientes:**
+
+- ✅ **Servicios de dominio**: Tests unitarios obligatorios
+- ✅ **Providers/Notifiers**: Tests unitarios obligatorios
+- ✅ **Widgets**: Tests de widget obligatorios
+- ✅ **Modelos**: Tests de validación y serialización obligatorios
+- ✅ **Utilidades/Helpers**: Tests unitarios obligatorios
+
+**Estructura de tests:**
+- Tests deben estar en `test/` con la misma estructura que `lib/`
+- Archivo de test: `{nombre_archivo}_test.dart`
+- Ubicación: Misma ruta relativa que el archivo original
+
+**Ejemplo:**
+```
+lib/features/auth/domain/services/auth_service.dart
+test/features/auth/domain/services/auth_service_test.dart
+```
+
+**Cobertura mínima requerida:**
+- Servicios: 80%+ cobertura
+- Providers: 80%+ cobertura
+- Widgets: Tests de casos principales (loading, error, success, empty)
+- Modelos: Tests de serialización y validación
+
+**Herramientas:**
+- `flutter_test` para tests unitarios y de widgets
+- `mocktail` para mocks
+- `ProviderContainer` para override de providers en tests
+
+---
+
 ## ✅ Checklist para Nuevo Código
 
 Antes de crear un nuevo servicio o modificar uno existente:
@@ -219,6 +254,7 @@ Antes de crear un nuevo servicio o modificar uno existente:
 - [ ] ¿Usa `Timeouts` para timeouts? (NO `Duration` hardcodeado)
 - [ ] ¿Tiene documentación `///` en métodos públicos?
 - [ ] ¿Maneja errores apropiadamente con try/catch?
+- [ ] **¿Tiene tests correspondientes?** (OBLIGATORIO)
 
 ---
 
@@ -230,6 +266,7 @@ Antes de crear un nuevo servicio o modificar uno existente:
 4. **NUNCA** hardcodear timeouts con `Duration(seconds: X)`
 5. **NUNCA** usar `dynamic` cuando se puede usar un tipo específico
 6. **NUNCA** mezclar lógica HTTP en providers (debe estar en servicios)
+7. **NUNCA** crear código sin tests correspondientes
 
 ---
 
@@ -239,7 +276,27 @@ Antes de crear un nuevo servicio o modificar uno existente:
 - Constantes: `lib/core/constants/`
 - Logging: `lib/core/logging/`
 - Result: `lib/core/result/`
+- Testing: `test/` (misma estructura que `lib/`)
 - Documentación: `lib/core/README.md`
+
+---
+
+## 🧪 Ejecutar Tests
+
+**Para ejecutar todos los tests:**
+```bash
+flutter test
+```
+
+**Para ejecutar tests específicos:**
+```bash
+flutter test test/features/auth/domain/services/auth_service_test.dart
+```
+
+**Para ver cobertura:**
+```bash
+flutter test --coverage
+```
 
 ---
 

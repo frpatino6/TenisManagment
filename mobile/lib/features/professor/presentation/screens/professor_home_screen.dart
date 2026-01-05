@@ -565,7 +565,10 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.person_outline),
+              leading: Icon(
+                Icons.person_outline,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               title: const Text('Perfil'),
               onTap: () {
                 Navigator.pop(context);
@@ -573,7 +576,10 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.palette_outlined),
+              leading: Icon(
+                Icons.palette_outlined,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
               title: const Text('Tema'),
               onTap: () {
                 Navigator.pop(context);
@@ -581,8 +587,16 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Cerrar Sesión'),
+              leading: Icon(
+                Icons.logout,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
+                'Cerrar Sesión',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _handleLogout(context);

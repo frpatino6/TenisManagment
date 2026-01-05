@@ -112,50 +112,12 @@ class HomeScreen extends ConsumerWidget {
               icon: const Icon(Icons.notifications_outlined),
               onPressed: () {},
             ),
-            PopupMenuButton<String>(
-              onSelected: (value) => _handleMenuSelection(context, ref, value),
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'profile',
-                  child: Row(
-                    children: [
-                      Icon(Icons.person_outline),
-                      Gap(12),
-                      Text('Perfil'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'change-center',
-                  child: Row(
-                    children: [
-                      Icon(Icons.business),
-                      Gap(12),
-                      Text('Cambiar Centro'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'theme',
-                  child: Row(
-                    children: [
-                      Icon(Icons.palette_outlined),
-                      Gap(12),
-                      Text('Tema'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'logout',
-                  child: Row(
-                    children: [
-                      Icon(Icons.logout),
-                      Gap(12),
-                      Text('Cerrar sesión'),
-                    ],
-                  ),
-                ),
-              ],
+            IconButton(
+              onPressed: () => _showProfileMenu(context, ref),
+              icon: Icon(
+                Icons.account_circle_outlined,
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
             ),
           ],
         ),
@@ -220,20 +182,83 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  void _handleMenuSelection(BuildContext context, WidgetRef ref, String value) {
-    switch (value) {
-      case 'profile':
-        break;
-      case 'change-center':
-        context.push('/select-tenant');
-        break;
-      case 'theme':
-        context.push('/theme-settings');
-        break;
-      case 'logout':
-        _handleLogout(context, ref);
-        break;
-    }
+  void _showProfileMenu(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.person_outline,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              title: const Text('Perfil'),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Navigate to profile
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.business,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              title: const Text('Cambiar Centro'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/select-tenant');
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.palette_outlined,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              title: const Text('Tema'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/theme-settings');
+              },
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.logout,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
+                'Cerrar Sesión',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _handleLogout(context, ref);
+              },
+            ),
+            const Gap(20),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {

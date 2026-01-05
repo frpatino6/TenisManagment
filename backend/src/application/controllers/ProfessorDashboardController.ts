@@ -713,6 +713,78 @@ export class ProfessorDashboardController {
         date: parsedDate.toISOString()
       });
 
+      // Validate: Check if professor already has a schedule at the same time in any center
+      const sameTimeSchedule = await ScheduleModel.findOne({
+        professorId: professor._id,
+        startTime: parsedStartTime,
+        // Same day (compare dates, not times)
+        $expr: {
+          $and: [
+            { $eq: [{ $year: '$startTime' }, parsedStartTime.getUTCFullYear()] },
+            { $eq: [{ $month: '$startTime' }, parsedStartTime.getUTCMonth() + 1] },
+            { $eq: [{ $dayOfMonth: '$startTime' }, parsedStartTime.getUTCDate()] },
+          ]
+        }
+      }).populate('tenantId', 'name');
+
+      if (sameTimeSchedule) {
+        const conflictingTenant = sameTimeSchedule.tenantId as any;
+        const conflictingTenantName = conflictingTenant?.name || 'otro centro';
+        return res.status(409).json({ 
+          error: 'CONFLICT_SAME_TIME',
+          message: `Ya tienes un horario a esta hora en ${conflictingTenantName}. No puedes tener el mismo horario en diferentes centros.`,
+          conflictingTenantId: conflictingTenant?._id?.toString(),
+          conflictingTenantName: conflictingTenantName
+        });
+      }
+
+      // Check for consecutive schedules in different centers (warning, not error)
+      // Find schedules that end right before this one starts (within 30 minutes)
+      const previousSchedule = await ScheduleModel.findOne({
+        professorId: professor._id,
+        endTime: {
+          $gte: new Date(parsedStartTime.getTime() - 30 * 60 * 1000), // 30 minutes before
+          $lte: parsedStartTime
+        },
+        // Same day
+        $expr: {
+          $and: [
+            { $eq: [{ $year: '$endTime' }, parsedStartTime.getUTCFullYear()] },
+            { $eq: [{ $month: '$endTime' }, parsedStartTime.getUTCMonth() + 1] },
+            { $eq: [{ $dayOfMonth: '$endTime' }, parsedStartTime.getUTCDate()] },
+          ]
+        },
+        tenantId: { $ne: finalTenantId } // Different center
+      }).populate('tenantId', 'name');
+
+      // Find schedules that start right after this one ends (within 30 minutes)
+      const nextSchedule = await ScheduleModel.findOne({
+        professorId: professor._id,
+        startTime: {
+          $gte: parsedEndTime,
+          $lte: new Date(parsedEndTime.getTime() + 30 * 60 * 1000) // 30 minutes after
+        },
+        // Same day
+        $expr: {
+          $and: [
+            { $eq: [{ $year: '$startTime' }, parsedEndTime.getUTCFullYear()] },
+            { $eq: [{ $month: '$startTime' }, parsedEndTime.getUTCMonth() + 1] },
+            { $eq: [{ $dayOfMonth: '$startTime' }, parsedEndTime.getUTCDate()] },
+          ]
+        },
+        tenantId: { $ne: finalTenantId } // Different center
+      }).populate('tenantId', 'name');
+
+      const warnings: string[] = [];
+      if (previousSchedule) {
+        const prevTenant = previousSchedule.tenantId as any;
+        warnings.push(`Tienes un horario que termina justo antes en ${prevTenant?.name || 'otro centro'}. Podrías tener retrasos para llegar a tiempo.`);
+      }
+      if (nextSchedule) {
+        const nextTenant = nextSchedule.tenantId as any;
+        warnings.push(`Tienes un horario que comienza justo después en ${nextTenant?.name || 'otro centro'}. Podrías tener retrasos para llegar a tiempo.`);
+      }
+
       // Create schedule with tenantId
       console.log('Creating schedule with:', {
         tenantId: finalTenantId.toString(),
@@ -731,6 +803,26 @@ export class ProfessorDashboardController {
         isAvailable: true,
         status: 'pending'
       });
+
+      console.log(`Schedule created successfully: ${schedule._id} with tenantId: ${finalTenantId}`);
+      
+      const response: any = {
+        id: schedule._id,
+        tenantId: schedule.tenantId,
+        professorId: schedule.professorId,
+        date: schedule.date,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        isAvailable: schedule.isAvailable,
+        status: schedule.status
+      };
+
+      // Include warnings if any
+      if (warnings.length > 0) {
+        response.warnings = warnings;
+      }
+      
+      res.status(201).json(response);
 
       console.log(`Schedule created successfully: ${schedule._id} with tenantId: ${finalTenantId}`);
       

@@ -150,7 +150,7 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
-  Future<void> createSchedule({
+  Future<Map<String, dynamic>?> createSchedule({
     required DateTime date,
     required DateTime startTime,
     required DateTime endTime,
@@ -162,7 +162,7 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
       // Get current tenantId if available
       final tenantId = ref.read(currentTenantIdProvider);
       
-      await service.createSchedule(
+      final result = await service.createSchedule(
         date: date,
         startTime: startTime,
         endTime: endTime,
@@ -174,8 +174,10 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
       ref.invalidate(weekScheduleProvider);
 
       state = const AsyncValue.data(null);
+      return result;
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
+      rethrow;
     }
   }
 

@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../providers/professor_provider.dart';
+import '../../domain/services/professor_service.dart';
 
 class CreateScheduleScreen extends ConsumerStatefulWidget {
   const CreateScheduleScreen({super.key});
@@ -439,7 +440,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
   Future<void> _selectDate() async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    
+
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate.isBefore(today) ? today : _selectedDate,
@@ -450,10 +451,14 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
     if (picked != null) {
       setState(() {
         _selectedDate = picked;
-        
-        final selectedDateOnly = DateTime(picked.year, picked.month, picked.day);
+
+        final selectedDateOnly = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+        );
         final isToday = selectedDateOnly == today;
-        
+
         if (isToday) {
           final currentTime = TimeOfDay.fromDateTime(now);
           if (_startTime.hour < currentTime.hour ||
@@ -486,21 +491,18 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
       _selectedDate.day,
     );
     final isToday = selectedDateOnly == today;
-    
+
     TimeOfDay? minTime;
     if (isStartTime && isToday) {
       final currentTime = TimeOfDay.fromDateTime(now);
-      minTime = TimeOfDay(
-        hour: currentTime.hour,
-        minute: currentTime.minute,
-      );
+      minTime = TimeOfDay(hour: currentTime.hour, minute: currentTime.minute);
     } else if (!isStartTime && isToday) {
       final currentTime = TimeOfDay.fromDateTime(now);
       final minEndTime = TimeOfDay(
         hour: _startTime.hour,
         minute: _startTime.minute + 1,
       );
-      
+
       if (minEndTime.hour < currentTime.hour ||
           (minEndTime.hour == currentTime.hour &&
               minEndTime.minute < currentTime.minute)) {
@@ -512,10 +514,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
         minTime = minEndTime;
       }
     } else if (!isStartTime) {
-      minTime = TimeOfDay(
-        hour: _startTime.hour,
-        minute: _startTime.minute + 1,
-      );
+      minTime = TimeOfDay(hour: _startTime.hour, minute: _startTime.minute + 1);
     }
 
     final picked = await showTimePicker(
@@ -530,7 +529,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
       if (minTime != null) {
         final pickedMinutes = picked.hour * 60 + picked.minute;
         final minMinutes = minTime.hour * 60 + minTime.minute;
-        
+
         if (pickedMinutes < minMinutes) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -554,10 +553,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           if (_endTime.hour < picked.hour ||
               (_endTime.hour == picked.hour &&
                   _endTime.minute <= picked.minute)) {
-            _endTime = TimeOfDay(
-              hour: picked.hour,
-              minute: picked.minute + 30,
-            );
+            _endTime = TimeOfDay(hour: picked.hour, minute: picked.minute + 30);
           }
         } else {
           _endTime = picked;
@@ -665,35 +661,98 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           now.minute,
         );
 
+        int createdCount = 0;
+        List<String> conflicts = [];
+
         for (final slot in slots) {
-          if (selectedDateOnly == today &&
-              slot['start']!.isBefore(nowUtc)) {
+          if (selectedDateOnly == today && slot['start']!.isBefore(nowUtc)) {
             continue;
           }
 
-          final utcDate = DateTime.utc(
-            _selectedDate.year,
-            _selectedDate.month,
-            _selectedDate.day,
-          );
-          await notifier.createSchedule(
-            date: utcDate,
-            startTime: slot['start']!,
-            endTime: slot['end']!,
-          );
+          try {
+            final utcDate = DateTime.utc(
+              _selectedDate.year,
+              _selectedDate.month,
+              _selectedDate.day,
+            );
+            await notifier.createSchedule(
+              date: utcDate,
+              startTime: slot['start']!,
+              endTime: slot['end']!,
+            );
+            createdCount++;
+          } on ScheduleConflictException catch (e) {
+            conflicts.add(e.message);
+          } catch (e) {
+            conflicts.add('Error al crear horario: ${e.toString()}');
+          }
         }
 
         if (!mounted) return;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '¡${slots.length} horarios creados exitosamente!',
-              style: GoogleFonts.inter(),
+        if (conflicts.isNotEmpty && createdCount == 0) {
+          // All failed
+          await showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.error, color: Colors.red),
+                  const Gap(8),
+                  Expanded(
+                    child: Text(
+                      'Error al Crear Horarios',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: conflicts
+                      .map(
+                        (c) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(c, style: GoogleFonts.inter()),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('Entendido', style: GoogleFonts.inter()),
+                ),
+              ],
             ),
-            backgroundColor: Colors.green,
-          ),
-        );
+          );
+        } else if (conflicts.isNotEmpty) {
+          // Some failed
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Se crearon $createdCount horarios. ${conflicts.length} no se pudieron crear por conflictos.',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        } else {
+          // All succeeded
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '¡$createdCount horarios creados exitosamente!',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       } else {
         // Create UTC date at midnight for the selected date
         final utcDate = DateTime.utc(
@@ -701,23 +760,124 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           _selectedDate.month,
           _selectedDate.day,
         );
-        await notifier.createSchedule(
-          date: utcDate,
-          startTime: startDateTime,
-          endTime: endDateTime,
-        );
 
-        if (!mounted) return;
+        try {
+          final result = await notifier.createSchedule(
+            date: utcDate,
+            startTime: startDateTime,
+            endTime: endDateTime,
+          );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '¡Horario creado exitosamente!',
-              style: GoogleFonts.inter(),
+          if (!mounted) return;
+
+          // Check for warnings in the response
+          final warnings = result?['warnings'] as List<dynamic>?;
+
+          if (warnings != null && warnings.isNotEmpty) {
+            // Show dialog with warnings
+            await showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Row(
+                  children: [
+                    Icon(Icons.warning_amber, color: Colors.orange),
+                    const Gap(8),
+                    Expanded(
+                      child: Text(
+                        'Advertencia de Horarios',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Horario creado exitosamente, pero:',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                      ),
+                      const Gap(12),
+                      ...warnings.map(
+                        (warning) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                size: 16,
+                                color: Colors.orange,
+                              ),
+                              const Gap(8),
+                              Expanded(
+                                child: Text(
+                                  warning.toString(),
+                                  style: GoogleFonts.inter(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('Entendido', style: GoogleFonts.inter()),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '¡Horario creado exitosamente!',
+                  style: GoogleFonts.inter(),
+                ),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } on ScheduleConflictException catch (e) {
+          if (!mounted) return;
+
+          // Show error dialog for conflict
+          await showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.orange),
+                  const Gap(8),
+                  Expanded(
+                    child: Text(
+                      'Conflicto de Horarios',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(e.message, style: GoogleFonts.inter()),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('Entendido', style: GoogleFonts.inter()),
+                ),
+              ],
             ),
-            backgroundColor: Colors.green,
-          ),
-        );
+          );
+
+          setState(() {
+            _isCreating = false;
+          });
+          return;
+        }
       }
 
       Navigator.of(context).pop(true); // Return true to indicate success

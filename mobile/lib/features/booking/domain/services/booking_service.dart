@@ -10,10 +10,13 @@ import '../models/available_schedule_model.dart';
 /// Handles professor selection, schedule availability, and lesson booking
 class BookingService {
   final String _baseUrl = AppConfig.apiBaseUrl;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseAuth _auth;
   final AppHttpClient _http;
 
-  BookingService(this._http);
+  BookingService(
+    this._http, {
+    FirebaseAuth? firebaseAuth,
+  }) : _auth = firebaseAuth ?? FirebaseAuth.instance;
 
   /// Retrieves the list of all available professors
   ///

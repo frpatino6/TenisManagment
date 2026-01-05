@@ -13,7 +13,14 @@ import '../models/booking_model.dart';
 /// Manages API communication for student-specific endpoints
 class StudentService {
   String get _baseUrl => AppConfig.apiBaseUrl;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseAuth _auth;
+  final http.Client _httpClient;
+
+  StudentService({
+    FirebaseAuth? firebaseAuth,
+    http.Client? httpClient,
+  })  : _auth = firebaseAuth ?? FirebaseAuth.instance,
+        _httpClient = httpClient ?? http.Client();
 
   /// Retrieves recent activities for the authenticated student
   ///
@@ -39,7 +46,7 @@ class StudentService {
         );
       }
 
-      final response = await http
+      final response = await _httpClient
           .get(
             Uri.parse('$_baseUrl/student-dashboard/activities'),
             headers: {
@@ -101,7 +108,7 @@ class StudentService {
         );
       }
 
-      final response = await http
+      final response = await _httpClient
           .get(
             Uri.parse('$_baseUrl/student-dashboard/me'),
             headers: {
@@ -157,7 +164,7 @@ class StudentService {
         );
       }
 
-      final response = await http
+      final response = await _httpClient
           .get(
             Uri.parse('$_baseUrl/student-dashboard/bookings'),
             headers: {

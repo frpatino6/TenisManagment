@@ -16,9 +16,18 @@ import '../models/user_model.dart';
 class AuthService {
   String get _baseUrl => AppConfig.authBaseUrl;
 
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FirebaseAuth _firebaseAuth;
+  final GoogleSignIn _googleSignIn;
   final _logger = AppLogger.tag('AuthService');
+  final http.Client _httpClient;
+
+  AuthService({
+    FirebaseAuth? firebaseAuth,
+    GoogleSignIn? googleSignIn,
+    http.Client? httpClient,
+  })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+        _googleSignIn = googleSignIn ?? GoogleSignIn(),
+        _httpClient = httpClient ?? http.Client();
 
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
@@ -339,7 +348,7 @@ class AuthService {
         );
       }
 
-      final response = await http
+      final response = await _httpClient
           .get(
             Uri.parse('$_baseUrl/firebase/me'),
             headers: {
@@ -397,7 +406,7 @@ class AuthService {
 
       final url = Uri.parse('$_baseUrl/firebase/verify');
 
-      final response = await http
+      final response = await _httpClient
           .post(
             url,
             headers: {'Content-Type': 'application/json'},
@@ -485,7 +494,7 @@ class AuthService {
     // Solo hacer UN intento de registro para evitar rate limiting
     // Si falla, mejor mostrar un error claro que hacer múltiples reintentos
     try {
-      final response = await http.post(
+      final response = await _httpClient.post(
         Uri.parse('$_baseUrl/firebase/register'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({

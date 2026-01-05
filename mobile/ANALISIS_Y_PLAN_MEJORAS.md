@@ -264,19 +264,109 @@ final List<dynamic> items = data['items'] as List<dynamic>;
 
 ---
 
-#### 10. **Falta de Tests Unitarios**
+#### 10. **Falta de Tests Unitarios** 🚧 EN PROGRESO
 **Problema:**
 - No se encontraron tests unitarios en el proyecto mobile
 - Solo hay algunos tests en `test/` pero muy limitados
 - Falta cobertura de servicios y providers
 
 **Recomendación:**
-- Crear tests para servicios críticos
-- Testear providers con `ProviderContainer`
-- Agregar tests de widgets importantes
-- Configurar CI/CD para ejecutar tests
+- ✅ Crear tests para servicios críticos - **EN PROGRESO**
+- ⚠️ Testear providers con `ProviderContainer` - **PENDIENTE**
+- ⚠️ Agregar tests de widgets importantes - **PENDIENTE**
+- ⚠️ Configurar CI/CD para ejecutar tests - **PENDIENTE**
 
 **Riesgo:** Muy bajo - Agregar tests no rompe nada
+
+**Estado:** 🚧 **EN PROGRESO** - Tests creados:
+- ✅ `ModelValidator` - 50 tests pasando, cobertura completa de todos los métodos de validación
+  - Tests para `validateNonEmpty`, `validateEmail`, `validateNonNegative`, `validateNonNegativeInt`
+  - Tests para `validateRating`, `validateTimeRange`, `validatePrice`
+  - Tests para `parseDouble` y `parseInt`
+  - Todos los casos edge y validaciones cubiertos
+
+- ✅ **Excepciones** - 47 tests pasando, cobertura completa de todas las excepciones personalizadas:
+  - `ValidationException` - 6 tests (missingRequiredField, invalidField, constructor)
+  - `AuthException` - 8 tests (notAuthenticated, invalidCredentials, tokenExpired, userNotFound, emailAlreadyExists)
+  - `NetworkException` - 8 tests (noConnection, timeout, serverError con diferentes variantes)
+  - `DomainException` - 7 tests (notFound, conflict, unauthorized, operationNotAllowed)
+  - `ScheduleException` - 7 tests (conflict, notFound, invalidTime, con información de conflictos)
+  - `TenantException` - 5 tests (notFound, notConfigured, alreadyJoined)
+
+- ✅ **Paquetes de testing agregados:**
+  - `mocktail: ^1.0.4` - Para crear mocks sin code generation
+  - `http_mock_adapter: ^0.6.1` - Para mockear requests HTTP
+
+**Total: 414 tests unitarios pasando** ✅ (3 tests con problemas de timers en widgets con animaciones)
+
+**Tests creados:**
+- ✅ `ModelValidator` - 50 tests (validación completa)
+- ✅ **Excepciones** - 47 tests (todas las excepciones personalizadas)
+  - `ValidationException` - 6 tests
+  - `AuthException` - 8 tests
+  - `NetworkException` - 8 tests
+  - `DomainException` - 7 tests
+  - `ScheduleException` - 7 tests
+  - `TenantException` - 5 tests
+- ✅ `Result<T>` pattern - 23 tests (manejo funcional de errores)
+- ✅ **Widgets reutilizables** - 85 tests
+  - `LoadingWidget` - 6 tests
+  - `AppErrorWidget` - 6 tests
+  - `EmptyStateWidget` - 8 tests
+  - `CustomTextField` - 12 tests (label, hint, error, helper, icons, validation, etc.)
+  - `CustomButton` - 15 tests (text, onPressed, loading, outlined, icons, sizes)
+  - `CustomIconButton` - 3 tests
+  - `CustomFloatingActionButton` - 3 tests
+  - `LoginScreen` - 7 tests (form elements, buttons, links, password toggle)
+  - `VersionWidget` - 2 tests
+  - `LoadingScreen` - 3 tests
+  - `UpdateRequiredDialog` - 4 tests
+  - `TenantSelectorWidget` - 2 tests
+  - `ProfessorProfileCard` - 3 tests (1 con problema de timers)
+  - `EarningsWidget` - 3 tests
+  - `StudentsListWidget` - 4 tests
+  - `AnalyticsLoadingWidget` - 3 tests
+  - `AnalyticsErrorWidget` - 3 tests
+  - `StudentCard` - 3 tests
+  - `ScheduleWidget` - 2 tests
+  - `UserProfileCard` - 3 tests
+  - `QuickActionsGrid` - 2 tests
+- ✅ `Timeouts` - 7 tests (validación de constantes)
+- ✅ **Servicios** - 71 tests
+  - `VersionService` - 7 tests
+  - `UpdateCheckService` - 3 tests
+  - `AuthService` - 18 tests (autenticación, getUserInfo, signInWithEmail, signOut)
+  - `ProfessorService` - 16 tests (getProfessorInfo, getStudents, getMySchedules, createSchedule, deleteSchedule)
+  - `StudentService` - 14 tests (getRecentActivities, getStudentInfo, getBookings)
+  - `BookingService` - 13 tests (getProfessors, getAvailableSchedules, bookLesson)
+- ✅ **Providers** - 36 tests
+  - `CurrentTenantIdNotifier` - 3 tests
+  - `hasTenantProvider` - 3 tests
+  - `AuthLoadingNotifier` - 3 tests
+  - `AuthErrorNotifier` - 4 tests
+  - `filteredStudentsProvider` - 7 tests
+  - `ProfessorNotifier` - 16 tests (updateProfile, confirmClass, cancelClass, createSchedule, deleteSchedule, completeClass, cancelBooking, refreshAll)
+- ✅ **Modelos de dominio** - 97 tests
+  - `CourtModel` - 9 tests
+  - `AvailableScheduleModel` (booking) - 7 tests
+  - `ProfessorBookingModel` y `PricingConfig` (booking) - 5 tests
+  - `ServiceType` - 5 tests
+  - `StudentModel` - 8 tests
+  - `RecentActivityModel` - 4 tests
+  - `UserModel` - 7 tests
+  - `TenantModel` - 7 tests
+  - `BookingModel` (student) - 8 tests
+  - `ClassScheduleModel` - 10 tests
+  - Otros modelos existentes - 19 tests
+
+**Archivos de test:** 50 archivos
+- Core: 18 archivos
+- Features: 32 archivos
+
+**Próximos pasos:**
+- Agregar más tests de pantallas principales (ProfessorHomeScreen, MyBookingsScreen, etc.)
+- Expandir tests de servicios críticos (más métodos de `ProfessorService` como `updateProfile`, `confirmClass`, `cancelClass`, etc.)
+- Crear tests para otros providers (`TenantNotifier`, `PreferencesNotifier`, etc.)
 
 ---
 

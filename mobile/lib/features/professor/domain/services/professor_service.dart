@@ -29,8 +29,15 @@ class ScheduleConflictException extends ScheduleException {
 class ProfessorService {
   String get _baseUrl => AppConfig.apiBaseUrl;
 
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final FirebaseAuth _firebaseAuth;
   final _logger = AppLogger.tag('ProfessorService');
+  final http.Client _httpClient;
+
+  ProfessorService({
+    FirebaseAuth? firebaseAuth,
+    http.Client? httpClient,
+  })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+        _httpClient = httpClient ?? http.Client();
 
   /// Retrieves professor information and dashboard data
   /// Returns [ProfessorModel] with complete professor details
@@ -46,7 +53,7 @@ class ProfessorService {
 
       final url = '$_baseUrl/professor-dashboard/me';
 
-      final response = await http
+      final response = await _httpClient
           .get(
             Uri.parse(url),
             headers: {
@@ -101,7 +108,7 @@ class ProfessorService {
       }
 
       final idToken = await user.getIdToken(true); // Force refresh
-      final response = await http
+      final response = await _httpClient
           .get(
             Uri.parse('$_baseUrl/professor-dashboard/students'),
             headers: {
@@ -328,7 +335,7 @@ class ProfessorService {
       }
 
       final idToken = await user.getIdToken(true); // Force refresh
-      final response = await http
+      final response = await _httpClient
           .get(
             Uri.parse('$_baseUrl/professor-dashboard/earnings'),
             headers: {
@@ -386,7 +393,7 @@ class ProfessorService {
       }
 
       final idToken = await user.getIdToken(true); // Force refresh
-      final response = await http
+      final response = await _httpClient
           .put(
             Uri.parse('$_baseUrl/professor-dashboard/profile'),
             headers: {
@@ -445,7 +452,7 @@ class ProfessorService {
       }
 
       final idToken = await user.getIdToken(true); // Force refresh
-      final response = await http
+      final response = await _httpClient
           .put(
             Uri.parse(
               '$_baseUrl/professor-dashboard/schedule/$classId/confirm',
@@ -496,7 +503,7 @@ class ProfessorService {
       }
 
       final idToken = await user.getIdToken(true); // Force refresh
-      final response = await http
+      final response = await _httpClient
           .put(
             Uri.parse('$_baseUrl/professor-dashboard/schedule/$classId/cancel'),
             headers: {
@@ -576,7 +583,7 @@ class ProfessorService {
         requestBody['tenantId'] = tenantId;
       }
 
-      final response = await http
+      final response = await _httpClient
           .post(
             Uri.parse('$_baseUrl/professor-dashboard/schedules'),
             headers: {
@@ -662,7 +669,7 @@ class ProfessorService {
 
       final idToken = await user.getIdToken(true);
 
-      final response = await http.get(
+      final response = await _httpClient.get(
         Uri.parse('$_baseUrl/professor-dashboard/schedules'),
         headers: {
           'Content-Type': 'application/json',
@@ -711,7 +718,7 @@ class ProfessorService {
 
       final idToken = await user.getIdToken(true);
 
-      final response = await http
+      final response = await _httpClient
           .delete(
             Uri.parse('$_baseUrl/professor-dashboard/schedules/$scheduleId'),
             headers: {
@@ -757,7 +764,7 @@ class ProfessorService {
 
       final idToken = await user.getIdToken(true);
 
-      final response = await http
+      final response = await _httpClient
           .put(
             Uri.parse(
               '$_baseUrl/professor-dashboard/schedules/$scheduleId/block',
@@ -814,7 +821,7 @@ class ProfessorService {
 
       final idToken = await user.getIdToken(true);
 
-      final response = await http
+      final response = await _httpClient
           .put(
             Uri.parse(
               '$_baseUrl/professor-dashboard/schedules/$scheduleId/unblock',
@@ -871,7 +878,7 @@ class ProfessorService {
 
       final idToken = await user.getIdToken(true);
 
-      final response = await http
+      final response = await _httpClient
           .put(
             Uri.parse(
               '$_baseUrl/professor-dashboard/schedules/$scheduleId/complete',
@@ -933,7 +940,7 @@ class ProfessorService {
 
       final idToken = await user.getIdToken(true);
 
-      final response = await http
+      final response = await _httpClient
           .put(
             Uri.parse(
               '$_baseUrl/professor-dashboard/schedules/$scheduleId/cancel-booking',
@@ -997,7 +1004,7 @@ class ProfessorService {
 
       final idToken = await user.getIdToken(true);
 
-      final response = await http
+      final response = await _httpClient
           .post(
             Uri.parse('$_baseUrl/professor-dashboard/tenants/join'),
             headers: {

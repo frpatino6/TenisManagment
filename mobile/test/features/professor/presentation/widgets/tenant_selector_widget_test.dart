@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tennis_management/features/professor/presentation/widgets/tenant_selector_widget.dart';
 import 'package:tennis_management/core/providers/tenant_provider.dart';
 import 'package:tennis_management/features/tenant/domain/models/tenant_model.dart';
-import 'package:tennis_management/features/tenant/domain/services/tenant_service.dart'
-    as tenant_domain;
 
 void main() {
   group('TenantSelectorWidget', () {

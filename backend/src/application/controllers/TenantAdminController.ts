@@ -423,7 +423,7 @@ export class TenantAdminController {
           authUserId: newAuthUser._id,
           name: tempName,
           email,
-          phone: '',
+          phone: '-', // Valor por defecto, el profesor actualizará su teléfono cuando se registre
           specialties: [],
           hourlyRate: 0,
           experienceYears: 0,
@@ -453,14 +453,14 @@ export class TenantAdminController {
         message: 'Profesor agregado al tenant exitosamente',
       });
     } catch (error) {
-      logger.error('Error invitando profesor', { error: (error as Error).message });
-      const message = (error as Error).message;
-      if (message.includes('no encontrado')) {
-        res.status(404).json({ error: message });
-      } else if (message.includes('ya está activo')) {
-        res.status(409).json({ error: message });
+      const errorMessage = (error as Error).message;
+      logger.error('Error invitando profesor', { error: errorMessage, stack: (error as Error).stack });
+      if (errorMessage.includes('no encontrado')) {
+        res.status(404).json({ error: errorMessage });
+      } else if (errorMessage.includes('ya está activo')) {
+        res.status(409).json({ error: errorMessage });
       } else {
-        res.status(500).json({ error: 'Error interno del servidor' });
+        res.status(500).json({ error: 'Error interno del servidor', details: errorMessage });
       }
     }
   };

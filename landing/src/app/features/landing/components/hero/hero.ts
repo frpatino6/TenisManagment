@@ -14,7 +14,8 @@ export class HeroComponent {
     'images/hero-app-mockup.png',
     'images/hero-app-mockup-2.png',
     'images/hero-app-mockup-3.png',
-    'images/hero-app-mockup-4.png'
+    'images/hero-app-mockup-4.png',
+    'images/hero-app-mockup-5.png'
   ];
   currentImageIndex = 0;
   private intervalId: any;

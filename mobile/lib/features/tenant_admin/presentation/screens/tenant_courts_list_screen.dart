@@ -55,14 +55,16 @@ class _TenantCourtsListScreenState
 
     final courtsAsync = ref.watch(tenantCourtsProvider);
 
-    final filteredBySearch = ref.watch(filteredTenantCourtsProvider(_searchQuery));
+    final filteredBySearch = ref.watch(
+      filteredTenantCourtsProvider(_searchQuery),
+    );
     final filteredByStatus = ref.watch(
       filteredTenantCourtsByStatusProvider(
         _selectedFilter == CourtFilter.active
             ? 'active'
             : _selectedFilter == CourtFilter.inactive
-                ? 'inactive'
-                : 'all',
+            ? 'inactive'
+            : 'all',
       ),
     );
 
@@ -188,8 +190,11 @@ class _TenantCourtsListScreenState
             child: courtsAsync.when(
               data: (courts) {
                 if (finalFilteredList.isEmpty) {
-                  return _buildEmptyState(context, _searchQuery.isNotEmpty ||
-                      _selectedFilter != CourtFilter.all);
+                  return _buildEmptyState(
+                    context,
+                    _searchQuery.isNotEmpty ||
+                        _selectedFilter != CourtFilter.all,
+                  );
                 }
                 return RefreshIndicator(
                   onRefresh: _refreshCourts,
@@ -212,10 +217,7 @@ class _TenantCourtsListScreenState
                   });
                   return const SizedBox.shrink();
                 }
-                return AppErrorWidget.fromError(
-                  error,
-                  onRetry: _refreshCourts,
-                );
+                return AppErrorWidget.fromError(error, onRetry: _refreshCourts);
               },
             ),
           ),
@@ -260,7 +262,7 @@ class _TenantCourtsListScreenState
         side: BorderSide(
           color: court.isActive
               ? Colors.transparent
-              : colorScheme.outline.withOpacity(0.3),
+              : colorScheme.outline.withValues(alpha: 0.3),
         ),
       ),
       child: InkWell(
@@ -313,8 +315,8 @@ class _TenantCourtsListScreenState
                           ),
                           decoration: BoxDecoration(
                             color: court.isActive
-                                ? Colors.green.withOpacity(0.1)
-                                : Colors.grey.withOpacity(0.1),
+                                ? Colors.green.withValues(alpha: 0.1)
+                                : Colors.grey.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -322,7 +324,9 @@ class _TenantCourtsListScreenState
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: court.isActive ? Colors.green : Colors.grey,
+                              color: court.isActive
+                                  ? Colors.green
+                                  : Colors.grey,
                             ),
                           ),
                         ),
@@ -391,7 +395,10 @@ class _TenantCourtsListScreenState
                 ),
               ),
               PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
+                icon: Icon(
+                  Icons.more_vert,
+                  color: colorScheme.onSurfaceVariant,
+                ),
                 onSelected: (value) {
                   if (value == 'edit') {
                     context.push('/tenant-admin-home/courts/${court.id}/edit');
@@ -406,7 +413,11 @@ class _TenantCourtsListScreenState
                     value: 'edit',
                     child: Row(
                       children: [
-                        Icon(Icons.edit, size: 20, color: colorScheme.onSurface),
+                        Icon(
+                          Icons.edit,
+                          size: 20,
+                          color: colorScheme.onSurface,
+                        ),
                         const Gap(8),
                         const Text('Editar'),
                       ],
@@ -460,7 +471,7 @@ class _TenantCourtsListScreenState
             Icon(
               Icons.sports_tennis_outlined,
               size: 64,
-              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const Gap(16),
             Text(
@@ -508,9 +519,7 @@ class _TenantCourtsListScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          court.isActive ? 'Desactivar Cancha' : 'Activar Cancha',
-        ),
+        title: Text(court.isActive ? 'Desactivar Cancha' : 'Activar Cancha'),
         content: Text(
           court.isActive
               ? '¿Estás seguro de que quieres desactivar "${court.name}"?'
@@ -533,10 +542,7 @@ class _TenantCourtsListScreenState
 
     try {
       final service = ref.read(tenantAdminServiceProvider);
-      await service.updateCourt(
-        courtId: court.id,
-        isActive: !court.isActive,
-      );
+      await service.updateCourt(courtId: court.id, isActive: !court.isActive);
 
       // Refresh list
       ref.invalidate(tenantCourtsProvider);
@@ -565,7 +571,13 @@ class _TenantCourtsListScreenState
     }
   }
 
-  Future<void> _deleteCourt(BuildContext context, TenantCourtModel court) async {
+  Future<void> _deleteCourt(
+    BuildContext context,
+    TenantCourtModel court,
+  ) async {
+    // Guardar el messenger antes de cualquier operación async
+    final messenger = ScaffoldMessenger.of(context);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -599,24 +611,21 @@ class _TenantCourtsListScreenState
       // Refresh list
       ref.invalidate(tenantCourtsProvider);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cancha eliminada exitosamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Cancha eliminada exitosamente'),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 }
-

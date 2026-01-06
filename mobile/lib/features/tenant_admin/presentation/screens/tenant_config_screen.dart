@@ -584,9 +584,12 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
     }
 
     final List<String> prices = [];
-    if (individual != null)
+    if (individual != null) {
       prices.add('Individual: ${_formatPrice(individual)}');
-    if (group != null) prices.add('Grupal: ${_formatPrice(group)}');
+    }
+    if (group != null) {
+      prices.add('Grupal: ${_formatPrice(group)}');
+    }
     if (court != null) prices.add('Cancha: ${_formatPrice(court)}');
 
     return prices.join(' • ');

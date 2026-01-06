@@ -13,10 +13,7 @@ import '../../domain/models/tenant_court_model.dart';
 class TenantEditCourtScreen extends ConsumerStatefulWidget {
   final String courtId;
 
-  const TenantEditCourtScreen({
-    super.key,
-    required this.courtId,
-  });
+  const TenantEditCourtScreen({super.key, required this.courtId});
 
   @override
   ConsumerState<TenantEditCourtScreen> createState() =>
@@ -105,10 +102,7 @@ class _TenantEditCourtScreenState extends ConsumerState<TenantEditCourtScreen> {
     } on ValidationException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: Colors.orange,
-          ),
+          SnackBar(content: Text(e.message), backgroundColor: Colors.orange),
         );
       }
     } catch (e) {
@@ -262,8 +256,9 @@ class _TenantEditCourtScreenState extends ConsumerState<TenantEditCourtScreen> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : Text(
@@ -310,7 +305,7 @@ class _TenantEditCourtScreenState extends ConsumerState<TenantEditCourtScreen> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: colorScheme.outline.withOpacity(0.5),
+            color: colorScheme.outline.withValues(alpha: 0.5),
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -336,7 +331,7 @@ class _TenantEditCourtScreenState extends ConsumerState<TenantEditCourtScreen> {
     }
 
     return DropdownButtonFormField<String>(
-      value: _selectedType,
+      initialValue: _selectedType,
       decoration: InputDecoration(
         labelText: 'Tipo de Cancha',
         prefixIcon: Icon(Icons.category, color: colorScheme.primary),
@@ -347,7 +342,7 @@ class _TenantEditCourtScreenState extends ConsumerState<TenantEditCourtScreen> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: colorScheme.outline.withOpacity(0.5),
+            color: colorScheme.outline.withValues(alpha: 0.5),
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -401,7 +396,7 @@ class _TenantEditCourtScreenState extends ConsumerState<TenantEditCourtScreen> {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: colorScheme.outline.withOpacity(0.5),
+            color: colorScheme.outline.withValues(alpha: 0.5),
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -428,4 +423,3 @@ class _TenantEditCourtScreenState extends ConsumerState<TenantEditCourtScreen> {
     );
   }
 }
-

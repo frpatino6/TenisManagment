@@ -68,7 +68,7 @@ final filteredTenantProfessorsProvider =
           return filtered;
         },
         loading: () => [],
-        error: (_, __) => [],
+        error: (_, _) => [],
       );
     });
 
@@ -88,7 +88,7 @@ final filteredTenantProfessorsByStatusProvider =
               .toList();
         },
         loading: () => [],
-        error: (_, __) => [],
+        error: (_, _) => [],
       );
     });
 
@@ -124,7 +124,7 @@ final filteredTenantCourtsProvider =
           }).toList();
         },
         loading: () => [],
-        error: (_, __) => [],
+        error: (_, _) => [],
       );
     });
 
@@ -142,6 +142,6 @@ final filteredTenantCourtsByStatusProvider =
           return courts.where((court) => court.isActive == isActive).toList();
         },
         loading: () => [],
-        error: (_, __) => [],
+        error: (_, _) => [],
       );
     });

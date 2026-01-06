@@ -51,8 +51,9 @@ class _TenantInviteProfessorScreenState
       if (_showPricing) {
         pricing = {};
         if (_individualPriceController.text.isNotEmpty) {
-          pricing['individualClass'] =
-              double.parse(_individualPriceController.text);
+          pricing['individualClass'] = double.parse(
+            _individualPriceController.text,
+          );
         }
         if (_groupPriceController.text.isNotEmpty) {
           pricing['groupClass'] = double.parse(_groupPriceController.text);
@@ -85,10 +86,7 @@ class _TenantInviteProfessorScreenState
     } on ValidationException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: Colors.orange,
-          ),
+          SnackBar(content: Text(e.message), backgroundColor: Colors.orange),
         );
       }
     } catch (e) {
@@ -154,15 +152,12 @@ class _TenantInviteProfessorScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Card(
-                color: colorScheme.primaryContainer.withOpacity(0.3),
+                color: colorScheme.primaryContainer.withValues(alpha: 0.3),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: colorScheme.primary,
-                      ),
+                      Icon(Icons.info_outline, color: colorScheme.primary),
                       const Gap(12),
                       Expanded(
                         child: Text(
@@ -209,10 +204,7 @@ class _TenantInviteProfessorScreenState
                         : 'Si no se especifican, se usarán los precios base del centro',
                     style: GoogleFonts.inter(fontSize: 12),
                   ),
-                  leading: Icon(
-                    Icons.attach_money,
-                    color: colorScheme.primary,
-                  ),
+                  leading: Icon(Icons.attach_money, color: colorScheme.primary),
                   onExpansionChanged: (expanded) {
                     setState(() {
                       _showPricing = expanded;
@@ -262,8 +254,9 @@ class _TenantInviteProfessorScreenState
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : Text(
@@ -307,7 +300,7 @@ class _TenantInviteProfessorScreenState
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: colorScheme.outline.withOpacity(0.5),
+            color: colorScheme.outline.withValues(alpha: 0.5),
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -349,7 +342,7 @@ class _TenantInviteProfessorScreenState
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: colorScheme.outline.withOpacity(0.5),
+            color: colorScheme.outline.withValues(alpha: 0.5),
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -375,4 +368,3 @@ class _TenantInviteProfessorScreenState
     );
   }
 }
-

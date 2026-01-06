@@ -50,7 +50,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           }
         },
         loading: () {},
-        error: (_, __) {},
+        error: (_, _) {},
       );
     });
   }
@@ -364,7 +364,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             }
 
             return DropdownButtonFormField<String>(
-              value: currentTenantId,
+              initialValue: currentTenantId,
               isExpanded: true,
               decoration: InputDecoration(
                 labelText: 'Centro',

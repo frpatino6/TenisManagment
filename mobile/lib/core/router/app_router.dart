@@ -23,6 +23,9 @@ import '../../features/student/presentation/screens/recent_activity_screen.dart'
 import '../../features/student/presentation/screens/request_service_screen.dart';
 import '../../features/settings/presentation/screens/theme_settings_screen.dart';
 import '../../features/tenant/presentation/screens/select_tenant_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_admin_home_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_config_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_professors_list_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../providers/tenant_provider.dart';
 
@@ -73,15 +76,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           if (tenantState.isLoading) {
             return null;
           }
-          
+
           // Tenant finished loading, now decide where to go
-          if (hasTenant) {
-            // User has tenant, go directly to home
-            return user.role == 'professor' ? '/professor-home' : '/home';
-          } else {
-            // User doesn't have tenant, go to select tenant
-            return '/select-tenant';
+          if (user.role == 'tenant_admin') {
+            return '/tenant-admin-home';
           }
+          // Professors should NEVER see select-tenant screen, go directly to professor-home
+          if (user.role == 'professor') {
+            return '/professor-home';
+          }
+          // For students: only show select-tenant if they don't have a favorite tenant
+          if (user.role == 'student') {
+            if (hasTenant) {
+              return '/home';
+            } else {
+              return '/select-tenant';
+            }
+          }
+          // Default fallback (should not reach here)
+          return '/home';
         }
 
         // For other screens (not login/register), handle tenant state
@@ -90,8 +103,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return null;
         }
 
-        // If user doesn't have a tenant, redirect to select tenant
-        if (!hasTenant && !isSelectingTenant) {
+        // tenant_admin should NEVER see select-tenant screen
+        if (user.role == 'tenant_admin') {
+          if (currentPath != '/tenant-admin-home' &&
+              !currentPath.startsWith('/tenant-')) {
+            return '/tenant-admin-home';
+          }
+          return null;
+        }
+
+        // Professors should NEVER see select-tenant screen
+        if (user.role == 'professor') {
+          if (currentPath == '/select-tenant') {
+            return '/professor-home';
+          }
+          return null;
+        }
+
+        // For students: only redirect to select-tenant if they don't have a favorite tenant
+        if (user.role == 'student' && !hasTenant && !isSelectingTenant) {
           return '/select-tenant';
         }
       }
@@ -118,6 +148,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/professor-home',
         name: 'professor-home',
         builder: (context, state) => const ProfessorHomeScreen(),
+      ),
+      GoRoute(
+        path: '/tenant-admin-home',
+        name: 'tenant-admin-home',
+        builder: (context, state) => const TenantAdminHomeScreen(),
+        routes: [
+          GoRoute(
+            path: 'config',
+            name: 'tenant-admin-config',
+            builder: (context, state) => const TenantConfigScreen(),
+          ),
+          GoRoute(
+            path: 'professors',
+            name: 'tenant-admin-professors',
+            builder: (context, state) => const TenantProfessorsListScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: '/book-class',

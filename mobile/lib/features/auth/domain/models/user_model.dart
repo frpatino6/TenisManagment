@@ -75,6 +75,7 @@ class UserModel extends Equatable {
 
   bool get isProfessor => role == 'professor';
   bool get isStudent => role == 'student';
+  bool get isTenantAdmin => role == 'tenant_admin';
 
   @override
   List<Object?> get props => [

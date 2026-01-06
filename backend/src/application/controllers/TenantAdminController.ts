@@ -155,57 +155,87 @@ export class TenantAdminController {
         return;
       }
 
-      const { open, close, daysOfWeek } = req.body;
+      const { schedule } = req.body;
+
+      logger.info('Actualizando horarios de operación', { 
+        schedule,
+        tenantId: tenantAdmin.tenantId.toString() 
+      });
 
       // Validaciones
-      if (!open || !close) {
-        res.status(400).json({ error: 'open y close son requeridos' });
+      if (!schedule || !Array.isArray(schedule)) {
+        res.status(400).json({ error: 'schedule es requerido y debe ser un array' });
+        return;
+      }
+
+      if (schedule.length === 0) {
+        res.status(400).json({ error: 'schedule debe contener al menos un día' });
         return;
       }
 
       // Validar formato de hora (HH:mm)
       const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-      if (!timeRegex.test(open) || !timeRegex.test(close)) {
-        res.status(400).json({ error: 'El formato de hora debe ser HH:mm (ej: 08:00, 20:00)' });
-        return;
-      }
 
-      const [openHour, openMinute] = open.split(':').map(Number);
-      const [closeHour, closeMinute] = close.split(':').map(Number);
-
-      // Validar rangos
-      if (openHour < 0 || openHour >= 24 || openMinute < 0 || openMinute >= 60) {
-        res.status(400).json({ error: 'Hora de apertura inválida' });
-        return;
-      }
-
-      if (closeHour < 0 || closeHour > 24 || closeMinute < 0 || closeMinute >= 60) {
-        res.status(400).json({ error: 'Hora de cierre inválida' });
-        return;
-      }
-
-      // Convertir a minutos para comparar
-      const openMinutes = openHour * 60 + openMinute;
-      const closeMinutes = closeHour * 60 + closeMinute;
-
-      if (openMinutes >= closeMinutes) {
-        res.status(400).json({ error: 'La hora de apertura debe ser anterior a la hora de cierre' });
-        return;
-      }
-
-      // Validar daysOfWeek si se proporciona
-      if (daysOfWeek !== undefined) {
-        if (!Array.isArray(daysOfWeek)) {
-          res.status(400).json({ error: 'daysOfWeek debe ser un array' });
+      // Validar cada día en el schedule
+      const seenDays = new Set<number>();
+      for (const daySchedule of schedule) {
+        // Validar estructura
+        if (typeof daySchedule.dayOfWeek !== 'number' || 
+            typeof daySchedule.open !== 'string' || 
+            typeof daySchedule.close !== 'string') {
+          res.status(400).json({ 
+            error: 'Cada día debe tener dayOfWeek (number), open (string) y close (string)' 
+          });
           return;
         }
 
-        const validDays = daysOfWeek.every(day => 
-          typeof day === 'number' && day >= 0 && day <= 6
-        );
+        // Validar dayOfWeek (0-6)
+        if (daySchedule.dayOfWeek < 0 || daySchedule.dayOfWeek > 6) {
+          res.status(400).json({ 
+            error: `dayOfWeek debe estar entre 0 y 6 (0=Domingo, 6=Sábado). Día inválido: ${daySchedule.dayOfWeek}` 
+          });
+          return;
+        }
 
-        if (!validDays) {
-          res.status(400).json({ error: 'daysOfWeek debe contener números del 0 al 6 (0=Domingo, 6=Sábado)' });
+        // Validar que no haya días duplicados
+        if (seenDays.has(daySchedule.dayOfWeek)) {
+          res.status(400).json({ 
+            error: `El día ${daySchedule.dayOfWeek} está duplicado en el schedule` 
+          });
+          return;
+        }
+        seenDays.add(daySchedule.dayOfWeek);
+
+        // Validar formato de hora
+        if (!timeRegex.test(daySchedule.open) || !timeRegex.test(daySchedule.close)) {
+          res.status(400).json({ 
+            error: `El formato de hora debe ser HH:mm (ej: 08:00, 20:00). Día: ${daySchedule.dayOfWeek}` 
+          });
+          return;
+        }
+
+        const [openHour, openMinute] = daySchedule.open.split(':').map(Number);
+        const [closeHour, closeMinute] = daySchedule.close.split(':').map(Number);
+
+        // Validar rangos
+        if (openHour < 0 || openHour >= 24 || openMinute < 0 || openMinute >= 60) {
+          res.status(400).json({ error: `Hora de apertura inválida para el día ${daySchedule.dayOfWeek}` });
+          return;
+        }
+
+        if (closeHour < 0 || closeHour > 24 || closeMinute < 0 || closeMinute >= 60) {
+          res.status(400).json({ error: `Hora de cierre inválida para el día ${daySchedule.dayOfWeek}` });
+          return;
+        }
+
+        // Convertir a minutos para comparar
+        const openMinutes = openHour * 60 + openMinute;
+        const closeMinutes = closeHour * 60 + closeMinute;
+
+        if (openMinutes >= closeMinutes) {
+          res.status(400).json({ 
+            error: `La hora de apertura debe ser anterior a la hora de cierre para el día ${daySchedule.dayOfWeek}` 
+          });
           return;
         }
       }
@@ -218,14 +248,25 @@ export class TenantAdminController {
       }
 
       // Actualizar operatingHours en la configuración
-      const updatedConfig = {
-        ...tenant.config,
-        operatingHours: {
-          open,
-          close,
-          ...(daysOfWeek !== undefined && { daysOfWeek }),
-        },
+      // Convertir tenant.config a objeto plano para evitar problemas con objetos Mongoose
+      const currentConfig = tenant.config ? JSON.parse(JSON.stringify(tenant.config)) : {};
+      
+      // Ordenar schedule por dayOfWeek para consistencia
+      const sortedSchedule = [...schedule].sort((a, b) => a.dayOfWeek - b.dayOfWeek);
+
+      const operatingHours = {
+        schedule: sortedSchedule,
       };
+
+      const updatedConfig = {
+        ...currentConfig,
+        operatingHours,
+      };
+
+      logger.info('Configuración a guardar', { 
+        updatedConfig: JSON.stringify(updatedConfig),
+        operatingHours: JSON.stringify(operatingHours)
+      });
 
       const input: UpdateTenantInput = {
         config: updatedConfig,
@@ -238,6 +279,11 @@ export class TenantAdminController {
         'tenant_admin',
       );
 
+      logger.info('Tenant actualizado', { 
+        tenantId: tenantAdmin.tenantId.toString(),
+        operatingHours: updatedTenant?.config?.operatingHours 
+      });
+
       if (!updatedTenant) {
         res.status(404).json({ error: 'Tenant no encontrado' });
         return;
@@ -245,14 +291,18 @@ export class TenantAdminController {
 
       logger.info('Horarios de operación actualizados', { 
         tenantId: tenantAdmin.tenantId.toString(), 
-        open, 
-        close,
+        schedule: sortedSchedule,
         updatedBy: userId 
       });
 
       res.json({
         id: updatedTenant._id.toString(),
-        operatingHours: updatedTenant.config?.operatingHours,
+        name: updatedTenant.name,
+        slug: updatedTenant.slug,
+        domain: updatedTenant.domain,
+        config: updatedTenant.config,
+        isActive: updatedTenant.isActive,
+        createdAt: updatedTenant.createdAt,
         updatedAt: updatedTenant.updatedAt,
       });
     } catch (error) {
@@ -355,13 +405,34 @@ export class TenantAdminController {
         res.status(409).json({ error: 'El email ya está registrado con otro rol' });
         return;
       } else {
-        // Crear nuevo profesor
-        // Por ahora solo creamos la relación si el profesor existe
-        // TODO: Implementar creación completa de profesor desde invitación
-        res.status(400).json({
-          error: 'El profesor debe estar registrado primero. Funcionalidad de creación desde invitación pendiente.',
+        // Crear nuevo profesor automáticamente
+        logger.info('Creando nuevo profesor desde invitación', { email });
+
+        // Extraer nombre del email (parte antes del @) como nombre temporal
+        const tempName = email.split('@')[0];
+
+        // Crear AuthUser sin firebaseUid (se asociará cuando el profesor se registre en Firebase)
+        const newAuthUser = await AuthUserModel.create({
+          email,
+          name: tempName,
+          role: 'professor',
         });
-        return;
+
+        // Crear perfil de profesor
+        professor = await ProfessorModel.create({
+          authUserId: newAuthUser._id,
+          name: tempName,
+          email,
+          phone: '',
+          specialties: [],
+          hourlyRate: 0,
+          experienceYears: 0,
+        });
+
+        logger.info('Profesor creado exitosamente desde invitación', {
+          authUserId: newAuthUser._id.toString(),
+          professorId: professor._id.toString(),
+        });
       }
 
       // Agregar profesor al tenant

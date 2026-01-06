@@ -115,12 +115,7 @@ class _TenantProfessorsListScreenState
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          // TODO: Navigate to invite professor screen
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Funcionalidad de invitar profesor próximamente'),
-            ),
-          );
+          context.push('/tenant-admin-home/professors/invite');
         },
         icon: const Icon(Icons.person_add),
         label: const Text('Invitar Profesor'),

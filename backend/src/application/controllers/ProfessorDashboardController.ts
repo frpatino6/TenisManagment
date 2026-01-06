@@ -1311,49 +1311,15 @@ export class ProfessorDashboardController {
 
   /**
    * Join a tenant (center) as a professor
-   * TODO: TEN-108 - This will change when tenant admin module is implemented.
-   * Currently allows self-service join, but will require admin approval in the future.
+   * TEN-108: Self-service join has been disabled.
+   * Professors must be invited by a tenant admin to join a center.
    * POST /api/professor-dashboard/tenants/join
    */
   joinTenant = async (req: Request, res: Response) => {
-    try {
-      const firebaseUid = req.user?.uid;
-      if (!firebaseUid) {
-        return res.status(401).json({ error: 'Usuario no autenticado' });
-      }
-
-      const { tenantId } = req.body;
-      if (!tenantId) {
-        return res.status(400).json({ error: 'tenantId es requerido' });
-      }
-
-      const authUser = await AuthUserModel.findOne({ firebaseUid });
-      if (!authUser) {
-        return res.status(404).json({ error: 'Usuario no encontrado' });
-      }
-
-      const professor = await ProfessorModel.findOne({ authUserId: authUser._id });
-      if (!professor) {
-        return res.status(404).json({ error: 'Perfil de profesor no encontrado' });
-      }
-
-      const tenantService = new TenantService();
-      await tenantService.addProfessorToTenant(
-        professor._id.toString(),
-        tenantId,
-      );
-
-      res.json({
-        message: 'Te has unido al centro exitosamente',
-        tenantId,
-      });
-    } catch (error: any) {
-      console.error('Error joining tenant:', error);
-      if (error.message === 'El profesor ya está activo en este tenant') {
-        return res.status(409).json({ error: error.message });
-      }
-      res.status(500).json({ error: 'Error interno del servidor' });
-    }
+    res.status(403).json({
+      error: 'No puedes unirte a un centro por tu cuenta. Debes ser invitado por un administrador del centro.',
+      code: 'INVITATION_REQUIRED',
+    });
   };
 
   /**

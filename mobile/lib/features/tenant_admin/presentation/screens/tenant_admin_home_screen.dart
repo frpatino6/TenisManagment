@@ -383,11 +383,7 @@ class TenantAdminHomeScreen extends ConsumerWidget {
               subtitle: 'Gestionar canchas',
               icon: Icons.sports_tennis,
               color: Colors.green,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Funcionalidad próximamente')),
-                );
-              },
+              onTap: () => context.push('/tenant-admin-home/courts'),
             ),
           ],
         ),

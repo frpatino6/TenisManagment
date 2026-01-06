@@ -8,6 +8,7 @@ import '../../../../core/constants/timeouts.dart';
 import '../models/tenant_metrics_model.dart';
 import '../models/tenant_config_model.dart';
 import '../models/tenant_professor_model.dart';
+import '../models/tenant_court_model.dart';
 
 /// Service responsible for tenant admin operations
 /// Handles API communication for tenant admin endpoints
@@ -181,18 +182,14 @@ class TenantAdminService {
   /// PUT /api/tenant/operating-hours
   /// Update operating hours
   Future<TenantConfigModel> updateOperatingHours({
-    required String open,
-    required String close,
-    List<int>? daysOfWeek,
+    required List<Map<String, dynamic>>
+    schedule, // Array of {dayOfWeek, open, close}
   }) async {
     try {
       final headers = await _getAuthHeaders();
       final uri = Uri.parse('$_baseUrl/tenant/operating-hours');
 
-      final body = <String, dynamic>{'open': open, 'close': close};
-      if (daysOfWeek != null) {
-        body['daysOfWeek'] = daysOfWeek;
-      }
+      final body = <String, dynamic>{'schedule': schedule};
 
       final bodyJson = json.encode(body);
 
@@ -416,6 +413,212 @@ class TenantAdminService {
           errorData['error']?.toString() ?? 'Profesor no encontrado',
           code: 'PROFESSOR_NOT_FOUND',
         );
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
+  /// GET /api/tenant/courts
+  /// Get list of courts for the tenant
+  Future<List<TenantCourtModel>> getCourts() async {
+    try {
+      final headers = await _getAuthHeaders();
+      final uri = Uri.parse('$_baseUrl/tenant/courts');
+
+      final response = await _httpClient.get(
+        uri,
+        headers: headers,
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final List<dynamic> courtsJson = data['courts'] as List<dynamic>;
+        return courtsJson
+            .map(
+              (json) => TenantCourtModel.fromJson(json as Map<String, dynamic>),
+            )
+            .toList();
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw TenantException.notFound();
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
+  /// POST /api/tenant/courts
+  /// Create a new court
+  Future<TenantCourtModel> createCourt({
+    required String name,
+    required String type,
+    required double price,
+    String? description,
+    List<String>? features,
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final uri = Uri.parse('$_baseUrl/tenant/courts');
+
+      final body = <String, dynamic>{
+        'name': name,
+        'type': type,
+        'price': price,
+      };
+      if (description != null) body['description'] = description;
+      if (features != null) body['features'] = features;
+
+      final response = await _httpClient.post(
+        uri,
+        headers: headers,
+        body: json.encode(body),
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 201) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return TenantCourtModel.fromJson(data);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw TenantException.notFound();
+      } else if (response.statusCode == 400 || response.statusCode == 409) {
+        final errorData = json.decode(response.body);
+        throw ValidationException(
+          errorData['error']?.toString() ?? 'Error al crear cancha',
+          code: 'CREATE_COURT_ERROR',
+        );
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
+  /// PUT /api/tenant/courts/:id
+  /// Update a court
+  Future<TenantCourtModel> updateCourt({
+    required String courtId,
+    String? name,
+    String? type,
+    double? price,
+    String? description,
+    List<String>? features,
+    bool? isActive,
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final uri = Uri.parse('$_baseUrl/tenant/courts/$courtId');
+
+      final body = <String, dynamic>{};
+      if (name != null) body['name'] = name;
+      if (type != null) body['type'] = type;
+      if (price != null) body['price'] = price;
+      if (description != null) body['description'] = description;
+      if (features != null) body['features'] = features;
+      if (isActive != null) body['isActive'] = isActive;
+
+      final response = await _httpClient.put(
+        uri,
+        headers: headers,
+        body: json.encode(body),
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return TenantCourtModel.fromJson(data);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw TenantException.notFound();
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
+  /// DELETE /api/tenant/courts/:id
+  /// Delete a court
+  Future<void> deleteCourt(String courtId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final uri = Uri.parse('$_baseUrl/tenant/courts/$courtId');
+
+      final response = await _httpClient.delete(
+        uri,
+        headers: headers,
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        return;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw TenantException.notFound();
       } else if (response.statusCode >= 500) {
         throw NetworkException.serverError(statusCode: response.statusCode);
       } else {

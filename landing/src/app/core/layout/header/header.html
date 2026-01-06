@@ -1,0 +1,61 @@
+<header class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-20">
+            <!-- Logo -->
+            <div class="flex-shrink-0 flex items-center cursor-pointer" routerLink="/">
+                <span
+                    class="text-2xl font-bold bg-gradient-to-r from-tenis-dark to-tenis-green bg-clip-text text-transparent">
+                    TenisManagement
+                </span>
+            </div>
+
+            <!-- Desktop Navigation -->
+            <nav class="hidden md:flex space-x-8">
+                <a href="#features"
+                    class="text-gray-600 hover:text-tenis-green transition-colors font-medium">Características</a>
+                <a href="#prices" class="text-gray-600 hover:text-tenis-green transition-colors font-medium">Precios</a>
+                <a href="#faq" class="text-gray-600 hover:text-tenis-green transition-colors font-medium">FAQ</a>
+            </nav>
+
+            <!-- Desktop Actions -->
+            <div class="hidden md:flex items-center space-x-4">
+                <a href="https://app.tenismanagment.com/admin"
+                    class="text-sm font-medium text-gray-500 hover:text-tenis-dark transition-colors">
+                    Acceso Administrativo
+                </a>
+                <app-ui-button variant="primary" label="Solicitar Demo"></app-ui-button>
+            </div>
+
+            <!-- Mobile Menu Button -->
+            <div class="md:hidden flex items-center">
+                <button (click)="toggleMenu()" class="text-gray-600 hover:text-tenis-dark focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path *ngIf="!isMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                        <path *ngIf="isMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div *ngIf="isMenuOpen" class="md:hidden bg-white border-t border-gray-100 absolute w-full shadow-lg">
+        <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 flex flex-col">
+            <a href="#features" (click)="isMenuOpen = false"
+                class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-tenis-green hover:bg-gray-50">Características</a>
+            <a href="#prices" (click)="isMenuOpen = false"
+                class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-tenis-green hover:bg-gray-50">Precios</a>
+            <a href="#faq" (click)="isMenuOpen = false"
+                class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-tenis-green hover:bg-gray-50">FAQ</a>
+            <div class="mt-4 px-3 flex flex-col space-y-3">
+                <a href="https://app.tenismanagment.com/admin"
+                    class="text-base font-medium text-gray-500 hover:text-tenis-dark">
+                    Acceso Administrativo
+                </a>
+                <app-ui-button variant="primary" label="Solicitar Demo" [fullWidth]="true"></app-ui-button>
+            </div>
+        </div>
+    </div>
+</header>

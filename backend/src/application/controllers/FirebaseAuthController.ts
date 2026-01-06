@@ -188,7 +188,39 @@ export class FirebaseAuthController {
       });
 
       if (user) {
-        return res.status(409).json({ error: 'User already exists' });
+        // Si el usuario existe pero no tiene firebaseUid, actualizarlo
+        if (!user.firebaseUid && user.email === email && user.role === role) {
+          this.logger.info('Actualizando firebaseUid para usuario existente', {
+            userId: user._id.toString(),
+            email,
+          });
+          user.firebaseUid = firebaseUid;
+          if (name && !user.name) {
+            user.name = name;
+          }
+          await user.save();
+          
+          // El perfil ya debería existir (creado desde invitación), verificar y continuar
+          // Generar tokens JWT y retornar
+          const accessToken = this.jwtService.signAccess({ sub: user._id.toString(), role: user.role });
+          const refreshToken = this.jwtService.signRefresh({
+            sub: user._id.toString(),
+            role: user.role,
+          });
+
+          return res.status(200).json({
+            accessToken,
+            refreshToken,
+            user: {
+              id: user._id.toString(),
+              email: user.email,
+              name: user.name,
+              role: user.role,
+            },
+          });
+        } else {
+          return res.status(409).json({ error: 'User already exists' });
+        }
       }
 
       // Crear nuevo usuario

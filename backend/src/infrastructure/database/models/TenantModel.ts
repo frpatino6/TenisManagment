@@ -13,9 +13,15 @@ export interface TenantConfig {
     courtRental?: number;
   };
   operatingHours?: {
-    open: string; // Format: "HH:mm"
-    close: string; // Format: "HH:mm"
-    daysOfWeek?: number[]; // 0-6 (Sunday-Saturday)
+    schedule?: Array<{
+      dayOfWeek: number; // 0-6 (0 = Sunday, 6 = Saturday)
+      open: string; // Format: "HH:mm"
+      close: string; // Format: "HH:mm"
+    }>;
+    // Legacy support: keep old format for backward compatibility
+    open?: string; // Format: "HH:mm" (deprecated, use schedule)
+    close?: string; // Format: "HH:mm" (deprecated, use schedule)
+    daysOfWeek?: number[]; // 0-6 (deprecated, use schedule)
   };
 }
 
@@ -46,6 +52,12 @@ const TenantConfigSchema = new Schema<TenantConfig>(
       courtRental: { type: Number },
     },
     operatingHours: {
+      schedule: [{
+        dayOfWeek: { type: Number, required: true, min: 0, max: 6 },
+        open: { type: String, required: true },
+        close: { type: String, required: true },
+      }],
+      // Legacy support
       open: { type: String },
       close: { type: String },
       daysOfWeek: { type: [Number] },

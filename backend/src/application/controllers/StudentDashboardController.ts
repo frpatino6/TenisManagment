@@ -1259,32 +1259,55 @@ export class StudentDashboardController {
       // Operating hours must be configured - use defaults if not set (temporary)
       let open = '06:00';
       let close = '22:00';
-      let daysOfWeek: number[] | undefined;
+      const targetDayOfWeek = targetDate.getUTCDay(); // 0 = Sunday, 6 = Saturday
 
-      if (tenant?.config?.operatingHours?.open && tenant?.config?.operatingHours?.close) {
-        open = tenant.config.operatingHours.open;
-        close = tenant.config.operatingHours.close;
-        daysOfWeek = tenant.config.operatingHours.daysOfWeek;
+      if (tenant?.config?.operatingHours) {
+        const operatingHours = tenant.config.operatingHours;
+        
+        // Try new format first: schedule array
+        if (operatingHours.schedule && Array.isArray(operatingHours.schedule) && operatingHours.schedule.length > 0) {
+          const daySchedule = operatingHours.schedule.find(s => s.dayOfWeek === targetDayOfWeek);
+          
+          if (daySchedule) {
+            open = daySchedule.open;
+            close = daySchedule.close;
+          } else {
+            // Day not found in schedule, center is closed on this day
+            res.json({
+              courtId: court._id.toString(),
+              date: targetDate.toISOString().split('T')[0],
+              availableSlots: [],
+              bookedSlots: [],
+              message: 'El centro no opera en este día',
+            });
+            return;
+          }
+        }
+        // Legacy format: single open/close with daysOfWeek
+        else if (operatingHours.open && operatingHours.close) {
+          open = operatingHours.open;
+          close = operatingHours.close;
+          
+          // Check if day is in daysOfWeek (if specified)
+          if (operatingHours.daysOfWeek && operatingHours.daysOfWeek.length > 0) {
+            if (!operatingHours.daysOfWeek.includes(targetDayOfWeek)) {
+              res.json({
+                courtId: court._id.toString(),
+                date: targetDate.toISOString().split('T')[0],
+                availableSlots: [],
+                bookedSlots: [],
+                message: 'El centro no opera en este día',
+              });
+              return;
+            }
+          }
+        } else {
+          // Log warning but use defaults
+          console.warn(`Tenant ${tenantId} does not have operating hours configured. Using defaults: ${open} - ${close}`);
+        }
       } else {
         // Log warning but use defaults
         console.warn(`Tenant ${tenantId} does not have operating hours configured. Using defaults: ${open} - ${close}`);
-      }
-
-      // open, close, and daysOfWeek are already set above
-      
-      // Check if the requested date is within operating days
-      if (daysOfWeek && daysOfWeek.length > 0) {
-        const dayOfWeek = targetDate.getUTCDay(); // 0 = Sunday, 6 = Saturday
-        if (!daysOfWeek.includes(dayOfWeek)) {
-          res.json({
-            courtId: court._id.toString(),
-            date: targetDate.toISOString().split('T')[0],
-            availableSlots: [],
-            bookedSlots: [],
-            message: 'El centro no opera en este día',
-          });
-          return;
-        }
       }
 
       const [openHour] = open.split(':').map(Number);
@@ -1369,7 +1392,7 @@ export class StudentDashboardController {
         }
       });
 
-      // Generate all possible slots based on operating hours (in local time)
+      // Generate all possible slots based on operating hours (in local time)     
       for (let hour = startHour; hour < endHour; hour++) {
         const slot = `${hour.toString().padStart(2, '0')}:00`;
         if (!bookedSlots.has(slot)) {

@@ -28,9 +28,8 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
   final _logoUrlController = TextEditingController();
   final _primaryColorController = TextEditingController();
   final _secondaryColorController = TextEditingController();
-  TimeOfDay _openTime = const TimeOfDay(hour: 6, minute: 0);
-  TimeOfDay _closeTime = const TimeOfDay(hour: 22, minute: 0);
-  List<int> _selectedDays = [0, 1, 2, 3, 4, 5, 6]; // All days by default
+  // Operating hours: Map<dayOfWeek (0-6), {open: TimeOfDay, close: TimeOfDay}>
+  final Map<int, ({TimeOfDay open, TimeOfDay close})> _daySchedules = {};
   bool _isLoading = false;
   bool _hasChanges = false;
   bool _isSavingOperatingHours = false;
@@ -76,15 +75,32 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
 
     // Load operating hours
     final operatingHours = tenant.config?.operatingHours;
-    if (operatingHours != null) {
-      _openTime = _parseTimeString(operatingHours.open);
-      _closeTime = _parseTimeString(operatingHours.close);
-      _selectedDays = List<int>.from(operatingHours.daysOfWeek);
+    _daySchedules.clear();
+    if (operatingHours != null &&
+        operatingHours.schedule != null &&
+        operatingHours.schedule!.isNotEmpty) {
+      // New format: schedule array
+      for (final daySchedule in operatingHours.schedule!) {
+        _daySchedules[daySchedule.dayOfWeek] = (
+          open: _parseTimeString(daySchedule.open),
+          close: _parseTimeString(daySchedule.close),
+        );
+      }
+    } else if (operatingHours?.open != null && operatingHours?.close != null) {
+      // Legacy format: single open/close for all selected days
+      final openTime = _parseTimeString(operatingHours!.open!);
+      final closeTime = _parseTimeString(operatingHours.close!);
+      final days = operatingHours.daysOfWeek ?? [0, 1, 2, 3, 4, 5, 6];
+      for (final day in days) {
+        _daySchedules[day] = (open: openTime, close: closeTime);
+      }
     } else {
-      // Default values
-      _openTime = const TimeOfDay(hour: 6, minute: 0);
-      _closeTime = const TimeOfDay(hour: 22, minute: 0);
-      _selectedDays = [0, 1, 2, 3, 4, 5, 6];
+      // Default: all days 06:00-22:00
+      const defaultOpen = TimeOfDay(hour: 6, minute: 0);
+      const defaultClose = TimeOfDay(hour: 22, minute: 0);
+      for (int day = 0; day < 7; day++) {
+        _daySchedules[day] = (open: defaultOpen, close: defaultClose);
+      }
     }
 
     // Load branding
@@ -217,7 +233,10 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
                     }
                     return null;
                   },
-                  onChanged: (_) => _markAsChanged(),
+                  onChanged: (_) {
+                    setState(() {}); // Update subtitle
+                    _markAsChanged();
+                  },
                 ),
                 const Gap(16),
                 _buildTextField(
@@ -258,6 +277,7 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
               title: 'Precios Base',
               icon: Icons.attach_money,
               isExpanded: _isPricingExpanded,
+              subtitle: _getPricingSubtitle(),
               onExpansionChanged: (value) {
                 setState(() {
                   _isPricingExpanded = value;
@@ -292,44 +312,77 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
               title: 'Horarios de Operación',
               icon: Icons.access_time,
               isExpanded: _isOperatingHoursExpanded,
+              subtitle: _getOperatingHoursSubtitle(),
               onExpansionChanged: (value) {
                 setState(() {
                   _isOperatingHoursExpanded = value;
                 });
               },
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildTimeField(
-                        context,
-                        label: 'Hora de Apertura',
-                        time: _openTime,
-                        onTap: () => _selectTime(true),
-                      ),
-                    ),
-                    const Gap(16),
-                    Expanded(
-                      child: _buildTimeField(
-                        context,
-                        label: 'Hora de Cierre',
-                        time: _closeTime,
-                        onTap: () => _selectTime(false),
-                      ),
-                    ),
-                  ],
-                ),
-                const Gap(24),
                 Text(
-                  'Días de la Semana',
+                  'Configura el horario de operación para cada día de la semana:',
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const Gap(12),
-                _buildDaysSelector(context),
+                const Gap(16),
+                ...List.generate(7, (index) {
+                  final dayOfWeek = index;
+                  final dayNames = [
+                    'Domingo',
+                    'Lunes',
+                    'Martes',
+                    'Miércoles',
+                    'Jueves',
+                    'Viernes',
+                    'Sábado',
+                  ];
+                  final schedule = _daySchedules[dayOfWeek];
+                  final openTime =
+                      schedule?.open ?? const TimeOfDay(hour: 6, minute: 0);
+                  final closeTime =
+                      schedule?.close ?? const TimeOfDay(hour: 22, minute: 0);
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          dayNames[dayOfWeek],
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        const Gap(8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTimeField(
+                                context,
+                                label: 'Apertura',
+                                time: openTime,
+                                onTap: () => _selectTime(dayOfWeek, true),
+                              ),
+                            ),
+                            const Gap(16),
+                            Expanded(
+                              child: _buildTimeField(
+                                context,
+                                label: 'Cierre',
+                                time: closeTime,
+                                onTap: () => _selectTime(dayOfWeek, false),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                }),
                 const Gap(16),
                 ElevatedButton.icon(
                   onPressed: _isSavingOperatingHours
@@ -362,6 +415,7 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
               title: 'Branding',
               icon: Icons.palette,
               isExpanded: _isBrandingExpanded,
+              subtitle: _getBrandingSubtitle(),
               onExpansionChanged: (value) {
                 setState(() {
                   _isBrandingExpanded = value;
@@ -376,18 +430,24 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
                   onChanged: (_) => _markAsChanged(),
                 ),
                 const Gap(16),
-                _buildTextField(
+                _buildColorField(
                   controller: _primaryColorController,
                   label: 'Color Primario (hex, ej: #2E7D32)',
                   icon: Icons.color_lens,
-                  onChanged: (_) => _markAsChanged(),
+                  onChanged: (_) {
+                    setState(() {});
+                    _markAsChanged();
+                  },
                 ),
                 const Gap(16),
-                _buildTextField(
+                _buildColorField(
                   controller: _secondaryColorController,
                   label: 'Color Secundario (hex, ej: #4CAF50)',
                   icon: Icons.color_lens_outlined,
-                  onChanged: (_) => _markAsChanged(),
+                  onChanged: (_) {
+                    setState(() {});
+                    _markAsChanged();
+                  },
                 ),
               ],
             ),
@@ -404,6 +464,7 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
     required bool isExpanded,
     required ValueChanged<bool> onExpansionChanged,
     required List<Widget> children,
+    String? subtitle,
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -432,7 +493,7 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
         data: theme.copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          childrenPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
           initiallyExpanded: isExpanded,
           onExpansionChanged: onExpansionChanged,
           leading: Icon(
@@ -442,14 +503,45 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
                 : colorScheme.onSurfaceVariant,
             size: 24,
           ),
-          title: Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: isExpanded ? colorScheme.primary : colorScheme.onSurface,
-            ),
-          ),
+          title: subtitle != null
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: isExpanded
+                            ? colorScheme.primary
+                            : colorScheme.onSurface,
+                      ),
+                    ),
+                    if (!isExpanded && subtitle.isNotEmpty) ...[
+                      const Gap(2),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                )
+              : Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isExpanded
+                        ? colorScheme.primary
+                        : colorScheme.onSurface,
+                  ),
+                ),
           trailing: Icon(
             isExpanded ? Icons.expand_less : Icons.expand_more,
             color: isExpanded
@@ -466,6 +558,79 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
         ),
       ),
     );
+  }
+
+  String _formatPrice(double? price) {
+    if (price == null) return '';
+    final priceStr = price.toStringAsFixed(0);
+    // Add thousand separators
+    final reversed = priceStr.split('').reversed.join();
+    final withCommas = reversed.replaceAllMapped(
+      RegExp(r'.{3}'),
+      (match) => '${match.group(0)},',
+    );
+    final result = withCommas.split('').reversed.join();
+    // Remove leading comma if any
+    return '\$${result.startsWith(',') ? result.substring(1) : result}';
+  }
+
+  String _getPricingSubtitle() {
+    final individual = double.tryParse(_individualPriceController.text);
+    final group = double.tryParse(_groupPriceController.text);
+    final court = double.tryParse(_courtRentalController.text);
+
+    if (individual == null && group == null && court == null) {
+      return 'No configurado';
+    }
+
+    final List<String> prices = [];
+    if (individual != null)
+      prices.add('Individual: ${_formatPrice(individual)}');
+    if (group != null) prices.add('Grupal: ${_formatPrice(group)}');
+    if (court != null) prices.add('Cancha: ${_formatPrice(court)}');
+
+    return prices.join(' • ');
+  }
+
+  String _getOperatingHoursSubtitle() {
+    if (_daySchedules.isEmpty) return 'No configurado';
+
+    final uniqueSchedules = <String, List<int>>{};
+    for (final entry in _daySchedules.entries) {
+      final key =
+          '${_formatTimeString(entry.value.open)}-${_formatTimeString(entry.value.close)}';
+      uniqueSchedules.putIfAbsent(key, () => []).add(entry.key);
+    }
+
+    if (uniqueSchedules.length == 1) {
+      final schedule = uniqueSchedules.keys.first;
+      final days = uniqueSchedules.values.first;
+      if (days.length == 7) {
+        return 'Todos los días: $schedule';
+      }
+      const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+      final dayNamesStr = days.map((d) => dayNames[d]).join(', ');
+      return '$dayNamesStr: $schedule';
+    }
+
+    return '${_daySchedules.length} días configurados';
+  }
+
+  String _getBrandingSubtitle() {
+    final primaryColor = _primaryColorController.text.trim();
+    final secondaryColor = _secondaryColorController.text.trim();
+    final logo = _logoUrlController.text.trim();
+
+    if (primaryColor.isEmpty && secondaryColor.isEmpty && logo.isEmpty) {
+      return 'No configurado';
+    }
+
+    final List<String> items = [];
+    if (primaryColor.isNotEmpty) items.add('Primario: $primaryColor');
+    if (secondaryColor.isNotEmpty) items.add('Secundario: $secondaryColor');
+    if (logo.isNotEmpty) items.add('Logo configurado');
+
+    return items.take(2).join(' • ');
   }
 
   Widget _buildTextField({
@@ -488,6 +653,82 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: colorScheme.primary),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.outline),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: colorScheme.outline.withValues(alpha: 0.5),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.error),
+        ),
+        filled: true,
+        fillColor: colorScheme.surfaceContainerHighest,
+      ),
+    );
+  }
+
+  Widget _buildColorField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    void Function(String)? onChanged,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final colorHex = controller.text.trim();
+    Color? previewColor;
+
+    // Try to parse hex color
+    if (colorHex.isNotEmpty && colorHex.startsWith('#')) {
+      try {
+        final hex = colorHex.replaceFirst('#', '');
+        if (hex.length == 6) {
+          previewColor = Color(int.parse('FF$hex', radix: 16));
+        }
+      } catch (e) {
+        // Invalid color, ignore
+      }
+    }
+
+    return TextFormField(
+      controller: controller,
+      onChanged: onChanged,
+      style: GoogleFonts.inter(fontSize: 16, color: colorScheme.onSurface),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: colorScheme.primary),
+        suffixIcon: previewColor != null
+            ? Container(
+                margin: const EdgeInsets.all(8),
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: previewColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: colorScheme.outline.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              )
+            : null,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.outline),
@@ -620,88 +861,66 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
     );
   }
 
-  Widget _buildDaysSelector(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    final days = [
-      {'value': 0, 'label': 'Dom'},
-      {'value': 1, 'label': 'Lun'},
-      {'value': 2, 'label': 'Mar'},
-      {'value': 3, 'label': 'Mié'},
-      {'value': 4, 'label': 'Jue'},
-      {'value': 5, 'label': 'Vie'},
-      {'value': 6, 'label': 'Sáb'},
-    ];
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: days.map((day) {
-        final dayValue = day['value'] as int;
-        final isSelected = _selectedDays.contains(dayValue);
-        return FilterChip(
-          label: Text(day['label'] as String),
-          selected: isSelected,
-          onSelected: (selected) {
-            setState(() {
-              if (selected) {
-                _selectedDays.add(dayValue);
-              } else {
-                _selectedDays.remove(dayValue);
-              }
-              _selectedDays.sort();
-            });
-          },
-          selectedColor: colorScheme.primaryContainer,
-          checkmarkColor: colorScheme.onPrimaryContainer,
-          backgroundColor: colorScheme.surfaceContainerHighest,
-        );
-      }).toList(),
+  Future<void> _selectTime(int dayOfWeek, bool isOpenTime) async {
+    // Initialize with defaults if not set
+    _daySchedules[dayOfWeek] ??= (
+      open: const TimeOfDay(hour: 6, minute: 0),
+      close: const TimeOfDay(hour: 22, minute: 0),
     );
-  }
 
-  Future<void> _selectTime(bool isOpenTime) async {
+    final schedule = _daySchedules[dayOfWeek]!;
+    final currentTime = isOpenTime ? schedule.open : schedule.close;
     final picked = await showTimePicker(
       context: context,
-      initialTime: isOpenTime ? _openTime : _closeTime,
+      initialTime: currentTime,
     );
 
     if (picked != null) {
       setState(() {
+        final currentSchedule = _daySchedules[dayOfWeek]!;
         if (isOpenTime) {
-          _openTime = picked;
-          // Ensure close time is after open time
-          if (_closeTime.hour < picked.hour ||
-              (_closeTime.hour == picked.hour &&
-                  _closeTime.minute <= picked.minute)) {
-            _closeTime = TimeOfDay(
-              hour: picked.hour,
-              minute: (picked.minute + 1) % 60,
-            );
-            if (_closeTime.minute == 0) {
-              _closeTime = TimeOfDay(
-                hour: (_closeTime.hour + 1) % 24,
-                minute: 0,
-              );
+          // Update open time, ensure close time is after
+          final openMinutes = picked.hour * 60 + picked.minute;
+          final closeMinutes =
+              currentSchedule.close.hour * 60 + currentSchedule.close.minute;
+
+          if (openMinutes >= closeMinutes) {
+            // If open is after or equal to close, set close to 1 hour after open
+            var newCloseHour = (picked.hour + 1) % 24;
+            var newCloseMinute = picked.minute;
+            if (newCloseHour == 0 && picked.minute > 0) {
+              newCloseHour = 23;
+              newCloseMinute = 59;
             }
+            _daySchedules[dayOfWeek] = (
+              open: picked,
+              close: TimeOfDay(hour: newCloseHour, minute: newCloseMinute),
+            );
+          } else {
+            _daySchedules[dayOfWeek] = (
+              open: picked,
+              close: currentSchedule.close,
+            );
           }
         } else {
-          _closeTime = picked;
-          // Ensure open time is before close time
-          if (_openTime.hour > picked.hour ||
-              (_openTime.hour == picked.hour &&
-                  _openTime.minute >= picked.minute)) {
-            _openTime = TimeOfDay(
-              hour: picked.hour,
-              minute: (picked.minute - 1 + 60) % 60,
+          // Update close time, ensure open time is before
+          final openMinutes =
+              currentSchedule.open.hour * 60 + currentSchedule.open.minute;
+          final closeMinutes = picked.hour * 60 + picked.minute;
+
+          if (closeMinutes <= openMinutes) {
+            // If close is before or equal to open, set open to 1 hour before close
+            var newOpenHour = (picked.hour - 1 + 24) % 24;
+            var newOpenMinute = picked.minute;
+            _daySchedules[dayOfWeek] = (
+              open: TimeOfDay(hour: newOpenHour, minute: newOpenMinute),
+              close: picked,
             );
-            if (_openTime.minute == 59) {
-              _openTime = TimeOfDay(
-                hour: (_openTime.hour - 1 + 24) % 24,
-                minute: 59,
-              );
-            }
+          } else {
+            _daySchedules[dayOfWeek] = (
+              open: currentSchedule.open,
+              close: picked,
+            );
           }
         }
       });
@@ -715,11 +934,17 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
 
     try {
       final service = ref.read(tenantAdminServiceProvider);
-      await service.updateOperatingHours(
-        open: _formatTimeString(_openTime),
-        close: _formatTimeString(_closeTime),
-        daysOfWeek: _selectedDays.isEmpty ? null : _selectedDays,
-      );
+
+      // Convert _daySchedules to schedule array
+      final schedule = _daySchedules.entries.map((entry) {
+        return {
+          'dayOfWeek': entry.key,
+          'open': _formatTimeString(entry.value.open),
+          'close': _formatTimeString(entry.value.close),
+        };
+      }).toList();
+
+      await service.updateOperatingHours(schedule: schedule);
 
       // Refresh tenant info
       ref.invalidate(tenantInfoProvider);

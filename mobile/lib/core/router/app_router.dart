@@ -26,6 +26,10 @@ import '../../features/tenant/presentation/screens/select_tenant_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_admin_home_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_config_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_professors_list_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_invite_professor_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_courts_list_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_create_court_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_edit_court_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../providers/tenant_provider.dart';
 
@@ -163,6 +167,33 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: 'professors',
             name: 'tenant-admin-professors',
             builder: (context, state) => const TenantProfessorsListScreen(),
+            routes: [
+              GoRoute(
+                path: 'invite',
+                name: 'tenant-admin-professors-invite',
+                builder: (context, state) => const TenantInviteProfessorScreen(),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: 'courts',
+            name: 'tenant-admin-courts',
+            builder: (context, state) => const TenantCourtsListScreen(),
+            routes: [
+              GoRoute(
+                path: 'create',
+                name: 'tenant-admin-courts-create',
+                builder: (context, state) => const TenantCreateCourtScreen(),
+              ),
+              GoRoute(
+                path: ':id/edit',
+                name: 'tenant-admin-courts-edit',
+                builder: (context, state) {
+                  final courtId = state.pathParameters['id']!;
+                  return TenantEditCourtScreen(courtId: courtId);
+                },
+              ),
+            ],
           ),
         ],
       ),

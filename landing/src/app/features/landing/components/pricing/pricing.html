@@ -1,0 +1,56 @@
+<section id="prices" class="py-24 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-3xl mx-auto mb-16">
+            <h2 class="text-base font-semibold text-tenis-green tracking-wide uppercase">Precios</h2>
+            <p class="mt-2 text-3xl font-extrabold text-tenis-dark sm:text-4xl">
+                Planes flexibles para cada etapa
+            </p>
+            <p class="mt-4 text-xl text-gray-500">
+                Sin costes ocultos. Cancela cuando quieras.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div *ngFor="let plan of plans"
+                class="relative bg-white rounded-2xl shadow-lg flex flex-col transition-transform duration-300 hover:-translate-y-2 border border-gray-100"
+                [class.border-tenis-green]="plan.recommended" [class.ring-2]="plan.recommended"
+                [class.ring-tenis-green]="plan.recommended">
+
+                <div *ngIf="plan.recommended"
+                    class="absolute top-0 right-0 -mr-1 -mt-1 w-32 h-32 overflow-hidden rounded-tr-2xl">
+                    <div
+                        class="absolute top-0 right-0 bg-tenis-green text-white text-xs font-bold px-3 py-1 transform rotate-45 translate-x-8 translate-y-4 shadow-sm">
+                        POPULAR
+                    </div>
+                </div>
+
+                <div class="p-8 flex-1">
+                    <h3 class="text-xl font-semibold text-gray-900">{{ plan.name }}</h3>
+                    <div class="mt-4 flex items-baseline text-gray-900">
+                        <span class="text-4xl font-extrabold tracking-tight">{{ plan.price.startsWith('C') ? '' : '€'
+                            }}{{ plan.price }}</span>
+                        <span *ngIf="!plan.price.startsWith('C')"
+                            class="ml-1 text-xl font-semibold text-gray-500">/mes</span>
+                    </div>
+
+                    <ul role="list" class="mt-8 space-y-4">
+                        <li *ngFor="let feature of plan.features" class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="flex-shrink-0 h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                            <p class="ml-3 text-base text-gray-700">{{ feature }}</p>
+                        </li>
+                    </ul>
+                </div>
+                <div class="p-8 bg-gray-50 rounded-b-2xl border-t border-gray-100">
+                    <app-ui-button [variant]="plan.recommended ? 'primary' : 'outline'" [fullWidth]="true"
+                        label="Seleccionar Plan"></app-ui-button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

@@ -201,41 +201,62 @@ class BasePricingModel extends Equatable {
 }
 
 class OperatingHoursModel extends Equatable {
-  final String open; // Format: "HH:mm"
-  final String close; // Format: "HH:mm"
-  final List<int> daysOfWeek; // 0-6 (0 = Sunday, 6 = Saturday)
+  final List<DayScheduleModel>? schedule; // Array of day schedules
+  // Legacy fields for backward compatibility
+  final String? open; // Format: "HH:mm" (deprecated, use schedule)
+  final String? close; // Format: "HH:mm" (deprecated, use schedule)
+  final List<int>? daysOfWeek; // 0-6 (deprecated, use schedule)
 
   const OperatingHoursModel({
-    required this.open,
-    required this.close,
-    required this.daysOfWeek,
+    this.schedule,
+    this.open,
+    this.close,
+    this.daysOfWeek,
   });
 
   factory OperatingHoursModel.fromJson(Map<String, dynamic> json) {
+    // Try new format first
+    if (json['schedule'] != null && json['schedule'] is List) {
+      return OperatingHoursModel(
+        schedule: (json['schedule'] as List<dynamic>)
+            .map((e) => DayScheduleModel.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+    }
+    
+    // Legacy format
     return OperatingHoursModel(
-      open: json['open']?.toString() ?? '08:00',
-      close: json['close']?.toString() ?? '20:00',
+      open: json['open']?.toString(),
+      close: json['close']?.toString(),
       daysOfWeek: (json['daysOfWeek'] as List<dynamic>?)
-              ?.map((e) => (e as num).toInt())
-              .toList() ??
-          [],
+          ?.map((e) => (e as num).toInt())
+          .toList(),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'open': open,
-      'close': close,
-      'daysOfWeek': daysOfWeek,
-    };
+    if (schedule != null && schedule!.isNotEmpty) {
+      return {
+        'schedule': schedule!.map((s) => s.toJson()).toList(),
+      };
+    }
+    
+    // Legacy format
+    final json = <String, dynamic>{};
+    if (open != null) json['open'] = open;
+    if (close != null) json['close'] = close;
+    if (daysOfWeek != null) json['daysOfWeek'] = daysOfWeek;
+    return json;
   }
 
   OperatingHoursModel copyWith({
+    List<DayScheduleModel>? schedule,
     String? open,
     String? close,
     List<int>? daysOfWeek,
   }) {
     return OperatingHoursModel(
+      schedule: schedule ?? this.schedule,
       open: open ?? this.open,
       close: close ?? this.close,
       daysOfWeek: daysOfWeek ?? this.daysOfWeek,
@@ -243,6 +264,49 @@ class OperatingHoursModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [open, close, daysOfWeek];
+  List<Object?> get props => [schedule, open, close, daysOfWeek];
+}
+
+class DayScheduleModel extends Equatable {
+  final int dayOfWeek; // 0-6 (0 = Sunday, 6 = Saturday)
+  final String open; // Format: "HH:mm"
+  final String close; // Format: "HH:mm"
+
+  const DayScheduleModel({
+    required this.dayOfWeek,
+    required this.open,
+    required this.close,
+  });
+
+  factory DayScheduleModel.fromJson(Map<String, dynamic> json) {
+    return DayScheduleModel(
+      dayOfWeek: (json['dayOfWeek'] as num).toInt(),
+      open: json['open'] as String,
+      close: json['close'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'dayOfWeek': dayOfWeek,
+      'open': open,
+      'close': close,
+    };
+  }
+
+  DayScheduleModel copyWith({
+    int? dayOfWeek,
+    String? open,
+    String? close,
+  }) {
+    return DayScheduleModel(
+      dayOfWeek: dayOfWeek ?? this.dayOfWeek,
+      open: open ?? this.open,
+      close: close ?? this.close,
+    );
+  }
+
+  @override
+  List<Object?> get props => [dayOfWeek, open, close];
 }
 

@@ -246,12 +246,19 @@ describe('TenantAdminController', () => {
       expect(mockResponse.status).toHaveBeenCalledWith(400);
     });
 
-    it('should return 404 if professor does not exist', async () => {
+    it('should create professor automatically if does not exist', async () => {
       mockRequest.body = { email: 'nonexistent@test.com' };
 
       await controller.inviteProfessor(mockRequest as Request, mockResponse as Response);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      // Should create the professor automatically and return 201
+      expect(mockResponse.status).toHaveBeenCalledWith(201);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId,
+          message: 'Profesor agregado al tenant exitosamente',
+        }),
+      );
     });
   });
 

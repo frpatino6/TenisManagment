@@ -1,0 +1,119 @@
+<section id="contact" class="py-24 bg-tenis-dark relative overflow-hidden">
+    <!-- Decorative background -->
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute -top-40 -right-32 w-96 h-96 rounded-full bg-tenis-green opacity-10 blur-3xl"></div>
+        <div class="absolute -bottom-40 -left-32 w-96 h-96 rounded-full bg-tenis-blue opacity-10 blur-3xl"></div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div class="grid grid-cols-1">
+                <div class="p-10 sm:p-12">
+                    <div class="text-center mb-10">
+                        <h2 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+                            ¡Comienza hoy mismo!
+                        </h2>
+                        <p class="mt-4 text-lg text-gray-500">
+                            Déjanos tus datos y nos pondremos en contacto contigo para configurar tu club.
+                        </p>
+                    </div>
+
+                    <form [formGroup]="leadForm" (ngSubmit)="onSubmit()" class="space-y-6">
+                        <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+
+                            <!-- Club Name -->
+                            <div class="sm:col-span-2">
+                                <label for="clubName" class="block text-sm font-medium text-gray-700">Nombre del
+                                    Club</label>
+                                <div class="mt-1">
+                                    <input type="text" id="clubName" formControlName="clubName"
+                                        class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-tenis-green focus:border-tenis-green sm:text-sm transition-colors"
+                                        [class.border-red-500]="f['clubName'].invalid && f['clubName'].touched"
+                                        placeholder="Ej. Club de Tenis Las Palmas">
+                                    <p *ngIf="f['clubName'].invalid && f['clubName'].touched"
+                                        class="mt-1 text-sm text-red-600">
+                                        El nombre del club es requerido.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Contact Name -->
+                            <div class="sm:col-span-2">
+                                <label for="contactName" class="block text-sm font-medium text-gray-700">Nombre del
+                                    Contacto</label>
+                                <div class="mt-1">
+                                    <input type="text" id="contactName" formControlName="contactName"
+                                        class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-tenis-green focus:border-tenis-green sm:text-sm"
+                                        [class.border-red-500]="f['contactName'].invalid && f['contactName'].touched"
+                                        placeholder="Tu nombre completo">
+                                    <p *ngIf="f['contactName'].invalid && f['contactName'].touched"
+                                        class="mt-1 text-sm text-red-600">
+                                        Requerido.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Email -->
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-gray-700">Email
+                                    Corporativo</label>
+                                <div class="mt-1">
+                                    <input type="email" id="email" formControlName="email"
+                                        class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-tenis-green focus:border-tenis-green sm:text-sm"
+                                        [class.border-red-500]="f['email'].invalid && f['email'].touched"
+                                        placeholder="admin@tuclub.com">
+                                    <p *ngIf="f['email'].invalid && f['email'].touched"
+                                        class="mt-1 text-sm text-red-600">
+                                        Email inválido.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Phone -->
+                            <div>
+                                <label for="phone" class="block text-sm font-medium text-gray-700">Teléfono</label>
+                                <div class="mt-1">
+                                    <input type="tel" id="phone" formControlName="phone"
+                                        class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-tenis-green focus:border-tenis-green sm:text-sm"
+                                        [class.border-red-500]="f['phone'].invalid && f['phone'].touched"
+                                        placeholder="+34 600 000 000">
+                                    <p *ngIf="f['phone'].invalid && f['phone'].touched"
+                                        class="mt-1 text-sm text-red-600">
+                                        Teléfono inválido.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-4">
+                            <app-ui-button type="submit" variant="primary" [fullWidth]="true" label="Solicitar Alta"
+                                [class.opacity-50]="isSubmitting" [class.cursor-not-allowed]="isSubmitting">
+                                <span *ngIf="isSubmitting"
+                                    class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2"></span>
+                            </app-ui-button>
+                        </div>
+
+                        <!-- Success Message -->
+                        <div *ngIf="successMessage" class="rounded-md bg-green-50 p-4 animate-fade-in-up">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-green-800">
+                                        {{ successMessage }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,86 @@
+<section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-gradient-to-br from-white to-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid lg:grid-cols-2 gap-12 items-center">
+
+            <!-- Content -->
+            <div class="space-y-8 animate-fade-in-up">
+                <h1 class="text-4xl lg:text-6xl font-bold tracking-tight text-tenis-dark leading-tight">
+                    La plataforma integral para tu
+                    <span class="text-tenis-green">Club de Raqueta</span>
+                </h1>
+                <p class="text-xl text-gray-600 leading-relaxed max-w-lg">
+                    Gestiona reservas, profesores, alumnos y cobros en una sola aplicación. Diseñada para modernizar tu
+                    club y mejorar la experiencia de tus usuarios.
+                </p>
+
+                <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                    <app-ui-button variant="primary" label="Solicitar Demo" class="w-full sm:w-auto"></app-ui-button>
+
+                </div>
+
+                <div class="pt-8 flex items-center space-x-6 text-sm text-gray-500">
+                    <div class="flex items-center">
+                        <svg class="h-5 w-5 text-tenis-green mr-2" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Setup Rápido
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="h-5 w-5 text-tenis-green mr-2" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Soporte 24/7
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image/Mockup -->
+            <div class="relative lg:ml-10 animate-fade-in-right">
+                <div
+                    class="relative rounded-2xl shadow-2xl overflow-hidden border-8 border-gray-900 bg-gray-800 aspect-[9/19] max-w-xs mx-auto transform rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
+                    <img [src]="images[currentImageIndex]" alt="Dashboard de Profesor - TenisManagement App"
+                        class="w-full h-full object-cover transition-opacity duration-500">
+
+                    <!-- Carousel Controls Overlay -->
+
+                    <!-- Previous Button -->
+                    <button (click)="prevImage(); setIndex(currentImageIndex)"
+                        class="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white backdrop-blur-sm transition-all focus:outline-none group">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-75 group-hover:opacity-100"
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Next Button -->
+                    <button (click)="nextImage(); setIndex(currentImageIndex)"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white backdrop-blur-sm transition-all focus:outline-none group">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 opacity-75 group-hover:opacity-100"
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dots Indicators -->
+                    <div class="absolute bottom-4 left-0 right-0 flex justify-center space-x-2 z-10">
+                        <button *ngFor="let img of images; let i = index" (click)="setIndex(i)"
+                            class="w-2 h-2 rounded-full transition-colors duration-300 focus:outline-none shadow-sm"
+                            [class.bg-white]="i === currentImageIndex" [class.bg-white-50]="i !== currentImageIndex"
+                            [class.bg-opacity-100]="i === currentImageIndex"
+                            [class.bg-opacity-40]="i !== currentImageIndex">
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- Decorative elements -->
+                <div
+                    class="absolute -z-10 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-tenis-green/20 blur-3xl rounded-full">
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>

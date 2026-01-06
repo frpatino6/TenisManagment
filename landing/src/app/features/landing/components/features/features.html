@@ -1,0 +1,76 @@
+<section id="features" class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <div class="text-center max-w-3xl mx-auto mb-16">
+            <h2 class="text-base font-semibold text-tenis-green tracking-wide uppercase">Características</h2>
+            <p class="mt-2 text-3xl font-extrabold text-tenis-dark sm:text-4xl">
+                Todo lo que necesitas para gestionar tu club
+            </p>
+            <p class="mt-4 text-xl text-gray-500">
+                Una suite completa de herramientas diseñadas para simplificar la administración y potenciar el
+                crecimiento.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div *ngFor="let feature of features"
+                class="relative p-8 bg-gray-50 rounded-2xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                <div
+                    class="absolute top-0 left-0 -mt-4 ml-6 w-12 h-12 bg-white rounded-xl shadow-md flex items-center justify-center border border-gray-100">
+                    <!-- Icons based on name -->
+                    <ng-container [ngSwitch]="feature.icon">
+                        <!-- Calendar -->
+                        <svg *ngSwitchCase="'calendar'" class="w-6 h-6 text-tenis-green" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <!-- Credit Card -->
+                        <svg *ngSwitchCase="'credit-card'" class="w-6 h-6 text-tenis-blue" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                        <!-- Chart Bar -->
+                        <svg *ngSwitchCase="'chart-bar'" class="w-6 h-6 text-purple-500" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
+                        </svg>
+                        <!-- Device Mobile -->
+                        <svg *ngSwitchCase="'device-mobile'" class="w-6 h-6 text-orange-500" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        <!-- Users (New) -->
+                        <svg *ngSwitchCase="'users'" class="w-6 h-6 text-indigo-500" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <!-- Database (New) -->
+                        <svg *ngSwitchCase="'database'" class="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                        </svg>
+                        <!-- ID Card (Profile) -->
+                        <svg *ngSwitchCase="'id-card'" class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0c0 .884-.2 1.634-.5 2.166A5.498 5.498 0 0012 13.918c3 0 5.438-2.31 5.955-5.618A6.002 6.002 0 0014 6H9.5a5.96 5.96 0 00-2.166.5" />
+                        </svg>
+                    </ng-container>
+                </div>
+                <div class="mt-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">{{ feature.title }}</h3>
+                    <p class="text-gray-500 leading-relaxed">
+                        {{ feature.description }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>

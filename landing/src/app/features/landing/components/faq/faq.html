@@ -1,0 +1,30 @@
+<section id="faq" class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center max-w-3xl mx-auto mb-16">
+            <h2 class="text-base font-semibold text-tenis-green tracking-wide uppercase">FAQ</h2>
+            <p class="mt-2 text-3xl font-extrabold text-tenis-dark sm:text-4xl">
+                Preguntas Frecuentes
+            </p>
+        </div>
+
+        <div class="max-w-3xl mx-auto divide-y divide-gray-200">
+            <div *ngFor="let faq of faqs; let i = index" class="py-6">
+                <button (click)="toggleFaq(i)"
+                    class="text-left w-full flex justify-between items-start text-gray-400 focus:outline-none">
+                    <span class="font-medium text-gray-900 text-lg">{{ faq.question }}</span>
+                    <span class="ml-6 h-7 flex items-center transform transition-transform duration-200"
+                        [class.rotate-180]="faq.isOpen">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </span>
+                </button>
+                <div *ngIf="faq.isOpen" class="mt-2 pr-12 animate-fade-in-up">
+                    <p class="text-base text-gray-500">
+                        {{ faq.answer }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

@@ -154,26 +154,31 @@ class TenantSelectorWidget extends ConsumerWidget {
                 if (tenants.isEmpty) {
                   return Column(
                     children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: colorScheme.onPrimaryContainer,
+                        size: 32,
+                      ),
+                      const Gap(12),
                       Text(
                         'No tienes centros asignados',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const Gap(8),
+                      Text(
+                        'Debes ser invitado por un administrador del centro para poder trabajar allí.',
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           color: colorScheme.onPrimaryContainer.withValues(
                             alpha: 0.7,
                           ),
                         ),
-                      ),
-                      const Gap(12),
-                      ElevatedButton.icon(
-                        onPressed: () => _showJoinTenantDialog(context, ref),
-                        icon: const Icon(Icons.add, size: 18),
-                        label: Text(
-                          'Unirse a un centro',
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   );
@@ -265,18 +270,33 @@ class TenantSelectorWidget extends ConsumerWidget {
                       ),
                     ),
                     const Gap(12),
-                    ElevatedButton.icon(
-                      onPressed: () => _showJoinTenantDialog(context, ref),
-                      icon: const Icon(Icons.add_circle_outline, size: 18),
-                      label: Text(
-                        'Unirse a otro centro',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colorScheme.outline.withValues(alpha: 0.3),
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 40),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: colorScheme.onSurfaceVariant,
+                            size: 20,
+                          ),
+                          const Gap(8),
+                          Expanded(
+                            child: Text(
+                              'Para unirte a otro centro, debes ser invitado por su administrador.',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -453,181 +473,4 @@ class TenantSelectorWidget extends ConsumerWidget {
     );
   }
 
-  /// Show dialog to join a new tenant (center)
-  /// TODO: TEN-108 - This will change when tenant admin module is implemented.
-  /// Currently allows self-service join, but will require admin approval in the future.
-  void _showJoinTenantDialog(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final availableTenantsAsync = ref
-        .read(tenant_domain.tenantDomainServiceProvider)
-        .getAvailableTenants();
-    final professorTenantsAsync = ref.read(professorTenantsProvider);
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(
-          'Unirse a un Centro',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-        ),
-        content: FutureBuilder<List<TenantModel>>(
-          future: availableTenantsAsync,
-          builder: (context, availableSnapshot) {
-            if (availableSnapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (availableSnapshot.hasError) {
-              return Text(
-                'Error al cargar centros: ${availableSnapshot.error}',
-                style: TextStyle(color: colorScheme.error),
-              );
-            }
-
-            final availableTenants = availableSnapshot.data ?? [];
-
-            return professorTenantsAsync.when(
-              data: (registeredTenants) {
-                final registeredTenantIds = registeredTenants
-                    .map((t) => t.id)
-                    .toSet();
-                final joinableTenants = availableTenants
-                    .where((tenant) => !registeredTenantIds.contains(tenant.id))
-                    .toList();
-
-                if (joinableTenants.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.check_circle_outline,
-                          size: 48,
-                          color: colorScheme.primary,
-                        ),
-                        const Gap(16),
-                        Text(
-                          'Ya estás registrado en todos los centros disponibles',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return SizedBox(
-                  width: double.maxFinite,
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: joinableTenants.length,
-                    itemBuilder: (context, index) {
-                      final tenant = joinableTenants[index];
-
-                      return ListTile(
-                        leading: tenant.logo != null && tenant.logo!.isNotEmpty
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  tenant.logo!,
-                                  width: 40,
-                                  height: 40,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Icon(
-                                      Icons.business,
-                                      color: colorScheme.primary,
-                                    );
-                                  },
-                                ),
-                              )
-                            : Icon(Icons.business, color: colorScheme.primary),
-                        title: Text(
-                          tenant.name,
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-                        ),
-                        subtitle: Text(tenant.slug),
-                        trailing: Icon(
-                          Icons.arrow_forward_ios,
-                          size: 16,
-                          color: colorScheme.primary,
-                        ),
-                        onTap: () =>
-                            _joinTenant(context, ref, tenant, dialogContext),
-                      );
-                    },
-                  ),
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stackTrace) => Text(
-                'Error al cargar tus centros: ${error.toString()}',
-                style: TextStyle(color: colorScheme.error),
-              ),
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _joinTenant(
-    BuildContext context,
-    WidgetRef ref,
-    TenantModel tenant,
-    BuildContext dialogContext,
-  ) async {
-    try {
-      final service = ref.read(professorServiceProvider);
-      await service.joinTenant(tenant.id);
-
-      ref.invalidate(professorTenantsProvider);
-      ref.invalidate(tenantNotifierProvider);
-
-      if (dialogContext.mounted) {
-        Navigator.of(dialogContext).pop();
-      }
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Te has unido a ${tenant.name} exitosamente',
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.green,
-            duration: Timeouts.snackbarError,
-          ),
-        );
-      }
-    } catch (e) {
-      if (dialogContext.mounted) {
-        Navigator.of(dialogContext).pop();
-      }
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              e.toString().replaceAll('Exception: ', ''),
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.red,
-            duration: Timeouts.snackbarError,
-          ),
-        );
-      }
-    }
-  }
 }

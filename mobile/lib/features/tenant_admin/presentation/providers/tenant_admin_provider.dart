@@ -179,6 +179,21 @@ final bookingStatsProvider = FutureProvider.autoDispose<dynamic>((ref) async {
   }
 
   final service = ref.read(tenantAdminServiceProvider);
-
   return await service.getBookingStats();
 });
+
+/// Provider for booking calendar
+/// Fetches bookings grouped by date for a given month/range
+final bookingCalendarProvider = FutureProvider.autoDispose
+    .family<Map<String, List<dynamic>>, ({DateTime from, DateTime to})>((
+      ref,
+      range,
+    ) async {
+      final tenantId = ref.watch(currentTenantIdProvider);
+      if (tenantId == null || tenantId.isEmpty) {
+        throw Exception('Tenant ID requerido');
+      }
+
+      final service = ref.read(tenantAdminServiceProvider);
+      return await service.getBookingCalendar(from: range.from, to: range.to);
+    });

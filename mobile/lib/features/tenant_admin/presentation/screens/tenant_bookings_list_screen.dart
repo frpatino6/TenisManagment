@@ -20,6 +20,13 @@ class TenantBookingsListScreen extends ConsumerWidget {
         title: const Text('Reservas'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.calendar_month),
+            onPressed: () {
+              context.push('/tenant-admin-home/bookings/calendar');
+            },
+            tooltip: 'Vista de calendario',
+          ),
+          IconButton(
             icon: const Icon(Icons.bar_chart),
             onPressed: () {
               context.push('/tenant-admin-home/bookings/stats');

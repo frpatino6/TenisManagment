@@ -746,7 +746,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
 
     return availableSlotsAsync.when(
       data: (data) {
-        final availableSlots =
+        var availableSlots =
             (data['availableSlots'] as List<dynamic>?)
                 ?.map((e) => e as String)
                 .toList() ??
@@ -756,6 +756,33 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                 ?.map((e) => e as String)
                 .toList() ??
             [];
+
+        // Filter past slots if selected date is today
+        if (_selectedDate != null) {
+          final now = DateTime.now();
+          final isToday =
+              _selectedDate!.year == now.year &&
+              _selectedDate!.month == now.month &&
+              _selectedDate!.day == now.day;
+
+          if (isToday) {
+            availableSlots = availableSlots.where((slot) {
+              final parts = slot.split(':');
+              final hour = int.parse(parts[0]);
+              final minute = int.parse(parts[1]);
+
+              final slotTime = DateTime(
+                now.year,
+                now.month,
+                now.day,
+                hour,
+                minute,
+              );
+
+              return slotTime.isAfter(now);
+            }).toList();
+          }
+        }
 
         if (availableSlots.isEmpty) {
           return Card(

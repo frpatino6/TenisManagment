@@ -144,6 +144,59 @@ void main() {
 
           // Verify snackbar
           expect(find.textContaining('Centro cambiado a'), findsOneWidget);
+
+          // Wait for courts to reload for the new tenant
+          await tester.pumpAndSettle(const Duration(seconds: 2));
+
+          // Now proceed with Booking for the new tenant
+
+          // 1. Select First Available Court
+          // Note: ID might have changed, so we find by Icon again
+          final courtIcons = find.byIcon(Icons.sports_tennis);
+          if (courtIcons.evaluate().isNotEmpty) {
+            await tester.tap(courtIcons.first);
+            await tester.pumpAndSettle();
+
+            // 2. Select Date
+            await tester.tap(find.text('Selecciona una fecha'));
+            await tester.pumpAndSettle();
+            await tester.tap(
+              find.byType(TextButton).last,
+            ); // Confirm DatePicker
+            await tester.pumpAndSettle();
+
+            // 3. Select Time
+            await tester.pumpAndSettle(const Duration(seconds: 1));
+            final stringTimeChips = find.byType(FilterChip);
+
+            if (stringTimeChips.evaluate().isNotEmpty) {
+              await tester.scrollUntilVisible(
+                stringTimeChips.first,
+                100.0,
+                scrollable: find.byType(Scrollable).first,
+              );
+              await tester.tap(stringTimeChips.first);
+              await tester.pumpAndSettle();
+
+              // 4. Confirm
+              final confirmBtn = find.text('Confirmar Reserva');
+              await tester.scrollUntilVisible(
+                confirmBtn,
+                100.0,
+                scrollable: find.byType(Scrollable).first,
+              );
+
+              await tester.tap(confirmBtn);
+              await tester.pumpAndSettle();
+
+              // 5. Verify Success
+              expect(find.textContaining('exitosamente'), findsOneWidget);
+            } else {
+              print('No slots available for the second tenant');
+            }
+          } else {
+            print('No courts available for the second tenant');
+          }
         } else {
           print('Skipping Tenant Change verify: Only 1 tenant available');
           // Click the first one to close it or verify content

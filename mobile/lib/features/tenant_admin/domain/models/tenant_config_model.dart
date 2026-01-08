@@ -77,28 +77,28 @@ class TenantConfigModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        slug,
-        domain,
-        config,
-        isActive,
-        createdAt,
-        updatedAt,
-      ];
+    id,
+    name,
+    slug,
+    domain,
+    config,
+    isActive,
+    createdAt,
+    updatedAt,
+  ];
 }
 
 class TenantConfigData extends Equatable {
   final String? logo;
-  final String? primaryColor;
-  final String? secondaryColor;
+  final String? website;
+  final String? address;
   final BasePricingModel? basePricing;
   final OperatingHoursModel? operatingHours;
 
   const TenantConfigData({
     this.logo,
-    this.primaryColor,
-    this.secondaryColor,
+    this.website,
+    this.address,
     this.basePricing,
     this.operatingHours,
   });
@@ -106,8 +106,8 @@ class TenantConfigData extends Equatable {
   factory TenantConfigData.fromJson(Map<String, dynamic> json) {
     return TenantConfigData(
       logo: json['logo']?.toString(),
-      primaryColor: json['primaryColor']?.toString(),
-      secondaryColor: json['secondaryColor']?.toString(),
+      website: json['website']?.toString(),
+      address: json['address']?.toString(),
       basePricing: json['basePricing'] != null
           ? BasePricingModel.fromJson(
               json['basePricing'] as Map<String, dynamic>,
@@ -124,8 +124,8 @@ class TenantConfigData extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'logo': logo,
-      'primaryColor': primaryColor,
-      'secondaryColor': secondaryColor,
+      'website': website,
+      'address': address,
       'basePricing': basePricing?.toJson(),
       'operatingHours': operatingHours?.toJson(),
     };
@@ -133,15 +133,15 @@ class TenantConfigData extends Equatable {
 
   TenantConfigData copyWith({
     String? logo,
-    String? primaryColor,
-    String? secondaryColor,
+    String? website,
+    String? address,
     BasePricingModel? basePricing,
     OperatingHoursModel? operatingHours,
   }) {
     return TenantConfigData(
       logo: logo ?? this.logo,
-      primaryColor: primaryColor ?? this.primaryColor,
-      secondaryColor: secondaryColor ?? this.secondaryColor,
+      website: website ?? this.website,
+      address: address ?? this.address,
       basePricing: basePricing ?? this.basePricing,
       operatingHours: operatingHours ?? this.operatingHours,
     );
@@ -149,12 +149,12 @@ class TenantConfigData extends Equatable {
 
   @override
   List<Object?> get props => [
-        logo,
-        primaryColor,
-        secondaryColor,
-        basePricing,
-        operatingHours,
-      ];
+    logo,
+    website,
+    address,
+    basePricing,
+    operatingHours,
+  ];
 }
 
 class BasePricingModel extends Equatable {
@@ -223,7 +223,7 @@ class OperatingHoursModel extends Equatable {
             .toList(),
       );
     }
-    
+
     // Legacy format
     return OperatingHoursModel(
       open: json['open']?.toString(),
@@ -236,11 +236,9 @@ class OperatingHoursModel extends Equatable {
 
   Map<String, dynamic> toJson() {
     if (schedule != null && schedule!.isNotEmpty) {
-      return {
-        'schedule': schedule!.map((s) => s.toJson()).toList(),
-      };
+      return {'schedule': schedule!.map((s) => s.toJson()).toList()};
     }
-    
+
     // Legacy format
     final json = <String, dynamic>{};
     if (open != null) json['open'] = open;
@@ -287,18 +285,10 @@ class DayScheduleModel extends Equatable {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'dayOfWeek': dayOfWeek,
-      'open': open,
-      'close': close,
-    };
+    return {'dayOfWeek': dayOfWeek, 'open': open, 'close': close};
   }
 
-  DayScheduleModel copyWith({
-    int? dayOfWeek,
-    String? open,
-    String? close,
-  }) {
+  DayScheduleModel copyWith({int? dayOfWeek, String? open, String? close}) {
     return DayScheduleModel(
       dayOfWeek: dayOfWeek ?? this.dayOfWeek,
       open: open ?? this.open,
@@ -309,4 +299,3 @@ class DayScheduleModel extends Equatable {
   @override
   List<Object?> get props => [dayOfWeek, open, close];
 }
-

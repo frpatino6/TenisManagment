@@ -271,7 +271,130 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           tenantAsync.when(
             data: (currentTenant) {
               if (currentTenant == null) return const SizedBox.shrink();
-              return _buildTenantDropdown(context, currentTenant);
+              return Column(
+                children: [
+                  if (currentTenant.logo != null &&
+                      currentTenant.logo!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          currentTenant.logo!,
+                          height: 120,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              const SizedBox.shrink(),
+                        ),
+                      ),
+                    ),
+                  if ((currentTenant.config?['address'] != null &&
+                          currentTenant.config!['address']
+                              .toString()
+                              .isNotEmpty) ||
+                      (currentTenant.config?['website'] != null &&
+                          currentTenant.config!['website']
+                              .toString()
+                              .isNotEmpty))
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest
+                              .withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (currentTenant.config?['address'] != null &&
+                                currentTenant.config!['address']
+                                    .toString()
+                                    .isNotEmpty) ...[
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.location_on_outlined,
+                                    size: 18,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                                  const Gap(8),
+                                  Expanded(
+                                    child: Text(
+                                      currentTenant.config!['address']
+                                          .toString(),
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            if (currentTenant.config?['address'] != null &&
+                                currentTenant.config!['address']
+                                    .toString()
+                                    .isNotEmpty &&
+                                currentTenant.config?['website'] != null &&
+                                currentTenant.config!['website']
+                                    .toString()
+                                    .isNotEmpty)
+                              const Gap(8),
+                            if (currentTenant.config?['website'] != null &&
+                                currentTenant.config!['website']
+                                    .toString()
+                                    .isNotEmpty) ...[
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.language,
+                                    size: 18,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                                  const Gap(8),
+                                  Expanded(
+                                    child: Text(
+                                      currentTenant.config!['website']
+                                          .toString(),
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                        decoration: TextDecoration.underline,
+                                        decorationColor: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  _buildTenantDropdown(context, currentTenant),
+                ],
+              );
             },
             loading: () => const SizedBox.shrink(),
             error: (error, stackTrace) => const SizedBox.shrink(),
@@ -425,13 +548,36 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.business,
-                          size: 20,
-                          color: isSelected
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                        if (tenant.logo != null && tenant.logo!.isNotEmpty)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Image.network(
+                              tenant.logo!,
+                              width: 24,
+                              height: 24,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Icon(
+                                    Icons.business,
+                                    size: 20,
+                                    color: isSelected
+                                        ? Theme.of(context).colorScheme.primary
+                                        : Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          )
+                        else
+                          Icon(
+                            Icons.business,
+                            size: 20,
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                          ),
                         const Gap(12),
                         Expanded(
                           child: Text(

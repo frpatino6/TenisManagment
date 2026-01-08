@@ -5,8 +5,8 @@ import { Schema, model, Types } from 'mongoose';
  */
 export interface TenantConfig {
   logo?: string;
-  primaryColor?: string;
-  secondaryColor?: string;
+  website?: string;
+  address?: string;
   basePricing?: {
     individualClass?: number;
     groupClass?: number;
@@ -15,8 +15,8 @@ export interface TenantConfig {
   operatingHours?: {
     schedule?: Array<{
       dayOfWeek: number; // 0-6 (0 = Sunday, 6 = Saturday)
-    open: string; // Format: "HH:mm"
-    close: string; // Format: "HH:mm"
+      open: string; // Format: "HH:mm"
+      close: string; // Format: "HH:mm"
     }>;
     // Legacy support: keep old format for backward compatibility
     open?: string; // Format: "HH:mm" (deprecated, use schedule)
@@ -44,8 +44,8 @@ export interface TenantDocument {
 const TenantConfigSchema = new Schema<TenantConfig>(
   {
     logo: { type: String },
-    primaryColor: { type: String },
-    secondaryColor: { type: String },
+    website: { type: String },
+    address: { type: String },
     basePricing: {
       individualClass: { type: Number },
       groupClass: { type: Number },
@@ -71,7 +71,7 @@ const TenantSchema = new Schema<TenantDocument>(
     name: { type: String, required: true, trim: true },
     slug: {
       type: String,
-      required: function(this: TenantDocument) {
+      required: function (this: TenantDocument) {
         // Slug is required, but will be auto-generated if not provided
         return !!this.slug;
       },

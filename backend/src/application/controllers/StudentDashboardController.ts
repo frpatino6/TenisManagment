@@ -108,7 +108,7 @@ export class StudentDashboardController {
   getRecentActivities = async (req: Request, res: Response) => {
     console.log('=== StudentDashboardController.getRecentActivities called ===');
     console.log('req.user:', req.user);
-    
+
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
@@ -175,25 +175,25 @@ export class StudentDashboardController {
       for (const booking of bookings) {
         const schedule = booking.scheduleId as any;
         const professor = schedule?.professorId as any;
-        
+
         activities.push({
           id: booking._id.toString(),
           type: 'booking',
-          title: booking.status === 'confirmed' ? 'Clase reservada' : 
-                 booking.status === 'cancelled' ? 'Reserva cancelada' : 'Reserva pendiente',
+          title: booking.status === 'confirmed' ? 'Clase reservada' :
+            booking.status === 'cancelled' ? 'Reserva cancelada' : 'Reserva pendiente',
           description: professor?.name ? `Prof. ${professor.name}` : 'Profesor',
           date: booking.createdAt || new Date(),
           status: booking.status,
           icon: 'calendar_today',
-          color: booking.status === 'confirmed' ? 'blue' : 
-                 booking.status === 'cancelled' ? 'red' : 'orange'
+          color: booking.status === 'confirmed' ? 'blue' :
+            booking.status === 'cancelled' ? 'red' : 'orange'
         });
       }
 
       // Add payments as activities
       for (const payment of payments) {
         const professor = payment.professorId as any;
-        
+
         activities.push({
           id: payment._id.toString(),
           type: 'payment',
@@ -247,7 +247,7 @@ export class StudentDashboardController {
    */
   getStudentInfo = async (req: Request, res: Response) => {
     console.log('=== StudentDashboardController.getStudentInfo called ===');
-    
+
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
@@ -296,8 +296,8 @@ export class StudentDashboardController {
     try {
       const tenantId = req.tenantId;
       if (!tenantId) {
-        return res.status(400).json({ 
-          error: 'Tenant ID requerido. Selecciona un centro primero.' 
+        return res.status(400).json({
+          error: 'Tenant ID requerido. Selecciona un centro primero.'
         });
       }
 
@@ -359,10 +359,10 @@ export class StudentDashboardController {
    */
   getAvailableSchedules = async (req: Request, res: Response) => {
     console.log('=== StudentDashboardController.getAvailableSchedules called ===');
-    
+
     try {
       const { professorId } = req.query;
-      
+
       if (!professorId) {
         return res.status(400).json({ error: 'professorId es requerido' });
       }
@@ -408,10 +408,10 @@ export class StudentDashboardController {
    */
   getProfessorSchedules = async (req: Request, res: Response) => {
     console.log('=== StudentDashboardController.getProfessorSchedules called ===');
-    
+
     try {
       const { professorId } = req.params;
-      
+
       if (!professorId) {
         return res.status(400).json({ error: 'professorId es requerido' });
       }
@@ -484,10 +484,10 @@ export class StudentDashboardController {
    */
   getTenantSchedules = async (req: Request, res: Response) => {
     console.log('=== StudentDashboardController.getTenantSchedules called ===');
-    
+
     try {
       const { tenantId } = req.params;
-      
+
       if (!tenantId) {
         return res.status(400).json({ error: 'tenantId es requerido' });
       }
@@ -566,7 +566,7 @@ export class StudentDashboardController {
    */
   getAllAvailableSchedules = async (req: Request, res: Response) => {
     console.log('=== StudentDashboardController.getAllAvailableSchedules called ===');
-    
+
     try {
       // Get all available schedules across all tenants
       const schedules = await ScheduleModel.find({
@@ -643,7 +643,7 @@ export class StudentDashboardController {
    */
   bookLesson = async (req: Request, res: Response) => {
     console.log('=== StudentDashboardController.bookLesson called ===');
-    
+
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
@@ -651,17 +651,17 @@ export class StudentDashboardController {
       }
 
       const { scheduleId, serviceType, price } = req.body;
-      
+
       console.log('Request body:', { scheduleId, serviceType, price });
-      
+
       if (!scheduleId) {
         return res.status(400).json({ error: 'scheduleId es requerido' });
       }
-      
+
       if (!serviceType) {
         return res.status(400).json({ error: 'serviceType es requerido' });
       }
-      
+
       if (!price || price <= 0) {
         return res.status(400).json({ error: 'price es requerido y debe ser mayor a 0' });
       }
@@ -680,7 +680,7 @@ export class StudentDashboardController {
       }
 
       console.log('Looking for schedule:', scheduleId);
-      
+
       // Check if schedule exists and is available
       const schedule = await ScheduleModel.findById(scheduleId);
       console.log('Schedule found:', !!schedule);
@@ -743,7 +743,7 @@ export class StudentDashboardController {
       await schedule.save();
 
       console.log(`Booking created: ${booking._id} with court: ${availableCourt.name}`);
-      
+
       res.status(201).json({
         id: booking._id,
         studentId: booking.studentId,
@@ -766,7 +766,7 @@ export class StudentDashboardController {
   getBookings = async (req: Request, res: Response) => {
     console.log('=== StudentDashboardController.getBookings called ===');
     console.log('req.user:', req.user);
-    
+
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
@@ -846,7 +846,7 @@ export class StudentDashboardController {
         // For court_rental, use bookingDate if available, otherwise use current date
         let startTime = '';
         let endTime = '';
-        
+
         if (booking.serviceType === 'court_rental') {
           // For court rentals, use bookingDate or createdAt as the time reference
           const bookingDateTime = booking.bookingDate || booking.createdAt || new Date();
@@ -917,7 +917,7 @@ export class StudentDashboardController {
    */
   bookCourt = async (req: Request, res: Response) => {
     console.log('=== StudentDashboardController.bookCourt called ===');
-    
+
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
@@ -925,17 +925,17 @@ export class StudentDashboardController {
       }
 
       const { courtId, startTime, endTime, price } = req.body;
-      
+
       console.log('Request body:', { courtId, startTime, endTime, price });
-      
+
       if (!courtId) {
         return res.status(400).json({ error: 'courtId es requerido' });
       }
-      
+
       if (!startTime || !endTime) {
         return res.status(400).json({ error: 'startTime y endTime son requeridos' });
       }
-      
+
       if (!price || price <= 0) {
         return res.status(400).json({ error: 'price es requerido y debe ser mayor a 0' });
       }
@@ -954,7 +954,7 @@ export class StudentDashboardController {
       }
 
       console.log('Looking for court:', courtId);
-      
+
       // Check if court exists and is available
       const court = await CourtModel.findById(courtId);
       console.log('Court found:', !!court);
@@ -991,7 +991,7 @@ export class StudentDashboardController {
       // We need to check both court_rental and lessons that have this court assigned
       const oneHourBefore = new Date(requestedStart);
       oneHourBefore.setUTCHours(oneHourBefore.getUTCHours() - 1);
-      
+
       // Find all bookings for this specific court that might overlap
       const potentialConflicts = await BookingModel.find({
         tenantId: tenantId,
@@ -1066,7 +1066,7 @@ export class StudentDashboardController {
         bookingDate: requestedStart,
       });
 
-      
+
       res.status(201).json({
         id: booking._id,
         studentId: booking.studentId,
@@ -1083,7 +1083,7 @@ export class StudentDashboardController {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : 'No stack trace';
       console.error('Error details:', { errorMessage, errorStack });
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Error interno del servidor',
         message: errorMessage,
         details: process.env.NODE_ENV === 'development' ? errorStack : undefined
@@ -1098,7 +1098,7 @@ export class StudentDashboardController {
    */
   getMyTenants = async (req: Request, res: Response) => {
     console.log('=== StudentDashboardController.getMyTenants called ===');
-    
+
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
@@ -1129,7 +1129,7 @@ export class StudentDashboardController {
       const tenantsWithActivity = await Promise.all(
         studentTenants.map(async (st) => {
           const tenant = st.tenantId as any;
-          
+
           // Get last booking for this student in this tenant
           const lastBooking = await BookingModel.findOne({
             studentId: student._id,
@@ -1144,6 +1144,7 @@ export class StudentDashboardController {
             name: tenant.name,
             slug: tenant.slug,
             logo: tenant.config?.logo || null,
+            config: tenant.config,
             isActive: st.isActive,
             joinedAt: st.joinedAt,
             balance: st.balance,
@@ -1180,6 +1181,7 @@ export class StudentDashboardController {
         slug: tenant.slug,
         domain: tenant.domain || null,
         logo: tenant.config?.logo || null,
+        config: tenant.config,
         isActive: tenant.isActive,
       }));
 
@@ -1231,7 +1233,7 @@ export class StudentDashboardController {
           0, 0, 0, 0
         ));
       }
-      
+
       const nextDay = new Date(targetDate);
       nextDay.setUTCDate(nextDay.getUTCDate() + 1);
 
@@ -1255,7 +1257,7 @@ export class StudentDashboardController {
 
       // Get tenant to check operating hours configuration
       const tenant = await TenantModel.findById(tenantId);
-      
+
       // Operating hours must be configured - use defaults if not set (temporary)
       let open = '06:00';
       let close = '22:00';
@@ -1263,11 +1265,11 @@ export class StudentDashboardController {
 
       if (tenant?.config?.operatingHours) {
         const operatingHours = tenant.config.operatingHours;
-        
+
         // Try new format first: schedule array
         if (operatingHours.schedule && Array.isArray(operatingHours.schedule) && operatingHours.schedule.length > 0) {
           const daySchedule = operatingHours.schedule.find(s => s.dayOfWeek === targetDayOfWeek);
-          
+
           if (daySchedule) {
             open = daySchedule.open;
             close = daySchedule.close;
@@ -1287,7 +1289,7 @@ export class StudentDashboardController {
         else if (operatingHours.open && operatingHours.close) {
           open = operatingHours.open;
           close = operatingHours.close;
-          
+
           // Check if day is in daysOfWeek (if specified)
           if (operatingHours.daysOfWeek && operatingHours.daysOfWeek.length > 0) {
             if (!operatingHours.daysOfWeek.includes(targetDayOfWeek)) {
@@ -1710,6 +1712,7 @@ export class StudentDashboardController {
         tenantName: firstFavorite.name,
         tenantSlug: firstFavorite.slug,
         logo: firstFavorite.config?.logo || null,
+        config: firstFavorite.config,
         isActive: firstFavorite.isActive,
       });
     } catch (error) {

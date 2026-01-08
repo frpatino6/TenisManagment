@@ -271,7 +271,7 @@ class TenantBookingsListScreen extends ConsumerWidget {
           ],
         ),
         onTap: () {
-          // TODO: Navigate to booking details
+          context.push('/tenant-admin-home/bookings/${booking.id}');
         },
       ),
     );

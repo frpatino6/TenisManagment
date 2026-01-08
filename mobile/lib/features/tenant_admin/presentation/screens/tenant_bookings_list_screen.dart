@@ -1,19 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
-import '../providers/tenant_admin_provider.dart';
-import '../../../../core/widgets/loading_widget.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/error_widget.dart';
+import '../../../../core/widgets/loading_widget.dart';
 import '../../domain/models/tenant_booking_model.dart';
-import 'package:intl/intl.dart';
+import '../providers/tenant_admin_provider.dart';
 
-class TenantBookingsListScreen extends ConsumerWidget {
+class TenantBookingsListScreen extends ConsumerStatefulWidget {
   const TenantBookingsListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TenantBookingsListScreen> createState() =>
+      _TenantBookingsListScreenState();
+}
+
+class _TenantBookingsListScreenState
+    extends ConsumerState<TenantBookingsListScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final bookingsAsync = ref.watch(tenantBookingsProvider);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -35,258 +51,322 @@ class TenantBookingsListScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: bookingsAsync.when(
-        data: (data) {
-          final bookings = data['bookings'] as List<TenantBookingModel>;
-          final pagination = data['pagination'] as BookingPagination;
+      body: Column(
+        children: [
+          _buildSearchAndFilters(context),
+          Expanded(
+            child: bookingsAsync.when(
+              data: (data) {
+                final bookings = data['bookings'] as List<TenantBookingModel>;
+                final pagination = data['pagination'] as BookingPagination;
 
-          if (bookings.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.event_busy, size: 64, color: Colors.grey[400]),
-                  const Gap(16),
-                  Text(
-                    'No hay reservas',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleLarge?.copyWith(color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            );
-          }
+                if (bookings.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No se encontraron reservas con los filtros aplicados.',
+                    ),
+                  );
+                }
 
-          return Column(
-            children: [
-              // Summary card
-              Container(
-                padding: const EdgeInsets.all(16),
-                color: Theme.of(context).colorScheme.primaryContainer,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                return Column(
                   children: [
-                    _buildSummaryItem(
-                      context,
-                      'Total',
-                      pagination.total.toString(),
-                      Icons.event,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Mostrando ${bookings.length} de ${pagination.totalItems} reservas',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          const Spacer(),
+                          Text(
+                            'Página ${pagination.currentPage} / ${pagination.totalPages}',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
                     ),
-                    _buildSummaryItem(
-                      context,
-                      'Página',
-                      '${pagination.page}/${pagination.totalPages}',
-                      Icons.pages,
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: bookings.length,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemBuilder: (context, index) {
+                          return _buildBookingCard(context, bookings[index]);
+                        },
+                      ),
                     ),
+                    _buildPaginationControls(context, pagination),
                   ],
-                ),
+                );
+              },
+              loading: () => const LoadingWidget(),
+              error: (error, stack) => AppErrorWidget.fromError(
+                error,
+                onRetry: () => ref.refresh(tenantBookingsProvider),
               ),
-
-              // Bookings list
-              Expanded(
-                child: ListView.builder(
-                  itemCount: bookings.length,
-                  padding: const EdgeInsets.all(8),
-                  itemBuilder: (context, index) {
-                    final booking = bookings[index];
-                    return _buildBookingCard(context, booking, ref);
-                  },
-                ),
-              ),
-
-              // Pagination controls
-              if (pagination.totalPages > 1)
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.chevron_left),
-                        onPressed: pagination.hasPreviousPage
-                            ? () {
-                                // TODO: Update page provider
-                              }
-                            : null,
-                      ),
-                      Text(
-                        'Página ${pagination.page} de ${pagination.totalPages}',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.chevron_right),
-                        onPressed: pagination.hasNextPage
-                            ? () {
-                                // TODO: Update page provider
-                              }
-                            : null,
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          );
-        },
-        loading: () => const LoadingWidget(),
-        error: (error, stack) => AppErrorWidget.fromError(
-          error,
-          onRetry: () => ref.refresh(tenantBookingsProvider),
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSummaryItem(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-  ) {
+  Widget _buildSearchAndFilters(BuildContext context) {
+    final currentStatus = ref.watch(bookingStatusFilterProvider);
+
     return Column(
       children: [
-        Icon(icon, size: 24),
-        const Gap(4),
-        Text(
-          value,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Buscar estudiante...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        ref.read(bookingStudentSearchProvider.notifier).set("");
+                      },
+                    )
+                  : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Theme.of(
+                context,
+              ).colorScheme.surfaceVariant.withOpacity(0.5),
+            ),
+            onChanged: (value) {
+              ref.read(bookingStudentSearchProvider.notifier).set(value);
+            },
+          ),
         ),
-        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              _buildFilterChip('Todas', null, currentStatus == null),
+              const Gap(8),
+              _buildFilterChip(
+                'Pendientes',
+                'pending',
+                currentStatus == 'pending',
+              ),
+              const Gap(8),
+              _buildFilterChip(
+                'Confirmadas',
+                'confirmed',
+                currentStatus == 'confirmed',
+              ),
+              const Gap(8),
+              _buildFilterChip(
+                'Completadas',
+                'completed',
+                currentStatus == 'completed',
+              ),
+              const Gap(8),
+              _buildFilterChip(
+                'Canceladas',
+                'cancelled',
+                currentStatus == 'cancelled',
+              ),
+            ],
+          ),
+        ),
+        const Gap(8),
       ],
     );
   }
 
-  Widget _buildBookingCard(
-    BuildContext context,
-    TenantBookingModel booking,
-    WidgetRef ref,
-  ) {
-    final dateFormat = DateFormat('dd/MM/yyyy');
-    final timeFormat = DateFormat('HH:mm');
+  Widget _buildFilterChip(String label, String? value, bool isSelected) {
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          ref.read(bookingStatusFilterProvider.notifier).set(value);
+        }
+      },
+      selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+      checkmarkColor: Theme.of(context).colorScheme.primary,
+    );
+  }
 
-    Color statusColor;
-    IconData statusIcon;
-    switch (booking.status) {
-      case 'confirmed':
-        statusColor = Colors.green;
-        statusIcon = Icons.check_circle;
-        break;
-      case 'pending':
-        statusColor = Colors.orange;
-        statusIcon = Icons.pending;
-        break;
-      case 'cancelled':
-        statusColor = Colors.red;
-        statusIcon = Icons.cancel;
-        break;
-      case 'completed':
-        statusColor = Colors.blue;
-        statusIcon = Icons.done_all;
-        break;
-      default:
-        statusColor = Colors.grey;
-        statusIcon = Icons.help;
-    }
+  Widget _buildBookingCard(BuildContext context, TenantBookingModel booking) {
+    final theme = Theme.of(context);
+    final statusColor = _getStatusColor(booking.status);
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: statusColor.withOpacity(0.2),
-          child: Icon(statusIcon, color: statusColor),
-        ),
-        title: Text(
-          booking.student.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Gap(4),
-            if (booking.date != null)
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: statusColor.withOpacity(0.2)),
+      ),
+      child: InkWell(
+        onTap: () => context.push('/tenant-admin-home/bookings/${booking.id}'),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Icon(Icons.calendar_today, size: 14),
-                  const Gap(4),
-                  Flexible(
+                  Expanded(
                     child: Text(
-                      dateFormat.format(booking.date!),
+                      booking.student.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (booking.startTime != null) ...[
-                    const Gap(8),
-                    const Icon(Icons.access_time, size: 14),
-                    const Gap(4),
-                    Text(timeFormat.format(booking.startTime!)),
-                  ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      booking.status.toUpperCase(),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: statusColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-            const Gap(4),
-            if (booking.court != null)
+              const Gap(8),
               Row(
                 children: [
-                  const Icon(Icons.sports_tennis, size: 14),
+                  const Icon(Icons.sports_tennis, size: 16, color: Colors.grey),
                   const Gap(4),
                   Expanded(
                     child: Text(
-                      '${booking.court!.name} (${booking.court!.type})',
+                      booking.court.name,
+                      style: theme.textTheme.bodySmall,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                ],
-              ),
-            if (booking.professor != null)
-              Row(
-                children: [
-                  const Icon(Icons.person, size: 14),
+                  const Gap(16),
+                  const Icon(Icons.person, size: 16, color: Colors.grey),
                   const Gap(4),
                   Expanded(
                     child: Text(
-                      booking.professor!.name,
+                      booking.professor?.name ?? 'Sin profesor',
+                      style: theme.textTheme.bodySmall,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '\$${booking.price.toStringAsFixed(0)}',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
+              const Gap(8),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.calendar_month,
+                    size: 16,
+                    color: Colors.grey,
+                  ),
+                  const Gap(4),
+                  Text(
+                    '${booking.date.day}/${booking.date.month}/${booking.date.year}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  const Gap(16),
+                  const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                  const Gap(4),
+                  Text(
+                    '${booking.startTime} - ${booking.endTime}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
               ),
-            ),
-            Text(
-              _getServiceTypeLabel(booking.serviceType),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
+              const Divider(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    booking.serviceType == 'court_rental'
+                        ? 'Alquiler'
+                        : 'Clase',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: Colors.grey,
+                    ),
+                  ),
+                  Text(
+                    '\$${booking.totalPrice.toStringAsFixed(0)}',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        onTap: () {
-          context.push('/tenant-admin-home/bookings/${booking.id}');
-        },
       ),
     );
   }
 
-  String _getServiceTypeLabel(String serviceType) {
-    switch (serviceType) {
-      case 'individual_class':
-        return 'Clase individual';
-      case 'group_class':
-        return 'Clase grupal';
-      case 'court_rental':
-        return 'Alquiler cancha';
+  Widget _buildPaginationControls(
+    BuildContext context,
+    BookingPagination pagination,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            onPressed: pagination.hasPrevious
+                ? () => ref
+                      .read(bookingPageProvider.notifier)
+                      .setPage(pagination.currentPage - 1)
+                : null,
+          ),
+          Text('Página ${pagination.currentPage} de ${pagination.totalPages}'),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            onPressed: pagination.hasNext
+                ? () => ref
+                      .read(bookingPageProvider.notifier)
+                      .setPage(pagination.currentPage + 1)
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'confirmed':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'cancelled':
+        return Colors.red;
+      case 'completed':
+        return Colors.blue;
       default:
-        return serviceType;
+        return Colors.grey;
     }
   }
 }

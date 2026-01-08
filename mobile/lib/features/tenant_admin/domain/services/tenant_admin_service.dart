@@ -651,6 +651,7 @@ class TenantAdminService {
     String? courtId,
     String? professorId,
     String? studentId,
+    String? search,
     String? serviceType,
     int page = 1,
     int limit = 20,
@@ -669,6 +670,7 @@ class TenantAdminService {
       if (courtId != null) queryParams['courtId'] = courtId;
       if (professorId != null) queryParams['professorId'] = professorId;
       if (studentId != null) queryParams['studentId'] = studentId;
+      if (search != null) queryParams['search'] = search;
       if (serviceType != null) queryParams['serviceType'] = serviceType;
 
       final uri = Uri.parse(

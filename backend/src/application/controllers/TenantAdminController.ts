@@ -825,6 +825,7 @@ export class TenantAdminController {
         professorId,
         studentId,
         serviceType,
+        search,
         page = '1',
         limit = '20',
       } = req.query;
@@ -833,6 +834,21 @@ export class TenantAdminController {
 
       // Construir filtro
       const filter: any = { tenantId: tenantObjectId };
+
+      // Si hay búsqueda, encontrar primero IDs de estudiantes que coincidan
+      if (search) {
+        const User = require('../../infrastructure/database/models/UserModel').default;
+        const matchingStudents = await User.find({
+          role: 'student',
+          $or: [
+            { name: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } }
+          ]
+        }).select('_id');
+
+        const studentIds = matchingStudents.map((s: any) => s._id);
+        filter.studentId = { $in: studentIds };
+      }
 
       if (status) {
         filter.status = status;

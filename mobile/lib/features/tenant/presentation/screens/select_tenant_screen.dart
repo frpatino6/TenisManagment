@@ -59,10 +59,12 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Error al cargar centros: ${e.toString()}';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error al cargar centros: ${e.toString()}';
+          _isLoading = false;
+        });
+      }
     }
   }
 

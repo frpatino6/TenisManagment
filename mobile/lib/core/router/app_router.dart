@@ -32,6 +32,7 @@ import '../../features/tenant_admin/presentation/screens/tenant_create_court_scr
 import '../../features/tenant_admin/presentation/screens/tenant_edit_court_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_bookings_list_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_booking_details_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_booking_stats_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../providers/tenant_provider.dart';
 
@@ -203,6 +204,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             name: 'tenant-admin-bookings',
             builder: (context, state) => const TenantBookingsListScreen(),
             routes: [
+              GoRoute(
+                path: 'stats',
+                name: 'tenant-admin-booking-stats',
+                builder: (context, state) => const TenantBookingStatsScreen(),
+              ),
               GoRoute(
                 path: ':id',
                 name: 'tenant-admin-booking-details',

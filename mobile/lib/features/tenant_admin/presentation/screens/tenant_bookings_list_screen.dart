@@ -16,7 +16,18 @@ class TenantBookingsListScreen extends ConsumerWidget {
     final bookingsAsync = ref.watch(tenantBookingsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reservas')),
+      appBar: AppBar(
+        title: const Text('Reservas'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bar_chart),
+            onPressed: () {
+              context.push('/tenant-admin-home/bookings/stats');
+            },
+            tooltip: 'Estadísticas',
+          ),
+        ],
+      ),
       body: bookingsAsync.when(
         data: (data) {
           final bookings = data['bookings'] as List<TenantBookingModel>;

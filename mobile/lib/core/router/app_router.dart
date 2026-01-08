@@ -30,6 +30,10 @@ import '../../features/tenant_admin/presentation/screens/tenant_invite_professor
 import '../../features/tenant_admin/presentation/screens/tenant_courts_list_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_create_court_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_edit_court_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_bookings_list_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_booking_details_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_booking_stats_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_booking_calendar_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../providers/tenant_provider.dart';
 
@@ -171,7 +175,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'invite',
                 name: 'tenant-admin-professors-invite',
-                builder: (context, state) => const TenantInviteProfessorScreen(),
+                builder: (context, state) =>
+                    const TenantInviteProfessorScreen(),
               ),
             ],
           ),
@@ -191,6 +196,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) {
                   final courtId = state.pathParameters['id']!;
                   return TenantEditCourtScreen(courtId: courtId);
+                },
+              ),
+            ],
+          ),
+          GoRoute(
+            path: 'bookings',
+            name: 'tenant-admin-bookings',
+            builder: (context, state) => const TenantBookingsListScreen(),
+            routes: [
+              GoRoute(
+                path: 'stats',
+                name: 'tenant-admin-booking-stats',
+                builder: (context, state) => const TenantBookingStatsScreen(),
+              ),
+              GoRoute(
+                path: 'calendar',
+                name: 'tenant-admin-booking-calendar',
+                builder: (context, state) =>
+                    const TenantBookingCalendarScreen(),
+              ),
+              GoRoute(
+                path: ':id',
+                name: 'tenant-admin-booking-details',
+                builder: (context, state) {
+                  final bookingId = state.pathParameters['id']!;
+                  return TenantBookingDetailsScreen(bookingId: bookingId);
                 },
               ),
             ],

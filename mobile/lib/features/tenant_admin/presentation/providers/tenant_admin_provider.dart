@@ -12,16 +12,11 @@ final tenantAdminServiceProvider = Provider<TenantAdminService>((ref) {
 });
 
 /// Provider for tenant metrics
-/// Waits for tenant to be loaded before fetching metrics (requires X-Tenant-ID header)
 final tenantMetricsProvider = FutureProvider<TenantMetricsModel>((ref) async {
-  // Wait for tenant to be loaded - watch currentTenantIdProvider
   final tenantId = ref.watch(currentTenantIdProvider);
-
-  // If tenant is not loaded yet, throw error to retry later
   if (tenantId == null || tenantId.isEmpty) {
     throw Exception('Tenant ID requerido. Cargando tenant...');
   }
-
   final service = ref.read(tenantAdminServiceProvider);
   return await service.getMetrics();
 });
@@ -33,44 +28,28 @@ final tenantInfoProvider = FutureProvider<TenantConfigModel>((ref) async {
 });
 
 /// Provider for list of professors
-/// Waits for tenant to be loaded before fetching professors (requires X-Tenant-ID header)
 final tenantProfessorsProvider = FutureProvider<List<TenantProfessorModel>>((
   ref,
 ) async {
-  // Wait for tenant to be loaded - watch currentTenantIdProvider
   final tenantId = ref.watch(currentTenantIdProvider);
-
-  // If tenant is not loaded yet, throw error to retry later
   if (tenantId == null || tenantId.isEmpty) {
-    throw Exception('Tenant ID requerido. Cargando tenant...');
+    throw Exception('Tenant ID requerido');
   }
-
   final service = ref.read(tenantAdminServiceProvider);
   return await service.getProfessors();
 });
 
-/// Provider for filtering professors based on search query and status
-final filteredTenantProfessorsProvider =
-    Provider.family<List<TenantProfessorModel>, String>((ref, searchQuery) {
-      final professorsAsync = ref.watch(tenantProfessorsProvider);
-
-      return professorsAsync.when(
-        data: (professors) {
-          if (searchQuery.isEmpty) {
-            return professors;
-          }
-          final filtered = professors.where((professor) {
-            final query = searchQuery.toLowerCase();
-            return professor.name.toLowerCase().contains(query) ||
-                professor.email.toLowerCase().contains(query) ||
-                (professor.phone?.toLowerCase().contains(query) ?? false);
-          }).toList();
-          return filtered;
-        },
-        loading: () => [],
-        error: (_, _) => [],
-      );
-    });
+/// Provider for list of courts
+final tenantCourtsProvider = FutureProvider<List<TenantCourtModel>>((
+  ref,
+) async {
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null || tenantId.isEmpty) {
+    throw Exception('Tenant ID requerido');
+  }
+  final service = ref.read(tenantAdminServiceProvider);
+  return await service.getCourts();
+});
 
 /// Provider for filtering professors by status (active/inactive)
 final filteredTenantProfessorsByStatusProvider =
@@ -86,42 +65,6 @@ final filteredTenantProfessorsByStatusProvider =
           return professors
               .where((professor) => professor.isActive == isActive)
               .toList();
-        },
-        loading: () => [],
-        error: (_, _) => [],
-      );
-    });
-
-/// Provider for listing courts for the current tenant
-final tenantCourtsProvider = FutureProvider<List<TenantCourtModel>>((
-  ref,
-) async {
-  // Ensure tenant is loaded before fetching courts
-  final tenantId = ref.watch(currentTenantIdProvider);
-  if (tenantId == null || tenantId.isEmpty) {
-    throw Exception('Tenant ID requerido. Cargando tenant...');
-  }
-
-  final service = ref.read(tenantAdminServiceProvider);
-  return await service.getCourts();
-});
-
-/// Provider for filtering courts based on search query
-final filteredTenantCourtsProvider =
-    Provider.family<List<TenantCourtModel>, String>((ref, searchQuery) {
-      final courtsAsync = ref.watch(tenantCourtsProvider);
-
-      return courtsAsync.when(
-        data: (courts) {
-          if (searchQuery.isEmpty) {
-            return courts;
-          }
-          final query = searchQuery.toLowerCase();
-          return courts.where((court) {
-            return court.name.toLowerCase().contains(query) ||
-                court.type.toLowerCase().contains(query) ||
-                (court.description?.toLowerCase().contains(query) ?? false);
-          }).toList();
         },
         loading: () => [],
         error: (_, _) => [],
@@ -144,4 +87,139 @@ final filteredTenantCourtsByStatusProvider =
         loading: () => [],
         error: (_, _) => [],
       );
+    });
+
+/// Provider for searching courts by name, type or description
+final filteredTenantCourtsProvider =
+    Provider.family<List<TenantCourtModel>, String>((ref, query) {
+      final courtsAsync = ref.watch(tenantCourtsProvider);
+
+      return courtsAsync.when(
+        data: (courts) {
+          if (query.isEmpty) {
+            return courts;
+          }
+          final lowercaseQuery = query.toLowerCase();
+          return courts.where((court) {
+            return court.name.toLowerCase().contains(lowercaseQuery) ||
+                court.type.toLowerCase().contains(lowercaseQuery) ||
+                (court.description?.toLowerCase().contains(lowercaseQuery) ??
+                    false);
+          }).toList();
+        },
+        loading: () => [],
+        error: (_, _) => [],
+      );
+    });
+
+// ============================================================================
+// BOOKING PROVIDERS
+// ============================================================================
+
+/// Provider for booking pagination
+class BookingPageNotifier extends Notifier<int> {
+  @override
+  int build() => 1;
+  void setPage(int page) => state = page;
+}
+
+final bookingPageProvider = NotifierProvider<BookingPageNotifier, int>(
+  BookingPageNotifier.new,
+);
+
+/// Providers for filters
+class BookingStatusFilterNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void set(String? value) => state = value;
+}
+
+final bookingStatusFilterProvider =
+    NotifierProvider<BookingStatusFilterNotifier, String?>(
+      BookingStatusFilterNotifier.new,
+    );
+
+class BookingCourtFilterNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void set(String? value) => state = value;
+}
+
+final bookingCourtFilterProvider =
+    NotifierProvider<BookingCourtFilterNotifier, String?>(
+      BookingCourtFilterNotifier.new,
+    );
+
+class BookingProfessorFilterNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void set(String? value) => state = value;
+}
+
+final bookingProfessorFilterProvider =
+    NotifierProvider<BookingProfessorFilterNotifier, String?>(
+      BookingProfessorFilterNotifier.new,
+    );
+
+class BookingStudentSearchNotifier extends Notifier<String> {
+  @override
+  String build() => "";
+  void set(String value) => state = value;
+}
+
+final bookingStudentSearchProvider =
+    NotifierProvider<BookingStudentSearchNotifier, String>(
+      BookingStudentSearchNotifier.new,
+    );
+
+/// Provider for fetching bookings with advanced filters
+final tenantBookingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
+  (ref) async {
+    final tenantId = ref.watch(currentTenantIdProvider);
+    if (tenantId == null || tenantId.isEmpty) {
+      throw Exception('Tenant ID requerido');
+    }
+
+    final service = ref.read(tenantAdminServiceProvider);
+    final page = ref.watch(bookingPageProvider);
+
+    // Watch filters
+    final status = ref.watch(bookingStatusFilterProvider);
+    final courtId = ref.watch(bookingCourtFilterProvider);
+    final professorId = ref.watch(bookingProfessorFilterProvider);
+    final studentSearch = ref.watch(bookingStudentSearchProvider);
+
+    return await service.getBookings(
+      page: page,
+      limit: 20,
+      status: status,
+      courtId: courtId,
+      professorId: professorId,
+      search: studentSearch.isEmpty ? null : studentSearch,
+    );
+  },
+);
+
+/// Provider for booking statistics
+final bookingStatsProvider = FutureProvider.autoDispose<dynamic>((ref) async {
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null || tenantId.isEmpty) {
+    throw Exception('Tenant ID requerido');
+  }
+  final service = ref.read(tenantAdminServiceProvider);
+  return await service.getBookingStats();
+});
+
+/// Provider for booking calendar
+final bookingCalendarProvider = FutureProvider.autoDispose
+    .family<Map<String, List<dynamic>>, ({DateTime from, DateTime to})>((
+      ref,
+      range,
+    ) async {
+      final tenantId = ref.watch(currentTenantIdProvider);
+      if (tenantId == null || tenantId.isEmpty) {
+        throw Exception('Tenant ID requerido');
+      }
+      final service = ref.read(tenantAdminServiceProvider);
+      return await service.getBookingCalendar(from: range.from, to: range.to);
     });

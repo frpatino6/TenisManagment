@@ -219,7 +219,7 @@ export class FirebaseAuthController {
             },
           });
         } else {
-          return res.status(409).json({ error: 'User already exists' });
+        return res.status(409).json({ error: 'User already exists' });
         }
       }
 

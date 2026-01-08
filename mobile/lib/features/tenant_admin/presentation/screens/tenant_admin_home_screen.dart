@@ -371,6 +371,14 @@ class TenantAdminHomeScreen extends ConsumerWidget {
           children: [
             _buildQuickActionCard(
               context,
+              title: 'Reservas',
+              subtitle: 'Ver reservas',
+              icon: Icons.calendar_today,
+              color: Colors.purple,
+              onTap: () => context.push('/tenant-admin-home/bookings'),
+            ),
+            _buildQuickActionCard(
+              context,
               title: 'Profesores',
               subtitle: 'Gestionar profesores',
               icon: Icons.people,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../../../../core/widgets/error_widget.dart';
 import '../../../../core/widgets/empty_state_widget.dart';
@@ -47,7 +48,10 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
                     icon: const Icon(Icons.book_online),
                     label: Text(AppStrings.bookClass),
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 );
@@ -259,7 +263,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
                 ),
                 const Spacer(),
                 Text(
-                  '\$${booking.price.toStringAsFixed(0)}',
+                  CurrencyUtils.format(booking.price),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.primary,
@@ -413,7 +417,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
               'Hora',
               '${_formatTime(DateTime.parse(booking.schedule.startTime))} - ${_formatTime(DateTime.parse(booking.schedule.endTime))}',
             ),
-            _buildDetailRow('Precio', '\$${booking.price.toStringAsFixed(0)}'),
+            _buildDetailRow('Precio', CurrencyUtils.format(booking.price)),
             _buildDetailRow('Estado', _getStatusText(booking.status)),
           ],
         ),

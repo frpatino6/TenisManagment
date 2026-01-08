@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/professor_provider.dart';
+import '../../../../core/utils/currency_utils.dart';
 
 class EarningsWidget extends ConsumerWidget {
   const EarningsWidget({super.key});
@@ -96,7 +97,7 @@ class EarningsWidget extends ConsumerWidget {
                           child: _buildEarningCard(
                             context,
                             'Total del Mes',
-                            '\$${monthlyEarnings.toStringAsFixed(0)}',
+                            CurrencyUtils.format(monthlyEarnings),
                             Icons.trending_up,
                             Colors.green,
                           ),
@@ -106,7 +107,7 @@ class EarningsWidget extends ConsumerWidget {
                           child: _buildEarningCard(
                             context,
                             'Esta Semana',
-                            '\$${weeklyEarnings.toStringAsFixed(0)}',
+                            CurrencyUtils.format(weeklyEarnings),
                             Icons.calendar_today,
                             colorScheme.primary,
                           ),
@@ -131,7 +132,7 @@ class EarningsWidget extends ConsumerWidget {
                           child: _buildStatCard(
                             context,
                             'Promedio/Clase',
-                            '\$${averagePerClass.toStringAsFixed(0)}',
+                            CurrencyUtils.format(averagePerClass),
                             Icons.analytics_outlined,
                           ),
                         ),

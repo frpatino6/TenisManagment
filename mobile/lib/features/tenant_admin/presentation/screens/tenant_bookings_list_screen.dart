@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/widgets/error_widget.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../../domain/models/tenant_booking_model.dart';
@@ -322,7 +323,7 @@ class _TenantBookingsListScreenState
                     ),
                   ),
                   Text(
-                    '\$${booking.price.toStringAsFixed(0)}',
+                    CurrencyUtils.format(booking.price),
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.primary,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/constants/timeouts.dart';
 import '../../domain/models/schedule_model.dart';
 import '../providers/booking_provider.dart';
@@ -163,7 +164,7 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                       ),
                     ),
                     Text(
-                      '\$${_price.toStringAsFixed(0)}',
+                      CurrencyUtils.format(_price),
                       style: Theme.of(context).textTheme.headlineMedium
                           ?.copyWith(
                             fontWeight: FontWeight.bold,

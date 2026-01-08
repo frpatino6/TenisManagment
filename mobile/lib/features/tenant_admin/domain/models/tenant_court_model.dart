@@ -1,12 +1,13 @@
 import 'package:equatable/equatable.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/validation/model_validator.dart';
 
 class TenantCourtModel extends Equatable {
   final String id;
   final String name;
   final String type; // 'tennis' | 'padel' | 'multi'
-  final double price; // Precio por hora (backend uses 'price', not 'pricePerHour')
+  final double
+  price; // Precio por hora (backend uses 'price', not 'pricePerHour')
   final bool isActive;
   final String? description;
   final List<String> features;
@@ -33,9 +34,10 @@ class TenantCourtModel extends Equatable {
       price: ModelValidator.parseDouble(json['price'], 'price'),
       isActive: json['isActive'] as bool? ?? true,
       description: json['description']?.toString(),
-      features: (json['features'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList() ??
+      features:
+          (json['features'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
           [],
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
@@ -97,26 +99,18 @@ class TenantCourtModel extends Equatable {
     }
   }
 
-  String get formattedPrice {
-    final formatter = NumberFormat.currency(
-      locale: 'es_CO',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
-    return formatter.format(price);
-  }
+  String get formattedPrice => CurrencyUtils.format(price);
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        type,
-        price,
-        isActive,
-        description,
-        features,
-        createdAt,
-        updatedAt,
-      ];
+    id,
+    name,
+    type,
+    price,
+    isActive,
+    description,
+    features,
+    createdAt,
+    updatedAt,
+  ];
 }
-

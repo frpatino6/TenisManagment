@@ -15,8 +15,8 @@ export interface TenantConfig {
   operatingHours?: {
     schedule?: Array<{
       dayOfWeek: number; // 0-6 (0 = Sunday, 6 = Saturday)
-      open: string; // Format: "HH:mm"
-      close: string; // Format: "HH:mm"
+    open: string; // Format: "HH:mm"
+    close: string; // Format: "HH:mm"
     }>;
     // Legacy support: keep old format for backward compatibility
     open?: string; // Format: "HH:mm" (deprecated, use schedule)

@@ -14,6 +14,7 @@ import { ProfessorModel } from '../../infrastructure/database/models/ProfessorMo
 import { AuthUserModel } from '../../infrastructure/database/models/AuthUserModel';
 import { CourtModel, CourtDocument } from '../../infrastructure/database/models/CourtModel';
 import { BookingModel } from '../../infrastructure/database/models/BookingModel';
+import { ScheduleModel } from '../../infrastructure/database/models/ScheduleModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
 import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
 import { Logger } from '../../infrastructure/services/Logger';
@@ -22,7 +23,7 @@ import { Types } from 'mongoose';
 const logger = new Logger({ module: 'TenantAdminController' });
 
 export class TenantAdminController {
-  constructor(private readonly tenantService: TenantService) {}
+  constructor(private readonly tenantService: TenantService) { }
 
   /**
    * GET /api/tenant/me
@@ -157,9 +158,9 @@ export class TenantAdminController {
 
       const { schedule } = req.body;
 
-      logger.info('Actualizando horarios de operación', { 
+      logger.info('Actualizando horarios de operación', {
         schedule,
-        tenantId: tenantAdmin.tenantId.toString() 
+        tenantId: tenantAdmin.tenantId.toString()
       });
 
       // Validaciones
@@ -180,27 +181,27 @@ export class TenantAdminController {
       const seenDays = new Set<number>();
       for (const daySchedule of schedule) {
         // Validar estructura
-        if (typeof daySchedule.dayOfWeek !== 'number' || 
-            typeof daySchedule.open !== 'string' || 
-            typeof daySchedule.close !== 'string') {
-          res.status(400).json({ 
-            error: 'Cada día debe tener dayOfWeek (number), open (string) y close (string)' 
+        if (typeof daySchedule.dayOfWeek !== 'number' ||
+          typeof daySchedule.open !== 'string' ||
+          typeof daySchedule.close !== 'string') {
+          res.status(400).json({
+            error: 'Cada día debe tener dayOfWeek (number), open (string) y close (string)'
           });
           return;
         }
 
         // Validar dayOfWeek (0-6)
         if (daySchedule.dayOfWeek < 0 || daySchedule.dayOfWeek > 6) {
-          res.status(400).json({ 
-            error: `dayOfWeek debe estar entre 0 y 6 (0=Domingo, 6=Sábado). Día inválido: ${daySchedule.dayOfWeek}` 
+          res.status(400).json({
+            error: `dayOfWeek debe estar entre 0 y 6 (0=Domingo, 6=Sábado). Día inválido: ${daySchedule.dayOfWeek}`
           });
           return;
         }
 
         // Validar que no haya días duplicados
         if (seenDays.has(daySchedule.dayOfWeek)) {
-          res.status(400).json({ 
-            error: `El día ${daySchedule.dayOfWeek} está duplicado en el schedule` 
+          res.status(400).json({
+            error: `El día ${daySchedule.dayOfWeek} está duplicado en el schedule`
           });
           return;
         }
@@ -208,8 +209,8 @@ export class TenantAdminController {
 
         // Validar formato de hora
         if (!timeRegex.test(daySchedule.open) || !timeRegex.test(daySchedule.close)) {
-          res.status(400).json({ 
-            error: `El formato de hora debe ser HH:mm (ej: 08:00, 20:00). Día: ${daySchedule.dayOfWeek}` 
+          res.status(400).json({
+            error: `El formato de hora debe ser HH:mm (ej: 08:00, 20:00). Día: ${daySchedule.dayOfWeek}`
           });
           return;
         }
@@ -233,8 +234,8 @@ export class TenantAdminController {
         const closeMinutes = closeHour * 60 + closeMinute;
 
         if (openMinutes >= closeMinutes) {
-          res.status(400).json({ 
-            error: `La hora de apertura debe ser anterior a la hora de cierre para el día ${daySchedule.dayOfWeek}` 
+          res.status(400).json({
+            error: `La hora de apertura debe ser anterior a la hora de cierre para el día ${daySchedule.dayOfWeek}`
           });
           return;
         }
@@ -250,7 +251,7 @@ export class TenantAdminController {
       // Actualizar operatingHours en la configuración
       // Convertir tenant.config a objeto plano para evitar problemas con objetos Mongoose
       const currentConfig = tenant.config ? JSON.parse(JSON.stringify(tenant.config)) : {};
-      
+
       // Ordenar schedule por dayOfWeek para consistencia
       const sortedSchedule = [...schedule].sort((a, b) => a.dayOfWeek - b.dayOfWeek);
 
@@ -263,7 +264,7 @@ export class TenantAdminController {
         operatingHours,
       };
 
-      logger.info('Configuración a guardar', { 
+      logger.info('Configuración a guardar', {
         updatedConfig: JSON.stringify(updatedConfig),
         operatingHours: JSON.stringify(operatingHours)
       });
@@ -279,9 +280,9 @@ export class TenantAdminController {
         'tenant_admin',
       );
 
-      logger.info('Tenant actualizado', { 
+      logger.info('Tenant actualizado', {
         tenantId: tenantAdmin.tenantId.toString(),
-        operatingHours: updatedTenant?.config?.operatingHours 
+        operatingHours: updatedTenant?.config?.operatingHours
       });
 
       if (!updatedTenant) {
@@ -289,10 +290,10 @@ export class TenantAdminController {
         return;
       }
 
-      logger.info('Horarios de operación actualizados', { 
-        tenantId: tenantAdmin.tenantId.toString(), 
+      logger.info('Horarios de operación actualizados', {
+        tenantId: tenantAdmin.tenantId.toString(),
         schedule: sortedSchedule,
-        updatedBy: userId 
+        updatedBy: userId
       });
 
       res.json({
@@ -800,6 +801,556 @@ export class TenantAdminController {
       });
     } catch (error) {
       logger.error('Error obteniendo métricas del centro', { error: (error as Error).message });
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * GET /api/tenant/bookings
+   * Listar todas las reservas del tenant con filtros
+   */
+  listBookings = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const {
+        status,
+        from,
+        to,
+        courtId,
+        professorId,
+        studentId,
+        serviceType,
+        page = '1',
+        limit = '20',
+      } = req.query;
+
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
+      // Construir filtro
+      const filter: any = { tenantId: tenantObjectId };
+
+      if (status) {
+        filter.status = status;
+      }
+
+      if (serviceType) {
+        filter.serviceType = serviceType;
+      }
+
+      if (courtId) {
+        filter.courtId = new Types.ObjectId(courtId as string);
+      }
+
+      if (professorId) {
+        filter.professorId = new Types.ObjectId(professorId as string);
+      }
+
+      if (studentId) {
+        filter.studentId = new Types.ObjectId(studentId as string);
+      }
+
+      // Filtro de fecha
+      if (from || to) {
+        filter.bookingDate = {};
+        if (from) {
+          filter.bookingDate.$gte = new Date(from as string);
+        }
+        if (to) {
+          filter.bookingDate.$lte = new Date(to as string);
+        }
+      }
+
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      const skip = (pageNum - 1) * limitNum;
+
+      const [bookings, total] = await Promise.all([
+        BookingModel.find(filter)
+          .populate('courtId', 'name type')
+          .populate('professorId', 'name email')
+          .populate('studentId', 'name email phone')
+          .populate('scheduleId', 'date startTime endTime')
+          .sort({ bookingDate: -1, createdAt: -1 })
+          .skip(skip)
+          .limit(limitNum)
+          .lean(),
+        BookingModel.countDocuments(filter),
+      ]);
+
+      const formattedBookings = bookings.map((booking) => {
+        const court = booking.courtId as any;
+        const professor = booking.professorId as any;
+        const student = booking.studentId as any;
+        const schedule = booking.scheduleId as any;
+
+        return {
+          id: booking._id.toString(),
+          date: schedule?.date || booking.bookingDate,
+          startTime: schedule?.startTime,
+          endTime: schedule?.endTime,
+          court: court
+            ? {
+              id: court._id.toString(),
+              name: court.name,
+              type: court.type,
+            }
+            : null,
+          professor: professor
+            ? {
+              id: professor._id.toString(),
+              name: professor.name,
+              email: professor.email,
+            }
+            : null,
+          student: {
+            id: student._id.toString(),
+            name: student.name,
+            email: student.email,
+            phone: student.phone,
+          },
+          serviceType: booking.serviceType,
+          status: booking.status,
+          price: booking.price,
+          notes: booking.notes,
+          createdAt: booking.createdAt,
+          updatedAt: booking.updatedAt,
+        };
+      });
+
+      res.json({
+        bookings: formattedBookings,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      });
+    } catch (error) {
+      logger.error('Error listando reservas', { error: (error as Error).message });
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * GET /api/tenant/bookings/calendar
+   * Vista de calendario de reservas
+   */
+  getBookingCalendar = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const { from, to, courtId } = req.query;
+
+      if (!from || !to) {
+        res.status(400).json({ error: 'Parámetros from y to son requeridos' });
+        return;
+      }
+
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
+      const filter: any = {
+        tenantId: tenantObjectId,
+        bookingDate: {
+          $gte: new Date(from as string),
+          $lte: new Date(to as string),
+        },
+        status: { $in: ['pending', 'confirmed'] }, // Solo reservas activas
+      };
+
+      if (courtId) {
+        filter.courtId = new Types.ObjectId(courtId as string);
+      }
+
+      const bookings = await BookingModel.find(filter)
+        .populate('courtId', 'name type')
+        .populate('professorId', 'name')
+        .populate('studentId', 'name')
+        .populate('scheduleId', 'date startTime endTime')
+        .sort({ bookingDate: 1 })
+        .lean();
+
+      // Agrupar por fecha
+      const calendarData: { [key: string]: any[] } = {};
+
+      bookings.forEach((booking) => {
+        const schedule = booking.scheduleId as any;
+        const date = schedule?.date || booking.bookingDate;
+        const dateKey = new Date(date).toISOString().split('T')[0];
+
+        if (!calendarData[dateKey]) {
+          calendarData[dateKey] = [];
+        }
+
+        const court = booking.courtId as any;
+        const professor = booking.professorId as any;
+        const student = booking.studentId as any;
+
+        calendarData[dateKey].push({
+          id: booking._id.toString(),
+          startTime: schedule?.startTime,
+          endTime: schedule?.endTime,
+          courtName: court?.name,
+          courtType: court?.type,
+          professorName: professor?.name,
+          studentName: student?.name,
+          serviceType: booking.serviceType,
+          status: booking.status,
+          price: booking.price,
+        });
+      });
+
+      res.json({ calendar: calendarData });
+    } catch (error) {
+      logger.error('Error obteniendo calendario de reservas', {
+        error: (error as Error).message,
+      });
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * GET /api/tenant/bookings/:id
+   * Obtener detalles completos de una reserva
+   */
+  getBookingDetails = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const { id } = req.params;
+
+      const booking = await BookingModel.findOne({
+        _id: id,
+        tenantId: new Types.ObjectId(tenantId),
+      })
+        .populate('courtId')
+        .populate('professorId')
+        .populate('studentId')
+        .populate('scheduleId')
+        .lean();
+
+      if (!booking) {
+        res.status(404).json({ error: 'Reserva no encontrada' });
+        return;
+      }
+
+      // Buscar pago asociado
+      const payment = await PaymentModel.findOne({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: booking.studentId,
+        // Buscar pagos cercanos a la fecha de la reserva
+        date: {
+          $gte: new Date(booking.createdAt.getTime() - 24 * 60 * 60 * 1000), // 1 día antes
+          $lte: new Date(booking.createdAt.getTime() + 24 * 60 * 60 * 1000), // 1 día después
+        },
+      }).lean();
+
+      const court = booking.courtId as any;
+      const professor = booking.professorId as any;
+      const student = booking.studentId as any;
+      const schedule = booking.scheduleId as any;
+
+      res.json({
+        id: booking._id.toString(),
+        date: schedule?.date || booking.bookingDate,
+        startTime: schedule?.startTime,
+        endTime: schedule?.endTime,
+        court: court
+          ? {
+            id: court._id.toString(),
+            name: court.name,
+            type: court.type,
+            price: court.price,
+            description: court.description,
+            features: court.features,
+          }
+          : null,
+        professor: professor
+          ? {
+            id: professor._id.toString(),
+            name: professor.name,
+            email: professor.email,
+            phone: professor.phone,
+            specialties: professor.specialties,
+          }
+          : null,
+        student: {
+          id: student._id.toString(),
+          name: student.name,
+          email: student.email,
+          phone: student.phone,
+        },
+        serviceType: booking.serviceType,
+        status: booking.status,
+        price: booking.price,
+        notes: booking.notes,
+        payment: payment
+          ? {
+            id: payment._id.toString(),
+            amount: payment.amount,
+            method: payment.method,
+            date: payment.date,
+            status: payment.status,
+          }
+          : null,
+        createdAt: booking.createdAt,
+        updatedAt: booking.updatedAt,
+      });
+    } catch (error) {
+      logger.error('Error obteniendo detalles de reserva', {
+        error: (error as Error).message,
+      });
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * PATCH /api/tenant/bookings/:id/cancel
+   * Cancelar una reserva
+   */
+  cancelBooking = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      const userId = req.user?.id;
+
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      if (!userId) {
+        res.status(401).json({ error: 'No autenticado' });
+        return;
+      }
+
+      const { id } = req.params;
+      const { reason } = req.body;
+
+      const booking = await BookingModel.findOne({
+        _id: id,
+        tenantId: new Types.ObjectId(tenantId),
+      });
+
+      if (!booking) {
+        res.status(404).json({ error: 'Reserva no encontrada' });
+        return;
+      }
+
+      if (booking.status === 'cancelled') {
+        res.status(400).json({ error: 'La reserva ya está cancelada' });
+        return;
+      }
+
+      if (booking.status === 'completed') {
+        res.status(400).json({ error: 'No se puede cancelar una reserva completada' });
+        return;
+      }
+
+      // Actualizar estado de la reserva
+      booking.status = 'cancelled';
+      if (reason) {
+        booking.notes = booking.notes
+          ? `${booking.notes}\n\nCancelada por admin: ${reason}`
+          : `Cancelada por admin: ${reason}`;
+      }
+      await booking.save();
+
+      // Si hay un schedule asociado, marcarlo como disponible nuevamente
+      if (booking.scheduleId) {
+        await ScheduleModel.findByIdAndUpdate(booking.scheduleId, {
+          isAvailable: true,
+          studentId: null,
+          status: 'cancelled',
+        });
+      }
+
+      logger.info('Reserva cancelada por tenant admin', {
+        bookingId: id,
+        tenantId,
+        cancelledBy: userId,
+        reason,
+      });
+
+      res.json({
+        id: booking._id.toString(),
+        status: booking.status,
+        message: 'Reserva cancelada exitosamente',
+      });
+    } catch (error) {
+      logger.error('Error cancelando reserva', { error: (error as Error).message });
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * GET /api/tenant/bookings/stats
+   * Obtener estadísticas de reservas
+   */
+  getBookingStats = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const { from, to } = req.query;
+
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
+      const filter: any = { tenantId: tenantObjectId };
+
+      // Filtro de fecha
+      if (from || to) {
+        filter.bookingDate = {};
+        if (from) {
+          filter.bookingDate.$gte = new Date(from as string);
+        }
+        if (to) {
+          filter.bookingDate.$lte = new Date(to as string);
+        }
+      }
+
+      // Estadísticas por estado
+      const statusStats = await BookingModel.aggregate([
+        { $match: filter },
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 },
+            revenue: { $sum: '$price' },
+          },
+        },
+      ]);
+
+      // Estadísticas por cancha
+      const courtStats = await BookingModel.aggregate([
+        { $match: { ...filter, courtId: { $exists: true, $ne: null } } },
+        {
+          $group: {
+            _id: '$courtId',
+            count: { $sum: 1 },
+            revenue: { $sum: '$price' },
+          },
+        },
+        { $sort: { count: -1 } },
+        { $limit: 10 },
+        {
+          $lookup: {
+            from: 'courts',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'court',
+          },
+        },
+        { $unwind: '$court' },
+        {
+          $project: {
+            courtId: '$_id',
+            courtName: '$court.name',
+            courtType: '$court.type',
+            bookingsCount: '$count',
+            revenue: '$revenue',
+          },
+        },
+      ]);
+
+      // Estadísticas por profesor
+      const professorStats = await BookingModel.aggregate([
+        { $match: { ...filter, professorId: { $exists: true, $ne: null } } },
+        {
+          $group: {
+            _id: '$professorId',
+            count: { $sum: 1 },
+            revenue: { $sum: '$price' },
+          },
+        },
+        { $sort: { count: -1 } },
+        { $limit: 10 },
+        {
+          $lookup: {
+            from: 'professors',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'professor',
+          },
+        },
+        { $unwind: '$professor' },
+        {
+          $project: {
+            professorId: '$_id',
+            professorName: '$professor.name',
+            bookingsCount: '$count',
+            revenue: '$revenue',
+          },
+        },
+      ]);
+
+      // Estadísticas por tipo de servicio
+      const serviceTypeStats = await BookingModel.aggregate([
+        { $match: filter },
+        {
+          $group: {
+            _id: '$serviceType',
+            count: { $sum: 1 },
+            revenue: { $sum: '$price' },
+          },
+        },
+      ]);
+
+      // Total general
+      const totalStats = await BookingModel.aggregate([
+        { $match: filter },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            totalRevenue: { $sum: '$price' },
+            averagePrice: { $avg: '$price' },
+          },
+        },
+      ]);
+
+      const stats = totalStats[0] || { total: 0, totalRevenue: 0, averagePrice: 0 };
+
+      res.json({
+        total: stats.total,
+        totalRevenue: stats.totalRevenue,
+        averagePrice: stats.averagePrice,
+        byStatus: statusStats.reduce((acc: any, item: any) => {
+          acc[item._id] = {
+            count: item.count,
+            revenue: item.revenue,
+          };
+          return acc;
+        }, {}),
+        byServiceType: serviceTypeStats.reduce((acc: any, item: any) => {
+          acc[item._id] = {
+            count: item.count,
+            revenue: item.revenue,
+          };
+          return acc;
+        }, {}),
+        topCourts: courtStats,
+        topProfessors: professorStats,
+      });
+    } catch (error) {
+      logger.error('Error obteniendo estadísticas de reservas', {
+        error: (error as Error).message,
+      });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

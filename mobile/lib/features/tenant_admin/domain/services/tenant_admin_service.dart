@@ -9,6 +9,8 @@ import '../models/tenant_metrics_model.dart';
 import '../models/tenant_config_model.dart';
 import '../models/tenant_professor_model.dart';
 import '../models/tenant_court_model.dart';
+import '../models/tenant_booking_model.dart';
+import '../models/booking_stats_model.dart';
 
 /// Service responsible for tenant admin operations
 /// Handles API communication for tenant admin endpoints
@@ -615,6 +617,299 @@ class TenantAdminService {
 
       if (response.statusCode == 200) {
         return;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw TenantException.notFound();
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
+  /// GET /api/tenant/bookings
+  /// Get list of bookings with filters
+  Future<Map<String, dynamic>> getBookings({
+    String? status,
+    DateTime? from,
+    DateTime? to,
+    String? courtId,
+    String? professorId,
+    String? studentId,
+    String? serviceType,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+
+      final queryParams = <String, String>{
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
+
+      if (status != null) queryParams['status'] = status;
+      if (from != null) queryParams['from'] = from.toIso8601String();
+      if (to != null) queryParams['to'] = to.toIso8601String();
+      if (courtId != null) queryParams['courtId'] = courtId;
+      if (professorId != null) queryParams['professorId'] = professorId;
+      if (studentId != null) queryParams['studentId'] = studentId;
+      if (serviceType != null) queryParams['serviceType'] = serviceType;
+
+      final uri = Uri.parse(
+        '$_baseUrl/tenant/bookings',
+      ).replace(queryParameters: queryParams);
+
+      final response = await _httpClient.get(
+        uri,
+        headers: headers,
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final bookingsList = data['bookings'] as List<dynamic>? ?? [];
+        final paginationData = data['pagination'] as Map<String, dynamic>;
+
+        return {
+          'bookings': bookingsList
+              .map(
+                (item) =>
+                    TenantBookingModel.fromJson(item as Map<String, dynamic>),
+              )
+              .toList(),
+          'pagination': BookingPagination.fromJson(paginationData),
+        };
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw TenantException.notFound();
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
+  /// GET /api/tenant/bookings/calendar
+  /// Get calendar view of bookings
+  Future<Map<String, List<Map<String, dynamic>>>> getBookingCalendar({
+    required DateTime from,
+    required DateTime to,
+    String? courtId,
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+
+      final queryParams = <String, String>{
+        'from': from.toIso8601String(),
+        'to': to.toIso8601String(),
+      };
+
+      if (courtId != null) queryParams['courtId'] = courtId;
+
+      final uri = Uri.parse(
+        '$_baseUrl/tenant/bookings/calendar',
+      ).replace(queryParameters: queryParams);
+
+      final response = await _httpClient.get(
+        uri,
+        headers: headers,
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final calendar = data['calendar'] as Map<String, dynamic>;
+
+        return calendar.map(
+          (key, value) => MapEntry(
+            key,
+            (value as List<dynamic>)
+                .map((item) => item as Map<String, dynamic>)
+                .toList(),
+          ),
+        );
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 400) {
+        throw ValidationException(
+          'Parámetros inválidos',
+          code: 'INVALID_PARAMS',
+        );
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
+  /// GET /api/tenant/bookings/:id
+  /// Get booking details
+  Future<Map<String, dynamic>> getBookingDetails(String bookingId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final uri = Uri.parse('$_baseUrl/tenant/bookings/$bookingId');
+
+      final response = await _httpClient.get(
+        uri,
+        headers: headers,
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return data;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw ValidationException(
+          'Reserva no encontrada',
+          code: 'BOOKING_NOT_FOUND',
+        );
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
+  /// PATCH /api/tenant/bookings/:id/cancel
+  /// Cancel a booking
+  Future<void> cancelBooking(String bookingId, {String? reason}) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final uri = Uri.parse('$_baseUrl/tenant/bookings/$bookingId/cancel');
+
+      final body = <String, dynamic>{};
+      if (reason != null) body['reason'] = reason;
+
+      final response = await _httpClient.patch(
+        uri,
+        headers: headers,
+        body: json.encode(body),
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        return; // Success
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw ValidationException(
+          'Reserva no encontrada',
+          code: 'BOOKING_NOT_FOUND',
+        );
+      } else if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        throw ValidationException(
+          errorData['error']?.toString() ?? 'No se puede cancelar la reserva',
+          code: 'CANNOT_CANCEL',
+        );
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
+  /// GET /api/tenant/bookings/stats
+  /// Get booking statistics
+  Future<BookingStatsModel> getBookingStats({
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+
+      final queryParams = <String, String>{};
+      if (from != null) queryParams['from'] = from.toIso8601String();
+      if (to != null) queryParams['to'] = to.toIso8601String();
+
+      final uri = Uri.parse(
+        '$_baseUrl/tenant/bookings/stats',
+      ).replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
+
+      final response = await _httpClient.get(
+        uri,
+        headers: headers,
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return BookingStatsModel.fromJson(data);
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         throw AuthException.tokenExpired();
       } else if (response.statusCode == 404) {

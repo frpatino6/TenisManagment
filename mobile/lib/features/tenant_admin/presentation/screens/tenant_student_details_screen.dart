@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/widgets/error_widget.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../../domain/models/tenant_student_model.dart';
@@ -159,7 +160,7 @@ class _TenantStudentDetailsScreenState
                       style: TextStyle(fontSize: 14),
                     ),
                     Text(
-                      '\$${student.balance.toStringAsFixed(2)}',
+                      CurrencyUtils.format(student.balance),
                       style: theme.textTheme.headlineLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: student.balance >= 0
@@ -228,7 +229,7 @@ class _TenantStudentDetailsScreenState
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '\$${booking.price.toStringAsFixed(0)}',
+                      CurrencyUtils.format(booking.price),
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(

@@ -4,7 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
+import '../../../../core/utils/currency_utils.dart';
 import '../../domain/services/student_service.dart';
 
 class MyBalanceScreen extends ConsumerStatefulWidget {
@@ -24,11 +24,6 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   void initState() {
     super.initState();
     _loadStudentInfo();
-  }
-
-  String _formatCurrency(double amount) {
-    final formatter = NumberFormat('#,###', 'es_CO');
-    return '\$${formatter.format(amount)}';
   }
 
   Future<void> _loadStudentInfo() async {
@@ -262,7 +257,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
                         ),
                       ),
                       Text(
-                        _formatCurrency(totalSpent),
+                        CurrencyUtils.format(totalSpent),
                         style: Theme.of(context).textTheme.headlineLarge
                             ?.copyWith(
                               color: Colors.white,
@@ -355,7 +350,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
         _buildStatCard(
           context,
           'Promedio por Clase',
-          _formatCurrency(averagePerClass),
+          CurrencyUtils.format(averagePerClass),
           Icons.trending_up,
           Colors.green,
         ),
@@ -376,7 +371,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
         _buildStatCard(
           context,
           'Inversión Total',
-          _formatCurrency(totalSpent),
+          CurrencyUtils.format(totalSpent),
           Icons.account_balance_wallet,
           Colors.purple,
         ),
@@ -423,10 +418,10 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
             const Gap(8),
             Flexible(
               child: Text(
-              value,
+                value,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
+                  fontWeight: FontWeight.bold,
+                  color: color,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -436,11 +431,11 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
             const Gap(4),
             Flexible(
               child: Text(
-              title,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
+                title,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),

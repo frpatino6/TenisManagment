@@ -1,3 +1,4 @@
+import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/validation/model_validator.dart';
 
 /// Model for representing a court (cancha) in the system
@@ -36,14 +37,15 @@ class CourtModel {
       'pricePerHour',
       defaultValue: 0.0,
     );
-    
+
     return CourtModel(
       id: id,
       name: name,
       type: type,
       pricePerHour: pricePerHour,
       description: json['description'] as String?,
-      features: (json['features'] as List<dynamic>?)
+      features:
+          (json['features'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           [],
@@ -74,6 +76,5 @@ class CourtModel {
     }
   }
 
-  String get formattedPrice => '\$${pricePerHour.toStringAsFixed(0)}';
+  String get formattedPrice => CurrencyUtils.format(pricePerHour);
 }
-

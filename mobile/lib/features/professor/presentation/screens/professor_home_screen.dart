@@ -14,6 +14,7 @@ import '../widgets/schedule_widget.dart';
 import '../widgets/earnings_widget.dart';
 import '../widgets/tenant_selector_widget.dart';
 import '../providers/professor_provider.dart';
+import '../../../../core/utils/currency_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 class ProfessorHomeScreen extends ConsumerStatefulWidget {
@@ -231,7 +232,9 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
                           child: _buildStatCard(
                             context,
                             'Ganancias',
-                            '\$${(earnings['weeklyEarnings'] ?? 0).toStringAsFixed(0)}',
+                            CurrencyUtils.format(
+                              (earnings['weeklyEarnings'] ?? 0).toDouble(),
+                            ),
                             Icons.attach_money_outlined,
                             Colors.green,
                           ),
@@ -593,9 +596,7 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
               ),
               title: Text(
                 'Cerrar Sesión',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
               onTap: () {
                 Navigator.pop(context);

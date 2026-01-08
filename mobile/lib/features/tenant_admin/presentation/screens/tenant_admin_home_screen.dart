@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/utils/currency_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../../../../core/widgets/error_widget.dart';
@@ -188,7 +189,7 @@ class TenantAdminHomeScreen extends ConsumerWidget {
             _buildMetricCard(
               context,
               'Ingresos',
-              '\$${metrics.payments.revenue.toStringAsFixed(0)}',
+              CurrencyUtils.format(metrics.payments.revenue.toDouble()),
               Icons.attach_money,
               Colors.green,
             ),

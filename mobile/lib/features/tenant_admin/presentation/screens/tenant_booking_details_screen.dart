@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../../../../core/widgets/error_widget.dart';
+import '../../../../core/utils/currency_utils.dart';
 import '../../domain/models/tenant_booking_model.dart';
 import '../providers/tenant_admin_provider.dart';
 
@@ -230,7 +231,7 @@ class _TenantBookingDetailsScreenState
           children: [
             Text('Precio Total', style: theme.textTheme.titleMedium),
             Text(
-              '\$${price.toStringAsFixed(0)}',
+              CurrencyUtils.format(price),
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.primary,

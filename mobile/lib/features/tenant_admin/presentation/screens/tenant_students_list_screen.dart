@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/error_widget.dart';
 import '../../../../core/widgets/loading_widget.dart';
+import '../../../../core/utils/currency_utils.dart';
 import '../../domain/models/tenant_student_model.dart';
 import '../providers/tenant_admin_provider.dart';
 
@@ -169,7 +170,7 @@ class _TenantStudentsListScreenState
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    'Balance: \$${student.balance.toStringAsFixed(2)}',
+                    'Balance: ${CurrencyUtils.format(student.balance)}',
                     style: TextStyle(
                       fontSize: 12,
                       color: student.balance >= 0 ? Colors.green : Colors.red,

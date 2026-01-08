@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import '../providers/tenant_admin_provider.dart';
 import '../../../../core/widgets/loading_widget.dart';
-import '../../../../core/widgets/error_widget.dart' as app_error;
+import '../../../../core/widgets/error_widget.dart';
 import '../../domain/models/tenant_booking_model.dart';
 import 'package:intl/intl.dart';
 
@@ -129,8 +129,8 @@ class TenantBookingsListScreen extends ConsumerWidget {
           );
         },
         loading: () => const LoadingWidget(),
-        error: (error, stack) => app_error.ErrorWidget(
-          message: error.toString(),
+        error: (error, stack) => AppErrorWidget.fromError(
+          error,
           onRetry: () => ref.refresh(tenantBookingsProvider),
         ),
       ),

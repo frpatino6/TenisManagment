@@ -145,3 +145,40 @@ final filteredTenantCourtsByStatusProvider =
         error: (_, _) => [],
       );
     });
+
+// ============================================================================
+// BOOKING PROVIDERS
+// ============================================================================
+
+/// Simple provider for booking page (can be overridden in screens)
+final bookingPageProvider = Provider<int>((ref) => 1);
+
+/// Provider for fetching bookings
+/// Use .family to pass parameters when needed
+final tenantBookingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
+  (ref) async {
+    // Wait for tenant to be loaded
+    final tenantId = ref.watch(currentTenantIdProvider);
+    if (tenantId == null || tenantId.isEmpty) {
+      throw Exception('Tenant ID requerido. Cargando tenant...');
+    }
+
+    final service = ref.read(tenantAdminServiceProvider);
+    final page = ref.watch(bookingPageProvider);
+
+    return await service.getBookings(page: page, limit: 20);
+  },
+);
+
+/// Provider for booking statistics
+final bookingStatsProvider = FutureProvider.autoDispose<dynamic>((ref) async {
+  // Wait for tenant to be loaded
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null || tenantId.isEmpty) {
+    throw Exception('Tenant ID requerido. Cargando tenant...');
+  }
+
+  final service = ref.read(tenantAdminServiceProvider);
+
+  return await service.getBookingStats();
+});

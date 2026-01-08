@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import '../providers/tenant_admin_provider.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../../../../core/widgets/error_widget.dart';
-import '../../domain/models/tenant_booking_model.dart';
 
 class TenantBookingCalendarScreen extends ConsumerStatefulWidget {
   const TenantBookingCalendarScreen({super.key});

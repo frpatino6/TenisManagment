@@ -112,9 +112,9 @@ class CourtInfo {
 
   factory CourtInfo.fromJson(Map<String, dynamic> json) {
     return CourtInfo(
-      id: json['id'] as String? ?? json['_id'] as String,
-      name: json['name'] as String,
-      type: json['type'] as String,
+      id: json['id'] as String? ?? json['_id'] as String? ?? 'unk',
+      name: json['name'] as String? ?? 'Sin nombre',
+      type: json['type'] as String? ?? 'tennis',
     );
   }
 
@@ -132,9 +132,9 @@ class ProfessorInfo {
 
   factory ProfessorInfo.fromJson(Map<String, dynamic> json) {
     return ProfessorInfo(
-      id: json['id'] as String? ?? json['_id'] as String,
-      name: json['name'] as String,
-      email: json['email'] as String,
+      id: json['id'] as String? ?? json['_id'] as String? ?? 'unk',
+      name: json['name'] as String? ?? 'Sin nombre',
+      email: json['email'] as String? ?? '',
     );
   }
 
@@ -158,9 +158,9 @@ class StudentInfo {
 
   factory StudentInfo.fromJson(Map<String, dynamic> json) {
     return StudentInfo(
-      id: json['id'] as String? ?? json['_id'] as String,
-      name: json['name'] as String,
-      email: json['email'] as String,
+      id: json['id'] as String? ?? json['_id'] as String? ?? 'unk',
+      name: json['name'] as String? ?? 'Sin nombre',
+      email: json['email'] as String? ?? '',
       phone: json['phone'] as String?,
     );
   }

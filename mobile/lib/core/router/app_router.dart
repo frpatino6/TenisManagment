@@ -34,6 +34,8 @@ import '../../features/tenant_admin/presentation/screens/tenant_bookings_list_sc
 import '../../features/tenant_admin/presentation/screens/tenant_booking_details_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_booking_stats_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_booking_calendar_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_students_list_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_student_details_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../providers/tenant_provider.dart';
 
@@ -222,6 +224,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) {
                   final bookingId = state.pathParameters['id']!;
                   return TenantBookingDetailsScreen(bookingId: bookingId);
+                },
+              ),
+            ],
+          ),
+          GoRoute(
+            path: 'students',
+            name: 'tenant-admin-students',
+            builder: (context, state) => const TenantStudentsListScreen(),
+            routes: [
+              GoRoute(
+                path: ':id',
+                name: 'tenant-admin-student-details',
+                builder: (context, state) {
+                  final studentId = state.pathParameters['id']!;
+                  return TenantStudentDetailsScreen(studentId: studentId);
                 },
               ),
             ],

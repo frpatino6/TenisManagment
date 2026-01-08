@@ -26,7 +26,7 @@ void main() {
       expect(model.price, 50.0);
       expect(model.date, isNotNull);
       expect(model.court?.name, 'Cancha 1');
-      expect(model.student?.name, 'Student 1');
+      expect(model.student.name, 'Student 1');
     });
 
     test(

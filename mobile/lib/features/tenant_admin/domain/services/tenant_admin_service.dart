@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/exceptions/exceptions.dart';
 import '../../../../core/services/http_client.dart';
@@ -11,6 +10,7 @@ import '../models/tenant_professor_model.dart';
 import '../models/tenant_court_model.dart';
 import '../models/tenant_booking_model.dart';
 import '../models/booking_stats_model.dart';
+import '../models/tenant_student_model.dart';
 
 /// Service responsible for tenant admin operations
 /// Handles API communication for tenant admin endpoints
@@ -913,6 +913,162 @@ class TenantAdminService {
         throw AuthException.tokenExpired();
       } else if (response.statusCode == 404) {
         throw TenantException.notFound();
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
+  /// GET /api/tenant/students
+  /// Get list of students with filters and pagination
+  Future<TenantStudentsResponse> getStudents({
+    String? search,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+
+      final queryParams = <String, String>{
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
+
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+
+      final uri = Uri.parse(
+        '$_baseUrl/tenant/students',
+      ).replace(queryParameters: queryParams);
+
+      final response = await _httpClient.get(
+        uri,
+        headers: headers,
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return TenantStudentsResponse.fromJson(data);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
+  /// GET /api/tenant/students/:id
+  /// Get detailed information of a student
+  Future<TenantStudentDetailsModel> getStudentDetails(String studentId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final uri = Uri.parse('$_baseUrl/tenant/students/$studentId');
+
+      final response = await _httpClient.get(
+        uri,
+        headers: headers,
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return TenantStudentDetailsModel.fromJson(data);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw ValidationException(
+          'Estudiante no encontrado en este centro',
+          code: 'STUDENT_NOT_FOUND',
+        );
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
+  /// PATCH /api/tenant/students/:id/balance
+  /// Update student balance
+  Future<double> updateStudentBalance(
+    String studentId, {
+    required double amount,
+    required String type, // 'add' | 'subtract' | 'set'
+    String? reason,
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final uri = Uri.parse('$_baseUrl/tenant/students/$studentId/balance');
+
+      final body = <String, dynamic>{'amount': amount, 'type': type};
+      if (reason != null) body['reason'] = reason;
+
+      final response = await _httpClient.patch(
+        uri,
+        headers: headers,
+        body: json.encode(body),
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return (data['newBalance'] as num).toDouble();
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw ValidationException(
+          'Estudiante no encontrado',
+          code: 'STUDENT_NOT_FOUND',
+        );
+      } else if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        throw ValidationException(
+          errorData['error']?.toString() ?? 'Error al actualizar balance',
+          code: 'BALANCE_UPDATE_ERROR',
+        );
       } else if (response.statusCode >= 500) {
         throw NetworkException.serverError(statusCode: response.statusCode);
       } else {

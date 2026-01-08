@@ -5,6 +5,7 @@ import '../../domain/models/tenant_professor_model.dart';
 import '../../domain/models/tenant_court_model.dart';
 import '../../domain/services/tenant_admin_service.dart';
 import '../../../../core/providers/tenant_provider.dart';
+import '../../domain/models/tenant_student_model.dart';
 
 import '../../../../core/services/http_client.dart';
 
@@ -225,4 +226,46 @@ final bookingCalendarProvider = FutureProvider.autoDispose
       }
       final service = ref.read(tenantAdminServiceProvider);
       return await service.getBookingCalendar(from: range.from, to: range.to);
+    });
+
+// ============================================================================
+// STUDENT PROVIDERS
+// ============================================================================
+
+class StudentSearchNotifier extends Notifier<String> {
+  @override
+  String build() => "";
+  void set(String value) => state = value;
+}
+
+final studentSearchProvider = NotifierProvider<StudentSearchNotifier, String>(
+  StudentSearchNotifier.new,
+);
+
+class StudentPageNotifier extends Notifier<int> {
+  @override
+  int build() => 1;
+  void setPage(int page) => state = page;
+}
+
+final studentPageProvider = NotifierProvider<StudentPageNotifier, int>(
+  StudentPageNotifier.new,
+);
+
+/// Provider for fetching students with search and pagination
+final tenantStudentsProvider =
+    FutureProvider.autoDispose<TenantStudentsResponse>((ref) async {
+      final tenantId = ref.watch(currentTenantIdProvider);
+      if (tenantId == null || tenantId.isEmpty) {
+        throw Exception('Tenant ID requerido');
+      }
+
+      final service = ref.read(tenantAdminServiceProvider);
+      final page = ref.watch(studentPageProvider);
+      final search = ref.watch(studentSearchProvider);
+
+      return await service.getStudents(
+        page: page,
+        search: search.isEmpty ? null : search,
+      );
     });

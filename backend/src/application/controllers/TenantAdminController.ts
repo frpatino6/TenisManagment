@@ -17,6 +17,7 @@ import { BookingModel } from '../../infrastructure/database/models/BookingModel'
 import { ScheduleModel } from '../../infrastructure/database/models/ScheduleModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
 import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
+import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { Logger } from '../../infrastructure/services/Logger';
 import { Types } from 'mongoose';
 
@@ -1376,6 +1377,203 @@ export class TenantAdminController {
       logger.error('Error obteniendo estadísticas de reservas', {
         error: (error as Error).message,
       });
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * GET /api/tenant/students
+   * Listar estudiantes del tenant con búsqueda y paginación
+   */
+  listStudents = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const { search, page = '1', limit = '20' } = (req.query || {}) as any;
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+
+      const query: any = { tenantId: new Types.ObjectId(tenantId) };
+
+      // Si hay búsqueda, primero buscamos estudiantes por nombre/email
+      if (search) {
+        const studentIds = await StudentModel.find({
+          $or: [
+            { name: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
+          ],
+        }).distinct('_id');
+        query.studentId = { $in: studentIds };
+      }
+
+      const [students, total] = await Promise.all([
+        StudentTenantModel.find(query)
+          .populate('studentId')
+          .sort({ joinedAt: -1 })
+          .skip(skip)
+          .limit(parseInt(limit)),
+        StudentTenantModel.countDocuments(query),
+      ]);
+
+      res.json({
+        students: students
+          .filter((st: any) => st.studentId)
+          .map((st: any) => ({
+            id: st.studentId._id,
+            name: st.studentId.name,
+            email: st.studentId.email,
+            phone: st.studentId.phone,
+            membershipType: st.studentId.membershipType,
+            balance: st.balance,
+            isActive: st.isActive,
+            joinedAt: st.joinedAt,
+          })),
+        pagination: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(total / parseInt(limit)),
+        },
+      });
+    } catch (error) {
+      logger.error('Error listando estudiantes', { error: (error as Error).message });
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * GET /api/tenant/students/:id
+   * Obtener detalles de un estudiante
+   */
+  getStudentDetails = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      const { id } = req.params;
+
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const relation = await StudentTenantModel.findOne({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: new Types.ObjectId(id),
+      }).populate('studentId');
+
+      if (!relation || !relation.studentId) {
+        res.status(404).json({ error: 'Estudiante no encontrado en este centro' });
+        return;
+      }
+
+      // Obtener últimas 5 reservas
+      const recentBookings = await BookingModel.find({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: new Types.ObjectId(id),
+      })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .populate('courtId')
+        .populate('professorId');
+
+      const student = relation.studentId as any;
+
+      res.json({
+        id: student._id,
+        name: student.name,
+        email: student.email,
+        phone: student.phone,
+        membershipType: student.membershipType,
+        balance: relation.balance,
+        isActive: relation.isActive,
+        joinedAt: relation.joinedAt,
+        recentBookings: recentBookings.map((b: any) => ({
+          id: b._id,
+          date: b.bookingDate,
+          serviceType: b.serviceType,
+          status: b.status,
+          price: b.price,
+          court: b.courtId ? {
+            id: b.courtId._id,
+            name: b.courtId.name,
+            type: b.courtId.type || 'tennis'
+          } : null,
+          professor: b.professorId ? {
+            id: b.professorId._id,
+            name: b.professorId.name,
+            email: b.professorId.email || ''
+          } : null,
+        })),
+      });
+    } catch (error) {
+      logger.error('Error obteniendo detalles de estudiante', { error: (error as Error).message });
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * PATCH /api/tenant/students/:id/balance
+   * Ajustar balance de un estudiante
+   */
+  updateStudentBalance = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      const { id } = req.params;
+      const { amount, type, reason } = req.body; // type: 'add' | 'subtract' | 'set'
+
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      if (amount === undefined || isNaN(amount)) {
+        res.status(400).json({ error: 'Monto válido requerido' });
+        return;
+      }
+
+      const relation = await StudentTenantModel.findOne({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: new Types.ObjectId(id),
+      });
+
+      if (!relation) {
+        res.status(404).json({ error: 'Estudiante no encontrado en este centro' });
+        return;
+      }
+
+      let newBalance = relation.balance;
+      if (type === 'add') {
+        newBalance += amount;
+      } else if (type === 'subtract') {
+        newBalance -= amount;
+      } else if (type === 'set') {
+        newBalance = amount;
+      } else {
+        res.status(400).json({ error: 'Tipo de operación inválido (add, subtract, set)' });
+        return;
+      }
+
+      relation.balance = newBalance;
+      await relation.save();
+
+      // Opcional: Registrar transacción de balance si existiera ese modelo
+      logger.info('Balance actualizado', {
+        tenantId,
+        studentId: id,
+        oldBalance: relation.balance - (type === 'add' ? amount : type === 'subtract' ? -amount : 0),
+        newBalance,
+        reason,
+      });
+
+      res.json({
+        studentId: id,
+        newBalance: relation.balance,
+        message: 'Balance actualizado exitosamente',
+      });
+    } catch (error) {
+      logger.error('Error actualizando balance', { error: (error as Error).message });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

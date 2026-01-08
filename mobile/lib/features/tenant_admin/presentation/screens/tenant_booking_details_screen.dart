@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../../../../core/widgets/error_widget.dart';
+import '../../domain/models/tenant_booking_model.dart';
 import '../providers/tenant_admin_provider.dart';
 
 class TenantBookingDetailsScreen extends ConsumerStatefulWidget {
@@ -27,7 +28,7 @@ class _TenantBookingDetailsScreenState
 
     return Scaffold(
       appBar: AppBar(title: const Text('Detalles de Reserva')),
-      body: FutureBuilder<Map<String, dynamic>>(
+      body: FutureBuilder<TenantBookingModel>(
         future: ref
             .read(tenantAdminServiceProvider)
             .getBookingDetails(widget.bookingId),
@@ -48,8 +49,8 @@ class _TenantBookingDetailsScreenState
           }
 
           final booking = snapshot.data!;
-          final status = booking['status'] as String;
-          final canCancel = status == 'pending' || status == 'confirmed';
+          final canCancel =
+              booking.status == 'pending' || booking.status == 'confirmed';
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -58,19 +59,19 @@ class _TenantBookingDetailsScreenState
               children: [
                 _buildStatusCard(context, booking),
                 const Gap(16),
-                _buildStudentInfo(context, booking),
+                _buildStudentInfo(context, booking.student),
                 const Gap(16),
                 _buildBookingInfo(context, booking),
                 const Gap(16),
-                if (booking['court'] != null) ...[
-                  _buildCourtInfo(context, booking),
+                if (booking.court != null) ...[
+                  _buildCourtInfo(context, booking.court!),
                   const Gap(16),
                 ],
-                if (booking['professor'] != null) ...[
-                  _buildProfessorInfo(context, booking),
+                if (booking.professor != null) ...[
+                  _buildProfessorInfo(context, booking.professor!),
                   const Gap(16),
                 ],
-                _buildPriceInfo(context, booking),
+                _buildPriceInfo(context, booking.price),
                 const Gap(24),
                 if (canCancel && !_isCancelling)
                   SizedBox(
@@ -95,15 +96,14 @@ class _TenantBookingDetailsScreenState
     );
   }
 
-  Widget _buildStatusCard(BuildContext context, Map<String, dynamic> booking) {
-    final status = booking['status'] as String;
+  Widget _buildStatusCard(BuildContext context, TenantBookingModel booking) {
     final theme = Theme.of(context);
 
     Color statusColor;
     IconData statusIcon;
     String statusText;
 
-    switch (status) {
+    switch (booking.status) {
       case 'confirmed':
         statusColor = Colors.green;
         statusIcon = Icons.check_circle;
@@ -127,11 +127,11 @@ class _TenantBookingDetailsScreenState
       default:
         statusColor = Colors.grey;
         statusIcon = Icons.help;
-        statusText = status;
+        statusText = booking.status;
     }
 
     return Card(
-      color: statusColor.withOpacity(0.1),
+      color: statusColor.withValues(alpha: 0.1),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -159,22 +159,20 @@ class _TenantBookingDetailsScreenState
     );
   }
 
-  Widget _buildStudentInfo(BuildContext context, Map<String, dynamic> booking) {
-    final student = booking['student'] as Map<String, dynamic>;
+  Widget _buildStudentInfo(BuildContext context, StudentInfo student) {
     return _buildInfoCard(
       context,
       title: 'Estudiante',
       icon: Icons.person,
       children: [
-        _buildInfoRow('Nombre', student['name'] as String),
-        _buildInfoRow('Email', student['email'] as String),
-        if (student['phone'] != null)
-          _buildInfoRow('Teléfono', student['phone'] as String),
+        _buildInfoRow('Nombre', student.name),
+        _buildInfoRow('Email', student.email),
+        if (student.phone != null) _buildInfoRow('Teléfono', student.phone!),
       ],
     );
   }
 
-  Widget _buildBookingInfo(BuildContext context, Map<String, dynamic> booking) {
+  Widget _buildBookingInfo(BuildContext context, TenantBookingModel booking) {
     final dateFormat = DateFormat('dd/MM/yyyy');
     final timeFormat = DateFormat('HH:mm');
 
@@ -183,58 +181,45 @@ class _TenantBookingDetailsScreenState
       title: 'Información de Reserva',
       icon: Icons.event,
       children: [
-        if (booking['date'] != null)
-          _buildInfoRow(
-            'Fecha',
-            dateFormat.format(DateTime.parse(booking['date'] as String)),
-          ),
-        if (booking['startTime'] != null && booking['endTime'] != null)
+        if (booking.date != null)
+          _buildInfoRow('Fecha', dateFormat.format(booking.date!)),
+        if (booking.startTime != null && booking.endTime != null)
           _buildInfoRow(
             'Horario',
-            '${timeFormat.format(DateTime.parse(booking['startTime'] as String))} - ${timeFormat.format(DateTime.parse(booking['endTime'] as String))}',
+            '${timeFormat.format(booking.startTime!)} - ${timeFormat.format(booking.endTime!)}',
           ),
-        _buildInfoRow(
-          'Tipo',
-          _getServiceTypeLabel(booking['serviceType'] as String),
-        ),
-        if (booking['notes'] != null)
-          _buildInfoRow('Notas', booking['notes'] as String),
+        _buildInfoRow('Tipo', _getServiceTypeLabel(booking.serviceType)),
+        if (booking.notes != null) _buildInfoRow('Notas', booking.notes!),
       ],
     );
   }
 
-  Widget _buildCourtInfo(BuildContext context, Map<String, dynamic> booking) {
-    final court = booking['court'] as Map<String, dynamic>;
+  Widget _buildCourtInfo(BuildContext context, CourtInfo court) {
     return _buildInfoCard(
       context,
       title: 'Cancha',
       icon: Icons.sports_tennis,
       children: [
-        _buildInfoRow('Nombre', court['name'] as String),
-        _buildInfoRow('Tipo', court['type'] as String),
+        _buildInfoRow('Nombre', court.name),
+        _buildInfoRow('Tipo', court.type),
       ],
     );
   }
 
-  Widget _buildProfessorInfo(
-    BuildContext context,
-    Map<String, dynamic> booking,
-  ) {
-    final professor = booking['professor'] as Map<String, dynamic>;
+  Widget _buildProfessorInfo(BuildContext context, ProfessorInfo professor) {
     return _buildInfoCard(
       context,
       title: 'Profesor',
       icon: Icons.school,
       children: [
-        _buildInfoRow('Nombre', professor['name'] as String),
-        _buildInfoRow('Email', professor['email'] as String),
+        _buildInfoRow('Nombre', professor.name),
+        _buildInfoRow('Email', professor.email),
       ],
     );
   }
 
-  Widget _buildPriceInfo(BuildContext context, Map<String, dynamic> booking) {
+  Widget _buildPriceInfo(BuildContext context, double price) {
     final theme = Theme.of(context);
-    final price = booking['price'] as num;
 
     return Card(
       color: theme.colorScheme.primaryContainer,

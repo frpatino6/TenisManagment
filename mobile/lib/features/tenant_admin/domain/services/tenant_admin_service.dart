@@ -791,7 +791,7 @@ class TenantAdminService {
 
   /// GET /api/tenant/bookings/:id
   /// Get booking details
-  Future<Map<String, dynamic>> getBookingDetails(String bookingId) async {
+  Future<TenantBookingModel> getBookingDetails(String bookingId) async {
     try {
       final headers = await _getAuthHeaders();
       final uri = Uri.parse('$_baseUrl/tenant/bookings/$bookingId');
@@ -804,7 +804,7 @@ class TenantAdminService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
-        return data;
+        return TenantBookingModel.fromJson(data);
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         throw AuthException.tokenExpired();
       } else if (response.statusCode == 404) {

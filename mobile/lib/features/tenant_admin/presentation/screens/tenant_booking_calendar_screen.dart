@@ -95,8 +95,8 @@ class _TenantBookingCalendarScreenState
                 eventLoader: _getEventsForDay,
                 calendarStyle: CalendarStyle(
                   todayDecoration: BoxDecoration(
-                    color: colorScheme.primary.withOpacity(0.5),
-                    shape: BoxShape.circle,
+                    color: colorScheme.primary.withAlpha(25),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   selectedDecoration: BoxDecoration(
                     color: colorScheme.primary,
@@ -167,12 +167,16 @@ class _TenantBookingCalendarScreenState
                                 _getStatusIcon(status),
                                 color: _getStatusColor(status),
                               ),
-                              onTap: () {
+                              onTap: () async {
                                 final id = bookingRaw['id'];
                                 if (id != null) {
-                                  context.push(
+                                  final refresh = await context.push<bool>(
                                     '/tenant-admin-home/bookings/$id',
                                   );
+                                  if (refresh == true) {
+                                    // Invalidate the specific provider for current range
+                                    ref.invalidate(bookingCalendarProvider);
+                                  }
                                 }
                               },
                             ),

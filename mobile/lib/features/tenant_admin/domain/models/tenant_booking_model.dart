@@ -31,27 +31,38 @@ class TenantBookingModel {
   });
 
   factory TenantBookingModel.fromJson(Map<String, dynamic> json) {
+    // API returns courtId, professorId, studentId due to populate in backend
     return TenantBookingModel(
-      id: json['id'] as String,
-      date: json['date'] != null
-          ? DateTime.parse(json['date'] as String)
-          : null,
+      id: json['id'] as String? ?? json['_id'] as String,
+      date: json['bookingDate'] != null
+          ? DateTime.parse(json['bookingDate'] as String)
+          : (json['date'] != null
+                ? DateTime.parse(json['date'] as String)
+                : null),
       startTime: json['startTime'] != null
           ? DateTime.parse(json['startTime'] as String)
           : null,
       endTime: json['endTime'] != null
           ? DateTime.parse(json['endTime'] as String)
           : null,
-      court: json['court'] != null
+      court: (json['court'] != null)
           ? CourtInfo.fromJson(json['court'] as Map<String, dynamic>)
-          : null,
-      professor: json['professor'] != null
+          : (json['courtId'] != null
+                ? CourtInfo.fromJson(json['courtId'] as Map<String, dynamic>)
+                : null),
+      professor: (json['professor'] != null)
           ? ProfessorInfo.fromJson(json['professor'] as Map<String, dynamic>)
-          : null,
-      student: StudentInfo.fromJson(json['student'] as Map<String, dynamic>),
+          : (json['professorId'] != null
+                ? ProfessorInfo.fromJson(
+                    json['professorId'] as Map<String, dynamic>,
+                  )
+                : null),
+      student: StudentInfo.fromJson(
+        (json['student'] ?? json['studentId']) as Map<String, dynamic>,
+      ),
       serviceType: json['serviceType'] as String,
       status: json['status'] as String,
-      price: (json['price'] as num).toDouble(),
+      price: (json['totalPrice'] ?? json['price'] ?? 0.0).toDouble(),
       notes: json['notes'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
@@ -95,7 +106,7 @@ class CourtInfo {
 
   factory CourtInfo.fromJson(Map<String, dynamic> json) {
     return CourtInfo(
-      id: json['id'] as String,
+      id: json['id'] as String? ?? json['_id'] as String,
       name: json['name'] as String,
       type: json['type'] as String,
     );
@@ -115,7 +126,7 @@ class ProfessorInfo {
 
   factory ProfessorInfo.fromJson(Map<String, dynamic> json) {
     return ProfessorInfo(
-      id: json['id'] as String,
+      id: json['id'] as String? ?? json['_id'] as String,
       name: json['name'] as String,
       email: json['email'] as String,
     );
@@ -141,7 +152,7 @@ class StudentInfo {
 
   factory StudentInfo.fromJson(Map<String, dynamic> json) {
     return StudentInfo(
-      id: json['id'] as String,
+      id: json['id'] as String? ?? json['_id'] as String,
       name: json['name'] as String,
       email: json['email'] as String,
       phone: json['phone'] as String?,
@@ -170,11 +181,17 @@ class BookingPagination {
     return BookingPagination(
       page: json['page'] as int,
       limit: json['limit'] as int,
-      total: json['total'] as int,
+      total: json['total'] as int? ?? json['totalItems'] as int,
       totalPages: json['totalPages'] as int,
     );
   }
 
   bool get hasNextPage => page < totalPages;
   bool get hasPreviousPage => page > 1;
+
+  // Compatibility with UI
+  int get currentPage => page;
+  int get totalItems => total;
+  bool get hasNext => hasNextPage;
+  bool get hasPrevious => hasPreviousPage;
 }

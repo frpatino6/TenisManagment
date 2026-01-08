@@ -837,9 +837,8 @@ export class TenantAdminController {
 
       // Si hay búsqueda, encontrar primero IDs de estudiantes que coincidan
       if (search) {
-        const User = require('../../infrastructure/database/models/UserModel').default;
-        const matchingStudents = await User.find({
-          role: 'student',
+        const Student = require('../../infrastructure/database/models/StudentModel').StudentModel;
+        const matchingStudents = await Student.find({
           $or: [
             { name: { $regex: search, $options: 'i' } },
             { email: { $regex: search, $options: 'i' } }
@@ -923,11 +922,16 @@ export class TenantAdminController {
               email: professor.email,
             }
             : null,
-          student: {
+          student: student ? {
             id: student._id.toString(),
             name: student.name,
             email: student.email,
             phone: student.phone,
+          } : {
+            id: booking.studentId.toString(),
+            name: 'Estudiante no encontrado',
+            email: '-',
+            phone: '-',
           },
           serviceType: booking.serviceType,
           status: booking.status,
@@ -1103,11 +1107,16 @@ export class TenantAdminController {
             specialties: professor.specialties,
           }
           : null,
-        student: {
+        student: student ? {
           id: student._id.toString(),
           name: student.name,
           email: student.email,
           phone: student.phone,
+        } : {
+          id: booking.studentId.toString(),
+          name: 'Estudiante no encontrado',
+          email: '-',
+          phone: '-',
         },
         serviceType: booking.serviceType,
         status: booking.status,

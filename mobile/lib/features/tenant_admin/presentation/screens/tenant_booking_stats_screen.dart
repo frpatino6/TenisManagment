@@ -130,10 +130,10 @@ class TenantBookingStatsScreen extends ConsumerWidget {
   ) {
     return Card(
       elevation: 0,
-      color: color.withOpacity(0.05),
+      color: color.withValues(alpha: 0.05),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: color.withOpacity(0.1)),
+        side: BorderSide(color: color.withValues(alpha: 0.1)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -282,8 +282,9 @@ class TenantBookingStatsScreen extends ConsumerWidget {
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
                           if (value.toInt() < 0 ||
-                              value.toInt() >= types.length)
+                              value.toInt() >= types.length) {
                             return const SizedBox();
+                          }
                           final label = _getServiceTypeLabel(
                             types[value.toInt()].key,
                           );
@@ -361,13 +362,13 @@ class TenantBookingStatsScreen extends ConsumerWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.withOpacity(0.1)),
+        side: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
       ),
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 20),

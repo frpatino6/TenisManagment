@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/widgets/error_widget.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../../domain/models/tenant_booking_model.dart';
@@ -29,7 +30,6 @@ class _TenantBookingsListScreenState
   Widget build(BuildContext context) {
     final bookingsAsync = ref.watch(tenantBookingsProvider);
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -142,7 +142,7 @@ class _TenantBookingsListScreenState
               filled: true,
               fillColor: Theme.of(
                 context,
-              ).colorScheme.surfaceVariant.withOpacity(0.5),
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
             ),
             onChanged: (value) {
               ref.read(bookingStudentSearchProvider.notifier).set(value);
@@ -196,7 +196,9 @@ class _TenantBookingsListScreenState
           ref.read(bookingStatusFilterProvider.notifier).set(value);
         }
       },
-      selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+      selectedColor: Theme.of(
+        context,
+      ).colorScheme.primary.withValues(alpha: 0.2),
       checkmarkColor: Theme.of(context).colorScheme.primary,
     );
   }
@@ -209,10 +211,17 @@ class _TenantBookingsListScreenState
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: statusColor.withOpacity(0.2)),
+        side: BorderSide(color: statusColor.withValues(alpha: 0.2)),
       ),
       child: InkWell(
-        onTap: () => context.push('/tenant-admin-home/bookings/${booking.id}'),
+        onTap: () async {
+          final refresh = await context.push<bool>(
+            '/tenant-admin-home/bookings/${booking.id}',
+          );
+          if (refresh == true) {
+            ref.invalidate(tenantBookingsProvider);
+          }
+        },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -237,7 +246,7 @@ class _TenantBookingsListScreenState
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -257,7 +266,7 @@ class _TenantBookingsListScreenState
                   const Gap(4),
                   Expanded(
                     child: Text(
-                      booking.court.name,
+                      booking.court?.name ?? 'Sin cancha',
                       style: theme.textTheme.bodySmall,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -284,14 +293,18 @@ class _TenantBookingsListScreenState
                   ),
                   const Gap(4),
                   Text(
-                    '${booking.date.day}/${booking.date.month}/${booking.date.year}',
+                    booking.date != null
+                        ? '${booking.date!.day}/${booking.date!.month}/${booking.date!.year}'
+                        : 'Sin fecha',
                     style: theme.textTheme.bodySmall,
                   ),
                   const Gap(16),
                   const Icon(Icons.access_time, size: 16, color: Colors.grey),
                   const Gap(4),
                   Text(
-                    '${booking.startTime} - ${booking.endTime}',
+                    booking.startTime != null && booking.endTime != null
+                        ? '${DateFormat('HH:mm').format(booking.startTime!)} - ${DateFormat('HH:mm').format(booking.endTime!)}'
+                        : 'Sin horario',
                     style: theme.textTheme.bodySmall,
                   ),
                 ],
@@ -309,7 +322,7 @@ class _TenantBookingsListScreenState
                     ),
                   ),
                   Text(
-                    '\$${booking.totalPrice.toStringAsFixed(0)}',
+                    '\$${booking.price.toStringAsFixed(0)}',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.primary,

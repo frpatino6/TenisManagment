@@ -51,6 +51,67 @@ final tenantCourtsProvider = FutureProvider<List<TenantCourtModel>>((
   return await service.getCourts();
 });
 
+/// Provider for filtering professors by status (active/inactive)
+final filteredTenantProfessorsByStatusProvider =
+    Provider.family<List<TenantProfessorModel>, String>((ref, statusFilter) {
+      final professorsAsync = ref.watch(tenantProfessorsProvider);
+
+      return professorsAsync.when(
+        data: (professors) {
+          if (statusFilter == 'all') {
+            return professors;
+          }
+          final bool isActive = statusFilter == 'active';
+          return professors
+              .where((professor) => professor.isActive == isActive)
+              .toList();
+        },
+        loading: () => [],
+        error: (_, _) => [],
+      );
+    });
+
+/// Provider for filtering courts by status (active/inactive)
+final filteredTenantCourtsByStatusProvider =
+    Provider.family<List<TenantCourtModel>, String>((ref, statusFilter) {
+      final courtsAsync = ref.watch(tenantCourtsProvider);
+
+      return courtsAsync.when(
+        data: (courts) {
+          if (statusFilter == 'all') {
+            return courts;
+          }
+          final bool isActive = statusFilter == 'active';
+          return courts.where((court) => court.isActive == isActive).toList();
+        },
+        loading: () => [],
+        error: (_, _) => [],
+      );
+    });
+
+/// Provider for searching courts by name, type or description
+final filteredTenantCourtsProvider =
+    Provider.family<List<TenantCourtModel>, String>((ref, query) {
+      final courtsAsync = ref.watch(tenantCourtsProvider);
+
+      return courtsAsync.when(
+        data: (courts) {
+          if (query.isEmpty) {
+            return courts;
+          }
+          final lowercaseQuery = query.toLowerCase();
+          return courts.where((court) {
+            return court.name.toLowerCase().contains(lowercaseQuery) ||
+                court.type.toLowerCase().contains(lowercaseQuery) ||
+                (court.description?.toLowerCase().contains(lowercaseQuery) ??
+                    false);
+          }).toList();
+        },
+        loading: () => [],
+        error: (_, _) => [],
+      );
+    });
+
 // ============================================================================
 // BOOKING PROVIDERS
 // ============================================================================

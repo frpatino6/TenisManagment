@@ -290,7 +290,7 @@ class TenantSelectorWidget extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               'Para unirte a otro centro, debes ser invitado por su administrador.',
-                              style: GoogleFonts.inter(
+                        style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: colorScheme.onSurfaceVariant,
                               ),

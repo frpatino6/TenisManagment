@@ -57,15 +57,21 @@ class TenantBookingModel {
                     json['professorId'] as Map<String, dynamic>,
                   )
                 : null),
-      student: StudentInfo.fromJson(
-        (json['student'] ?? json['studentId']) as Map<String, dynamic>,
-      ),
-      serviceType: json['serviceType'] as String,
-      status: json['status'] as String,
+      student: (json['student'] ?? json['studentId']) != null
+          ? StudentInfo.fromJson(
+              (json['student'] ?? json['studentId']) as Map<String, dynamic>,
+            )
+          : StudentInfo(id: '', name: 'Estudiante no encontrado', email: '-'),
+      serviceType: json['serviceType'] as String? ?? 'court_rental',
+      status: json['status'] as String? ?? 'pending',
       price: (json['totalPrice'] ?? json['price'] ?? 0.0).toDouble(),
       notes: json['notes'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'] as String)
+          : DateTime.now(),
     );
   }
 

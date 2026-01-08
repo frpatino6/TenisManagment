@@ -16,15 +16,12 @@ import '../models/booking_stats_model.dart';
 /// Handles API communication for tenant admin endpoints
 class TenantAdminService {
   final FirebaseAuth _auth;
-  final Ref _ref;
   final String _baseUrl = AppConfig.apiBaseUrl;
+  final AppHttpClient _httpClient;
 
-  TenantAdminService({required Ref ref, FirebaseAuth? auth})
-    : _ref = ref,
+  TenantAdminService({required AppHttpClient httpClient, FirebaseAuth? auth})
+    : _httpClient = httpClient,
       _auth = auth ?? FirebaseAuth.instance;
-
-  /// Get HTTP client with automatic X-Tenant-ID header
-  AppHttpClient get _httpClient => AppHttpClient(_ref);
 
   /// Get authorization headers
   Future<Map<String, String>> _getAuthHeaders() async {

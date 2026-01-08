@@ -828,7 +828,7 @@ export class TenantAdminController {
         search,
         page = '1',
         limit = '20',
-      } = req.query;
+      } = (req.query || {}) as any;
 
       const tenantObjectId = new Types.ObjectId(tenantId);
 
@@ -1232,7 +1232,7 @@ export class TenantAdminController {
         return;
       }
 
-      const { from, to } = req.query;
+      const { from, to } = (req.query || {}) as any;
 
       const tenantObjectId = new Types.ObjectId(tenantId);
 

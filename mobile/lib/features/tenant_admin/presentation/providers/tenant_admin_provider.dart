@@ -6,9 +6,12 @@ import '../../domain/models/tenant_court_model.dart';
 import '../../domain/services/tenant_admin_service.dart';
 import '../../../../core/providers/tenant_provider.dart';
 
+import '../../../../core/services/http_client.dart';
+
 /// Provider for TenantAdminService
 final tenantAdminServiceProvider = Provider<TenantAdminService>((ref) {
-  return TenantAdminService(ref: ref);
+  final httpClient = ref.watch(appHttpClientProvider);
+  return TenantAdminService(httpClient: httpClient);
 });
 
 /// Provider for tenant metrics

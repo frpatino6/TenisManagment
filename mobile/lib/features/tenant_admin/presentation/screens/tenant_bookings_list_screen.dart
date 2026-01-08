@@ -210,7 +210,12 @@ class TenantBookingsListScreen extends ConsumerWidget {
                 children: [
                   const Icon(Icons.calendar_today, size: 14),
                   const Gap(4),
-                  Text(dateFormat.format(booking.date!)),
+                  Flexible(
+                    child: Text(
+                      dateFormat.format(booking.date!),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                   if (booking.startTime != null) ...[
                     const Gap(8),
                     const Icon(Icons.access_time, size: 14),
@@ -225,7 +230,12 @@ class TenantBookingsListScreen extends ConsumerWidget {
                 children: [
                   const Icon(Icons.sports_tennis, size: 14),
                   const Gap(4),
-                  Text('${booking.court!.name} (${booking.court!.type})'),
+                  Expanded(
+                    child: Text(
+                      '${booking.court!.name} (${booking.court!.type})',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
             if (booking.professor != null)
@@ -233,7 +243,12 @@ class TenantBookingsListScreen extends ConsumerWidget {
                 children: [
                   const Icon(Icons.person, size: 14),
                   const Gap(4),
-                  Text(booking.professor!.name),
+                  Expanded(
+                    child: Text(
+                      booking.professor!.name,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
           ],

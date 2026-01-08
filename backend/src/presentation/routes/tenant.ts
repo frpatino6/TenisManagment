@@ -53,5 +53,10 @@ router.get('/bookings/stats', controller.getBookingStats);
 router.get('/bookings/:id', controller.getBookingDetails);
 router.patch('/bookings/:id/cancel', controller.cancelBooking);
 
+// Gestión de estudiantes
+router.get('/students', controller.listStudents);
+router.get('/students/:id', controller.getStudentDetails);
+router.patch('/students/:id/balance', controller.updateStudentBalance);
+
 export default router;
 

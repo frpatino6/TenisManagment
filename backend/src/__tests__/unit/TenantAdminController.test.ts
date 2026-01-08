@@ -17,6 +17,8 @@ import { CourtModel } from '../../infrastructure/database/models/CourtModel';
 import { BookingModel } from '../../infrastructure/database/models/BookingModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
 import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
+import { StudentModel } from '../../infrastructure/database/models/StudentModel';
+import { ScheduleModel } from '../../infrastructure/database/models/ScheduleModel';
 import { Request, Response } from 'express';
 
 describe('TenantAdminController', () => {
@@ -25,8 +27,8 @@ describe('TenantAdminController', () => {
   let tenantService: TenantService;
   let tenantId: string;
   let tenantAdminId: string;
-  let mockRequest: Partial<Request>;
-  let mockResponse: Partial<Response>;
+  let mockRequest: any;
+  let mockResponse: any;
 
   beforeAll(async () => {
     mongo = await MongoMemoryServer.create();
@@ -47,6 +49,8 @@ describe('TenantAdminController', () => {
     await BookingModel.deleteMany({});
     await PaymentModel.deleteMany({});
     await StudentTenantModel.deleteMany({});
+    await StudentModel.deleteMany({});
+    await ScheduleModel.deleteMany({});
 
     // Create Tenant Admin
     const adminUser = await AuthUserModel.create({
@@ -77,6 +81,7 @@ describe('TenantAdminController', () => {
       user: { id: tenantAdminId, role: 'tenant_admin' },
       tenantId,
       params: {},
+      query: {},
       body: {},
     };
 
@@ -537,6 +542,406 @@ describe('TenantAdminController', () => {
       await controller.getMetrics(mockRequest as Request, mockResponse as Response);
 
       expect(mockResponse.status).toHaveBeenCalledWith(400);
+    });
+  });
+
+  describe('listBookings', () => {
+    it('should return list of bookings for the tenant', async () => {
+      // Create a student
+      const student = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Test Student',
+        email: 'student@test.com',
+        membershipType: 'basic',
+      });
+
+      // Create a booking
+      await BookingModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: student._id,
+        serviceType: 'court_rental',
+        price: 50,
+        status: 'confirmed',
+        bookingDate: new Date(),
+      });
+
+      await controller.listBookings(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bookings: expect.arrayContaining([
+            expect.objectContaining({
+              price: 50,
+              status: 'confirmed',
+            }),
+          ]),
+          pagination: expect.any(Object),
+        }),
+      );
+    });
+
+    it('should filter bookings by student name search', async () => {
+      const student1 = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Target Student',
+        email: 'target@test.com',
+        membershipType: 'basic',
+      });
+
+      const student2 = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Other Student',
+        email: 'other@test.com',
+        membershipType: 'basic',
+      });
+
+      await BookingModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: student1._id,
+        serviceType: 'court_rental',
+        price: 50,
+        status: 'confirmed',
+      });
+
+      await BookingModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: student2._id,
+        serviceType: 'court_rental',
+        price: 50,
+        status: 'confirmed',
+      });
+
+      mockRequest.query = { search: 'Target' };
+
+      await controller.listBookings(mockRequest as Request, mockResponse as Response);
+
+      const responseData = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
+      expect(responseData.bookings.length).toBe(1);
+      expect(responseData.bookings[0].student.name).toBe('Target Student');
+    });
+  });
+
+  describe('getBookingDetails', () => {
+    it('should return booking details', async () => {
+      const student = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Test Student',
+        email: 'student@test.com',
+        membershipType: 'basic',
+      });
+
+      const booking = await BookingModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: student._id,
+        serviceType: 'court_rental',
+        price: 50,
+        status: 'confirmed',
+      });
+
+      mockRequest.params = { id: booking._id.toString() };
+
+      await controller.getBookingDetails(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: booking._id.toString(),
+          student: expect.objectContaining({
+            name: 'Test Student',
+          }),
+        }),
+      );
+    });
+
+    it('should return 404 if booking does not exist', async () => {
+      mockRequest.params = { id: new Types.ObjectId().toString() };
+
+      await controller.getBookingDetails(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
+    });
+  });
+
+  describe('cancelBooking', () => {
+    it('should cancel a booking and free up schedule', async () => {
+      const student = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Test Student',
+        email: 'student@test.com',
+        membershipType: 'basic',
+      });
+
+      const schedule = await ScheduleModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        professorId: new Types.ObjectId(),
+        date: new Date(),
+        startTime: new Date(),
+        endTime: new Date(),
+        isAvailable: false,
+      });
+
+      const booking = await BookingModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: student._id,
+        professorId: new Types.ObjectId(),
+        scheduleId: schedule._id,
+        serviceType: 'individual_class',
+        price: 100,
+        status: 'confirmed',
+      });
+
+      mockRequest.params = { id: booking._id.toString() };
+      mockRequest.body = { reason: 'Test cancellation' };
+
+      await controller.cancelBooking(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'cancelled',
+        }),
+      );
+
+      const updatedBooking = await BookingModel.findById(booking._id);
+      expect(updatedBooking?.status).toBe('cancelled');
+
+      const updatedSchedule = await ScheduleModel.findById(schedule._id);
+      expect(updatedSchedule?.isAvailable).toBe(true);
+    });
+  });
+
+  describe('getBookingStats', () => {
+    it('should return booking statistics', async () => {
+      const student = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Test Student',
+        email: 'student@test.com',
+        membershipType: 'basic',
+      });
+
+      await BookingModel.create([
+        {
+          tenantId: new Types.ObjectId(tenantId),
+          studentId: student._id,
+          serviceType: 'court_rental',
+          price: 50,
+          status: 'completed',
+        },
+        {
+          tenantId: new Types.ObjectId(tenantId),
+          studentId: student._id,
+          professorId: new Types.ObjectId(),
+          scheduleId: new Types.ObjectId(),
+          serviceType: 'individual_class',
+          price: 100,
+          status: 'confirmed',
+        },
+      ]);
+
+      await controller.getBookingStats(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          total: 2,
+          totalRevenue: 150,
+          byStatus: expect.objectContaining({
+            completed: expect.objectContaining({ count: 1 }),
+            confirmed: expect.objectContaining({ count: 1 }),
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('listStudents', () => {
+    it('should return list of students for the tenant', async () => {
+      const student = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Test Student',
+        email: 'student@test.com',
+        membershipType: 'basic',
+      });
+
+      await StudentTenantModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: student._id,
+        balance: 100,
+      });
+
+      await controller.listStudents(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          students: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'Test Student',
+              balance: 100,
+            }),
+          ]),
+        }),
+      );
+    });
+
+    it('should filter students by search', async () => {
+      const student1 = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Target Student',
+        email: 'target@test.com',
+        membershipType: 'basic',
+      });
+
+      const student2 = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Other Student',
+        email: 'other@test.com',
+        membershipType: 'basic',
+      });
+
+      await StudentTenantModel.create([
+        { tenantId: new Types.ObjectId(tenantId), studentId: student1._id },
+        { tenantId: new Types.ObjectId(tenantId), studentId: student2._id },
+      ]);
+
+      mockRequest.query = { search: 'Target' };
+
+      await controller.listStudents(mockRequest as Request, mockResponse as Response);
+
+      const responseData = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
+      expect(responseData.students.length).toBe(1);
+      expect(responseData.students[0].name).toBe('Target Student');
+    });
+
+    it('should handle orphan records (missing studentId)', async () => {
+      await StudentTenantModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: new Types.ObjectId(), // Non-existent student
+        balance: 100,
+      });
+
+      mockRequest.query = {};
+
+      await controller.listStudents(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          students: expect.not.arrayContaining([
+            expect.objectContaining({ id: expect.any(Types.ObjectId) }),
+          ]),
+        }),
+      );
+    });
+  });
+
+  describe('getStudentDetails', () => {
+    it('should return student details and recent bookings', async () => {
+      const student = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Test Student',
+        email: 'student@test.com',
+        membershipType: 'premium',
+      });
+
+      await StudentTenantModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: student._id,
+        balance: 200,
+      });
+
+      await BookingModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: student._id,
+        serviceType: 'court_rental',
+        price: 50,
+        status: 'confirmed',
+      });
+
+      mockRequest.params = { id: student._id.toString() };
+
+      await controller.getStudentDetails(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Test Student',
+          balance: 200,
+          membershipType: 'premium',
+          recentBookings: expect.arrayContaining([
+            expect.objectContaining({ price: 50 }),
+          ]),
+        }),
+      );
+    });
+
+    it('should return 404 if studentId is missing/orphan', async () => {
+      const orphanId = new Types.ObjectId();
+      await StudentTenantModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: orphanId,
+        balance: 100,
+      });
+
+      mockRequest.params = { id: orphanId.toString() };
+
+      await controller.getStudentDetails(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        error: 'Estudiante no encontrado en este centro',
+      });
+    });
+  });
+
+  describe('updateStudentBalance', () => {
+    it('should add to student balance', async () => {
+      const student = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Test Student',
+        email: 'student@test.com',
+        membershipType: 'basic',
+      });
+
+      await StudentTenantModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: student._id,
+        balance: 100,
+      });
+
+      mockRequest.params = { id: student._id.toString() };
+      mockRequest.body = { amount: 50, type: 'add', reason: 'Bonus' };
+
+      await controller.updateStudentBalance(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          newBalance: 150,
+        }),
+      );
+
+      const updated = await StudentTenantModel.findOne({ studentId: student._id });
+      expect(updated?.balance).toBe(150);
+    });
+
+    it('should set student balance', async () => {
+      const student = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Test Student',
+        email: 'student@test.com',
+        membershipType: 'basic',
+      });
+
+      await StudentTenantModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: student._id,
+        balance: 100,
+      });
+
+      mockRequest.params = { id: student._id.toString() };
+      mockRequest.body = { amount: 25, type: 'set' };
+
+      await controller.updateStudentBalance(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          newBalance: 25,
+        }),
+      );
     });
   });
 });

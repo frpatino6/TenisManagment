@@ -38,7 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isLoading = ref.watch(authLoadingProvider);
     final error = ref.watch(authErrorProvider);
     final tenantState = ref.watch(tenantNotifierProvider);
-    
+
     // Check if user is authenticated
     final user = authState.when(
       data: (user) => user,
@@ -51,8 +51,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     // 1. Auth is loading (initial load)
     // 2. User is authenticated and tenant is loading (after login, waiting for tenant to load)
     // This prevents briefly showing the select-tenant screen during login
-    if (authState.isLoading || 
-        (isAuthenticated && tenantState.isLoading)) {
+    if (authState.isLoading || (isAuthenticated && tenantState.isLoading)) {
       return const LoadingScreen(message: AppStrings.verifyingAuth);
     }
 
@@ -364,7 +363,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) {
         // Load tenant from backend after login
         // The router will automatically redirect based on auth state
-        await ref.read(tenantNotifierProvider.notifier).loadTenant();
+        // No need to manually load tenant, the provider listener handles it
+        // The router will automatically redirect based on auth state
         // No need for manual navigation - router redirect handles it
       }
     } catch (_) {
@@ -379,7 +379,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (mounted) {
         // Load tenant from backend after login
         // The router will automatically redirect based on auth state
-        await ref.read(tenantNotifierProvider.notifier).loadTenant();
+        // No need to manually load tenant, the provider listener handles it
+        // The router will automatically redirect based on auth state
         // No need for manual navigation - router redirect handles it
       }
     } catch (_) {

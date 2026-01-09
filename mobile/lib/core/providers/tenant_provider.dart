@@ -42,13 +42,15 @@ final hasTenantProvider = Provider<bool>((ref) {
 class TenantNotifier extends Notifier<AsyncValue<String?>> {
   @override
   AsyncValue<String?> build() {
-    // Watch auth state - if user changes, clear tenant
-    ref.listen(authStateProvider, (previous, next) {
+    // Watch auth notifier state - if user changes, clear tenant
+    // Fix: Listen to authNotifierProvider instead of authStateProvider to stay in sync with Router
+    ref.listen(authNotifierProvider, (previous, next) {
       final previousUser = previous?.value;
       final nextUser = next.value;
-      
+
       // If user changed (logout or different user login), clear tenant
-      if (previousUser != null && (nextUser == null || previousUser.id != nextUser.id)) {
+      if (previousUser != null &&
+          (nextUser == null || previousUser.id != nextUser.id)) {
         state = const AsyncValue.loading();
         ref.read(currentTenantIdProvider.notifier).update(null);
         // Reload tenant for new user
@@ -57,12 +59,15 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
         } else {
           state = const AsyncValue.data(null);
         }
-      } else if (nextUser != null && (previousUser == null || previousUser.id != nextUser.id)) {
+      } else if (nextUser != null &&
+          (previousUser == null || previousUser.id != nextUser.id)) {
         // New user logged in, load their tenant
+        // Fix: Set state to loading immediately to prevent UI flicker
+        state = const AsyncValue.loading();
         Future.microtask(() => loadTenant());
       }
     });
-    
+
     // Start with loading to ensure router waits for tenant to load
     // This prevents showing select-tenant screen when tenant is still loading
     Future.microtask(() => loadTenant());
@@ -82,13 +87,15 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
 
       // Always load from backend - service is stateless, no cache
       final tenantId = await service.loadTenant();
-      state = AsyncValue.data(tenantId);
 
+      // Fix: Update ID before state to preventing router from seeing loading=false + NoTenant
       if (tenantId != null && tenantId.isNotEmpty) {
         ref.read(currentTenantIdProvider.notifier).update(tenantId);
       } else {
         ref.read(currentTenantIdProvider.notifier).update(null);
       }
+
+      state = AsyncValue.data(tenantId);
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
       ref.read(currentTenantIdProvider.notifier).update(null);
@@ -102,8 +109,9 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
       final service = ref.read(tenantServiceProvider);
       final success = await service.setTenant(tenantId);
       if (success) {
-        state = AsyncValue.data(tenantId);
+        // Fix: Update ID before state
         ref.read(currentTenantIdProvider.notifier).update(tenantId);
+        state = AsyncValue.data(tenantId);
       } else {
         throw Exception('Failed to save tenant ID');
       }
@@ -138,7 +146,7 @@ class TenantNotifier extends Notifier<AsyncValue<String?>> {
     // Update local state immediately without loading
     state = AsyncValue.data(tenantId);
     ref.read(currentTenantIdProvider.notifier).update(tenantId);
-    
+
     // Save to backend asynchronously without affecting state
     try {
       final service = ref.read(tenantServiceProvider);

@@ -7,6 +7,7 @@ import { config } from '../../infrastructure/config';
 import { Logger } from '../../infrastructure/services/Logger';
 import admin from '../../infrastructure/auth/firebase';
 import { TenantService } from '../services/TenantService';
+import { AccessLogService } from '../../domain/services/AccessLogService';
 
 export class FirebaseAuthController {
   private jwtService = new JwtService(config.jwtSecret);
@@ -31,12 +32,12 @@ export class FirebaseAuthController {
       try {
         decodedToken = await admin.auth().verifyIdToken(idToken);
       } catch (verifyError: any) {
-        this.logger.error('Token verification failed', { 
-          error: verifyError.message, 
-          code: verifyError.code 
+        this.logger.error('Token verification failed', {
+          error: verifyError.message,
+          code: verifyError.code
         });
-        return res.status(401).json({ 
-          error: 'Token inválido o expirado', 
+        return res.status(401).json({
+          error: 'Token inválido o expirado',
           details: verifyError.message || 'El token de Firebase no pudo ser verificado'
         });
       }
@@ -81,7 +82,7 @@ export class FirebaseAuthController {
           // Vincular Firebase UID a usuario existente
           user.firebaseUid = decodedToken.uid;
           await user.save();
-          
+
           // Verificar si tiene perfil de estudiante o profesor
           if (user.role === 'student') {
             const existingStudent = await StudentModel.findOne({ authUserId: user._id });
@@ -135,6 +136,23 @@ export class FirebaseAuthController {
         role: user.role,
       });
 
+      this.logger.info('User authenticated/verified successfully', {
+        userId: user._id.toString(),
+        role: user.role,
+        firebaseUid: decodedToken.uid
+      });
+
+      // Log access
+      void AccessLogService.logAccess({
+        userId: user._id,
+        email: user.email,
+        role: user.role,
+        action: 'VERIFY_TOKEN',
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        metadata: { firebaseUid: decodedToken.uid }
+      });
+
       res.json({
         accessToken,
         refreshToken,
@@ -149,16 +167,16 @@ export class FirebaseAuthController {
       const message = error instanceof Error ? error.message : String(error);
       const code = (error as any)?.code || 'unknown';
       const stack = error instanceof Error ? error.stack : undefined;
-      this.logger.error('Firebase auth error in verifyToken', { 
-        error: message, 
+      this.logger.error('Firebase auth error in verifyToken', {
+        error: message,
         code,
         stack: stack?.split('\n').slice(0, 5).join('\n')
       });
-      
+
       // Mensajes más específicos según el tipo de error
       let errorMessage = 'Error de autenticación';
       let statusCode = 401;
-      
+
       if (code === 'auth/id-token-expired' || message.includes('expired')) {
         errorMessage = 'El token ha expirado. Por favor, inicia sesión nuevamente.';
       } else if (code === 'auth/argument-error' || message.includes('malformed')) {
@@ -168,7 +186,7 @@ export class FirebaseAuthController {
       } else {
         errorMessage = `Error de autenticación: ${message}`;
       }
-      
+
       res.status(statusCode).json({ error: errorMessage, details: message });
     }
   };
@@ -199,7 +217,7 @@ export class FirebaseAuthController {
             user.name = name;
           }
           await user.save();
-          
+
           // El perfil ya debería existir (creado desde invitación), verificar y continuar
           // Generar tokens JWT y retornar
           const accessToken = this.jwtService.signAccess({ sub: user._id.toString(), role: user.role });
@@ -219,7 +237,7 @@ export class FirebaseAuthController {
             },
           });
         } else {
-        return res.status(409).json({ error: 'User already exists' });
+          return res.status(409).json({ error: 'User already exists' });
         }
       }
 
@@ -267,8 +285,8 @@ export class FirebaseAuthController {
           });
           this.logger.info('Professor created successfully', { professorId: professor._id.toString() });
         } catch (error: any) {
-          this.logger.error('Error creating Professor profile', { 
-            error: error.message, 
+          this.logger.error('Error creating Professor profile', {
+            error: error.message,
             stack: error.stack,
             authUserId: user._id.toString(),
             email: email,
@@ -276,8 +294,8 @@ export class FirebaseAuthController {
           });
           // Rollback: delete AuthUser if professor creation fails
           await AuthUserModel.findByIdAndDelete(user._id);
-          return res.status(500).json({ 
-            error: 'Failed to create professor profile', 
+          return res.status(500).json({
+            error: 'Failed to create professor profile',
             details: error.message,
             code: error.code || 'UNKNOWN_ERROR'
           });
@@ -291,12 +309,12 @@ export class FirebaseAuthController {
               professor._id.toString(),
               tenantId,
             );
-            this.logger.info('Professor added to tenant', { 
-              professorId: professor._id.toString(), 
-              tenantId 
+            this.logger.info('Professor added to tenant', {
+              professorId: professor._id.toString(),
+              tenantId
             });
           } catch (error: any) {
-            this.logger.error('Error adding professor to tenant', { 
+            this.logger.error('Error adding professor to tenant', {
               error: error.message,
               professorId: professor._id.toString(),
               tenantId
@@ -312,6 +330,23 @@ export class FirebaseAuthController {
       const refreshToken = this.jwtService.signRefresh({
         sub: user._id.toString(),
         role: user.role,
+      });
+
+      this.logger.info('User registration completed successfully', {
+        userId: user._id.toString(),
+        role: user.role,
+        email: user.email
+      });
+
+      // Log access
+      void AccessLogService.logAccess({
+        userId: user._id,
+        email: user.email,
+        role: user.role,
+        action: 'REGISTER',
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        metadata: { firebaseUid: firebaseUid }
       });
 
       res.status(201).json({
@@ -336,18 +371,18 @@ export class FirebaseAuthController {
     try {
       const userId = req.user?.id;
       const firebaseUid = req.user?.uid;
-      
+
       if (!userId) {
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
       let user = await AuthUserModel.findById(userId);
-      
+
       // Si no se encuentra por ID, intentar por firebaseUid
       if (!user && firebaseUid) {
         user = await AuthUserModel.findOne({ firebaseUid });
       }
-      
+
       if (!user) {
         return res.status(404).json({ error: 'Usuario no encontrado' });
       }
@@ -378,7 +413,7 @@ export class FirebaseAuthController {
           });
         }
       }
-      
+
       res.json({
         id: user._id,
         email: user.email,

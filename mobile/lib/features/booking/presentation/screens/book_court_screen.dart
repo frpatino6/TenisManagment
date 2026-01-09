@@ -32,6 +32,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isBooking = false;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -62,6 +63,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     // The tenant will remain as the user selected it, which is acceptable behavior
     // If we need to restore the original tenant, it should be done before dispose
     // or through a different mechanism that doesn't rely on ref
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -265,6 +267,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     AsyncValue tenantAsync,
   ) {
     return SingleChildScrollView(
+      controller: _scrollController,
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -282,7 +285,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                         borderRadius: BorderRadius.circular(12),
                         child: WebImage(
                           imageUrl: currentTenant.logo!,
-                          height: 120,
+                          height: 200,
                           width: double.infinity,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
@@ -745,6 +748,16 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             _selectedDate = null;
             _selectedTime = null;
           });
+          // Scroll to bottom after state update to show date selection
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_scrollController.hasClients) {
+              _scrollController.animateTo(
+                _scrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOut,
+              );
+            }
+          });
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -861,6 +874,16 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                 )),
               );
             }
+            // Scroll to bottom to show time selection
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (_scrollController.hasClients) {
+                _scrollController.animateTo(
+                  _scrollController.position.maxScrollExtent,
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeOut,
+                );
+              }
+            });
           }
         },
         child: Padding(
@@ -1030,6 +1053,16 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                     if (selected) {
                       setState(() {
                         _selectedTime = timeOfDay;
+                      });
+                      // Scroll to bottom to show booking summary
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (_scrollController.hasClients) {
+                          _scrollController.animateTo(
+                            _scrollController.position.maxScrollExtent,
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeOut,
+                          );
+                        }
                       });
                     }
                   },

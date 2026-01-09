@@ -231,86 +231,162 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
     final isSelected = _selectedProfessor?.id == professor.id;
 
     return Card(
-      elevation: isSelected ? 4 : 1,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isSelected
-              ? colorScheme.primary
-              : colorScheme.outline.withValues(alpha: 0.2),
-          width: isSelected ? 2 : 1,
-        ),
-      ),
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            _selectedProfessor = professor;
-            _selectedSchedule = null; // Reset schedule when changing professor
-          });
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+          elevation: isSelected ? 4 : 1,
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: isSelected
+                  ? colorScheme.primary
+                  : colorScheme.outline.withValues(alpha: 0.2),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _selectedProfessor = professor;
+                _selectedSchedule =
+                    null; // Reset schedule when changing professor
+              });
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: colorScheme.primary.withValues(alpha: 0.1),
-                    ),
-                    child: Center(
-                      child: Text(
-                        professor.name.isNotEmpty
-                            ? professor.name[0].toUpperCase()
-                            : '?',
-                        style: GoogleFonts.inter(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.primary,
+                  // Top Section: Avatar, Name, Favorite
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: colorScheme.primary.withValues(alpha: 0.1),
+                        ),
+                        child: Center(
+                          child: Text(
+                            professor.name.isNotEmpty
+                                ? professor.name[0].toUpperCase()
+                                : '?',
+                            style: GoogleFonts.inter(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.primary,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  const Gap(16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                      const Gap(16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Text(
-                                professor.name,
-                                style: GoogleFonts.inter(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    professor.name,
+                                    style: GoogleFonts.inter(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: colorScheme.onSurface,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                Consumer(
+                                  builder: (context, ref, _) {
+                                    final isFavorite = ref
+                                        .watch(preferencesNotifierProvider)
+                                        .when(
+                                          data: (preferences) => preferences
+                                              .favoriteProfessors
+                                              .any((p) => p.id == professor.id),
+                                          loading: () => false,
+                                          error: (_, _) => false,
+                                        );
+                                    return IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      icon: Icon(
+                                        isFavorite
+                                            ? Icons.favorite
+                                            : Icons.favorite_border,
+                                        color: isFavorite
+                                            ? colorScheme.error
+                                            : colorScheme.onSurfaceVariant,
+                                        size: 24,
+                                      ),
+                                      onPressed: () async {
+                                        try {
+                                          await ref
+                                              .read(
+                                                preferencesNotifierProvider
+                                                    .notifier,
+                                              )
+                                              .toggleFavoriteProfessor(
+                                                professor.id,
+                                              );
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  isFavorite
+                                                      ? 'Profesor eliminado de favoritos'
+                                                      : 'Profesor agregado a favoritos',
+                                                ),
+                                                duration:
+                                                    Timeouts.snackbarSuccess,
+                                              ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Error: ${e.toString()}',
+                                                ),
+                                                backgroundColor:
+                                                    colorScheme.error,
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      },
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
-                            if (isFavorite)
+                            if (isFavorite) ...[
+                              const Gap(4),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
-                                  vertical: 4,
+                                  vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
                                   color: colorScheme.error.withValues(
                                     alpha: 0.1,
                                   ),
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
                                       Icons.favorite,
-                                      size: 12,
+                                      size: 10,
                                       color: colorScheme.error,
                                     ),
                                     const Gap(4),
@@ -325,141 +401,127 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
                                   ],
                                 ),
                               ),
+                            ],
+                            const Gap(8),
+                            Row(
+                              children: [
+                                Icon(Icons.star, size: 16, color: Colors.amber),
+                                const Gap(4),
+                                Text(
+                                  professor.rating.toStringAsFixed(1),
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                const Gap(12),
+                                Icon(
+                                  Icons.work_outline,
+                                  size: 16,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                                const Gap(4),
+                                Text(
+                                  '${professor.experienceYears} años',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                        const Gap(4),
-                        Row(
-                          children: [
-                            Icon(Icons.star, size: 16, color: Colors.amber),
-                            const Gap(4),
-                            Text(
-                              professor.rating.toStringAsFixed(1),
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
+                      ),
+                    ],
+                  ),
+                  if (professor.specialties.isNotEmpty) ...[
+                    const Gap(12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: professor.specialties.take(3).map((specialty) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colorScheme.secondaryContainer.withValues(
+                              alpha: 0.3,
                             ),
-                            const Gap(12),
-                            Icon(
-                              Icons.work_outline,
-                              size: 16,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: colorScheme.outline.withValues(alpha: 0.1),
+                            ),
+                          ),
+                          child: Text(
+                            specialty,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: colorScheme.onSecondaryContainer,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                  const Gap(16),
+                  Divider(
+                    height: 1,
+                    color: colorScheme.outline.withValues(alpha: 0.1),
+                  ),
+                  const Gap(16),
+                  // Bottom Section: Price and Action
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Desde',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
                               color: colorScheme.onSurfaceVariant,
                             ),
-                            const Gap(4),
-                            Text(
-                              '${professor.experienceYears} años',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
+                          ),
+                          Text(
+                            CurrencyUtils.format(
+                              professor.pricing.courtRental.toDouble(),
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Consumer(
-                            builder: (context, ref, _) {
-                              final isFavorite = ref
-                                  .watch(preferencesNotifierProvider)
-                                  .when(
-                                    data: (preferences) => preferences
-                                        .favoriteProfessors
-                                        .any((p) => p.id == professor.id),
-                                    loading: () => false,
-                                    error: (_, _) => false,
-                                  );
-                              return IconButton(
-                                icon: Icon(
-                                  isFavorite
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  color: isFavorite
-                                      ? colorScheme.error
-                                      : colorScheme.onSurfaceVariant,
-                                  size: 24,
-                                ),
-                                onPressed: () async {
-                                  try {
-                                    await ref
-                                        .read(
-                                          preferencesNotifierProvider.notifier,
-                                        )
-                                        .toggleFavoriteProfessor(professor.id);
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            isFavorite
-                                                ? 'Profesor eliminado de favoritos'
-                                                : 'Profesor agregado a favoritos',
-                                          ),
-                                          duration: Timeouts.snackbarSuccess,
-                                        ),
-                                      );
-                                    }
-                                  } catch (e) {
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'Error: ${e.toString()}',
-                                          ),
-                                          backgroundColor: colorScheme.error,
-                                        ),
-                                      );
-                                    }
-                                  }
-                                },
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                              );
-                            },
+                            style: GoogleFonts.inter(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.primary,
+                            ),
                           ),
                         ],
                       ),
-                      Text(
-                        'Desde ${CurrencyUtils.format(professor.pricing.courtRental.toDouble())}',
-                        style: GoogleFonts.inter(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                      Text(
-                        'por hora',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const Gap(8),
-                      // Botón para ver horarios agrupados (TEN-94)
                       OutlinedButton.icon(
                         onPressed: () {
                           context.push(
                             '/professor/${professor.id}/schedules?name=${Uri.encodeComponent(professor.name)}',
                           );
                         },
-                        icon: const Icon(Icons.calendar_view_week, size: 16),
+                        icon: const Icon(Icons.calendar_month, size: 16),
                         label: Text(
                           'Ver horarios',
-                          style: GoogleFonts.inter(fontSize: 12),
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          side: BorderSide(
+                            color: colorScheme.primary.withValues(alpha: 0.5),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                       ),
@@ -467,39 +529,12 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
                   ),
                 ],
               ),
-              if (professor.specialties.isNotEmpty) ...[
-                const Gap(12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: professor.specialties.map((specialty) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer.withValues(
-                          alpha: 0.3,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        specialty,
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ],
+            ),
           ),
-        ),
-      ),
-    ).animate().fadeIn(duration: 400.ms, delay: (index * 100).ms).slideX(begin: -0.2, end: 0);
+        )
+        .animate()
+        .fadeIn(duration: 400.ms, delay: (index * 100).ms)
+        .slideX(begin: -0.2, end: 0);
   }
 
   Widget _buildServiceTypeSelection() {

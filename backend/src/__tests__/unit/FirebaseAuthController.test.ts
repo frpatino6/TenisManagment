@@ -26,6 +26,7 @@ jest.mock('../../infrastructure/auth/firebase', () => {
 import { describe, it, beforeEach, expect, jest } from '@jest/globals';
 import { Request, Response } from 'express';
 import { FirebaseAuthController } from '../../application/controllers/FirebaseAuthController';
+import { AccessLogService } from '../../domain/services/AccessLogService';
 import { AuthUserModel } from '../../infrastructure/database/models/AuthUserModel';
 import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { ProfessorModel } from '../../infrastructure/database/models/ProfessorModel';
@@ -79,24 +80,28 @@ describe('FirebaseAuthController', () => {
   let controller: FirebaseAuthController;
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
+  let logAccessSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+    logAccessSpy = jest.spyOn(AccessLogService, 'logAccess').mockImplementation(async () => { });
+
     mockVerifyIdToken.mockClear();
     mockAuth.mockClear();
     mockAuth.mockReturnValue(mockAuthInstance);
-    
+
     const firebaseMock = require('../../infrastructure/auth/firebase');
     const firebaseAuth = firebaseMock.default.auth as jest.Mock;
     firebaseAuth.mockReturnValue(mockAuthInstance);
-    
+
     controller = new FirebaseAuthController();
-    
+
     mockRequest = {
       body: {},
+      ip: '127.0.0.1',
+      get: jest.fn().mockReturnValue('jest-test'),
     };
-    
+
     mockResponse = {
       status: jest.fn().mockReturnThis() as any,
       json: jest.fn().mockReturnThis() as any,
@@ -114,12 +119,12 @@ describe('FirebaseAuthController', () => {
             jwtSecret: 'test-jwt-secret',
           },
         };
-        
+
         jest.doMock('../../infrastructure/config', () => mockConfig);
         jest.resetModules();
         const { FirebaseAuthController: DisabledController } = require('../../application/controllers/FirebaseAuthController');
         const disabledController = new DisabledController();
-        
+
         await disabledController.verifyToken(mockRequest as Request, mockResponse as Response);
 
         expect(mockResponse.status).toHaveBeenCalledWith(503);
@@ -226,6 +231,9 @@ describe('FirebaseAuthController', () => {
 
         expect(mockResponse.json).toHaveBeenCalled();
         expect(mockResponse.status).not.toHaveBeenCalledWith(500);
+        expect(logAccessSpy).toHaveBeenCalled();
+        expect(mockResponse.status).not.toHaveBeenCalledWith(500);
+        expect(logAccessSpy).toHaveBeenCalled();
       });
 
       it('should create missing student profile for existing user', async () => {

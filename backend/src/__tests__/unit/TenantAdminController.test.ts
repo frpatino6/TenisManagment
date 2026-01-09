@@ -133,7 +133,8 @@ describe('TenantAdminController', () => {
         name: 'Updated Center',
         config: {
           logo: 'https://example.com/logo.png',
-          primaryColor: '#FF0000',
+          website: 'https://example.com',
+          address: '123 Main St',
         },
       };
 
@@ -144,7 +145,8 @@ describe('TenantAdminController', () => {
           name: 'Updated Center',
           config: expect.objectContaining({
             logo: 'https://example.com/logo.png',
-            primaryColor: '#FF0000',
+            website: 'https://example.com',
+            address: '123 Main St',
           }),
         }),
       );

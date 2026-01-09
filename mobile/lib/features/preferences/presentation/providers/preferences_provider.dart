@@ -9,29 +9,31 @@ class PreferencesNotifier extends Notifier<AsyncValue<UserPreferencesModel>> {
 
   @override
   AsyncValue<UserPreferencesModel> build() {
-    // Watch auth state - if user changes, invalidate preferences
-    ref.listen(authStateProvider, (previous, next) {
+    // Watch auth notifier state - if user changes, invalidate preferences
+    // Fix: Listen to authNotifierProvider instead of authStateProvider to stay in sync with Router
+    ref.listen(authNotifierProvider, (previous, next) {
       final previousUser = previous?.value;
       final nextUser = next.value;
-      
+
       // If user changed (logout or different user login), clear preferences
-      if (previousUser != null && (nextUser == null || previousUser.id != nextUser.id)) {
+      if (previousUser != null &&
+          (nextUser == null || previousUser.id != nextUser.id)) {
         state = const AsyncValue.loading();
         // Reload preferences for new user
         if (nextUser != null) {
           Future.microtask(() => loadPreferences());
         } else {
-          state = AsyncValue.data(UserPreferencesModel(
-            favoriteProfessors: [],
-            favoriteTenants: [],
-          ));
+          state = AsyncValue.data(
+            UserPreferencesModel(favoriteProfessors: [], favoriteTenants: []),
+          );
         }
-      } else if (nextUser != null && (previousUser == null || previousUser.id != nextUser.id)) {
+      } else if (nextUser != null &&
+          (previousUser == null || previousUser.id != nextUser.id)) {
         // New user logged in, load their preferences
         Future.microtask(() => loadPreferences());
       }
     });
-    
+
     // Load preferences on initialization
     Future.microtask(() => loadPreferences());
     return const AsyncValue.loading();

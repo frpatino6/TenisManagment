@@ -2,8 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/models/user_model.dart';
 import '../../domain/services/auth_service.dart';
-import '../../../preferences/presentation/providers/preferences_provider.dart';
-import '../../../../core/providers/tenant_provider.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService();
@@ -180,12 +178,11 @@ class AuthNotifier extends Notifier<AsyncValue<UserModel?>> {
 
       final authService = ref.read(authServiceProvider);
       await authService.signOut();
-      
+
       // CRITICAL: Invalidate all user-specific providers to clear state
       // This prevents showing data from previous user
-      ref.invalidate(tenantNotifierProvider);
-      ref.invalidate(currentTenantIdProvider);
-      ref.invalidate(preferencesNotifierProvider);
+      // No need to manually invalidate, the listeners in the providers handle cleanup
+      // This prevents CircularDependencyError
     } catch (e) {
       ref.read(authErrorProvider.notifier).setError(e.toString());
       rethrow;

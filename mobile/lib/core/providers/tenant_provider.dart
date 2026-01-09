@@ -42,8 +42,9 @@ final hasTenantProvider = Provider<bool>((ref) {
 class TenantNotifier extends Notifier<AsyncValue<String?>> {
   @override
   AsyncValue<String?> build() {
-    // Watch auth state - if user changes, clear tenant
-    ref.listen(authStateProvider, (previous, next) {
+    // Watch auth notifier state - if user changes, clear tenant
+    // Fix: Listen to authNotifierProvider instead of authStateProvider to stay in sync with Router
+    ref.listen(authNotifierProvider, (previous, next) {
       final previousUser = previous?.value;
       final nextUser = next.value;
 

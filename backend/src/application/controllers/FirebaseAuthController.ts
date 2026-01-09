@@ -7,6 +7,7 @@ import { config } from '../../infrastructure/config';
 import { Logger } from '../../infrastructure/services/Logger';
 import admin from '../../infrastructure/auth/firebase';
 import { TenantService } from '../services/TenantService';
+import { AccessLogService } from '../../domain/services/AccessLogService';
 
 export class FirebaseAuthController {
   private jwtService = new JwtService(config.jwtSecret);
@@ -139,6 +140,17 @@ export class FirebaseAuthController {
         userId: user._id.toString(),
         role: user.role,
         firebaseUid: decodedToken.uid
+      });
+
+      // Log access
+      AccessLogService.logAccess({
+        userId: user._id,
+        email: user.email,
+        role: user.role,
+        action: 'VERIFY_TOKEN',
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        metadata: { firebaseUid: decodedToken.uid }
       });
 
       res.json({
@@ -324,6 +336,17 @@ export class FirebaseAuthController {
         userId: user._id.toString(),
         role: user.role,
         email: user.email
+      });
+
+      // Log access
+      AccessLogService.logAccess({
+        userId: user._id,
+        email: user.email,
+        role: user.role,
+        action: 'REGISTER',
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        metadata: { firebaseUid: firebaseUid }
       });
 
       res.status(201).json({

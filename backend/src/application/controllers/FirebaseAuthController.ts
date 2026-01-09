@@ -143,7 +143,7 @@ export class FirebaseAuthController {
       });
 
       // Log access
-      AccessLogService.logAccess({
+      void AccessLogService.logAccess({
         userId: user._id,
         email: user.email,
         role: user.role,
@@ -339,7 +339,7 @@ export class FirebaseAuthController {
       });
 
       // Log access
-      AccessLogService.logAccess({
+      void AccessLogService.logAccess({
         userId: user._id,
         email: user.email,
         role: user.role,

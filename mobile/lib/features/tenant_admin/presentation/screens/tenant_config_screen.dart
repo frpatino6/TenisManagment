@@ -25,9 +25,11 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
   final _individualPriceController = TextEditingController();
   final _groupPriceController = TextEditingController();
   final _courtRentalController = TextEditingController();
-  final _logoUrlController = TextEditingController();
-  final _primaryColorController = TextEditingController();
-  final _secondaryColorController = TextEditingController();
+  final _logoUrlController = TextEditingController(
+    text: "https://www.logoestilo.com/doc-logos/bluepadel_g.jpg",
+  );
+  final _websiteController = TextEditingController();
+  final _addressController = TextEditingController();
   // Operating hours: Map<dayOfWeek (0-6), {open: TimeOfDay, close: TimeOfDay}>
   final Map<int, ({TimeOfDay open, TimeOfDay close})> _daySchedules = {};
   bool _isLoading = false;
@@ -49,8 +51,8 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
     _groupPriceController.dispose();
     _courtRentalController.dispose();
     _logoUrlController.dispose();
-    _primaryColorController.dispose();
-    _secondaryColorController.dispose();
+    _websiteController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -106,8 +108,8 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
     // Load branding
     final config = tenant.config;
     _logoUrlController.text = config?.logo ?? '';
-    _primaryColorController.text = config?.primaryColor ?? '';
-    _secondaryColorController.text = config?.secondaryColor ?? '';
+    _websiteController.text = config?.website ?? '';
+    _addressController.text = config?.address ?? '';
 
     _hasChanges = false;
   }
@@ -430,24 +432,21 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
                   onChanged: (_) => _markAsChanged(),
                 ),
                 const Gap(16),
-                _buildColorField(
-                  controller: _primaryColorController,
-                  label: 'Color Primario (hex, ej: #2E7D32)',
-                  icon: Icons.color_lens,
-                  onChanged: (_) {
-                    setState(() {});
-                    _markAsChanged();
-                  },
+                const Gap(16),
+                _buildTextField(
+                  controller: _websiteController,
+                  label: 'Sitio Web',
+                  icon: Icons.language,
+                  keyboardType: TextInputType.url,
+                  onChanged: (_) => _markAsChanged(),
                 ),
                 const Gap(16),
-                _buildColorField(
-                  controller: _secondaryColorController,
-                  label: 'Color Secundario (hex, ej: #4CAF50)',
-                  icon: Icons.color_lens_outlined,
-                  onChanged: (_) {
-                    setState(() {});
-                    _markAsChanged();
-                  },
+                _buildTextField(
+                  controller: _addressController,
+                  label: 'Dirección física',
+                  icon: Icons.location_on,
+                  keyboardType: TextInputType.streetAddress,
+                  onChanged: (_) => _markAsChanged(),
                 ),
               ],
             ),
@@ -620,20 +619,20 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
   }
 
   String _getBrandingSubtitle() {
-    final primaryColor = _primaryColorController.text.trim();
-    final secondaryColor = _secondaryColorController.text.trim();
+    final website = _websiteController.text.trim();
+    final address = _addressController.text.trim();
     final logo = _logoUrlController.text.trim();
 
-    if (primaryColor.isEmpty && secondaryColor.isEmpty && logo.isEmpty) {
+    if (website.isEmpty && address.isEmpty && logo.isEmpty) {
       return 'No configurado';
     }
 
     final List<String> items = [];
-    if (primaryColor.isNotEmpty) items.add('Primario: $primaryColor');
-    if (secondaryColor.isNotEmpty) items.add('Secundario: $secondaryColor');
-    if (logo.isNotEmpty) items.add('Logo configurado');
+    if (logo.isNotEmpty) items.add('Logo');
+    if (website.isNotEmpty) items.add('Web');
+    if (address.isNotEmpty) items.add('Dirección');
 
-    return items.take(2).join(' • ');
+    return items.join(' • ');
   }
 
   Widget _buildTextField({
@@ -656,82 +655,6 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: colorScheme.primary),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.outline),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: colorScheme.outline.withValues(alpha: 0.5),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.primary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.error),
-        ),
-        filled: true,
-        fillColor: colorScheme.surfaceContainerHighest,
-      ),
-    );
-  }
-
-  Widget _buildColorField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    void Function(String)? onChanged,
-  }) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final colorHex = controller.text.trim();
-    Color? previewColor;
-
-    // Try to parse hex color
-    if (colorHex.isNotEmpty && colorHex.startsWith('#')) {
-      try {
-        final hex = colorHex.replaceFirst('#', '');
-        if (hex.length == 6) {
-          previewColor = Color(int.parse('FF$hex', radix: 16));
-        }
-      } catch (e) {
-        // Invalid color, ignore
-      }
-    }
-
-    return TextFormField(
-      controller: controller,
-      onChanged: onChanged,
-      style: GoogleFonts.inter(fontSize: 16, color: colorScheme.onSurface),
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: colorScheme.primary),
-        suffixIcon: previewColor != null
-            ? Container(
-                margin: const EdgeInsets.all(8),
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: previewColor,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: colorScheme.outline.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-              )
-            : null,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.outline),
@@ -1055,9 +978,15 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
       // Build config with existing data and new pricing
       final existingConfig = currentTenant.config ?? const TenantConfigData();
       final updatedConfig = TenantConfigData(
-        logo: existingConfig.logo,
-        primaryColor: existingConfig.primaryColor,
-        secondaryColor: existingConfig.secondaryColor,
+        logo: _logoUrlController.text.trim().isEmpty
+            ? null
+            : _logoUrlController.text.trim(),
+        website: _websiteController.text.trim().isEmpty
+            ? null
+            : _websiteController.text.trim(),
+        address: _addressController.text.trim().isEmpty
+            ? null
+            : _addressController.text.trim(),
         basePricing: basePricing,
         operatingHours: existingConfig.operatingHours,
       );

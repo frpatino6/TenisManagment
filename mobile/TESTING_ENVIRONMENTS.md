@@ -228,6 +228,38 @@ android:label="@string/app_name"
 
 ---
 
+## 🧪 Pruebas de Integración
+
+Puedes ejecutar los tests de integración para verificar los flujos completos de la aplicación. Asegúrate de tener un emulador corriendo.
+
+### 1. Test de Flujo de Reserva de Cancha (Booking Flow)
+
+Verifica el flujo completo de reserva de cancha para un estudiante:
+- Login
+- Selección de Centro (Tenant)
+- Selección de Cancha
+- Selección de Fecha y Hora
+- Confirmación
+
+```bash
+flutter test integration_test/booking_flow_test.dart --flavor dev
+```
+
+### 2. Test de Flujo de Reserva de Clase (Class Booking)
+
+Verifica el flujo de reserva de clase con un profesor:
+- Login
+- Navegación a "Reservar Clase"
+- Selección de Profesor (itera buscando horarios)
+- Selección de Servicio y Horario
+- Confirmación
+
+```bash
+flutter test integration_test/class_booking_test.dart --flavor dev
+```
+
+---
+
 ## ✅ Lista de Verificación Final
 
 - [ ] Los logs muestran el ambiente correcto

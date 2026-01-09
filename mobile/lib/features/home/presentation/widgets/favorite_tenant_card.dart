@@ -5,15 +5,13 @@ import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../preferences/domain/models/user_preferences_model.dart';
+import '../../../../core/widgets/web_image.dart';
 
 /// Widget to display favorite tenant (center) card in home screen
 class FavoriteTenantCard extends ConsumerWidget {
   final FavoriteTenant tenant;
 
-  const FavoriteTenantCard({
-    super.key,
-    required this.tenant,
-  });
+  const FavoriteTenantCard({super.key, required this.tenant});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,9 +21,7 @@ class FavoriteTenantCard extends ConsumerWidget {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: () {
           // Navigate to tenant selection screen
@@ -53,8 +49,8 @@ class FavoriteTenantCard extends ConsumerWidget {
                   if (tenant.logo != null && tenant.logo!.isNotEmpty)
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        tenant.logo!,
+                      child: WebImage(
+                        imageUrl: tenant.logo!,
                         width: 60,
                         height: 60,
                         fit: BoxFit.cover,
@@ -101,7 +97,9 @@ class FavoriteTenantCard extends ConsumerWidget {
                           tenant.slug,
                           style: GoogleFonts.inter(
                             fontSize: 12,
-                            color: colorScheme.onSecondaryContainer.withValues(alpha: 0.7),
+                            color: colorScheme.onSecondaryContainer.withValues(
+                              alpha: 0.7,
+                            ),
                           ),
                         ),
                       ],
@@ -181,12 +179,7 @@ class FavoriteTenantCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
         color: colorScheme.secondary.withValues(alpha: 0.2),
       ),
-      child: Icon(
-        Icons.business,
-        color: colorScheme.secondary,
-        size: 32,
-      ),
+      child: Icon(Icons.business, color: colorScheme.secondary, size: 32),
     );
   }
 }
-

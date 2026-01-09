@@ -748,9 +748,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             _selectedDate = null;
             _selectedTime = null;
           });
-          // Scroll to bottom after state update to show date selection
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_scrollController.hasClients) {
+          // Scroll to bottom after state update to show date selection with a slight delay
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (mounted && _scrollController.hasClients) {
               _scrollController.animateTo(
                 _scrollController.position.maxScrollExtent,
                 duration: const Duration(milliseconds: 500),
@@ -874,9 +874,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                 )),
               );
             }
-            // Scroll to bottom to show time selection
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (_scrollController.hasClients) {
+            // Scroll to bottom to show time selection with a slight delay
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (mounted && _scrollController.hasClients) {
                 _scrollController.animateTo(
                   _scrollController.position.maxScrollExtent,
                   duration: const Duration(milliseconds: 500),
@@ -1054,9 +1054,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                       setState(() {
                         _selectedTime = timeOfDay;
                       });
-                      // Scroll to bottom to show booking summary
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (_scrollController.hasClients) {
+                      // Scroll to bottom to show booking summary with a slight delay
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        if (mounted && _scrollController.hasClients) {
                           _scrollController.animateTo(
                             _scrollController.position.maxScrollExtent,
                             duration: const Duration(milliseconds: 500),

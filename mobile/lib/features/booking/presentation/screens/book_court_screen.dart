@@ -10,6 +10,7 @@ import '../providers/booking_provider.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../../tenant/domain/services/tenant_service.dart' as tenant_domain;
 import '../../../tenant/domain/models/tenant_model.dart';
+import '../../../../core/widgets/web_image.dart';
 
 /// Provider for available tenants for dropdown selection
 final availableTenantsProvider = FutureProvider.autoDispose<List<TenantModel>>((
@@ -279,13 +280,42 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          currentTenant.logo!,
+                        child: WebImage(
+                          imageUrl: currentTenant.logo!,
                           height: 120,
                           width: double.infinity,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
-                              const SizedBox.shrink(),
+                              Container(
+                                height: 120,
+                                width: double.infinity,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.broken_image_outlined,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                      const Gap(4),
+                                      Text(
+                                        'Error al cargar imagen',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                         ),
                       ),
                     ),

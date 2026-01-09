@@ -7,6 +7,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/services/tenant_service.dart' as tenant_domain;
 import '../../domain/models/tenant_model.dart';
 import '../../../preferences/presentation/providers/preferences_provider.dart';
+import '../../../../core/widgets/web_image.dart';
 
 /// Screen for selecting a tenant (center)
 ///
@@ -406,8 +407,11 @@ class _SelectTenantScreenState extends ConsumerState<SelectTenantScreen> {
                             ).colorScheme.primary,
                             child: tenant.logo != null
                                 ? ClipOval(
-                                    child: Image.network(
-                                      tenant.logo!,
+                                    child: WebImage(
+                                      imageUrl: tenant.logo!,
+                                      width: 40,
+                                      height: 40,
+                                      fit: BoxFit.cover,
                                       errorBuilder:
                                           (context, error, stackTrace) {
                                             return const Icon(

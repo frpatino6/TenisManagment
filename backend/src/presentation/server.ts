@@ -12,6 +12,7 @@ import studentDashboardRoutes from './routes/studentDashboard';
 import { config } from '../infrastructure/config';
 import { Logger } from '../infrastructure/services/Logger';
 import { requestIdMiddleware } from '../application/middleware/requestId';
+import { requestLoggerMiddleware } from '../application/middleware/requestLogger';
 
 const app: Application = express();
 const logger = new Logger({ service: 'backend', env: config.nodeEnv });
@@ -19,6 +20,7 @@ const logger = new Logger({ service: 'backend', env: config.nodeEnv });
 // Security middlewares
 app.use(helmet());
 app.use(requestIdMiddleware);
+app.use(requestLoggerMiddleware);
 
 // Trust proxy in non-development environments (needed for correct client IP and secure cookies behind proxies)
 if (config.nodeEnv !== 'development') {
@@ -37,22 +39,22 @@ const corsOptions: cors.CorsOptions = {
     if (!origin) {
       return callback(null, true);
     }
-    
+
     // Allow requests from explicitly allowed origins (web apps)
     if (allowedOrigins.has(origin)) {
       return callback(null, true);
     }
-    
+
     // In development, if no origins are configured, allow all
     if (!isProd && allowedOrigins.size === 0) {
       return callback(null, true);
     }
-    
+
     // In production, log the rejected origin for debugging
     if (isProd) {
       logger.warn('CORS request rejected', { origin, allowedOrigins: Array.from(allowedOrigins) });
     }
-    
+
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,

@@ -1,13 +1,15 @@
-import 'express-serve-static-core';
+export { }; // Ensure this is a module
 
-declare module 'express-serve-static-core' {
-  interface Request {
-    requestId?: string;
-    tenantId?: string;
-    user?: {
-      id: string;
-      role: any;
-      [key: string]: any;
-    };
+declare global {
+  namespace Express {
+    interface Request {
+      requestId?: string;
+      tenantId?: string;
+      user?: {
+        id: string;
+        role: any;
+        [key: string]: any;
+      };
+    }
   }
 }

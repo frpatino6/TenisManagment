@@ -11,13 +11,14 @@ class ProfessorScheduleModel {
   final double? price;
   final String? studentName;
   final String? studentEmail;
+  final String? courtId;
 
   ProfessorScheduleModel({
     required this.id,
     required this.date,
     required this.startTime,
     required this.endTime,
-    this.type,
+    required this.type,
     required this.isAvailable,
     required this.isBlocked,
     this.blockReason,
@@ -25,6 +26,7 @@ class ProfessorScheduleModel {
     this.price,
     this.studentName,
     this.studentEmail,
+    this.courtId,
   });
 
   factory ProfessorScheduleModel.fromJson(Map<String, dynamic> json) {
@@ -34,12 +36,12 @@ class ProfessorScheduleModel {
     final dateStr = json['date'] as String;
     final startTimeStr = json['startTime'] as String;
     final endTimeStr = json['endTime'] as String;
-    
+
     // Parse as UTC explicitly
     final date = DateTime.parse(dateStr).toUtc();
     final startTime = DateTime.parse(startTimeStr).toUtc();
     final endTime = DateTime.parse(endTimeStr).toUtc();
-    
+
     return ProfessorScheduleModel(
       id: json['id'] as String,
       date: date,
@@ -53,6 +55,7 @@ class ProfessorScheduleModel {
       price: (json['price'] as num?)?.toDouble(),
       studentName: json['studentName'] as String?,
       studentEmail: json['studentEmail'] as String?,
+      courtId: json['courtId'] as String?,
     );
   }
 

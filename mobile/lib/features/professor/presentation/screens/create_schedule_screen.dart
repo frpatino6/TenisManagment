@@ -7,6 +7,8 @@ import '../../../../core/exceptions/exceptions.dart';
 import '../../../../core/constants/timeouts.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../providers/professor_provider.dart';
+import '../../../booking/domain/models/court_model.dart';
+import '../../../booking/domain/services/court_service.dart';
 
 class CreateScheduleScreen extends ConsumerStatefulWidget {
   const CreateScheduleScreen({super.key});
@@ -26,6 +28,38 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
   bool _isCreating = false;
   bool _generateMultipleSlots = false;
   int _slotDuration = 60; // Duration in minutes
+  List<CourtModel> _courts = [];
+  String? _selectedCourtId;
+  bool _isLoadingCourts = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCourts();
+  }
+
+  Future<void> _loadCourts() async {
+    setState(() {
+      _isLoadingCourts = true;
+    });
+
+    try {
+      final courtService = ref.read(courtServiceProvider);
+      final courts = await courtService.getCourts();
+      if (mounted) {
+        setState(() {
+          _courts = courts;
+          _isLoadingCourts = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingCourts = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -219,8 +253,58 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                   ),
                 ],
               ),
-
               const Gap(24),
+
+              if (_isLoadingCourts)
+                const Center(child: CircularProgressIndicator())
+              else if (_courts.isNotEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Cancha (opcional)',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Gap(12),
+                    DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                      value: _selectedCourtId,
+                      hint: Text(
+                        'Seleccionar cancha',
+                        style: GoogleFonts.inter(color: colorScheme.outline),
+                      ),
+                      items: [
+                        DropdownMenuItem<String>(
+                          value: null,
+                          child: Text('Cualquiera', style: GoogleFonts.inter()),
+                        ),
+                        ..._courts.map(
+                          (court) => DropdownMenuItem<String>(
+                            value: court.id,
+                            child: Text(court.name, style: GoogleFonts.inter()),
+                          ),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedCourtId = value;
+                        });
+                      },
+                    ),
+                    const Gap(24),
+                  ],
+                ),
 
               Card(
                 elevation: 0,
@@ -670,15 +754,11 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           }
 
           try {
-            final utcDate = DateTime.utc(
-              _selectedDate.year,
-              _selectedDate.month,
-              _selectedDate.day,
-            );
             await notifier.createSchedule(
-              date: utcDate,
+              date: startDateTime,
               startTime: slot['start']!,
               endTime: slot['end']!,
+              courtId: _selectedCourtId,
             );
             createdCount++;
           } on ScheduleException catch (e) {
@@ -754,17 +834,12 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           );
         }
       } else {
-        final utcDate = DateTime.utc(
-          _selectedDate.year,
-          _selectedDate.month,
-          _selectedDate.day,
-        );
-
         try {
           final result = await notifier.createSchedule(
-            date: utcDate,
+            date: startDateTime,
             startTime: startDateTime,
             endTime: endDateTime,
+            courtId: _selectedCourtId,
           );
 
           if (!mounted) return;

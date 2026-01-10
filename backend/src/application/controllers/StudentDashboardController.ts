@@ -1336,6 +1336,9 @@ export class StudentDashboardController {
 
       // Get all bookings for this specific court on this date
       // We need to check both court_rental and lessons that have this court assigned
+      // Get all bookings for this specific court on this date
+      // We need to check both court_rental and lessons that have this court assigned
+      // AND now blocked schedules for this court
       const bookings = await BookingModel.find({
         tenantId: new Types.ObjectId(tenantId),
         courtId: new Types.ObjectId(courtId),
@@ -1365,6 +1368,7 @@ export class StudentDashboardController {
 
       // Mark booked slots - bookings are stored in UTC, convert to local time for comparison
       // operatingHours are in local time, so we need to compare in local time
+      // Mark booked slots from Bookings
       bookings.forEach((booking) => {
         let bookingTime: Date | null = null;
 
@@ -1388,10 +1392,33 @@ export class StudentDashboardController {
         }
 
         if (bookingTime) {
-          // Convert UTC booking to local time for comparison with local operating hours
+          // Convert UTC booking to local time (Colombia UTC-5)
           const hour = bookingTime.getUTCHours();
           bookedSlots.add(`${hour.toString().padStart(2, '0')}:00`);
         }
+      });
+      // Query standard range (assuming data is stored as "Local in UTC")
+      const queryStart = targetDate;
+      const queryEnd = nextDay;
+
+      // Get blocked schedules for this court and date
+      const blockedSchedules = await ScheduleModel.find({
+        tenantId: new Types.ObjectId(tenantId),
+        courtId: new Types.ObjectId(courtId),
+        isBlocked: true,
+        startTime: {
+          $gte: queryStart,
+          $lt: queryEnd,
+        }
+      }).lean();
+
+      // NEW: Mark slots as booked from Blocked Schedules
+      blockedSchedules.forEach((schedule) => {
+        const scheduleStart = new Date(schedule.startTime);
+        // Assumption: Data is stored as Local Time inside UTC (e.g. 09:00 = 9 AM Local)
+        // So we just take the UTC hour directly.
+        const hour = scheduleStart.getUTCHours();
+        bookedSlots.add(`${hour.toString().padStart(2, '0')}:00`);
       });
 
       // Generate all possible slots based on operating hours (in local time)     

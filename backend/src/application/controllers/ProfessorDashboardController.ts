@@ -17,9 +17,9 @@ export class ProfessorDashboardController {
   // Obtener información del profesor
   getProfessorInfo = async (req: Request, res: Response) => {
     logger.debug('getProfessorInfo called', { requestId: req.requestId });
-    
+
     try {
-      
+
       const professorId = req.user?.id;
       if (!professorId) {
         logger.warn('Missing professorId in req.user', { requestId: req.requestId });
@@ -28,20 +28,20 @@ export class ProfessorDashboardController {
 
       logger.debug('Looking for professor by authUserId');
       let professor = await ProfessorModel.findOne({ authUserId: professorId });
-      
+
       if (!professor) {
         logger.info('Professor not found, creating');
-        
+
         // Buscar el AuthUser para obtener información
         const { AuthUserModel } = require('../../infrastructure/database/models/AuthUserModel');
         const authUser = await AuthUserModel.findById(professorId);
-        
+
         if (!authUser) {
           return res.status(404).json({ error: 'Usuario de autenticación no encontrado' });
         }
-        
+
         logger.debug('Creating professor record');
-        
+
         // Crear el registro del profesor
         professor = await ProfessorModel.create({
           authUserId: authUser._id,
@@ -52,7 +52,7 @@ export class ProfessorDashboardController {
           hourlyRate: 0,
           experienceYears: 0
         });
-        
+
         logger.info('Professor created');
       } else {
         logger.debug('Professor found');
@@ -60,16 +60,16 @@ export class ProfessorDashboardController {
 
       // Calcular estadísticas reales
       const totalStudents = await StudentModel.countDocuments({});
-      
+
       // Calcular rating promedio basado en clases completadas
       const completedClasses = await ScheduleModel.countDocuments({
         professorId: professor._id,
         status: 'completed'
       });
-      
+
       // Rating basado en clases completadas (más clases = mejor rating)
       const rating = Math.min(4.0 + (completedClasses / 100), 5.0);
-      
+
       // Calcular años de experiencia basado en la fecha de creación del profesor
       const createdAt = (professor as any).createdAt || new Date();
       const experienceYears = professor.experienceYears || 0;
@@ -112,7 +112,7 @@ export class ProfessorDashboardController {
       // Por ahora obtenemos todos los estudiantes, pero en el futuro deberíamos
       // implementar una relación real entre profesor y estudiantes
       const students = await StudentModel.find({}).limit(10);
-      
+
       // Transformar los datos para que coincidan con el formato esperado
       const studentsData = await Promise.all(students.map(async (student) => {
         // Obtener la próxima clase del estudiante
@@ -186,7 +186,7 @@ export class ProfessorDashboardController {
       startOfDay.setUTCHours(0, 0, 0, 0);
       const endOfDay = new Date(targetDate);
       endOfDay.setUTCHours(23, 59, 59, 999);
-      
+
       // First, find all schedules for the date (populate tenantId)
       const allSchedules = await ScheduleModel.find({
         professorId: professor._id,
@@ -203,14 +203,14 @@ export class ProfessorDashboardController {
           scheduleId: schedule._id,
           status: 'confirmed', // Only confirmed bookings
         };
-        
+
         // Filter by tenantId if provided (from middleware)
         if (req.tenantId) {
           bookingQuery.tenantId = new Types.ObjectId(req.tenantId);
         }
-        
+
         const booking = await BookingModel.findOne(bookingQuery);
-        
+
         if (booking) {
           // Populate student info from the booking
           const student = await StudentModel.findById(booking.studentId);
@@ -230,17 +230,17 @@ export class ProfessorDashboardController {
       const classesData = await Promise.all(
         schedules.map(async (schedule) => {
           const bookingQuery: any = { scheduleId: schedule._id };
-          
+
           // Filter by tenantId if provided (from middleware)
           if (req.tenantId) {
             bookingQuery.tenantId = new Types.ObjectId(req.tenantId);
           }
-          
+
           const booking = await BookingModel.findOne(bookingQuery);
-          
+
           // Get tenant info from populated schedule
           const tenant = schedule.tenantId as any;
-          
+
           return {
             id: schedule._id.toString(),
             studentName: schedule.studentInfo?.name || 'Estudiante',
@@ -297,12 +297,12 @@ export class ProfessorDashboardController {
         professorId: professor._id,
         studentId: { $exists: true, $ne: null },
       };
-      
+
       // Filter by tenantId if provided (from middleware)
       if (req.tenantId) {
         scheduleQuery.tenantId = new Types.ObjectId(req.tenantId);
       }
-      
+
       // First, let's see ALL schedules with studentId for this professor
       const allReservedSchedules = await ScheduleModel.find(scheduleQuery)
         .populate('studentId', 'name email')
@@ -327,12 +327,12 @@ export class ProfessorDashboardController {
           $lt: tomorrow
         }
       };
-      
+
       // Filter by tenantId if provided (from middleware)
       if (req.tenantId) {
         todayScheduleQuery.tenantId = new Types.ObjectId(req.tenantId);
       }
-      
+
       // First, find all schedules for today
       const allTodaySchedules = await ScheduleModel.find(todayScheduleQuery).sort({ startTime: 1 });
 
@@ -343,14 +343,14 @@ export class ProfessorDashboardController {
           scheduleId: schedule._id,
           status: 'confirmed', // Only confirmed bookings
         };
-        
+
         // Filter by tenantId if provided (from middleware)
         if (req.tenantId) {
           bookingQuery.tenantId = new Types.ObjectId(req.tenantId);
         }
-        
+
         const booking = await BookingModel.findOne(bookingQuery);
-        
+
         if (booking) {
           // Populate student info from the booking
           const student = await StudentModel.findById(booking.studentId);
@@ -378,14 +378,14 @@ export class ProfessorDashboardController {
       const classesData = await Promise.all(
         todayClasses.map(async (schedule) => {
           const bookingQuery: any = { scheduleId: schedule._id };
-          
+
           // Filter by tenantId if provided (from middleware)
           if (req.tenantId) {
             bookingQuery.tenantId = new Types.ObjectId(req.tenantId);
           }
-          
+
           const booking = await BookingModel.findOne(bookingQuery);
-          
+
           return {
             id: schedule._id.toString(),
             studentName: schedule.studentInfo?.name || 'Estudiante',
@@ -436,12 +436,12 @@ export class ProfessorDashboardController {
         },
         studentId: { $exists: true, $ne: null }, // Solo horarios reservados
       };
-      
+
       // Filter by tenantId if provided (from middleware)
       if (req.tenantId) {
         weekScheduleQuery.tenantId = new Types.ObjectId(req.tenantId);
       }
-      
+
       const weekClasses = await ScheduleModel.find(weekScheduleQuery)
         .populate('studentId', 'name email')
         .sort({ startTime: 1 });
@@ -491,18 +491,18 @@ export class ProfessorDashboardController {
         professorId: professor._id,
         createdAt: { $gte: startOfMonth }
       };
-      
+
       const weeklyPaymentQuery: any = {
         professorId: professor._id,
         createdAt: { $gte: startOfWeek }
       };
-      
+
       // Filter by tenantId if provided (from middleware)
       if (req.tenantId) {
         monthlyPaymentQuery.tenantId = new Types.ObjectId(req.tenantId);
         weeklyPaymentQuery.tenantId = new Types.ObjectId(req.tenantId);
       }
-      
+
       // Obtener pagos del mes
       const monthlyPayments = await PaymentModel.find(monthlyPaymentQuery);
 
@@ -604,14 +604,14 @@ export class ProfessorDashboardController {
 
     try {
       const firebaseUid = req.user?.uid;
-      
+
       if (!firebaseUid) {
         logger.warn('createSchedule: missing firebaseUid', { requestId: req.requestId });
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
-      const { date, startTime, endTime, tenantId } = req.body;
-      
+      const { date, startTime, endTime, tenantId, courtId } = req.body;
+
       if (!date || !startTime || !endTime) {
         logger.warn('createSchedule: missing required fields', {
           requestId: req.requestId,
@@ -644,28 +644,28 @@ export class ProfessorDashboardController {
           return res.status(400).json({ error: 'tenantId inválido' });
         }
         finalTenantId = new Types.ObjectId(tenantId);
-        
+
         // Verify professor has access to this tenant
         const professorTenant = await ProfessorTenantModel.findOne({
           professorId: professor._id,
           tenantId: finalTenantId,
           isActive: true
         });
-        
+
         if (!professorTenant) {
           return res.status(403).json({ error: 'El profesor no tiene acceso a este centro' });
         }
       } else if (req.tenantId) {
         // 2. Try from header (X-Tenant-ID)
         finalTenantId = new Types.ObjectId(req.tenantId);
-        
+
         // Verify professor has access to this tenant
         const professorTenant = await ProfessorTenantModel.findOne({
           professorId: professor._id,
           tenantId: finalTenantId,
           isActive: true
         });
-        
+
         if (!professorTenant) {
           return res.status(403).json({ error: 'El profesor no tiene acceso a este centro' });
         }
@@ -675,13 +675,13 @@ export class ProfessorDashboardController {
           professorId: professor._id,
           isActive: true
         }).sort({ joinedAt: -1 }); // Get most recently joined tenant
-        
+
         if (!professorTenant) {
-          return res.status(400).json({ 
-            error: 'El profesor no está asociado a ningún centro. Debe estar asociado a un centro para crear horarios.' 
+          return res.status(400).json({
+            error: 'El profesor no está asociado a ningún centro. Debe estar asociado a un centro para crear horarios.'
           });
         }
-        
+
         finalTenantId = professorTenant.tenantId;
         logger.debug('createSchedule: using default tenant', { requestId: req.requestId, tenantId: finalTenantId.toString() });
       }
@@ -721,7 +721,7 @@ export class ProfessorDashboardController {
       if (sameTimeSchedule) {
         const conflictingTenant = sameTimeSchedule.tenantId as any;
         const conflictingTenantName = conflictingTenant?.name || 'otro centro';
-        return res.status(409).json({ 
+        return res.status(409).json({
           error: 'CONFLICT_SAME_TIME',
           message: `Ya tienes un horario a esta hora en ${conflictingTenantName}. No puedes tener el mismo horario en diferentes centros.`,
           conflictingTenantId: conflictingTenant?._id?.toString(),
@@ -780,6 +780,7 @@ export class ProfessorDashboardController {
       const schedule = await ScheduleModel.create({
         tenantId: finalTenantId,
         professorId: professor._id,
+        courtId: courtId && Types.ObjectId.isValid(courtId) ? new Types.ObjectId(courtId) : undefined,
         date: parsedDate,
         startTime: parsedStartTime,
         endTime: parsedEndTime,
@@ -794,7 +795,7 @@ export class ProfessorDashboardController {
         professorId: professor._id?.toString?.() ?? String(professor._id),
         warningsCount: warnings.length,
       });
-      
+
       const response: any = {
         id: schedule._id,
         tenantId: schedule.tenantId,
@@ -810,7 +811,7 @@ export class ProfessorDashboardController {
       if (warnings.length > 0) {
         response.warnings = warnings;
       }
-      
+
       return res.status(201).json(response);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -825,16 +826,16 @@ export class ProfessorDashboardController {
 
       // If response was already sent for some reason, avoid triggering ERR_HTTP_HEADERS_SENT
       if (res.headersSent) return;
-      
+
       // Check if it's a validation error (e.g., missing tenantId)
       if (errorMessage.includes('tenantId') || errorMessage.includes('required')) {
         logger.warn('createSchedule: returning 400 validation error', { requestId: req.requestId, error: errorMessage });
-        return res.status(400).json({ 
-          error: 'Error de validación', 
-          message: 'El horario requiere un centro (tenantId) asociado' 
+        return res.status(400).json({
+          error: 'Error de validación',
+          message: 'El horario requiere un centro (tenantId) asociado'
         });
       }
-      
+
       return res.status(500).json({ error: 'Error interno del servidor', message: errorMessage });
     }
   };
@@ -843,11 +844,11 @@ export class ProfessorDashboardController {
    * Get all schedules for the professor
    */
   getMySchedules = async (req: Request, res: Response) => {
-    
+
     try {
       const firebaseUid = req.user?.uid;
       console.log('Firebase UID:', firebaseUid);
-      
+
       if (!firebaseUid) {
         console.log('ERROR: No firebaseUid');
         return res.status(401).json({ error: 'Usuario no autenticado' });
@@ -866,7 +867,7 @@ export class ProfessorDashboardController {
       // Get all schedules for the professor - only future schedules
       // Filter by tenantId if provided (from X-Tenant-ID header)
       const now = new Date();
-      
+
       const query: any = {
         professorId: professor._id,
         startTime: { $gte: now } // Only future schedules
@@ -876,7 +877,7 @@ export class ProfessorDashboardController {
       if (req.tenantId) {
         query.tenantId = new Types.ObjectId(req.tenantId);
       }
-      
+
       const schedules = await ScheduleModel.find(query)
         .populate('studentId', 'name email')
         .populate('tenantId', 'name slug')
@@ -885,7 +886,7 @@ export class ProfessorDashboardController {
 
       const schedulesData = schedules.map(schedule => {
         const hasStudent = !!schedule.studentId;
-        
+
         // Debug: Log raw studentId
         if (hasStudent) {
           console.log('Schedule with studentId:', {
@@ -896,9 +897,9 @@ export class ProfessorDashboardController {
             isAvailable: schedule.isAvailable
           });
         }
-        
+
         const tenant = schedule.tenantId as any;
-        
+
         return {
           id: schedule._id.toString(),
           date: schedule.date.toISOString(),
@@ -931,7 +932,7 @@ export class ProfessorDashboardController {
    */
   deleteSchedule = async (req: Request, res: Response) => {
     console.log('=== ProfessorDashboardController.deleteSchedule called ===');
-    
+
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
@@ -939,7 +940,7 @@ export class ProfessorDashboardController {
       }
 
       const { scheduleId } = req.params;
-      
+
       if (!scheduleId) {
         return res.status(400).json({ error: 'scheduleId es requerido' });
       }
@@ -969,7 +970,7 @@ export class ProfessorDashboardController {
    */
   blockSchedule = async (req: Request, res: Response) => {
     console.log('=== ProfessorDashboardController.blockSchedule called ===');
-    
+
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
@@ -977,8 +978,8 @@ export class ProfessorDashboardController {
       }
 
       const { scheduleId } = req.params;
-      const { reason } = req.body;
-      
+      const { reason, courtId } = req.body;
+
       if (!scheduleId) {
         return res.status(400).json({ error: 'scheduleId es requerido' });
       }
@@ -988,6 +989,13 @@ export class ProfessorDashboardController {
         return res.status(404).json({ error: 'Horario no encontrado' });
       }
 
+      console.log('DEBUG: blockSchedule request', {
+        body: req.body,
+        params: req.params,
+        courtIdFromBody: courtId,
+        isValidId: courtId ? Types.ObjectId.isValid(courtId) : false
+      });
+
       // Check if schedule is already booked
       if (schedule.studentId) {
         return res.status(400).json({ error: 'No se puede bloquear un horario ya reservado' });
@@ -996,10 +1004,17 @@ export class ProfessorDashboardController {
       schedule.isBlocked = true;
       schedule.blockReason = reason || 'Bloqueado por el profesor';
       schedule.isAvailable = false;
+
+      // Save courtId if provided
+      if (courtId && Types.ObjectId.isValid(courtId)) {
+        schedule.courtId = new Types.ObjectId(courtId);
+      }
+      // CRITICAL FIX: Do NOT clear courtId if not provided. Use separate endpoint or explicit null if clearing is needed.
+
       await schedule.save();
 
-      console.log(`Schedule blocked: ${scheduleId}`);
-      res.json({ message: 'Horario bloqueado exitosamente' });
+      console.log(`Schedule blocked: ${scheduleId}, Court: ${courtId || 'none'}`);
+      res.json({ message: 'Horario bloqueado exitosamente', schedule });
     } catch (error) {
       console.error('Error blocking schedule:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
@@ -1011,7 +1026,7 @@ export class ProfessorDashboardController {
    */
   unblockSchedule = async (req: Request, res: Response) => {
     console.log('=== ProfessorDashboardController.unblockSchedule called ===');
-    
+
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
@@ -1019,7 +1034,7 @@ export class ProfessorDashboardController {
       }
 
       const { scheduleId } = req.params;
-      
+
       if (!scheduleId) {
         return res.status(400).json({ error: 'scheduleId es requerido' });
       }
@@ -1054,7 +1069,7 @@ export class ProfessorDashboardController {
 
       const { scheduleId } = req.params;
       const { paymentAmount } = req.body;
-      
+
       if (!scheduleId) {
         return res.status(400).json({ error: 'scheduleId es requerido' });
       }
@@ -1089,12 +1104,12 @@ export class ProfessorDashboardController {
 
       // Build booking query with tenantId filter if present
       const bookingQuery: any = { scheduleId: schedule._id };
-      
+
       // Filter by tenantId if provided (from middleware)
       if (req.tenantId) {
         bookingQuery.tenantId = new Types.ObjectId(req.tenantId);
       }
-      
+
       // Update booking status
       const booking = await BookingModel.findOne(bookingQuery);
       if (booking) {
@@ -1117,7 +1132,7 @@ export class ProfessorDashboardController {
         });
       }
 
-      res.json({ 
+      res.json({
         message: 'Clase marcada como completada' + (payment ? ' y pago registrado' : ''),
         scheduleId: schedule._id,
         bookingId: booking?._id,
@@ -1141,7 +1156,7 @@ export class ProfessorDashboardController {
 
       const { scheduleId } = req.params;
       const { reason, penaltyAmount } = req.body;
-      
+
       if (!scheduleId) {
         return res.status(400).json({ error: 'scheduleId es requerido' });
       }
@@ -1168,12 +1183,12 @@ export class ProfessorDashboardController {
 
       // Build booking query with tenantId filter if present
       const bookingQuery: any = { scheduleId: schedule._id };
-      
+
       // Filter by tenantId if provided (from middleware)
       if (req.tenantId) {
         bookingQuery.tenantId = new Types.ObjectId(req.tenantId);
       }
-      
+
       // Update booking
       const booking = await BookingModel.findOne(bookingQuery);
       if (booking) {
@@ -1203,7 +1218,7 @@ export class ProfessorDashboardController {
       schedule.status = 'cancelled';
       await schedule.save();
 
-      res.json({ 
+      res.json({
         message: 'Reserva cancelada exitosamente' + (payment ? ' con penalización registrada' : ''),
         scheduleId: schedule._id,
         paymentId: payment?._id
@@ -1221,7 +1236,7 @@ export class ProfessorDashboardController {
    */
   getMyTenants = async (req: Request, res: Response) => {
     console.log('=== ProfessorDashboardController.getMyTenants called ===');
-    
+
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
@@ -1252,7 +1267,7 @@ export class ProfessorDashboardController {
       const tenantsWithActivity = await Promise.all(
         professorTenants.map(async (pt) => {
           const tenant = pt.tenantId as any;
-          
+
           // Get last schedule/booking for this professor in this tenant
           const lastSchedule = await ScheduleModel.findOne({
             professorId: professor._id,

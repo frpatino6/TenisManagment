@@ -5,6 +5,7 @@ export interface ScheduleDocument {
   tenantId: Types.ObjectId; // Reference to Tenant (required for multi-tenancy)
   professorId: Types.ObjectId;
   studentId?: Types.ObjectId;
+  courtId?: Types.ObjectId; // Optional: Link to a specific court for blocks
   date: Date;
   startTime: Date;
   endTime: Date;
@@ -24,6 +25,7 @@ const ScheduleSchema = new Schema<ScheduleDocument>({
   },
   professorId: { type: Schema.Types.ObjectId, ref: 'Professor', required: true, index: true },
   studentId: { type: Schema.Types.ObjectId, ref: 'Student' },
+  courtId: { type: Schema.Types.ObjectId, ref: 'Court' },
   date: { type: Date, required: true, index: true },
   startTime: { type: Date, required: true },
   endTime: { type: Date, required: true },

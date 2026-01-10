@@ -36,6 +36,7 @@ router.get('/professors', controller.listProfessors);
 router.post('/professors/invite', controller.inviteProfessor);
 router.patch('/professors/:id/activate', controller.activateProfessor);
 router.patch('/professors/:id/deactivate', controller.deactivateProfessor);
+router.put('/professors/:id', controller.updateProfessor);
 
 // Gestión de canchas
 router.get('/courts', controller.listCourts);

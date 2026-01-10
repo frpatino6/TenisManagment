@@ -124,6 +124,7 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     required DateTime date,
     required DateTime startTime,
     required DateTime endTime,
+    String? courtId,
   }) async {
     state = const AsyncValue.loading();
 
@@ -136,7 +137,8 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
         startTime: startTime,
         endTime: endTime,
         tenantId:
-            tenantId, // Pass tenantId if available, backend will use first active tenant if null
+            tenantId, // Pass tenantId if available, backend will use first active tenant
+        courtId: courtId,
       );
 
       ref.invalidate(professorSchedulesProvider);

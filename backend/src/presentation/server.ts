@@ -117,4 +117,8 @@ async function start() {
   }
 }
 
-void start();
+export { app };
+
+if (require.main === module) {
+  void start();
+}

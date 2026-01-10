@@ -745,10 +745,18 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         onTap: () {
           setState(() {
             _selectedCourt = court;
-            _selectedDate = null;
             _selectedTime = null;
           });
-          // Scroll to bottom after state update to show date selection with a slight delay
+
+          if (_selectedDate != null) {
+            ref.invalidate(
+              courtAvailableSlotsProvider((
+                courtId: court.id,
+                date: _selectedDate!,
+              )),
+            );
+          }
+
           Future.delayed(const Duration(milliseconds: 300), () {
             if (mounted && _scrollController.hasClients) {
               _scrollController.animateTo(

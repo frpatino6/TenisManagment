@@ -583,8 +583,11 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
     final reasonController = TextEditingController();
     String? selectedCourtId;
 
-    final confirmed = await showDialog<bool>(
+    bool isLoading = false;
+
+    await showDialog<void>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
@@ -656,53 +659,73 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
+                onPressed: isLoading ? null : () => Navigator.of(context).pop(),
                 child: Text('Cancelar', style: GoogleFonts.inter()),
               ),
               FilledButton(
-                onPressed: () => Navigator.of(context).pop(true),
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        setState(() {
+                          isLoading = true;
+                        });
+
+                        try {
+                          final service = ref.read(professorServiceProvider);
+                          await service.blockSchedule(
+                            schedule.id,
+                            reasonController.text,
+                            courtId: selectedCourtId,
+                          );
+
+                          ref.invalidate(professorSchedulesProvider);
+
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Horario bloqueado exitosamente',
+                                  style: GoogleFonts.inter(),
+                                ),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            setState(() {
+                              isLoading = false;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  e.toString(),
+                                  style: GoogleFonts.inter(),
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
                 style: FilledButton.styleFrom(backgroundColor: Colors.orange),
-                child: Text('Bloquear', style: GoogleFonts.inter()),
+                child: isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text('Bloquear', style: GoogleFonts.inter()),
               ),
             ],
           );
         },
       ),
     );
-
-    if (confirmed == true && context.mounted) {
-      try {
-        final service = ref.read(professorServiceProvider);
-        await service.blockSchedule(
-          schedule.id,
-          reasonController.text,
-          courtId: selectedCourtId,
-        );
-
-        ref.invalidate(professorSchedulesProvider);
-
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Horario bloqueado exitosamente',
-                style: GoogleFonts.inter(),
-              ),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString(), style: GoogleFonts.inter()),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
 
     reasonController.dispose();
   }

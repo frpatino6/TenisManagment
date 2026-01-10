@@ -40,7 +40,8 @@ class AppConfig {
         return 'https://tenismanagment.onrender.com';
 
       case Environment.uat:
-        return 'https://tenismanagment-uat.onrender.com';
+        // TEMP: Apuntando a Prod mientras se resuelve el servicio UAT dedicado
+        return 'https://tenismanagment.onrender.com';
     }
   }
 

@@ -27,7 +27,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
 
   bool _isCreating = false;
   bool _generateMultipleSlots = false;
-  int _slotDuration = 60; // Duration in minutes
+  int _slotDuration = 60;
   List<CourtModel> _courts = [];
   String? _selectedCourtId;
   bool _isLoadingCourts = false;

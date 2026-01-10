@@ -22,8 +22,7 @@ class ManageSchedulesScreen extends ConsumerStatefulWidget {
 }
 
 class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
-  ScheduleFilter _selectedFilter = ScheduleFilter
-      .all; // Changed from 'booked' to 'all' to show all schedules by default
+  ScheduleFilter _selectedFilter = ScheduleFilter.all;
   List<CourtModel> _courts = [];
   bool _isLoadingCourts = false;
 
@@ -94,7 +93,6 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
             return _buildEmptyState(context);
           }
 
-          // schedulesData is already List<ProfessorScheduleModel>
           final schedules = schedulesData;
 
           final available = schedules

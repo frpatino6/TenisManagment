@@ -47,7 +47,7 @@ class ProfessorService {
         throw AuthException.notAuthenticated();
       }
 
-      final idToken = await user.getIdToken(true); // Force refresh
+      final idToken = await user.getIdToken(true);
 
       final url = '$_baseUrl/professor-dashboard/me';
 
@@ -105,7 +105,7 @@ class ProfessorService {
         throw AuthException.notAuthenticated();
       }
 
-      final idToken = await user.getIdToken(true); // Force refresh
+      final idToken = await user.getIdToken(true);
       final response = await _httpClient
           .get(
             Uri.parse('$_baseUrl/professor-dashboard/students'),
@@ -554,8 +554,7 @@ class ProfessorService {
     required DateTime date,
     required DateTime startTime,
     required DateTime endTime,
-    String?
-    tenantId, // Optional tenantId - if not provided, backend will use first active tenant
+    String? tenantId,
     String? courtId,
   }) async {
     _logger.info('Creando horario', {

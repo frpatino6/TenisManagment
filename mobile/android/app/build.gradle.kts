@@ -67,7 +67,8 @@ android {
             
             // Configuraciones adicionales para UAT
             buildConfigField("String", "ENVIRONMENT", "\"uat\"")
-            buildConfigField("String", "API_BASE_URL", "\"https://tenismanagment-uat.onrender.com/api\"")
+            // TEMP: Apuntando a Prod mientras se resuelve el servicio UAT dedicado
+            buildConfigField("String", "API_BASE_URL", "\"https://tenismanagment.onrender.com/api\"")
         }
 
         create("prod") {

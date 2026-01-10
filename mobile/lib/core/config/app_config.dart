@@ -38,6 +38,9 @@ class AppConfig {
 
       case Environment.production:
         return 'https://tenismanagment.onrender.com';
+
+      case Environment.uat:
+        return 'https://tenismanagment-uat.onrender.com';
     }
   }
 
@@ -54,6 +57,8 @@ class AppConfig {
         return 'Tennis DEV';
       case Environment.production:
         return 'Tennis Management';
+      case Environment.uat:
+        return 'Tennis UAT';
     }
   }
 
@@ -64,6 +69,8 @@ class AppConfig {
         return '.dev';
       case Environment.production:
         return '';
+      case Environment.uat:
+        return '.uat';
     }
   }
 
@@ -96,6 +103,8 @@ class AppConfig {
         return const Duration(seconds: 60);
       case Environment.production:
         return const Duration(seconds: 30);
+      case Environment.uat:
+        return const Duration(seconds: 30);
     }
   }
 
@@ -105,6 +114,8 @@ class AppConfig {
       case Environment.development:
         return 2;
       case Environment.production:
+        return 3;
+      case Environment.uat:
         return 3;
     }
   }

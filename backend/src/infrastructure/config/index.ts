@@ -4,6 +4,7 @@ const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   MONGO_URI: z.string().min(1).default('mongodb://localhost:27017/tennis_mgmt'),
+  MONGO_DB_NAME: z.string().optional(),
   JWT_SECRET: z.string().min(10, 'JWT_SECRET must be at least 10 characters'),
   FIREBASE_PROJECT_ID: z.string().optional(),
   FIREBASE_PRIVATE_KEY: z.string().optional(),
@@ -35,6 +36,7 @@ export const config = {
   nodeEnv: env.NODE_ENV,
   port: env.PORT,
   mongoUri: env.MONGO_URI,
+  mongoDbName: env.MONGO_DB_NAME,
   jwtSecret: env.JWT_SECRET,
   http: {
     corsOrigins:

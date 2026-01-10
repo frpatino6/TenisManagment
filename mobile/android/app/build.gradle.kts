@@ -57,6 +57,19 @@ android {
             buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000/api\"")
         }
         
+        create("uat") {
+            dimension = "environment"
+            // applicationIdSuffix = ".uat"
+            versionNameSuffix = "-uat"
+            
+            // Nombre de la app en el dispositivo
+            resValue("string", "app_name", "Tennis UAT")
+            
+            // Configuraciones adicionales para UAT
+            buildConfigField("String", "ENVIRONMENT", "\"uat\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://tenismanagment-uat.onrender.com/api\"")
+        }
+
         create("prod") {
             dimension = "environment"
             

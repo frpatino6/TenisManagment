@@ -11,7 +11,7 @@ class Timeouts {
 
   /// Timeout para requests HTTP estándar
   /// Usado en la mayoría de servicios
-  static const Duration httpRequest = Duration(seconds: 10);
+  static const Duration httpRequest = Duration(seconds: 30);
 
   /// Timeout para requests HTTP largos (analytics, reportes, etc.)
   static const Duration httpRequestLong = Duration(seconds: 30);

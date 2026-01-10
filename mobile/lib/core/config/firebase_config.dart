@@ -21,6 +21,10 @@ class FirebaseConfig {
         return developmentOptions;
       case Environment.production:
         return productionOptions;
+      case Environment.uat:
+        // Por ahora UAT usa las mismas opciones que Prod (o Dev), apuntando al mismo proyecto Firebase
+        // Si se crea un proyecto 'tennis-management-uat', se usaría uatOptions
+        return productionOptions;
     }
   }
 

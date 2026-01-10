@@ -1,0 +1,106 @@
+# Cursor Rules - Tennis Management Backend
+
+## 📋 Reglas Generales
+
+### Arquitectura
+- **Clean Architecture**: Mantener separación clara de responsabilidades.
+  - `src/application/controllers`: Manejo de peticiones HTTP (Express).
+  - `src/domain/services` / `src/application/services`: Lógica de negocio pura.
+  - `src/infrastructure`: Implementaciones técnicas (DB, Auth, Logger).
+- **Inyección de Dependencias**: Favorecer la inyección de dependencias para facilitar el testing.
+- **Stateless**: Los servicios deben ser stateless.
+
+### Estándares de Código
+- **TypeScript Estricto**: Evitar `any` a toda costa. Definir interfaces para DTOs.
+- **Sin `console.log`**: Usar estrictamente `Logger` (`infrastructure/services/Logger`).
+- **Async/Await**: Preferir `async/await` sobre `.then()`.
+- **Promesas Flotantes**: Cumplir regla `@typescript-eslint/no-floating-promises`. Usar `await`, `.catch()` o `void` explícito.
+- **Validación**: Usar `Zod` para validar entradas en los controladores.
+- **Inmutabilidad**: Preferir `const` sobre `let`. Evitar mutar objetos directamente siempre que sea posible.
+- **Guard Clauses**: Usar retornos tempranos (early returns) para evitar anidamiento profundo y mejorar la legibilidad.
+
+### Convenciones de Nombres
+- **Clases y Archivos**: `PascalCase` (ej. `AuthService.ts`, `UserController`).
+- **Métodos y Variables**: `camelCase` (ej. `verifyToken`, `userData`).
+- **Constantes**: `UPPER_SNAKE_CASE` (ej. `MAX_LOGIN_ATTEMPTS`).
+
+### Seguridad
+- **Secretos**: Prohibido hardcodear credenciales, tokens o claves. Usar variables de entorno.
+- **Sanitización**: Confiar en la validación de esquemas (`Zod`) para prevenir inyecciones.
+
+---
+
+## 📝 Estándar de Comentarios (TSDoc)
+
+**OBLIGATORIO: Documentación profesional usando TSDoc (`/** ... */`)**
+
+Se debe aplicar el mejor estándar de comentarios en:
+1. **Clases Exportadas**: Explicar responsabilidad.
+2. **Métodos Públicos**: Explicar qué hace, parámetros, retornos y excepciones.
+
+**Ejemplo:**
+```typescript
+/**
+ * Procesa el pago de una reserva.
+ * 
+ * @param bookingId - ID de la reserva a pagar.
+ * @param amount - Monto del pago.
+ * @returns El objeto de pago procesado.
+ * @throws {PaymentError} Si la pasarela rechaza la transacción.
+ */
+public async processPayment(bookingId: string, amount: number): Promise<Payment> { ... }
+```
+
+---
+
+## 🚨 REGLAS CRÍTICAS - Calidad y Testing
+
+### 1. NO CODE WITHOUT TESTS (Sin Tests No Hay Código)
+**Regla Inquebrantable**: No se debe entregar ningún cambio (feature, fix o refactor) sin su respectivo test.
+
+- **Unit Tests**: Obligatorios para Servicios y Lógica de Negocio.
+- **Integration Tests**: Obligatorios para nuevos Endpoints/Controladores.
+- **Bug Fixes**: Deben incluir un test que falle antes del fix y pase después (Regression Testing).
+
+### 2. Manejo de Errores
+- **HTTP Codes**: Usar códigos semánticos (200, 201, 400, 401, 403, 404, 500).
+- **Try/Catch**: Los controladores deben capturar errores y usar el Logger.
+- **Excepciones**: No tragar errores silenciosamente.
+
+### 3. Logging Estructurado (Común con Mobile)
+Al igual que en mobile, el logging debe ser estructurado para facilitar la depuración en producción.
+
+```typescript
+// ❌ PROHIBIDO
+console.log('Error', error);
+
+// ✅ CORRECTO
+this.logger.error('Error procesando pago', { 
+  error: error.message, 
+  stack: error.stack,
+  bookingId 
+});
+```
+
+---
+
+## ✅ Checklist de Entrega
+
+Antes de considerar una tarea completada:
+
+- [ ] ¿El código cumple con las reglas de linter (sin promesas flotantes)?
+- [ ] ¿Se han eliminado todos los `console.log`?
+- [ ] ¿Está documentado con TSDoc?
+- [ ] **¿Tiene tests que validen el cambio?**
+- [ ] ¿Se manejan los errores adecuadamente?
+- [ ] ¿Se respetan las convenciones de nombres y estructura?
+
+---
+
+## 🚫 Prohibiciones
+
+1. **NUNCA** dejar `console.log` en el código.
+2. **NUNCA** usar `any` si se puede tipar.
+3. **NUNCA** ignorar errores en un `catch` vacío.
+4. **NUNCA** subir código sin tests.
+5. **NUNCA** exponer secretos o credenciales en el código.

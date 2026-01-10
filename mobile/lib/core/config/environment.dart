@@ -1,5 +1,5 @@
 /// Enumeración de ambientes disponibles en la aplicación
-/// 
+///
 /// Cada ambiente representa una configuración diferente de:
 /// - Backend URL
 /// - Firebase Project
@@ -16,13 +16,22 @@ enum Environment {
   /// - Backend: Render (https://tenismanagment.onrender.com)
   /// - Firebase: tennis-management-fcd54
   /// - Debug logs: Deshabilitados
-  production;
+  production,
+
+  /// Ambiente de UAT
+  /// - Backend: Render UAT (https://tenismanagment-uat.onrender.com)
+  /// - Firebase: tennis-management-fcd54
+  /// - Debug logs: Habilitados
+  uat;
 
   /// Verifica si el ambiente actual es desarrollo
   bool get isDevelopment => this == Environment.development;
 
   /// Verifica si el ambiente actual es producción
   bool get isProduction => this == Environment.production;
+
+  /// Verifica si el ambiente actual es UAT
+  bool get isUat => this == Environment.uat;
 
   /// Obtiene el nombre legible del ambiente
   String get name {
@@ -31,6 +40,8 @@ enum Environment {
         return 'Development';
       case Environment.production:
         return 'Production';
+      case Environment.uat:
+        return 'UAT';
     }
   }
 
@@ -41,6 +52,8 @@ enum Environment {
         return 'dev';
       case Environment.production:
         return 'prod';
+      case Environment.uat:
+        return 'uat';
     }
   }
 
@@ -51,7 +64,8 @@ enum Environment {
         return 'development';
       case Environment.production:
         return 'production';
+      case Environment.uat:
+        return 'uat';
     }
   }
 }
-

@@ -104,7 +104,9 @@ const MONGO_URI = config.mongoUri;
 
 async function start() {
   try {
-    await mongoose.connect(MONGO_URI);
+    await mongoose.connect(MONGO_URI, {
+      dbName: config.mongoDbName,
+    });
     logger.info('Connected to MongoDB');
     app.listen(PORT, () => logger.info('Server started', { port: PORT }));
   } catch (error) {

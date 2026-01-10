@@ -998,18 +998,16 @@ export class ProfessorDashboardController {
       schedule.blockReason = reason || 'Bloqueado por el profesor';
       schedule.isAvailable = false;
 
-      // Save courtId if provided
       if (courtId && Types.ObjectId.isValid(courtId)) {
         schedule.courtId = new Types.ObjectId(courtId);
       }
-      // CRITICAL FIX: Do NOT clear courtId if not provided. Use separate endpoint or explicit null if clearing is needed.
 
       await schedule.save();
 
-      console.log(`Schedule blocked: ${scheduleId}, Court: ${courtId || 'none'}`);
       res.json({ message: 'Horario bloqueado exitosamente', schedule });
     } catch (error) {
-      console.error('Error blocking schedule:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error('Error blocking schedule', { error: message, requestId: req.requestId });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

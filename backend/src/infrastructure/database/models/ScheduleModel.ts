@@ -2,10 +2,10 @@ import { Schema, model, Types } from 'mongoose';
 
 export interface ScheduleDocument {
   _id: Types.ObjectId;
-  tenantId: Types.ObjectId; // Reference to Tenant (required for multi-tenancy)
+  tenantId: Types.ObjectId;
   professorId: Types.ObjectId;
   studentId?: Types.ObjectId;
-  courtId?: Types.ObjectId; // Optional: Link to a specific court for blocks
+  courtId?: Types.ObjectId;
   date: Date;
   startTime: Date;
   endTime: Date;

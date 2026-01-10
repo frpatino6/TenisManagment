@@ -433,6 +433,68 @@ class TenantAdminService {
     }
   }
 
+  /// PUT /api/tenant/professors/:id
+  /// Update professor details
+  Future<TenantProfessorModel> updateProfessor({
+    required String professorId,
+    String? name,
+    String? phone,
+    double? hourlyRate,
+    List<String>? specialties,
+    Map<String, dynamic>? pricing,
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final uri = Uri.parse('$_baseUrl/tenant/professors/$professorId');
+
+      final body = <String, dynamic>{};
+      if (name != null) body['name'] = name;
+      if (phone != null) body['phone'] = phone;
+      if (hourlyRate != null) body['hourlyRate'] = hourlyRate;
+      if (specialties != null) body['specialties'] = specialties;
+      if (pricing != null) body['pricing'] = pricing;
+
+      final response = await _httpClient.put(
+        uri,
+        headers: headers,
+        body: json.encode(body),
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return TenantProfessorModel.fromJson(data);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw TenantException.notFound();
+      } else if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        throw ValidationException(
+          errorData['error']?.toString() ?? 'Datos inválidos',
+          code: 'INVALID_DATA',
+        );
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
   /// GET /api/tenant/courts
   /// Get list of courts for the tenant
   Future<List<TenantCourtModel>> getCourts() async {

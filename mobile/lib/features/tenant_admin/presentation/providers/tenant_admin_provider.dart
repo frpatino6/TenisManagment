@@ -6,6 +6,7 @@ import '../../domain/models/tenant_court_model.dart';
 import '../../domain/services/tenant_admin_service.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../domain/models/tenant_student_model.dart';
+import '../../domain/models/tenant_booking_model.dart';
 
 import '../../../../core/services/http_client.dart';
 
@@ -268,4 +269,28 @@ final tenantStudentsProvider =
         page: page,
         search: search.isEmpty ? null : search,
       );
+    });
+
+// ============================================================================
+// PROFESSOR BOOKINGS PROVIDER
+// ============================================================================
+
+/// Provider for fetching bookings for a specific professor
+final professorBookingsProvider = FutureProvider.autoDispose
+    .family<List<TenantBookingModel>, String>((ref, professorId) async {
+      final tenantId = ref.watch(currentTenantIdProvider);
+      if (tenantId == null || tenantId.isEmpty) {
+        throw Exception('Tenant ID requerido');
+      }
+
+      final service = ref.read(tenantAdminServiceProvider);
+
+      // Fetch bookings for this professor (upcoming and recent)
+      final result = await service.getBookings(
+        professorId: professorId,
+        page: 1,
+        limit: 50,
+      );
+
+      return (result['bookings'] as List<TenantBookingModel>);
     });

@@ -36,6 +36,7 @@ import '../../features/tenant_admin/presentation/screens/tenant_booking_stats_sc
 import '../../features/tenant_admin/presentation/screens/tenant_booking_calendar_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_students_list_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_student_details_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_professor_details_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../providers/tenant_provider.dart';
 
@@ -179,6 +180,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 name: 'tenant-admin-professors-invite',
                 builder: (context, state) =>
                     const TenantInviteProfessorScreen(),
+              ),
+              GoRoute(
+                path: ':id',
+                name: 'tenant-admin-professor-details',
+                builder: (context, state) {
+                  final professorId = state.pathParameters['id']!;
+                  return TenantProfessorDetailsScreen(professorId: professorId);
+                },
               ),
             ],
           ),

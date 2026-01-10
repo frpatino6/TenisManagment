@@ -33,11 +33,9 @@ class ProfessorService {
   final _logger = AppLogger.tag('ProfessorService');
   final http.Client _httpClient;
 
-  ProfessorService({
-    FirebaseAuth? firebaseAuth,
-    http.Client? httpClient,
-  })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-        _httpClient = httpClient ?? http.Client();
+  ProfessorService({FirebaseAuth? firebaseAuth, http.Client? httpClient})
+    : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+      _httpClient = httpClient ?? http.Client();
 
   /// Retrieves professor information and dashboard data
   /// Returns [ProfessorModel] with complete professor details
@@ -49,7 +47,7 @@ class ProfessorService {
         throw AuthException.notAuthenticated();
       }
 
-      final idToken = await user.getIdToken(true); // Force refresh
+      final idToken = await user.getIdToken(true);
 
       final url = '$_baseUrl/professor-dashboard/me';
 
@@ -107,7 +105,7 @@ class ProfessorService {
         throw AuthException.notAuthenticated();
       }
 
-      final idToken = await user.getIdToken(true); // Force refresh
+      final idToken = await user.getIdToken(true);
       final response = await _httpClient
           .get(
             Uri.parse('$_baseUrl/professor-dashboard/students'),
@@ -556,14 +554,15 @@ class ProfessorService {
     required DateTime date,
     required DateTime startTime,
     required DateTime endTime,
-    String?
-    tenantId, // Optional tenantId - if not provided, backend will use first active tenant
+    String? tenantId,
+    String? courtId,
   }) async {
     _logger.info('Creando horario', {
       'date': date.toIso8601String(),
       'startTime': startTime.toIso8601String(),
       'endTime': endTime.toIso8601String(),
       'tenantId': tenantId,
+      'courtId': courtId,
     });
     try {
       final user = _firebaseAuth.currentUser;
@@ -581,6 +580,10 @@ class ProfessorService {
 
       if (tenantId != null && tenantId.isNotEmpty) {
         requestBody['tenantId'] = tenantId;
+      }
+
+      if (courtId != null && courtId.isNotEmpty) {
+        requestBody['courtId'] = courtId;
       }
 
       final response = await _httpClient
@@ -755,7 +758,11 @@ class ProfessorService {
   }
 
   /// Block a schedule
-  Future<void> blockSchedule(String scheduleId, String reason) async {
+  Future<void> blockSchedule(
+    String scheduleId,
+    String reason, {
+    String? courtId,
+  }) async {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
@@ -763,6 +770,11 @@ class ProfessorService {
       }
 
       final idToken = await user.getIdToken(true);
+
+      final body = {'reason': reason};
+      if (courtId != null) {
+        body['courtId'] = courtId;
+      }
 
       final response = await _httpClient
           .put(
@@ -773,7 +785,7 @@ class ProfessorService {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $idToken',
             },
-            body: json.encode({'reason': reason}),
+            body: json.encode(body),
           )
           .timeout(
             Timeouts.httpRequest,

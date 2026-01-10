@@ -8,6 +8,8 @@ import '../../domain/models/professor_schedule_model.dart';
 import '../providers/professor_provider.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../booking/domain/models/court_model.dart';
+import '../../../booking/domain/services/court_service.dart';
 
 enum ScheduleFilter { all, available, blocked, booked }
 
@@ -20,8 +22,38 @@ class ManageSchedulesScreen extends ConsumerStatefulWidget {
 }
 
 class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
-  ScheduleFilter _selectedFilter = ScheduleFilter
-      .all; // Changed from 'booked' to 'all' to show all schedules by default
+  ScheduleFilter _selectedFilter = ScheduleFilter.all;
+  List<CourtModel> _courts = [];
+  bool _isLoadingCourts = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCourts();
+  }
+
+  Future<void> _loadCourts() async {
+    setState(() {
+      _isLoadingCourts = true;
+    });
+
+    try {
+      final courtService = ref.read(courtServiceProvider);
+      final courts = await courtService.getCourts();
+      if (mounted) {
+        setState(() {
+          _courts = courts;
+          _isLoadingCourts = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingCourts = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +93,6 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
             return _buildEmptyState(context);
           }
 
-          // schedulesData is already List<ProfessorScheduleModel>
           final schedules = schedulesData;
 
           final available = schedules
@@ -550,57 +581,103 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
     ProfessorScheduleModel schedule,
   ) async {
     final reasonController = TextEditingController();
+    String? selectedCourtId;
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          AppStrings.blockSchedule,
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${schedule.formattedDate}\n${schedule.formattedTimeRange}',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text(
+              AppStrings.blockSchedule,
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
             ),
-            const Gap(16),
-            TextField(
-              controller: reasonController,
-              decoration: InputDecoration(
-                labelText: 'Motivo (opcional)',
-                hintText: 'Ej: Almuerzo, reunión, etc.',
-                border: const OutlineInputBorder(),
-                labelStyle: GoogleFonts.inter(),
-                hintStyle: GoogleFonts.inter(),
-              ),
-              maxLines: 2,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${schedule.formattedDate}\n${schedule.formattedTimeRange}',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Gap(16),
+                if (_isLoadingCourts)
+                  const Center(child: CircularProgressIndicator())
+                else if (_courts.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        labelText: 'Cancha (opcional)',
+                        border: const OutlineInputBorder(),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                      ),
+                      value: selectedCourtId,
+                      items: [
+                        DropdownMenuItem<String>(
+                          value: null,
+                          child: Text(
+                            'General (Todas)',
+                            style: GoogleFonts.inter(),
+                          ),
+                        ),
+                        ..._courts.map(
+                          (court) => DropdownMenuItem<String>(
+                            value: court.id,
+                            child: Text(court.name, style: GoogleFonts.inter()),
+                          ),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          selectedCourtId = value;
+                        });
+                      },
+                    ),
+                  ),
+                TextField(
+                  controller: reasonController,
+                  decoration: InputDecoration(
+                    labelText: 'Motivo (opcional)',
+                    hintText: 'Ej: Almuerzo, reunión, etc.',
+                    border: const OutlineInputBorder(),
+                    labelStyle: GoogleFonts.inter(),
+                    hintStyle: GoogleFonts.inter(),
+                  ),
+                  maxLines: 2,
+                ),
+              ],
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text('Cancelar', style: GoogleFonts.inter()),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.orange),
-            child: Text('Bloquear', style: GoogleFonts.inter()),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('Cancelar', style: GoogleFonts.inter()),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: FilledButton.styleFrom(backgroundColor: Colors.orange),
+                child: Text('Bloquear', style: GoogleFonts.inter()),
+              ),
+            ],
+          );
+        },
       ),
     );
 
     if (confirmed == true && context.mounted) {
       try {
         final service = ref.read(professorServiceProvider);
-        await service.blockSchedule(schedule.id, reasonController.text);
+        await service.blockSchedule(
+          schedule.id,
+          reasonController.text,
+          courtId: selectedCourtId,
+        );
 
         ref.invalidate(professorSchedulesProvider);
 

@@ -989,13 +989,6 @@ export class ProfessorDashboardController {
         return res.status(404).json({ error: 'Horario no encontrado' });
       }
 
-      console.log('DEBUG: blockSchedule request', {
-        body: req.body,
-        params: req.params,
-        courtIdFromBody: courtId,
-        isValidId: courtId ? Types.ObjectId.isValid(courtId) : false
-      });
-
       // Check if schedule is already booked
       if (schedule.studentId) {
         return res.status(400).json({ error: 'No se puede bloquear un horario ya reservado' });

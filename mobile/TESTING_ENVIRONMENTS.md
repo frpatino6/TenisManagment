@@ -18,6 +18,7 @@ Esta guía te ayudará a verificar que los ambientes estén funcionando correcta
 # Verificar que los archivos existan
 ls lib/main_dev.dart
 ls lib/main_prod.dart
+ls lib/main_uat.dart
 ls lib/core/config/environment.dart
 ls lib/core/config/app_config.dart
 ls scripts/run_dev.sh
@@ -144,7 +145,52 @@ Deberías ver:
 
 ---
 
-## 🧪 Prueba 3: Ambas Apps Instaladas Simultáneamente
+## 🧪 Prueba 3: Ambiente de UAT (Pruebas de Aceptación)
+
+### Ejecutar
+
+```bash
+# Aún no hay script sh, usar comando manual:
+flutter run --flavor uat -t lib/main_uat.dart
+```
+
+### Verificar en los Logs
+
+Deberías ver:
+
+```
+🌍 Environment set to: UAT (uat)
+┌─────────────────────────────────────────────────
+│ 🎯 APP CONFIGURATION
+├─────────────────────────────────────────────────
+│ Environment:        UAT
+│ App Name:          Tennis UAT
+│ Package:           com.tennismanagement.tennis_management.uat
+├─────────────────────────────────────────────────
+│ Backend URL:       https://tenismanagment.onrender.com
+│ API Base URL:      https://tenismanagment.onrender.com/api
+│ Auth Base URL:     https://tenismanagment.onrender.com/api/auth
+├─────────────────────────────────────────────────
+│ Debug Logs:        false
+│ Network Logs:      false
+│ Analytics:         false
+│ Crash Reporting:   false
+├─────────────────────────────────────────────────
+│ HTTP Timeout:      30s
+│ Max Retries:       3
+└─────────────────────────────────────────────────
+✅ Firebase initialized for UAT
+```
+
+### Verificar en la App
+
+1. **Nombre de la app en el dispositivo:** "Tennis UAT"
+2. **Login:** Intenta iniciar sesión (Usará BD de UAT)
+3. **Backend:** Verifica que se conecte al backend en Render
+
+---
+
+## 🧪 Prueba 4: Ambas Apps Instaladas Simultáneamente
 
 ### Instalar ambas
 
@@ -171,7 +217,7 @@ adb install build/app/outputs/flutter-apk/app-prod-release.apk
 
 ---
 
-## 🧪 Prueba 4: Switching entre Ambientes
+## 🧪 Prueba 5: Switching entre Ambientes
 
 ### Sin rebuild
 
@@ -273,15 +319,15 @@ flutter test integration_test/class_booking_test.dart --flavor dev
 
 ## 📊 Comparación de Ambientes
 
-| Característica | DEV | PROD |
-|----------------|-----|------|
-| **Backend** | localhost:3000 | Render |
-| **App Name** | Tennis DEV | Tennis Management |
-| **Package** | .dev suffix | Normal |
-| **Debug Logs** | ✅ Sí | ❌ No |
-| **Timeout** | 60s | 30s |
-| **Analytics** | ❌ No | ✅ Sí |
-| **Crash Reporting** | ❌ No | ✅ Sí |
+| Característica | DEV | UAT | PROD |
+|----------------|-----|-----|------|
+| **Backend** | localhost:3000 | Render (UAT DB) | Render (Prod DB) |
+| **App Name** | Tennis DEV | Tennis UAT | Tennis Management |
+| **Package** | .dev suffix | .uat suffix | Normal |
+| **Debug Logs** | ✅ Sí | ❌ No | ❌ No |
+| **Timeout** | 60s | 30s | 30s |
+| **Analytics** | ❌ No | ❌ No | ✅ Sí |
+| **Crash Reporting** | ❌ No | ❌ No | ✅ Sí |
 
 ---
 

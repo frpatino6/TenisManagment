@@ -556,6 +556,81 @@ export class TenantAdminController {
   };
 
   /**
+   * PUT /api/tenant/professors/:id
+   * Actualizar perfil de profesor
+   */
+  updateProfessor = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const { id } = req.params; // professorId
+      const { name, phone, hourlyRate, specialties, pricing } = req.body;
+
+      // 1. Verificar si el profesor pertenece al tenant
+      const professorTenant = await ProfessorTenantModel.findOne({
+        professorId: new Types.ObjectId(id),
+        tenantId: new Types.ObjectId(tenantId),
+      });
+
+      if (!professorTenant) {
+        res.status(404).json({ error: 'El profesor no está registrado en este tenant' });
+        return;
+      }
+
+      // 2. Buscar y actualizar el profesor global
+      const professor = await ProfessorModel.findById(id);
+      if (!professor) {
+        res.status(404).json({ error: 'Profesor no encontrado' });
+        return;
+      }
+
+      if (name !== undefined) professor.name = name;
+      if (phone !== undefined) professor.phone = phone;
+      if (hourlyRate !== undefined) professor.hourlyRate = hourlyRate;
+      if (specialties !== undefined) professor.specialties = specialties;
+
+      await professor.save();
+
+      // 3. Actualizar pricing específico del tenant sise proporciona
+      if (pricing !== undefined) {
+        professorTenant.pricing = pricing;
+        await professorTenant.save();
+      }
+
+      // 4. Devolver modelo unificado
+      const professorAuth = await AuthUserModel.findById(professor.authUserId).lean();
+
+      const bookingsCount = await BookingModel.countDocuments({
+        professorId: professor._id,
+        tenantId: new Types.ObjectId(tenantId),
+      });
+
+      res.json({
+        id: professor._id.toString(),
+        name: professor.name,
+        email: professor.email,
+        phone: professor.phone,
+        specialties: professor.specialties,
+        hourlyRate: professor.hourlyRate,
+        experienceYears: professor.experienceYears,
+        pricing: professorTenant.pricing,
+        isActive: professorTenant.isActive,
+        joinedAt: professorTenant.joinedAt,
+        bookingsCount,
+        authUserId: professorAuth?._id.toString(),
+      });
+
+    } catch (error) {
+      logger.error('Error actualizando profesor', { error: (error as Error).message });
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
    * GET /api/tenant/courts
    * Listar canchas del tenant
    */

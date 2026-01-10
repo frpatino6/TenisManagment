@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, uat ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, uat ]
   workflow_dispatch: # Manual triggers also available
 
 jobs:

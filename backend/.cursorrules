@@ -13,6 +13,7 @@
 ### Estándares de Código
 - **TypeScript Estricto**: Evitar `any` a toda costa. Definir interfaces para DTOs.
 - **Sin `console.log`**: Usar estrictamente `Logger` (`infrastructure/services/Logger`).
+- **Sin comentarios innecesarios**: El código debe ser autoexplicativo (Regla de Oro).
 - **Async/Await**: Preferir `async/await` sobre `.then()`.
 - **Promesas Flotantes**: Cumplir regla `@typescript-eslint/no-floating-promises`. Usar `await`, `.catch()` o `void` explícito.
 - **Validación**: Usar `Zod` para validar entradas en los controladores.

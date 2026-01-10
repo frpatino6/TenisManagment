@@ -1397,11 +1397,9 @@ export class StudentDashboardController {
           bookedSlots.add(`${hour.toString().padStart(2, '0')}:00`);
         }
       });
-      // Query standard range (assuming data is stored as "Local in UTC")
       const queryStart = targetDate;
       const queryEnd = nextDay;
 
-      // Get blocked schedules for this court and date
       const blockedSchedules = await ScheduleModel.find({
         tenantId: new Types.ObjectId(tenantId),
         courtId: new Types.ObjectId(courtId),
@@ -1412,11 +1410,8 @@ export class StudentDashboardController {
         }
       }).lean();
 
-      // NEW: Mark slots as booked from Blocked Schedules
       blockedSchedules.forEach((schedule) => {
         const scheduleStart = new Date(schedule.startTime);
-        // Assumption: Data is stored as Local Time inside UTC (e.g. 09:00 = 9 AM Local)
-        // So we just take the UTC hour directly.
         const hour = scheduleStart.getUTCHours();
         bookedSlots.add(`${hour.toString().padStart(2, '0')}:00`);
       });

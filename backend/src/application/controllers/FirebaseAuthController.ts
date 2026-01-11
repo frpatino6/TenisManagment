@@ -301,28 +301,7 @@ export class FirebaseAuthController {
           });
         }
 
-        // Si se proporciona tenantId, crear la relación ProfessorTenant
-        if (tenantId) {
-          try {
-            const tenantService = new TenantService();
-            await tenantService.addProfessorToTenant(
-              professor._id.toString(),
-              tenantId,
-            );
-            this.logger.info('Professor added to tenant', {
-              professorId: professor._id.toString(),
-              tenantId
-            });
-          } catch (error: any) {
-            this.logger.error('Error adding professor to tenant', {
-              error: error.message,
-              professorId: professor._id.toString(),
-              tenantId
-            });
-            // No hacemos rollback aquí, el profesor ya está creado
-            // Solo logueamos el error pero permitimos que el registro continúe
-          }
-        }
+
       }
 
       // Generar tokens JWT

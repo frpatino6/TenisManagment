@@ -8,6 +8,8 @@ class ScheduleModel {
   final String? notes;
   final bool isAvailable;
   final bool? isBlocked;
+  final String? courtId;
+  final String? courtName;
 
   ScheduleModel({
     required this.id,
@@ -18,6 +20,8 @@ class ScheduleModel {
     this.notes,
     required this.isAvailable,
     this.isBlocked,
+    this.courtId,
+    this.courtName,
   });
 
   factory ScheduleModel.fromJson(Map<String, dynamic> json) {
@@ -34,6 +38,8 @@ class ScheduleModel {
       notes: json['notes'] as String?,
       isAvailable: json['isAvailable'] as bool? ?? true,
       isBlocked: json['isBlocked'] as bool?,
+      courtId: json['courtId'] as String?,
+      courtName: json['courtName'] as String?,
     );
   }
 
@@ -52,8 +58,10 @@ class ScheduleModel {
 
   /// Format time range as "HH:mm - HH:mm"
   String get timeRange {
-    final start = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
-    final end = '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+    final start =
+        '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
+    final end =
+        '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
     return '$start - $end';
   }
 
@@ -91,7 +99,8 @@ class TenantSchedulesGroup {
       tenantName: json['tenantName'] as String,
       tenantSlug: json['tenantSlug'] as String,
       tenantLogo: json['tenantLogo'] as String?,
-      schedules: (json['schedules'] as List<dynamic>?)
+      schedules:
+          (json['schedules'] as List<dynamic>?)
               ?.map((s) => ScheduleModel.fromJson(s as Map<String, dynamic>))
               .toList() ??
           [],
@@ -125,8 +134,11 @@ class ProfessorSchedulesResponse {
     return ProfessorSchedulesResponse(
       professorId: json['professorId'] as String,
       professorName: json['professorName'] as String,
-      schedules: (json['schedules'] as List<dynamic>?)
-              ?.map((s) => TenantSchedulesGroup.fromJson(s as Map<String, dynamic>))
+      schedules:
+          (json['schedules'] as List<dynamic>?)
+              ?.map(
+                (s) => TenantSchedulesGroup.fromJson(s as Map<String, dynamic>),
+              )
               .toList() ??
           [],
     );
@@ -140,4 +152,3 @@ class ProfessorSchedulesResponse {
     };
   }
 }
-

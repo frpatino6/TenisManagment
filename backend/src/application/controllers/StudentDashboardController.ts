@@ -378,6 +378,7 @@ export class StudentDashboardController {
         ]
       })
         .populate('tenantId', 'name slug config')
+        .populate('courtId', 'name')
         .sort({ startTime: 1 })
         .limit(100);
 
@@ -386,6 +387,8 @@ export class StudentDashboardController {
         professorId: schedule.professorId.toString(),
         tenantId: schedule.tenantId ? (schedule.tenantId as any)._id.toString() : null,
         tenantName: schedule.tenantId ? (schedule.tenantId as any).name : null,
+        courtId: schedule.courtId ? (schedule.courtId as any)._id.toString() : null,
+        courtName: schedule.courtId ? (schedule.courtId as any).name : null,
         startTime: schedule.startTime,
         endTime: schedule.endTime,
         type: 'individual_class', // Default type since we removed it from schedule
@@ -433,6 +436,7 @@ export class StudentDashboardController {
         ]
       })
         .populate('tenantId', 'name slug config')
+        .populate('courtId', 'name')
         .sort({ startTime: 1 })
         .limit(200);
 
@@ -460,6 +464,10 @@ export class StudentDashboardController {
           endTime: schedule.endTime,
           status: schedule.status || 'pending',
           notes: schedule.notes,
+          isAvailable: schedule.isAvailable,
+          isBlocked: schedule.isBlocked,
+          courtId: schedule.courtId ? (schedule.courtId as any)._id.toString() : null,
+          courtName: schedule.courtId ? (schedule.courtId as any).name : null,
         });
       }
 

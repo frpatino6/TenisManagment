@@ -399,19 +399,36 @@ export class StudentDashboardController {
         .sort({ startTime: 1 })
         .limit(100);
 
-      const schedulesData = schedules.map(schedule => ({
-        id: schedule._id.toString(),
-        professorId: schedule.professorId.toString(),
-        tenantId: schedule.tenantId ? (schedule.tenantId as any)._id.toString() : null,
-        tenantName: schedule.tenantId ? (schedule.tenantId as any).name : null,
-        courtId: schedule.courtId ? (schedule.courtId as any)._id.toString() : null,
-        courtName: schedule.courtId ? (schedule.courtId as any).name : null,
-        startTime: schedule.startTime,
-        endTime: schedule.endTime,
-        type: 'individual_class', // Default type since we removed it from schedule
-        price: 0, // Price is now set during booking
-        status: schedule.status
-      }));
+      const schedulesData: any[] = [];
+
+      for (const schedule of schedules) {
+        const tenantId = schedule.tenantId ? (schedule.tenantId as any)._id.toString() : null;
+
+        // SECURITY CHECK: Verify if professor is active in this tenant
+        if (tenantId) {
+          const isActive = await ProfessorTenantModel.exists({
+            professorId: new Types.ObjectId(professorId as string),
+            tenantId: new Types.ObjectId(tenantId),
+            isActive: true
+          });
+
+          if (!isActive) continue;
+        }
+
+        schedulesData.push({
+          id: schedule._id.toString(),
+          professorId: schedule.professorId.toString(),
+          tenantId: schedule.tenantId ? (schedule.tenantId as any)._id.toString() : null,
+          tenantName: schedule.tenantId ? (schedule.tenantId as any).name : null,
+          courtId: schedule.courtId ? (schedule.courtId as any)._id.toString() : null,
+          courtName: schedule.courtId ? (schedule.courtId as any).name : null,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime,
+          type: 'individual_class', // Default type since we removed it from schedule
+          price: 0, // Price is now set during booking
+          status: schedule.status
+        });
+      }
 
       console.log(`Found ${schedulesData.length} available schedules for professor ${professorId}`);
       res.json({ items: schedulesData });
@@ -527,9 +544,18 @@ export class StudentDashboardController {
         return res.status(400).json({ error: 'El centro no está activo' });
       }
 
-      // Get all available schedules for this tenant
+      // Get active professors for this tenant first
+      const activeProfessorTenants = await ProfessorTenantModel.find({
+        tenantId: new Types.ObjectId(tenantId),
+        isActive: true
+      }).select('professorId');
+
+      const activeProfessorIds = activeProfessorTenants.map(pt => pt.professorId);
+
+      // Get all available schedules for this tenant, filtering by active professors
       const schedules = await ScheduleModel.find({
         tenantId: new Types.ObjectId(tenantId),
+        professorId: { $in: activeProfessorIds }, // Only show active professors
         startTime: { $gte: new Date() }, // Only future schedules
         isAvailable: true, // Only available slots
         $or: [
@@ -594,6 +620,13 @@ export class StudentDashboardController {
 
     try {
       // Get all available schedules across all tenants
+      // Get active professor-tenant relationships first
+      const activeLinks = await ProfessorTenantModel.find({ isActive: true }).select('professorId tenantId');
+
+      // Create a Set of valid "tenantId:professorId" strings for fast lookup
+      const validLinks = new Set(activeLinks.map(link => `${link.tenantId.toString()}:${link.professorId.toString()}`));
+
+      // Get all future schedules
       const schedules = await ScheduleModel.find({
         startTime: { $gte: new Date() }, // Only future schedules
         isAvailable: true, // Only available slots
@@ -607,13 +640,20 @@ export class StudentDashboardController {
         .sort({ startTime: 1 })
         .limit(500);
 
-      // Group by tenant first, then by professor
+      // Group by tenant first, then by professor AND filter invalid links
       const groupedByTenant: Record<string, any> = {};
 
       for (const schedule of schedules) {
         const tenantId = schedule.tenantId ? (schedule.tenantId as any)._id.toString() : 'unknown';
+        const professorId = schedule.professorId ? (schedule.professorId as any)._id.toString() : 'unknown';
+
+        // SECURITY CHECK: Skip if this specific professor-tenant combination is not active
+        if (!validLinks.has(`${tenantId}:${professorId}`)) {
+          continue;
+        }
+
         const tenant = schedule.tenantId as any;
-        const professorId = schedule.professorId ? schedule.professorId.toString() : 'unknown';
+
         const professor = schedule.professorId as any;
 
         if (!groupedByTenant[tenantId]) {
@@ -727,6 +767,19 @@ export class StudentDashboardController {
       const tenantId = schedule.tenantId;
       if (!tenantId) {
         return res.status(400).json({ error: 'El horario no tiene un tenant asociado' });
+      }
+
+      // Verify if the professor is still active in this tenant
+      const professorTenant = await ProfessorTenantModel.findOne({
+        professorId: professor._id,
+        tenantId: tenantId,
+        isActive: true
+      });
+
+      if (!professorTenant) {
+        return res.status(403).json({
+          error: 'El profesor ya no está asociado activamente a este centro. No se pueden realizar reservas.'
+        });
       }
 
       // Ensure StudentTenant relationship exists (creates if not exists)

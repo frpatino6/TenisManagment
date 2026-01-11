@@ -133,6 +133,14 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                       'Horario',
                       widget.schedule.timeRange,
                     ),
+                    if (widget.schedule.courtName != null) ...[
+                      const SizedBox(height: 12),
+                      _buildDetailRow(
+                        Icons.stadium,
+                        'Cancha',
+                        widget.schedule.courtName!,
+                      ),
+                    ],
                     if (widget.schedule.notes != null &&
                         widget.schedule.notes!.isNotEmpty)
                       Padding(

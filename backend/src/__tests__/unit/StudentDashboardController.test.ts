@@ -90,7 +90,7 @@ describe('StudentDashboardController', () => {
       // Mock database responses
       const { AuthUserModel } = require('../../infrastructure/database/models/AuthUserModel');
       const { BookingModel } = require('../../infrastructure/database/models/BookingModel');
-      
+
       AuthUserModel.findOne.mockResolvedValue({ _id: 'user-id', email: 'test@example.com' });
       // @ts-expect-error - Jest mock type issue
       BookingModel.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([] as any) });
@@ -173,20 +173,6 @@ describe('StudentDashboardController', () => {
         professorId: mockProfessor,
       };
 
-      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
-      const mockPopulate3 = jest.fn().mockReturnValue({
-        sort: mockSort,
-      });
-      const mockPopulate2 = jest.fn().mockReturnValue({
-        populate: mockPopulate3,
-      });
-      const mockPopulate1 = jest.fn().mockReturnValue({
-        populate: mockPopulate2,
-      });
-      const mockFind = jest.fn().mockReturnValue({
-        populate: mockPopulate1,
-      });
-
       const { AuthUserModel } = require('../../infrastructure/database/models/AuthUserModel');
       const { StudentModel } = require('../../infrastructure/database/models/StudentModel');
       const { BookingModel } = require('../../infrastructure/database/models/BookingModel');
@@ -202,7 +188,22 @@ describe('StudentDashboardController', () => {
           courtRental: 25000,
         },
       });
-      BookingModel.find = mockFind;
+
+      const mockSort = jest.fn<any>().mockResolvedValue([finalBooking] as any);
+      const mockPopulate3 = jest.fn().mockReturnValue({
+        sort: mockSort,
+      });
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        populate: mockPopulate3,
+      });
+      const mockPopulate1 = jest.fn().mockReturnValue({
+        populate: mockPopulate2,
+      });
+      const mockFind = jest.fn().mockReturnValue({
+        populate: mockPopulate1,
+      });
+
+      (BookingModel.find as any) = mockFind;
 
       // Act
       await controller.getBookings(mockRequest, mockResponse);
@@ -212,7 +213,7 @@ describe('StudentDashboardController', () => {
       expect(StudentModel.findOne).toHaveBeenCalledWith({ authUserId: authUserId });
       expect(BookingModel.find).toHaveBeenCalledWith({ studentId: studentId });
       expect(mockResponse.json).toHaveBeenCalled();
-      
+
       const jsonCall = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
       expect(jsonCall).toHaveProperty('items');
       expect(Array.isArray(jsonCall.items)).toBe(true);
@@ -231,7 +232,7 @@ describe('StudentDashboardController', () => {
       StudentModel.findOne.mockResolvedValue({ _id: 'student-id' });
       SystemConfigModel.findOne.mockResolvedValue(null);
 
-      const mockSort = jest.fn().mockResolvedValue([] as any);
+      const mockSort = jest.fn<any>().mockResolvedValue([] as any);
       const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
       });
@@ -241,7 +242,7 @@ describe('StudentDashboardController', () => {
       const mockPopulate1 = jest.fn().mockReturnValue({
         populate: mockPopulate2,
       });
-      BookingModel.find = jest.fn().mockReturnValue({
+      (BookingModel.find as any) = jest.fn().mockReturnValue({
         populate: mockPopulate1,
       });
 
@@ -300,7 +301,7 @@ describe('StudentDashboardController', () => {
         professorId: mockBooking.scheduleId?.professorId || null,
         courtId: null, // No court assigned in this test
       };
-      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
+      const mockSort = jest.fn<any>().mockResolvedValue([finalBooking] as any);
       const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
       });
@@ -310,7 +311,7 @@ describe('StudentDashboardController', () => {
       const mockPopulate1 = jest.fn().mockReturnValue({
         populate: mockPopulate2,
       });
-      BookingModel.find = jest.fn().mockReturnValue({
+      (BookingModel.find as any) = jest.fn().mockReturnValue({
         populate: mockPopulate1,
       });
 
@@ -417,7 +418,7 @@ describe('StudentDashboardController', () => {
       StudentModel.findOne.mockResolvedValue({ _id: 'student-id' });
       SystemConfigModel.findOne.mockResolvedValue(null);
 
-      const mockSort = jest.fn().mockResolvedValue([] as any);
+      const mockSort = jest.fn<any>().mockResolvedValue([] as any);
       const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
       });
@@ -427,7 +428,7 @@ describe('StudentDashboardController', () => {
       const mockPopulate1 = jest.fn().mockReturnValue({
         populate: mockPopulate2,
       });
-      BookingModel.find = jest.fn().mockReturnValue({
+      (BookingModel.find as jest.Mock) = jest.fn().mockReturnValue({
         populate: mockPopulate1,
       });
 
@@ -477,7 +478,7 @@ describe('StudentDashboardController', () => {
         professorId: mockBooking.scheduleId?.professorId || null,
         courtId: null, // No court assigned in this test
       };
-      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
+      const mockSort = jest.fn<any>().mockResolvedValue([finalBooking] as any);
       const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
       });
@@ -487,7 +488,7 @@ describe('StudentDashboardController', () => {
       const mockPopulate1 = jest.fn().mockReturnValue({
         populate: mockPopulate2,
       });
-      BookingModel.find = jest.fn().mockReturnValue({
+      (BookingModel.find as any) = jest.fn().mockReturnValue({
         populate: mockPopulate1,
       });
 
@@ -534,7 +535,7 @@ describe('StudentDashboardController', () => {
         professorId: mockBooking.scheduleId?.professorId || null,
         courtId: null, // No court assigned in this test
       };
-      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
+      const mockSort = jest.fn<any>().mockResolvedValue([finalBooking] as any);
       const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
       });
@@ -544,7 +545,7 @@ describe('StudentDashboardController', () => {
       const mockPopulate1 = jest.fn().mockReturnValue({
         populate: mockPopulate2,
       });
-      BookingModel.find = jest.fn().mockReturnValue({
+      (BookingModel.find as any) = jest.fn().mockReturnValue({
         populate: mockPopulate1,
       });
 
@@ -599,7 +600,7 @@ describe('StudentDashboardController', () => {
         professorId: mockBooking.scheduleId?.professorId || null,
         courtId: null, // No court assigned in this test
       };
-      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
+      const mockSort = jest.fn<any>().mockResolvedValue([finalBooking] as any);
       const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
       });
@@ -609,7 +610,7 @@ describe('StudentDashboardController', () => {
       const mockPopulate1 = jest.fn().mockReturnValue({
         populate: mockPopulate2,
       });
-      BookingModel.find = jest.fn().mockReturnValue({
+      (BookingModel.find as any) = jest.fn().mockReturnValue({
         populate: mockPopulate1,
       });
 
@@ -620,7 +621,7 @@ describe('StudentDashboardController', () => {
       const jsonCall = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
       expect(jsonCall).toHaveProperty('items');
       expect(Array.isArray(jsonCall.items)).toBe(true);
-      
+
       if (jsonCall.items.length > 0) {
         const item = jsonCall.items[0];
         expect(item).toHaveProperty('id');
@@ -630,13 +631,13 @@ describe('StudentDashboardController', () => {
         expect(item).toHaveProperty('price');
         expect(item).toHaveProperty('status');
         expect(item).toHaveProperty('createdAt');
-        
+
         expect(item.professor).toHaveProperty('id');
         expect(item.professor).toHaveProperty('name');
         expect(item.professor).toHaveProperty('email');
         expect(item.professor).toHaveProperty('specialties');
         expect(item.professor).toHaveProperty('pricing');
-        
+
         expect(item.schedule).toHaveProperty('id');
         expect(item.schedule).toHaveProperty('professorId');
         expect(item.schedule).toHaveProperty('startTime');
@@ -671,10 +672,10 @@ describe('StudentDashboardController', () => {
 
       const finalBooking = {
         ...mockBooking,
-        professorId: mockBooking.scheduleId?.professorId || null,
+        professorId: (mockBooking.scheduleId as any)?.professorId || null,
         courtId: null, // No court assigned in this test
       };
-      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
+      const mockSort = jest.fn<any>().mockResolvedValue([finalBooking] as any);
       const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
       });
@@ -711,9 +712,10 @@ describe('StudentDashboardController', () => {
 
     it('should return schedules grouped by tenant', async () => {
       // Arrange
-      const professorId = 'professor-id';
-      const tenantId1 = 'tenant-id-1';
-      const tenantId2 = 'tenant-id-2';
+      const mongoose = require('mongoose');
+      const professorId = new mongoose.Types.ObjectId().toString();
+      const tenantId1 = new mongoose.Types.ObjectId().toString();
+      const tenantId2 = new mongoose.Types.ObjectId().toString();
       mockRequest.params = { professorId };
 
       const { ProfessorModel } = require('../../infrastructure/database/models/ProfessorModel');
@@ -726,7 +728,7 @@ describe('StudentDashboardController', () => {
 
       const mockSchedules = [
         {
-          _id: 'schedule-1',
+          _id: new mongoose.Types.ObjectId().toString(),
           tenantId: { _id: tenantId1, name: 'Centro A', slug: 'centro-a', config: {} },
           professorId: professorId,
           date: new Date(),
@@ -736,7 +738,7 @@ describe('StudentDashboardController', () => {
           status: 'pending',
         },
         {
-          _id: 'schedule-2',
+          _id: new mongoose.Types.ObjectId().toString(),
           tenantId: { _id: tenantId1, name: 'Centro A', slug: 'centro-a', config: {} },
           professorId: professorId,
           date: new Date(),
@@ -746,7 +748,7 @@ describe('StudentDashboardController', () => {
           status: 'pending',
         },
         {
-          _id: 'schedule-3',
+          _id: new mongoose.Types.ObjectId().toString(),
           tenantId: { _id: tenantId2, name: 'Centro B', slug: 'centro-b', config: {} },
           professorId: professorId,
           date: new Date(),
@@ -757,20 +759,32 @@ describe('StudentDashboardController', () => {
         },
       ];
 
-      const mockFind = jest.fn().mockReturnValue({
-        populate: jest.fn().mockReturnValue({
-          sort: jest.fn().mockReturnValue({
-            limit: jest.fn().mockResolvedValue(mockSchedules),
-          }),
-        }),
+      const mockLimit = jest.fn<any>().mockResolvedValue(mockSchedules as any);
+      const mockSort = jest.fn().mockReturnValue({
+        limit: mockLimit,
+      });
+      const mockPopulate2 = jest.fn().mockReturnValue({
+        sort: mockSort,
+      });
+      const mockPopulate1 = jest.fn().mockReturnValue({
+        populate: mockPopulate2,
       });
 
-      ScheduleModel.find = mockFind;
+      const mockFind = jest.fn().mockReturnValue({
+        populate: mockPopulate1,
+      });
+
+      (ScheduleModel.find as any) = mockFind;
 
       // Act
       await controller.getProfessorSchedules(mockRequest, mockResponse);
 
       // Assert
+      if (mockResponse.json.mock.calls.length > 0 && !mockResponse.json.mock.calls[0][0].professorId) {
+        console.log('DEBUG - Response Status:', mockResponse.status.mock.calls[0]?.[0]);
+        console.log('DEBUG - Response Body:', JSON.stringify(mockResponse.json.mock.calls[0][0], null, 2));
+      }
+
       expect(ProfessorModel.findById).toHaveBeenCalledWith(professorId);
       expect(mockResponse.json).toHaveBeenCalled();
       const jsonCall = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
@@ -845,16 +859,16 @@ describe('StudentDashboardController', () => {
 
       const mockPopulate = jest.fn().mockReturnThis();
       const mockSort = jest.fn().mockReturnThis();
-      const mockLimit = jest.fn().mockResolvedValue(mockSchedules);
-      
+      const mockLimit = jest.fn<any>().mockResolvedValue(mockSchedules);
+
       const mockFind = jest.fn().mockReturnValue({
         populate: mockPopulate,
       });
-      
+
       mockPopulate.mockReturnValue({
         sort: mockSort,
       });
-      
+
       mockSort.mockReturnValue({
         limit: mockLimit,
       });
@@ -954,20 +968,20 @@ describe('StudentDashboardController', () => {
       const mockPopulate1 = jest.fn().mockReturnThis();
       const mockPopulate2 = jest.fn().mockReturnThis();
       const mockSort = jest.fn().mockReturnThis();
-      const mockLimit = jest.fn().mockResolvedValue(mockSchedules);
-      
+      const mockLimit = jest.fn<any>().mockResolvedValue(mockSchedules);
+
       const mockFind = jest.fn().mockReturnValue({
         populate: mockPopulate1,
       });
-      
+
       mockPopulate1.mockReturnValue({
         populate: mockPopulate2,
       });
-      
+
       mockPopulate2.mockReturnValue({
         sort: mockSort,
       });
-      
+
       mockSort.mockReturnValue({
         limit: mockLimit,
       });
@@ -1042,14 +1056,14 @@ describe('StudentDashboardController', () => {
         },
       ];
 
-      const mockPopulate = jest.fn().mockResolvedValue(mockStudentTenants);
+      const mockPopulate = jest.fn<any>().mockResolvedValue(mockStudentTenants);
       const mockSort = jest.fn().mockReturnValue({ populate: mockPopulate });
       StudentTenantModel.find = jest.fn().mockReturnValue({ sort: mockSort });
 
       // Mock BookingModel.findOne with chainable methods
       // Create a factory function that returns a new chainable object each time
       const createBookingChain = (bookingData: any) => {
-        const mockLean = jest.fn().mockResolvedValue(bookingData);
+        const mockLean = jest.fn<any>().mockResolvedValue(bookingData);
         const mockLimit = jest.fn().mockReturnValue({ lean: mockLean });
         const mockSort = jest.fn().mockReturnValue({ limit: mockLimit });
         return { sort: mockSort };
@@ -1090,7 +1104,7 @@ describe('StudentDashboardController', () => {
       AuthUserModel.findOne.mockResolvedValue({ _id: 'auth-user-id' });
       StudentModel.findOne.mockResolvedValue({ _id: 'student-id' });
 
-      const mockPopulate = jest.fn().mockResolvedValue([]);
+      const mockPopulate = jest.fn<any>().mockResolvedValue([]);
       const mockSort = jest.fn().mockReturnValue({ populate: mockPopulate });
       StudentTenantModel.find = jest.fn().mockReturnValue({ sort: mockSort });
 

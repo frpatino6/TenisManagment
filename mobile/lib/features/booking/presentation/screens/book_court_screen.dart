@@ -10,6 +10,7 @@ import '../providers/booking_provider.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../../tenant/domain/services/tenant_service.dart' as tenant_domain;
 import '../../../tenant/domain/models/tenant_model.dart';
+import '../../../student/presentation/providers/student_provider.dart';
 import '../../../../core/widgets/web_image.dart';
 
 /// Provider for available tenants for dropdown selection
@@ -1362,8 +1363,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         price: totalPrice,
       );
 
-      // Invalidate courts provider to refresh the list
+      // Invalidate providers to refresh data
       ref.invalidate(courtsProvider);
+      ref.invalidate(studentBookingsProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

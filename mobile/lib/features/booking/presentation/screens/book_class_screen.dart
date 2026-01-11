@@ -11,6 +11,7 @@ import '../../domain/models/available_schedule_model.dart';
 import '../../domain/models/service_type.dart';
 import '../providers/booking_provider.dart';
 import '../../../preferences/presentation/providers/preferences_provider.dart';
+import '../../../student/presentation/providers/student_provider.dart';
 import '../../../../core/providers/tenant_provider.dart';
 
 class BookClassScreen extends ConsumerStatefulWidget {
@@ -898,6 +899,7 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
       if (!mounted) return;
 
       ref.invalidate(professorsProvider);
+      ref.invalidate(studentBookingsProvider);
       if (_selectedProfessor != null) {
         ref.invalidate(availableSchedulesProvider(_selectedProfessor!.id));
       }

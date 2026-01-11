@@ -42,7 +42,7 @@ Para que tu backend siempre tenga la misma dirección y el puerto 3000 esté abi
     *   **Nombre:** `allow-backend-3000`.
     *   **Destinos:** `Todas las instancias de la red`.
     *   **Rangos de IP de origen:** `0.0.0.0/0` (Todo el mundo).
-    *   **Protocolos y puertos:** Marca `TCP` y escribe `3000`.
+    *   **Protocolos y puertos:** Marca `TCP` y escribe `3000, 80, 443`.
     *   Haz clic en **Crear**.
 
 ---
@@ -103,10 +103,39 @@ sudo usermod -aG docker $USER
 4.  Copia el `docker-compose.yml` que creamos:
     ```bash
     nano docker-compose.yml
-    # Pega el contenido del docker-compose.yml de tu proyecto.
-    # Asegúrate de cambiar 'image:' por la URL de tu imagen en GitHub (ghcr.io/...)
+    # Pega el contenido con Caddy (ver abajo)
     ```
-    *Para ver la URL exacta de tu imagen, ve a la página principal de tu repo en GitHub, columna derecha "Packages"*.
+
+    **Contenido de docker-compose.yml:**
+    ```yaml
+    services:
+      backend:
+        container_name: tennis-backend
+        image: ghcr.io/frpatino6/tenismanagment/backend:latest
+        restart: always
+        # Ports are handled by Caddy
+        # ports:
+        #   - "3000:3000" 
+        env_file:
+          - .env
+        environment:
+          - NODE_ENV=production
+        logging:
+          driver: "json-file"
+          options:
+            max-size: "10m"
+            max-file: "3"
+
+      caddy:
+        image: caddy:2-alpine
+        restart: always
+        ports:
+          - "80:80"
+          - "443:443"
+        command: caddy reverse-proxy --from https://34.57.81.166.nip.io --to http://backend:3000
+        depends_on:
+          - backend
+    ```
 
 ### C. Iniciar Servicio
 ```bash

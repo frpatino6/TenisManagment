@@ -7,8 +7,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
-import '../../../tenant/domain/models/tenant_model.dart';
-import '../../../tenant/domain/services/tenant_service.dart' as tenant_domain;
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -29,9 +27,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _obscureConfirmPassword = true;
   String _selectedRole = 'student';
   bool _acceptTerms = false;
-  String? _selectedTenantId;
-  List<TenantModel> _availableTenants = [];
-  bool _loadingTenants = false;
 
   @override
   void initState() {
@@ -41,27 +36,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _phoneController.text = '';
     _passwordController.text = '';
     _confirmPasswordController.text = '';
-  }
-
-  Future<void> _loadTenants() async {
-    setState(() {
-      _loadingTenants = true;
-    });
-
-    try {
-      final service = ref.read(tenant_domain.tenantDomainServiceProvider);
-      final tenants = await service.getAvailableTenants();
-
-      setState(() {
-        _availableTenants = tenants;
-        _loadingTenants = false;
-      });
-    } catch (e) {
-      setState(() {
-        _loadingTenants = false;
-        _availableTenants = [];
-      });
-    }
   }
 
   @override
@@ -257,11 +231,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
         const Gap(16),
 
-        if (_selectedRole == 'professor') ...[
-          _buildTenantSelector(context),
-          const Gap(16),
-        ],
-
         CustomTextField(
               controller: _passwordController,
               label: 'Contraseña',
@@ -351,12 +320,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               onChanged: (value) {
                 setState(() {
                   _selectedRole = value!;
-                  if (value == 'professor' && _availableTenants.isEmpty) {
-                    _loadTenants();
-                  }
-                  if (value == 'student') {
-                    _selectedTenantId = null;
-                  }
                 });
               },
               child: Row(
@@ -406,9 +369,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       onTap: () {
                         setState(() {
                           _selectedRole = 'professor';
-                          if (_availableTenants.isEmpty) {
-                            _loadTenants();
-                          }
                         });
                       },
                       child: Container(
@@ -453,228 +413,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         .slideY(begin: 0.2, end: 0);
   }
 
-  Widget _buildTenantSelector(BuildContext context) {
-    return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Centro *',
-              style: Theme.of(
-                context,
-              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500),
-            ),
-            const Gap(8),
-            if (_loadingTenants)
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outline.withValues(alpha: 0.3),
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Center(child: CircularProgressIndicator()),
-              )
-            else if (_availableTenants.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      color: Theme.of(context).colorScheme.error,
-                      size: 20,
-                    ),
-                    const Gap(12),
-                    Expanded(
-                      child: Text(
-                        'No hay centros disponibles. Contacta al administrador.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              Container(
-                key: ValueKey(_selectedTenantId),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _selectedTenantId != null
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(
-                            context,
-                          ).colorScheme.outline.withValues(alpha: 0.3),
-                    width: 1.5,
-                  ),
-                  color: Theme.of(context).colorScheme.surface,
-                ),
-                child: DropdownButtonFormField<String>(
-                  key: ValueKey('tenant_${_selectedTenantId ?? 'none'}'),
-                  initialValue: _selectedTenantId,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: 'Selecciona un centro',
-                    hintText: 'Elige el centro donde trabajarás',
-                    hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                    ),
-                    prefixIcon: Icon(
-                      Icons.business,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    focusedErrorBorder: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 16,
-                    ),
-                    errorText:
-                        _selectedRole == 'professor' &&
-                            _selectedTenantId == null
-                        ? 'Debes seleccionar un centro'
-                        : null,
-                    errorStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                  selectedItemBuilder: (BuildContext context) {
-                    return _availableTenants.map<Widget>((tenant) {
-                      return Row(
-                        children: [
-                          Icon(
-                            Icons.business,
-                            size: 20,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          const Gap(8),
-                          Expanded(
-                            child: Text(
-                              tenant.name,
-                              style: Theme.of(context).textTheme.bodyLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurface,
-                                  ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      );
-                    }).toList();
-                  },
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontSize: 16,
-                  ),
-                  dropdownColor: Theme.of(context).colorScheme.surface,
-                  icon: Icon(
-                    Icons.arrow_drop_down,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 28,
-                  ),
-                  iconSize: 28,
-                  borderRadius: BorderRadius.circular(12),
-                  items: _availableTenants.map((tenant) {
-                    final isSelected = tenant.id == _selectedTenantId;
-                    return DropdownMenuItem<String>(
-                      value: tenant.id,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? Theme.of(context).colorScheme.primaryContainer
-                                    .withValues(alpha: 0.2)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primaryContainer
-                                    .withValues(alpha: 0.3),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                Icons.sports_tennis,
-                                size: 20,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                            const Gap(12),
-                            Expanded(
-                              child: Text(
-                                tenant.name,
-                                style: Theme.of(context).textTheme.bodyLarge
-                                    ?.copyWith(
-                                      fontWeight: isSelected
-                                          ? FontWeight.w600
-                                          : FontWeight.w500,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurface,
-                                    ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                            ),
-                            if (isSelected) ...[
-                              const Gap(8),
-                              Icon(
-                                Icons.check_circle,
-                                color: Theme.of(context).colorScheme.primary,
-                                size: 20,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedTenantId = value;
-                    });
-                  },
-                  validator: (value) {
-                    if (_selectedRole == 'professor' &&
-                        (value == null || value.isEmpty)) {
-                      return 'Debes seleccionar un centro';
-                    }
-                    return null;
-                  },
-                ),
-              ),
-          ],
-        )
-        .animate()
-        .fadeIn(duration: 400.ms, delay: 1200.ms)
-        .slideY(begin: 0.2, end: 0);
-  }
+  // _buildTenantSelector REMOVED
 
   Widget _buildTermsCheckbox(BuildContext context) {
     return Row(
@@ -842,18 +581,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
 
-    if (_selectedRole == 'professor' &&
-        (_selectedTenantId == null || _selectedTenantId!.isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Debes seleccionar un centro para registrarte como profesor',
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
+    // Tenant ID is not required for professor registration (handled via invitation)
 
     try {
       await ref
@@ -864,7 +592,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             password: _passwordController.text,
             phone: _phoneController.text.trim(),
             role: _selectedRole,
-            tenantId: _selectedRole == 'professor' ? _selectedTenantId : null,
+            tenantId:
+                null, // Always null, handled by backend invitation logic or manual assignment
           );
 
       if (mounted) {

@@ -18,6 +18,7 @@ jest.mock('../../infrastructure/database/models/BookingModel', () => ({
   BookingModel: {
     find: jest.fn(),
     findOne: jest.fn(),
+    create: jest.fn(),
   },
 }));
 
@@ -65,6 +66,13 @@ jest.mock('../../infrastructure/database/models/CourtModel', () => ({
 jest.mock('../../infrastructure/database/models/StudentTenantModel', () => ({
   StudentTenantModel: {
     find: jest.fn(),
+  },
+}));
+
+jest.mock('../../infrastructure/database/models/ProfessorTenantModel', () => ({
+  ProfessorTenantModel: {
+    find: jest.fn(),
+    findOne: jest.fn(),
   },
 }));
 
@@ -189,7 +197,7 @@ describe('StudentDashboardController', () => {
         },
       });
 
-      const mockSort = jest.fn<any>().mockResolvedValue([finalBooking] as any);
+      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
       const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
       });
@@ -232,7 +240,7 @@ describe('StudentDashboardController', () => {
       StudentModel.findOne.mockResolvedValue({ _id: 'student-id' });
       SystemConfigModel.findOne.mockResolvedValue(null);
 
-      const mockSort = jest.fn<any>().mockResolvedValue([] as any);
+      const mockSort = jest.fn().mockResolvedValue([] as any);
       const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
       });
@@ -301,7 +309,7 @@ describe('StudentDashboardController', () => {
         professorId: mockBooking.scheduleId?.professorId || null,
         courtId: null, // No court assigned in this test
       };
-      const mockSort = jest.fn<any>().mockResolvedValue([finalBooking] as any);
+      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
       const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
       });
@@ -418,7 +426,7 @@ describe('StudentDashboardController', () => {
       StudentModel.findOne.mockResolvedValue({ _id: 'student-id' });
       SystemConfigModel.findOne.mockResolvedValue(null);
 
-      const mockSort = jest.fn<any>().mockResolvedValue([] as any);
+      const mockSort = jest.fn().mockResolvedValue([] as any);
       const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
       });
@@ -478,7 +486,7 @@ describe('StudentDashboardController', () => {
         professorId: mockBooking.scheduleId?.professorId || null,
         courtId: null, // No court assigned in this test
       };
-      const mockSort = jest.fn<any>().mockResolvedValue([finalBooking] as any);
+      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
       const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
       });
@@ -535,7 +543,7 @@ describe('StudentDashboardController', () => {
         professorId: mockBooking.scheduleId?.professorId || null,
         courtId: null, // No court assigned in this test
       };
-      const mockSort = jest.fn<any>().mockResolvedValue([finalBooking] as any);
+      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
       const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
       });
@@ -600,7 +608,7 @@ describe('StudentDashboardController', () => {
         professorId: mockBooking.scheduleId?.professorId || null,
         courtId: null, // No court assigned in this test
       };
-      const mockSort = jest.fn<any>().mockResolvedValue([finalBooking] as any);
+      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
       const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
       });
@@ -675,7 +683,7 @@ describe('StudentDashboardController', () => {
         professorId: (mockBooking.scheduleId as any)?.professorId || null,
         courtId: null, // No court assigned in this test
       };
-      const mockSort = jest.fn<any>().mockResolvedValue([finalBooking] as any);
+      const mockSort = jest.fn().mockResolvedValue([finalBooking] as any);
       const mockPopulate3 = jest.fn().mockReturnValue({
         sort: mockSort,
       });
@@ -759,7 +767,7 @@ describe('StudentDashboardController', () => {
         },
       ];
 
-      const mockLimit = jest.fn<any>().mockResolvedValue(mockSchedules as any);
+      const mockLimit = jest.fn().mockResolvedValue(mockSchedules as any);
       const mockSort = jest.fn().mockReturnValue({
         limit: mockLimit,
       });
@@ -834,11 +842,32 @@ describe('StudentDashboardController', () => {
         config: {},
       });
 
+      const { ProfessorTenantModel } = require('../../infrastructure/database/models/ProfessorTenantModel');
+
+      const mockProfessorTenants = [
+        { professorId: professorId1, isActive: true },
+        { professorId: professorId2, isActive: true },
+      ];
+
+      const mockSelect = jest.fn() as jest.Mock;
+      mockSelect.mockResolvedValue(mockProfessorTenants);
+      ProfessorTenantModel.find.mockReturnValue({
+        select: mockSelect
+      });
+
+
+
       const mockSchedules = [
         {
           _id: 'schedule-1',
           tenantId: new mongoose.Types.ObjectId(tenantId),
-          professorId: { _id: professorId1, name: 'Prof. A', email: 'prof-a@test.com', specialties: [] },
+          professorId: {
+            _id: professorId1,
+            name: 'Prof. A',
+            email: 'prof-a@test.com',
+            specialties: [],
+            toString: () => professorId1
+          },
           date: new Date(),
           startTime: new Date('2025-12-10T10:00:00Z'),
           endTime: new Date('2025-12-10T11:00:00Z'),
@@ -848,7 +877,13 @@ describe('StudentDashboardController', () => {
         {
           _id: 'schedule-2',
           tenantId: new mongoose.Types.ObjectId(tenantId),
-          professorId: { _id: professorId2, name: 'Prof. B', email: 'prof-b@test.com', specialties: [] },
+          professorId: {
+            _id: professorId2,
+            name: 'Prof. B',
+            email: 'prof-b@test.com',
+            specialties: [],
+            toString: () => professorId2
+          },
           date: new Date(),
           startTime: new Date('2025-12-10T14:00:00Z'),
           endTime: new Date('2025-12-10T15:00:00Z'),
@@ -856,10 +891,9 @@ describe('StudentDashboardController', () => {
           status: 'pending',
         },
       ];
-
       const mockPopulate = jest.fn().mockReturnThis();
       const mockSort = jest.fn().mockReturnThis();
-      const mockLimit = jest.fn<any>().mockResolvedValue(mockSchedules);
+      const mockLimit = jest.fn().mockResolvedValue(mockSchedules);
 
       const mockFind = jest.fn().mockReturnValue({
         populate: mockPopulate,
@@ -931,6 +965,18 @@ describe('StudentDashboardController', () => {
     it('should return all available schedules grouped by tenant and professor', async () => {
       // Arrange
       const { ScheduleModel } = require('../../infrastructure/database/models/ScheduleModel');
+      const { ProfessorTenantModel } = require('../../infrastructure/database/models/ProfessorTenantModel');
+
+      const mockActiveLinks = [
+        { professorId: 'prof-1', tenantId: 'tenant-1' },
+        { professorId: 'prof-2', tenantId: 'tenant-1' },
+        { professorId: 'prof-1', tenantId: 'tenant-2' },
+      ];
+
+      const mockSelect = jest.fn().mockResolvedValue(mockActiveLinks as any);
+      ProfessorTenantModel.find.mockReturnValue({
+        select: mockSelect
+      });
 
       const mockSchedules = [
         {
@@ -968,7 +1014,7 @@ describe('StudentDashboardController', () => {
       const mockPopulate1 = jest.fn().mockReturnThis();
       const mockPopulate2 = jest.fn().mockReturnThis();
       const mockSort = jest.fn().mockReturnThis();
-      const mockLimit = jest.fn<any>().mockResolvedValue(mockSchedules);
+      const mockLimit = jest.fn().mockResolvedValue(mockSchedules);
 
       const mockFind = jest.fn().mockReturnValue({
         populate: mockPopulate1,
@@ -1056,14 +1102,14 @@ describe('StudentDashboardController', () => {
         },
       ];
 
-      const mockPopulate = jest.fn<any>().mockResolvedValue(mockStudentTenants);
+      const mockPopulate = jest.fn().mockResolvedValue(mockStudentTenants);
       const mockSort = jest.fn().mockReturnValue({ populate: mockPopulate });
       StudentTenantModel.find = jest.fn().mockReturnValue({ sort: mockSort });
 
       // Mock BookingModel.findOne with chainable methods
       // Create a factory function that returns a new chainable object each time
       const createBookingChain = (bookingData: any) => {
-        const mockLean = jest.fn<any>().mockResolvedValue(bookingData);
+        const mockLean = jest.fn().mockResolvedValue(bookingData);
         const mockLimit = jest.fn().mockReturnValue({ lean: mockLean });
         const mockSort = jest.fn().mockReturnValue({ limit: mockLimit });
         return { sort: mockSort };
@@ -1104,7 +1150,7 @@ describe('StudentDashboardController', () => {
       AuthUserModel.findOne.mockResolvedValue({ _id: 'auth-user-id' });
       StudentModel.findOne.mockResolvedValue({ _id: 'student-id' });
 
-      const mockPopulate = jest.fn<any>().mockResolvedValue([]);
+      const mockPopulate = jest.fn().mockResolvedValue([]);
       const mockSort = jest.fn().mockReturnValue({ populate: mockPopulate });
       StudentTenantModel.find = jest.fn().mockReturnValue({ sort: mockSort });
 
@@ -1154,6 +1200,150 @@ describe('StudentDashboardController', () => {
 
       // Assert
       expect(mockResponse.status).toHaveBeenCalledWith(404);
+    });
+  });
+
+  describe('bookLesson - TEN-96 (Security Check)', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should return 403 if professor is not active in tenant', async () => {
+      // Arrange
+      const firebaseUid = 'test-uid';
+      const authUserId = 'auth-user-id';
+      const studentId = 'student-id';
+      const professorId = 'professor-id';
+      const tenantId = 'tenant-id';
+      const scheduleId = 'schedule-id';
+
+      mockRequest.user = { uid: firebaseUid };
+      mockRequest.body = {
+        scheduleId,
+        serviceType: 'individual_class',
+        price: 50000
+      };
+
+      const { AuthUserModel } = require('../../infrastructure/database/models/AuthUserModel');
+      const { StudentModel } = require('../../infrastructure/database/models/StudentModel');
+      const { ScheduleModel } = require('../../infrastructure/database/models/ScheduleModel');
+      const { ProfessorModel } = require('../../infrastructure/database/models/ProfessorModel');
+      const { ProfessorTenantModel } = require('../../infrastructure/database/models/ProfessorTenantModel');
+
+      AuthUserModel.findOne.mockResolvedValue({ _id: authUserId });
+      StudentModel.findOne.mockResolvedValue({ _id: studentId });
+
+      ScheduleModel.findById.mockResolvedValue({
+        _id: scheduleId,
+        professorId: professorId,
+        tenantId: tenantId,
+        isAvailable: true
+      });
+
+      ProfessorModel.findById.mockResolvedValue({ _id: professorId });
+
+      // Mock ProfessorTenantModel to return null (not active)
+      ProfessorTenantModel.findOne.mockResolvedValue(null);
+
+      // Act
+      await controller.bookLesson(mockRequest, mockResponse);
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(403);
+      expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
+        error: expect.stringContaining('El profesor ya no está asociado activamente')
+      }));
+    });
+
+    it('should proceed if professor is active in tenant', async () => {
+      // Arrange
+      const firebaseUid = 'test-uid';
+      const authUserId = 'auth-user-id';
+      const studentId = 'student-id';
+      const professorId = 'professor-id';
+      const tenantId = 'tenant-id';
+      const scheduleId = 'schedule-id';
+      const courtId = 'court-id';
+
+      mockRequest.user = { uid: firebaseUid };
+      mockRequest.body = {
+        scheduleId,
+        serviceType: 'individual_class',
+        price: 50000
+      };
+
+      const { AuthUserModel } = require('../../infrastructure/database/models/AuthUserModel');
+      const { StudentModel } = require('../../infrastructure/database/models/StudentModel');
+      const { ScheduleModel } = require('../../infrastructure/database/models/ScheduleModel');
+      const { ProfessorModel } = require('../../infrastructure/database/models/ProfessorModel');
+      const { ProfessorTenantModel } = require('../../infrastructure/database/models/ProfessorTenantModel');
+      const { BookingModel } = require('../../infrastructure/database/models/BookingModel');
+      const { CourtModel } = require('../../infrastructure/database/models/CourtModel');
+
+      AuthUserModel.findOne.mockResolvedValue({ _id: authUserId });
+      StudentModel.findOne.mockResolvedValue({ _id: studentId });
+
+      const mockSchedule = {
+        _id: scheduleId,
+        professorId: professorId,
+        tenantId: tenantId,
+        startDate: new Date(),
+        endDate: new Date(),
+        startTime: new Date(),
+        endTime: new Date(),
+        isAvailable: true,
+        save: jest.fn().mockResolvedValue(true)
+      };
+      ScheduleModel.findById.mockResolvedValue(mockSchedule);
+
+      ProfessorModel.findById.mockResolvedValue({ _id: professorId });
+
+      // Mock ProfessorTenantModel to return active record
+      ProfessorTenantModel.findOne.mockResolvedValue({
+        professorId,
+        tenantId,
+        isActive: true
+      });
+
+      // Mock Court availability
+      CourtModel.find.mockReturnValue({
+        lean: jest.fn().mockResolvedValue([{ _id: courtId, name: 'Cancha 1', isActive: true }])
+      });
+      const { BookingModel: MockBookingModel } = require('../../infrastructure/database/models/BookingModel');
+      // Mock finding no conflicts
+      MockBookingModel.find.mockReturnValue({
+        populate: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue([])
+        })
+      });
+
+      BookingModel.create.mockResolvedValue({
+        _id: 'booking-id',
+        studentId,
+        scheduleId: mockSchedule,
+        courtId,
+        serviceType: 'individual_class',
+        price: 50000,
+        status: 'confirmed',
+        createdAt: new Date()
+      });
+
+      // Mock TenantService
+      // @ts-ignore
+      controller.tenantService = {
+        addStudentToTenant: jest.fn().mockResolvedValue(true)
+      } as any;
+
+      // Act
+      await controller.bookLesson(mockRequest, mockResponse);
+
+      // Assert
+      expect(ProfessorTenantModel.findOne).toHaveBeenCalledWith({
+        professorId: professorId,
+        tenantId: tenantId,
+        isActive: true
+      });
+      expect(mockResponse.status).toHaveBeenCalledWith(201);
     });
   });
 });

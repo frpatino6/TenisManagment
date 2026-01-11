@@ -76,9 +76,16 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
   }
 
   Widget _buildProfessorContent(BuildContext context, professor) {
+    final tenantsAsync = ref.watch(professorTenantsProvider);
+    final hasTenants = tenantsAsync.maybeWhen(
+      data: (tenants) => tenants.isNotEmpty,
+      orElse: () => false,
+    );
+
     return RefreshIndicator(
       onRefresh: () async {
         ref.read(professorNotifierProvider.notifier).refreshAll();
+        ref.invalidate(professorTenantsProvider);
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -96,17 +103,20 @@ class _ProfessorHomeScreenState extends ConsumerState<ProfessorHomeScreen> {
             const ProfessorProfileCard(),
             const Gap(24),
 
-            _buildTodaySchedule(context),
-            const Gap(24),
+            if (hasTenants) ...[
+              _buildTodaySchedule(context),
+              const Gap(24),
 
-            _buildQuickActionsGrid(context),
-            const Gap(24),
+              _buildQuickActionsGrid(context),
+              const Gap(24),
 
-            _buildQuickStats(context),
-            const Gap(24),
+              _buildQuickStats(context),
+              const Gap(24),
 
-            _buildEarningsSection(context),
-            const Gap(24),
+              _buildEarningsSection(context),
+              const Gap(24),
+            ],
+
             Center(
               child:
                   VersionBadge(

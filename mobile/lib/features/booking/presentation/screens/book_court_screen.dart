@@ -10,6 +10,7 @@ import '../providers/booking_provider.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../../tenant/domain/services/tenant_service.dart' as tenant_domain;
 import '../../../tenant/domain/models/tenant_model.dart';
+import '../../../student/presentation/providers/student_provider.dart';
 import '../../../../core/widgets/web_image.dart';
 
 /// Provider for available tenants for dropdown selection
@@ -745,10 +746,18 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         onTap: () {
           setState(() {
             _selectedCourt = court;
-            _selectedDate = null;
             _selectedTime = null;
           });
-          // Scroll to bottom after state update to show date selection with a slight delay
+
+          if (_selectedDate != null) {
+            ref.invalidate(
+              courtAvailableSlotsProvider((
+                courtId: court.id,
+                date: _selectedDate!,
+              )),
+            );
+          }
+
           Future.delayed(const Duration(milliseconds: 300), () {
             if (mounted && _scrollController.hasClients) {
               _scrollController.animateTo(
@@ -1354,8 +1363,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         price: totalPrice,
       );
 
-      // Invalidate courts provider to refresh the list
+      // Invalidate providers to refresh data
       ref.invalidate(courtsProvider);
+      ref.invalidate(studentBookingsProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

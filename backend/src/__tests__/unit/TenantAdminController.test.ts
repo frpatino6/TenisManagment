@@ -20,6 +20,19 @@ import { StudentTenantModel } from '../../infrastructure/database/models/Student
 import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { ScheduleModel } from '../../infrastructure/database/models/ScheduleModel';
 import { Request, Response } from 'express';
+import { EmailService } from '../../infrastructure/services/EmailService';
+
+// Mock EmailService
+const mockSendInvitationEmail = jest.fn().mockResolvedValue(true);
+jest.mock('../../infrastructure/services/EmailService', () => {
+  return {
+    EmailService: jest.fn().mockImplementation(() => {
+      return {
+        sendInvitationEmail: mockSendInvitationEmail,
+      };
+    }),
+  };
+});
 
 describe('TenantAdminController', () => {
   let mongo: MongoMemoryServer;
@@ -89,6 +102,8 @@ describe('TenantAdminController', () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
     };
+
+    mockSendInvitationEmail.mockClear();
   });
 
   afterAll(async () => {
@@ -243,6 +258,8 @@ describe('TenantAdminController', () => {
           tenantId,
         }),
       );
+
+      expect(mockSendInvitationEmail).toHaveBeenCalledWith('prof@test.com', 'Test Center');
     });
 
     it('should return 400 if email is missing', async () => {
@@ -266,6 +283,8 @@ describe('TenantAdminController', () => {
           message: 'Profesor agregado al tenant exitosamente',
         }),
       );
+
+      expect(mockSendInvitationEmail).toHaveBeenCalledWith('nonexistent@test.com', 'Test Center');
     });
   });
 

@@ -18,6 +18,12 @@ const EnvSchema = z.object({
     .default(15 * 60 * 1000),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
   RATE_LIMIT_AUTH_MAX: z.coerce.number().int().positive().default(20),
+  // Email Configuration
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().optional().default(587),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional().default('"Tennis Management" <noreply@tennismanagement.com>'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);
@@ -55,6 +61,13 @@ export const config = {
     projectId: env.FIREBASE_PROJECT_ID,
     privateKey: env.FIREBASE_PRIVATE_KEY,
     clientEmail: env.FIREBASE_CLIENT_EMAIL,
+  },
+  email: {
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    user: env.SMTP_USER,
+    pass: env.SMTP_PASS,
+    from: env.SMTP_FROM,
   },
 } as const;
 

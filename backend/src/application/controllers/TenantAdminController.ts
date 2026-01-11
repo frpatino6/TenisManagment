@@ -20,10 +20,13 @@ import { StudentTenantModel } from '../../infrastructure/database/models/Student
 import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { Logger } from '../../infrastructure/services/Logger';
 import { Types } from 'mongoose';
+import { EmailService } from '../../infrastructure/services/EmailService';
 
 const logger = new Logger({ module: 'TenantAdminController' });
 
 export class TenantAdminController {
+  private emailService = new EmailService();
+
   constructor(private readonly tenantService: TenantService) { }
 
   /**
@@ -338,9 +341,14 @@ export class TenantAdminController {
         .populate('professorId')
         .lean();
 
-      const professors = await Promise.all(
+      const professorsData = await Promise.all(
         professorTenants.map(async (pt) => {
           const professor = pt.professorId as any;
+
+          if (!professor) {
+            return null;
+          }
+
           const professorAuth = await AuthUserModel.findById(professor.authUserId).lean();
 
           // Contar bookings del profesor en este tenant
@@ -365,6 +373,8 @@ export class TenantAdminController {
           };
         }),
       );
+
+      const professors = professorsData.filter((p) => p !== null);
 
       res.json({ professors });
     } catch (error) {
@@ -444,7 +454,13 @@ export class TenantAdminController {
         pricing,
       );
 
-      // TODO: Enviar email de invitación
+      // Enviar email de invitación
+      const tenant = await TenantModel.findById(tenantId).select('name');
+      if (tenant) {
+        await this.emailService.sendInvitationEmail(email, tenant.name);
+      } else {
+        logger.warn('Tenant no encontrado al enviar invitación', { tenantId });
+      }
 
       res.status(201).json({
         id: professorTenant._id.toString(),

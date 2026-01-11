@@ -22,6 +22,23 @@ const DEFAULT_BASE_PRICING = {
   courtRental: 25000,
 };
 
+/**
+ * Interface that extends the Express Request to include properties
+ * added by authentication and tenant middlewares.
+ * Compatibility with src/types/express/index.d.ts
+ */
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    role: any;
+    uid?: string;
+    email?: string;
+    [key: string]: any;
+  };
+  tenantId?: string;
+  requestId?: string;
+}
+
 export class StudentDashboardController {
   private tenantService: TenantService;
 
@@ -105,7 +122,7 @@ export class StudentDashboardController {
   /**
    * Get student's recent activities (bookings, payments, service requests)
    */
-  getRecentActivities = async (req: Request, res: Response) => {
+  public getRecentActivities = async (req: AuthenticatedRequest, res: Response) => {
     console.log('=== StudentDashboardController.getRecentActivities called ===');
     console.log('req.user:', req.user);
 
@@ -245,7 +262,7 @@ export class StudentDashboardController {
   /**
    * Get student info/profile
    */
-  getStudentInfo = async (req: Request, res: Response) => {
+  public getStudentInfo = async (req: AuthenticatedRequest, res: Response) => {
     console.log('=== StudentDashboardController.getStudentInfo called ===');
 
     try {
@@ -292,7 +309,7 @@ export class StudentDashboardController {
    * Get list of professors for the active tenant
    * TEN-96: Updated to filter by tenant (multi-tenancy)
    */
-  getProfessors = async (req: Request, res: Response) => {
+  public getProfessors = async (req: AuthenticatedRequest, res: Response) => {
     try {
       const tenantId = req.tenantId;
       if (!tenantId) {
@@ -357,7 +374,7 @@ export class StudentDashboardController {
    * Get available schedules for a specific professor
    * TEN-90: Actualizado para mantener compatibilidad
    */
-  getAvailableSchedules = async (req: Request, res: Response) => {
+  public getAvailableSchedules = async (req: AuthenticatedRequest, res: Response) => {
     console.log('=== StudentDashboardController.getAvailableSchedules called ===');
 
     try {
@@ -378,20 +395,40 @@ export class StudentDashboardController {
         ]
       })
         .populate('tenantId', 'name slug config')
+        .populate('courtId', 'name')
         .sort({ startTime: 1 })
         .limit(100);
 
-      const schedulesData = schedules.map(schedule => ({
-        id: schedule._id.toString(),
-        professorId: schedule.professorId.toString(),
-        tenantId: schedule.tenantId ? (schedule.tenantId as any)._id.toString() : null,
-        tenantName: schedule.tenantId ? (schedule.tenantId as any).name : null,
-        startTime: schedule.startTime,
-        endTime: schedule.endTime,
-        type: 'individual_class', // Default type since we removed it from schedule
-        price: 0, // Price is now set during booking
-        status: schedule.status
-      }));
+      const schedulesData: any[] = [];
+
+      for (const schedule of schedules) {
+        const tenantId = schedule.tenantId ? (schedule.tenantId as any)._id.toString() : null;
+
+        // SECURITY CHECK: Verify if professor is active in this tenant
+        if (tenantId) {
+          const isActive = await ProfessorTenantModel.exists({
+            professorId: new Types.ObjectId(professorId as string),
+            tenantId: new Types.ObjectId(tenantId),
+            isActive: true
+          });
+
+          if (!isActive) continue;
+        }
+
+        schedulesData.push({
+          id: schedule._id.toString(),
+          professorId: schedule.professorId.toString(),
+          tenantId: schedule.tenantId ? (schedule.tenantId as any)._id.toString() : null,
+          tenantName: schedule.tenantId ? (schedule.tenantId as any).name : null,
+          courtId: schedule.courtId ? (schedule.courtId as any)._id.toString() : null,
+          courtName: schedule.courtId ? (schedule.courtId as any).name : null,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime,
+          type: 'individual_class', // Default type since we removed it from schedule
+          price: 0, // Price is now set during booking
+          status: schedule.status
+        });
+      }
 
       console.log(`Found ${schedulesData.length} available schedules for professor ${professorId}`);
       res.json({ items: schedulesData });
@@ -433,6 +470,7 @@ export class StudentDashboardController {
         ]
       })
         .populate('tenantId', 'name slug config')
+        .populate('courtId', 'name')
         .sort({ startTime: 1 })
         .limit(200);
 
@@ -460,6 +498,10 @@ export class StudentDashboardController {
           endTime: schedule.endTime,
           status: schedule.status || 'pending',
           notes: schedule.notes,
+          isAvailable: schedule.isAvailable,
+          isBlocked: schedule.isBlocked,
+          courtId: schedule.courtId ? (schedule.courtId as any)._id.toString() : null,
+          courtName: schedule.courtId ? (schedule.courtId as any).name : null,
         });
       }
 
@@ -502,9 +544,18 @@ export class StudentDashboardController {
         return res.status(400).json({ error: 'El centro no está activo' });
       }
 
-      // Get all available schedules for this tenant
+      // Get active professors for this tenant first
+      const activeProfessorTenants = await ProfessorTenantModel.find({
+        tenantId: new Types.ObjectId(tenantId),
+        isActive: true
+      }).select('professorId');
+
+      const activeProfessorIds = activeProfessorTenants.map(pt => pt.professorId);
+
+      // Get all available schedules for this tenant, filtering by active professors
       const schedules = await ScheduleModel.find({
         tenantId: new Types.ObjectId(tenantId),
+        professorId: { $in: activeProfessorIds }, // Only show active professors
         startTime: { $gte: new Date() }, // Only future schedules
         isAvailable: true, // Only available slots
         $or: [
@@ -569,6 +620,13 @@ export class StudentDashboardController {
 
     try {
       // Get all available schedules across all tenants
+      // Get active professor-tenant relationships first
+      const activeLinks = await ProfessorTenantModel.find({ isActive: true }).select('professorId tenantId');
+
+      // Create a Set of valid "tenantId:professorId" strings for fast lookup
+      const validLinks = new Set(activeLinks.map(link => `${link.tenantId.toString()}:${link.professorId.toString()}`));
+
+      // Get all future schedules
       const schedules = await ScheduleModel.find({
         startTime: { $gte: new Date() }, // Only future schedules
         isAvailable: true, // Only available slots
@@ -582,13 +640,20 @@ export class StudentDashboardController {
         .sort({ startTime: 1 })
         .limit(500);
 
-      // Group by tenant first, then by professor
+      // Group by tenant first, then by professor AND filter invalid links
       const groupedByTenant: Record<string, any> = {};
 
       for (const schedule of schedules) {
         const tenantId = schedule.tenantId ? (schedule.tenantId as any)._id.toString() : 'unknown';
+        const professorId = schedule.professorId ? (schedule.professorId as any)._id.toString() : 'unknown';
+
+        // SECURITY CHECK: Skip if this specific professor-tenant combination is not active
+        if (!validLinks.has(`${tenantId}:${professorId}`)) {
+          continue;
+        }
+
         const tenant = schedule.tenantId as any;
-        const professorId = schedule.professorId ? schedule.professorId.toString() : 'unknown';
+
         const professor = schedule.professorId as any;
 
         if (!groupedByTenant[tenantId]) {
@@ -641,7 +706,7 @@ export class StudentDashboardController {
   /**
    * Book a lesson
    */
-  bookLesson = async (req: Request, res: Response) => {
+  public bookLesson = async (req: AuthenticatedRequest, res: Response) => {
     console.log('=== StudentDashboardController.bookLesson called ===');
 
     try {
@@ -704,6 +769,19 @@ export class StudentDashboardController {
         return res.status(400).json({ error: 'El horario no tiene un tenant asociado' });
       }
 
+      // Verify if the professor is still active in this tenant
+      const professorTenant = await ProfessorTenantModel.findOne({
+        professorId: professor._id,
+        tenantId: tenantId,
+        isActive: true
+      });
+
+      if (!professorTenant) {
+        return res.status(403).json({
+          error: 'El profesor ya no está asociado activamente a este centro. No se pueden realizar reservas.'
+        });
+      }
+
       // Ensure StudentTenant relationship exists (creates if not exists)
       await this.tenantService.addStudentToTenant(
         student._id.toString(),
@@ -763,7 +841,7 @@ export class StudentDashboardController {
   /**
    * Get student bookings
    */
-  getBookings = async (req: Request, res: Response) => {
+  public getBookings = async (req: AuthenticatedRequest, res: Response) => {
     console.log('=== StudentDashboardController.getBookings called ===');
     console.log('req.user:', req.user);
 
@@ -915,7 +993,7 @@ export class StudentDashboardController {
    * Book a court (court rental)
    * TEN-89: MT-BACK-007
    */
-  bookCourt = async (req: Request, res: Response) => {
+  public bookCourt = async (req: AuthenticatedRequest, res: Response) => {
     console.log('=== StudentDashboardController.bookCourt called ===');
 
     try {
@@ -1096,7 +1174,7 @@ export class StudentDashboardController {
    * TEN-91: MT-BACK-009
    * GET /api/student-dashboard/tenants
    */
-  getMyTenants = async (req: Request, res: Response) => {
+  public getMyTenants = async (req: AuthenticatedRequest, res: Response) => {
     console.log('=== StudentDashboardController.getMyTenants called ===');
 
     try {
@@ -1196,7 +1274,7 @@ export class StudentDashboardController {
    * Get available time slots for a court on a specific date
    * GET /api/student-dashboard/courts/:courtId/available-slots?date=YYYY-MM-DD
    */
-  getCourtAvailableSlots = async (req: Request, res: Response): Promise<void> => {
+  getCourtAvailableSlots = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const { courtId } = req.params;
       const { date } = req.query;
@@ -1440,7 +1518,7 @@ export class StudentDashboardController {
    * TEN-96: MT-FRONT-005
    * GET /api/student-dashboard/courts
    */
-  getCourts = async (req: Request, res: Response): Promise<void> => {
+  getCourts = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const tenantId = req.tenantId;
       if (!tenantId) {
@@ -1475,7 +1553,7 @@ export class StudentDashboardController {
    * Get user preferences (favorite professors and tenants)
    * GET /api/student-dashboard/preferences
    */
-  getPreferences = async (req: Request, res: Response): Promise<void> => {
+  getPreferences = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const authUser = req.user;
       if (!authUser) {
@@ -1523,7 +1601,7 @@ export class StudentDashboardController {
    * Add professor to favorites
    * POST /api/student-dashboard/preferences/favorite-professor
    */
-  addFavoriteProfessor = async (req: Request, res: Response): Promise<void> => {
+  addFavoriteProfessor = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const authUser = req.user;
       if (!authUser) {
@@ -1572,7 +1650,7 @@ export class StudentDashboardController {
    * Remove professor from favorites
    * DELETE /api/student-dashboard/preferences/favorite-professor/:professorId
    */
-  removeFavoriteProfessor = async (req: Request, res: Response): Promise<void> => {
+  removeFavoriteProfessor = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const authUser = req.user;
       if (!authUser) {
@@ -1609,7 +1687,7 @@ export class StudentDashboardController {
    * Add tenant to favorites
    * POST /api/student-dashboard/preferences/favorite-tenant
    */
-  addFavoriteTenant = async (req: Request, res: Response): Promise<void> => {
+  addFavoriteTenant = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const authUser = req.user;
       if (!authUser) {
@@ -1658,7 +1736,7 @@ export class StudentDashboardController {
    * Remove tenant from favorites
    * DELETE /api/student-dashboard/preferences/favorite-tenant/:tenantId
    */
-  removeFavoriteTenant = async (req: Request, res: Response): Promise<void> => {
+  removeFavoriteTenant = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const authUser = req.user;
       if (!authUser) {
@@ -1696,7 +1774,7 @@ export class StudentDashboardController {
    * Returns the first favorite tenant (no longer uses activeTenantId)
    * GET /api/student-dashboard/active-tenant
    */
-  getActiveTenant = async (req: Request, res: Response): Promise<void> => {
+  getActiveTenant = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
@@ -1749,7 +1827,7 @@ export class StudentDashboardController {
    * POST /api/student-dashboard/active-tenant
    * Body: { tenantId: string }
    */
-  setActiveTenant = async (req: Request, res: Response): Promise<void> => {
+  setActiveTenant = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {

@@ -13,7 +13,7 @@ import 'main_common.dart';
 /// - ./scripts/run_uat.sh
 ///
 /// Configuración:
-/// - Backend: https://tenismanagment-uat.onrender.com
+/// - Backend: https://34.57.81.166.nip.io
 /// - Firebase: tennis-management-fcd54 (Mismo que prod por ahora)
 /// - Debug logs: Habilitados
 /// - App name: "Tennis UAT"

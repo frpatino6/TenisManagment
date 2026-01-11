@@ -1,0 +1,29 @@
+services:
+  backend:
+    container_name: tennis-backend
+    # La imagen se descargará de tu registro (GitHub Packages o Docker Hub)
+    # Reemplaza 'ghcr.io/usuario/repo:tag' con la ruta real más tarde
+    image: ${DOCKER_IMAGE_NAME:-tennis-management-backend:latest}
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    # Limitamos logs para no llenar el disco de la VM free tier
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    command: caddy reverse-proxy --from https://34.57.81.166.nip.io --to http://backend:3000
+    depends_on:
+      - backend

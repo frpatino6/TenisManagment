@@ -46,6 +46,7 @@ router.delete('/courts/:id', controller.deleteCourt);
 
 // Métricas del centro
 router.get('/metrics', controller.getMetrics);
+router.get('/analytics/overview', controller.getAnalyticsOverview);
 
 // Gestión de reservas
 router.get('/bookings', controller.listBookings);

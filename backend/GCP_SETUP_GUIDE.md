@@ -98,6 +98,11 @@ sudo usermod -aG docker $USER
     nano .env
     # Pega tu contenido. Guarda con Ctrl+O, Enter. Sal con Ctrl+X.
     ```
+    > ⚠️ **Importante**:
+    > 1. Asegúrate de que `MONGO_URI` sea la URL de conexión a MongoDB Atlas.
+    > 2. Agrega esta línea para permitir que tu Flutter Web (Localhost) se conecte:
+    >    `CORS_ORIGINS=http://localhost:XYZ,https://tu-app-en-render.com` 
+    >    *(Reemplaza XYZ con el puerto que use tu flutter run -d chrome, suelen ser variables)*
     > ⚠️ **Importante**: Asegúrate de que `MONGO_URI` sea la URL de conexión a MongoDB Atlas, no `localhost`.
 
 4.  Copia el `docker-compose.yml` que creamos:
@@ -148,4 +153,41 @@ docker compose pull
 docker compose up -d
 ```
 
-¡Listo! Tu backend debería estar corriendo en `http://TU_IP_PUBLICA:3000`.
+¡Listo! Tu backend debería estar corriendo en `https://34.57.81.166.nip.io` (Seguro con HTTPS).
+
+---
+
+## 5. 🔄 Rutina de Despliegue (Actualizar versión)
+
+Cada vez que quieras subir cambios nuevos a producción:
+
+1.  **En GitHub:**
+    *   Haz merge de tus cambios a `main`.
+    *   Ve a **Actions** -> **Build & Push Backend** -> **Run workflow**.
+
+2.  **En la VM (SSH):**
+    ```bash
+    # Descargar la última versión de tu imagen
+    sudo docker compose pull
+
+    # Reiniciar los servicios (Caddy y Backend)
+    sudo docker compose up -d --remove-orphans
+    ```
+
+---
+
+## 6. ⚙️ Actualizar Variables de Entorno (.env)
+
+Si necesitas cambiar la base de datos, claves o configuración CORS:
+
+1.  **Edita el archivo (Recomendado usar nano):**
+    ```bash
+    nano .env
+    # Edita, Ctrl+O (Guardar), Ctrl+X (Salir)
+    ```
+
+2.  **⚠️ IMPORTANTE: Aplicar cambios**
+    No uses `restart`. Debes recrear el contenedor para que lea las variables nuevas:
+    ```bash
+    sudo docker compose up -d --force-recreate backend
+    ```

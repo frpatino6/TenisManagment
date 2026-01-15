@@ -816,8 +816,44 @@ export class TenantAdminController {
   };
 
   /**
+   * GET /api/tenant/analytics/overview
+   * Obtener visión general de métricas del centro
+   */
+  getAnalyticsOverview = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const { period = 'month' } = req.query;
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
+      // Get date range based on period
+      const dateRange = this.getDateRange(period as string);
+
+      // Get metrics
+      const metrics = await this.getTenantMetrics(tenantObjectId, dateRange);
+
+      // Get charts
+      const charts = await this.getTenantCharts(tenantObjectId, dateRange);
+
+      res.json({
+        metrics,
+        charts,
+        lastUpdated: new Date().toISOString(),
+        period: period as string,
+      });
+    } catch (error) {
+      logger.error('Error obteniendo analytics overview', { error: (error as Error).message });
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * Helper actual para métricas básicas (legacy)
    * GET /api/tenant/metrics
-   * Obtener métricas del centro
    */
   getMetrics = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -896,6 +932,250 @@ export class TenantAdminController {
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
+
+  // Helper Methods for Analytics
+
+  private getDateRange(period: string): { start: Date; end: Date } {
+    const end = new Date();
+    const start = new Date();
+
+    switch (period) {
+      case 'week':
+        start.setDate(end.getDate() - 7);
+        break;
+      case 'month':
+        start.setMonth(end.getMonth() - 1);
+        break;
+      case 'year':
+        start.setFullYear(end.getFullYear() - 1);
+        break;
+      default:
+        start.setMonth(end.getMonth() - 1); // Default to month
+    }
+
+    return { start, end };
+  }
+
+  private async getTenantMetrics(tenantId: Types.ObjectId, dateRange: { start: Date; end: Date }) {
+    // 1. Fetch data for the period
+    const payments = await PaymentModel.find({ tenantId }).lean();
+    const bookings = await BookingModel.find({
+      tenantId,
+      bookingDate: { $gte: dateRange.start, $lte: dateRange.end }
+    }).lean();
+
+    // 2. Filter payments and calculate revenue with "Accrued" logic
+    // Includes:
+    // - Paid payments in date range
+    // - Pending payments for Completed bookings in date range (via related booking check)
+
+
+
+    // 1. Calculate revenue from PAID payments
+    let totalRevenue = 0;
+    const paidBookingIds = new Set<string>();
+
+    const periodPayments = payments.filter((p: any) => {
+      const isInDateRange = p.date >= dateRange.start && p.date <= dateRange.end;
+      if (isInDateRange && p.status === 'paid') {
+        totalRevenue += p.amount;
+        if (p.bookingId) paidBookingIds.add(p.bookingId.toString());
+        return true;
+      }
+      return false;
+    });
+
+    // 2. Add Accrued Revenue from COMPLETED bookings that don't have a PAID payment
+    bookings.forEach((booking: any) => {
+      if (booking.status === 'completed' && !paidBookingIds.has(booking._id.toString())) {
+        const price = booking.price || 0;
+        totalRevenue += price;
+      }
+    });
+
+    // Previous period for comparison (growth calculation)
+    const duration = dateRange.end.getTime() - dateRange.start.getTime();
+    const previousDateRange = {
+      start: new Date(dateRange.start.getTime() - duration),
+      end: new Date(dateRange.start.getTime())
+    };
+
+    // Fetch bookings for previous period
+    const previousBookings = await BookingModel.find({
+      tenantId,
+      bookingDate: { $gte: previousDateRange.start, $lte: previousDateRange.end }
+    }).lean();
+
+    let previousRevenue = 0;
+    const prevPaidBookingIds = new Set<string>();
+
+    const previousPayments = payments.filter((p: any) => {
+      const isInDateRange = p.date >= previousDateRange.start && p.date <= previousDateRange.end;
+      if (isInDateRange && p.status === 'paid') {
+        previousRevenue += p.amount;
+        if (p.bookingId) prevPaidBookingIds.add(p.bookingId.toString());
+        return true;
+      }
+      return false;
+    });
+
+    // Add Accrued Revenue for previous period
+    previousBookings.forEach((booking: any) => {
+      if (booking.status === 'completed' && !prevPaidBookingIds.has(booking._id.toString())) {
+        const price = booking.price || 0;
+        previousRevenue += price;
+      }
+    });
+    const revenueChange = previousRevenue === 0 ? 100 : ((totalRevenue - previousRevenue) / previousRevenue) * 100;
+
+    // 3. Other metrics
+    const completedBookingsCount = bookings.filter((b: any) => b.status === 'completed').length;
+
+    // Estudiantes activos (con al menos una clase "completada" o "confirmada" en el periodo)
+    const activeStudentIds = new Set(
+      bookings
+        .filter((b: any) => ['completed', 'confirmed'].includes(b.status))
+        .map((b: any) => b.studentId.toString())
+    );
+    const activeStudentsCount = activeStudentIds.size;
+
+    // Tasa de ocupación (Bookings Totales / Slots disponibles teóricos)
+    // Estimación simplificada: Asumimos 8 horas diarias * 30 días * numero de canchas
+    const courtsCount = await CourtModel.countDocuments({ tenantId, isActive: true });
+    // Días en el rango
+    const daysInMillis = dateRange.end.getTime() - dateRange.start.getTime();
+    const days = Math.ceil(daysInMillis / (1000 * 60 * 60 * 24));
+
+    const totalSlots = courtsCount * days * 10; // Asumiendo 10 slots por día promedio
+    const occupancyRate = totalSlots > 0 ? Math.round((bookings.length / totalSlots) * 100) : 0;
+
+    return [
+      {
+        title: 'Ingresos del Período',
+        value: `$${totalRevenue}`,
+        change: Math.round(revenueChange),
+        icon: 'money',
+        color: '#4CAF50',
+        isPositive: revenueChange >= 0,
+        subtitle: 'vs período anterior'
+      },
+      {
+        title: 'Clases Completadas',
+        value: completedBookingsCount.toString(),
+        change: null, // Podríamos calcular cambio también
+        icon: 'bookings',
+        color: '#2196F3',
+        isPositive: true,
+        subtitle: 'en el período'
+      },
+      {
+        title: 'Estudiantes Activos',
+        value: activeStudentsCount.toString(),
+        change: null,
+        icon: 'students',
+        color: '#FF9800',
+        isPositive: true,
+        subtitle: 'con clases recientes'
+      },
+      {
+        title: 'Tasa de Ocupación',
+        value: `${occupancyRate}%`,
+        change: null,
+        icon: 'occupancy',
+        color: '#9C27B0',
+        isPositive: true,
+        subtitle: 'de capacidad estimada'
+      }
+    ];
+  }
+
+  private async getTenantCharts(tenantId: Types.ObjectId, dateRange: { start: Date; end: Date }) {
+    // 1. Revenue Chart (Line)
+    const revenueByMonth = new Map<string, number>();
+    const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const paidBookingIds = new Set<string>();
+
+    // Fetch payments
+    const payments = await PaymentModel.find({ tenantId }).lean();
+
+    // Process Paid Payments
+    payments.forEach((p: any) => {
+      const isInDateRange = p.date >= dateRange.start && p.date <= dateRange.end;
+      if (isInDateRange && p.status === 'paid') {
+        const d = new Date(p.date);
+        const monthLabel = months[d.getMonth()];
+        const current = revenueByMonth.get(monthLabel) || 0;
+        revenueByMonth.set(monthLabel, current + p.amount);
+
+        if (p.bookingId) paidBookingIds.add(p.bookingId.toString());
+      }
+    });
+
+    // Fetch bookings for the period (with price)
+    const periodBookings = await BookingModel.find({
+      tenantId,
+      bookingDate: { $gte: dateRange.start, $lte: dateRange.end }
+    }).lean();
+
+    // Process Unpaid Completed Bookings (Accrued Revenue)
+    periodBookings.forEach((b: any) => {
+      if (b.status === 'completed' && !paidBookingIds.has(b._id.toString())) {
+        const d = new Date(b.bookingDate || b.createdAt);
+        const monthLabel = months[d.getMonth()];
+        const current = revenueByMonth.get(monthLabel) || 0;
+        const price = b.price || 0;
+        revenueByMonth.set(monthLabel, current + price);
+      }
+    });
+
+    const revenueChartData = Array.from(revenueByMonth.entries()).map(([label, value]) => ({
+      label,
+      value,
+      date: new Date().toISOString(),
+      color: '#2196F3',
+      serviceType: 'all'
+    }));
+
+    // 2. Service Type Breakdown (Bar/Pie)
+    const bookings = await BookingModel.find({
+      tenantId,
+      bookingDate: { $gte: dateRange.start, $lte: dateRange.end }
+    }).lean();
+
+    const serviceTypeMap = new Map<string, number>();
+    bookings.forEach((b: any) => {
+      const type = b.serviceType === 'individual_class' ? 'Clase Individual' :
+        b.serviceType === 'group_class' ? 'Clase Grupal' :
+          b.serviceType === 'court_rental' ? 'Alquiler Cancha' : b.serviceType;
+      const current = serviceTypeMap.get(type) || 0;
+      serviceTypeMap.set(type, current + 1);
+    });
+
+    const serviceTypeChartData = Array.from(serviceTypeMap.entries()).map(([label, value]) => ({
+      label,
+      value
+    }));
+
+    return [
+      {
+        title: 'Ingresos',
+        type: 'line',
+        data: revenueChartData,
+        xAxisLabel: 'Periodo',
+        yAxisLabel: 'Ingresos ($)',
+        description: 'Evolución de ingresos del centro'
+      },
+      {
+        title: 'Servicios',
+        type: 'bar', // or donut
+        data: serviceTypeChartData,
+        xAxisLabel: 'Tipo de Servicio',
+        yAxisLabel: 'Cantidad',
+        description: 'Distribución por tipo de servicio'
+      }
+    ];
+  }
+
 
   /**
    * GET /api/tenant/bookings

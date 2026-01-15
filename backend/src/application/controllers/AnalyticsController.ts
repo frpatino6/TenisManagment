@@ -21,7 +21,7 @@ export class AnalyticsController {
     try {
       console.log('🚀 Analytics overview requested');
       console.log('🚀 User:', req.user);
-      
+
       const professorId = req.user?.id;
       if (!professorId) {
         console.log('❌ No professor ID found');
@@ -48,11 +48,11 @@ export class AnalyticsController {
 
       // Get date range based on period
       const dateRange = this.getDateRange(period as string);
-      
+
       // Get metrics
       console.log('🚀 Getting metrics...');
       const metrics = await this.getMetrics(actualProfessorId, dateRange, serviceType as string, status as string);
-      
+
       // Get charts
       console.log('🚀 Getting charts...');
       const charts = await this.getCharts(actualProfessorId, dateRange, serviceType as string, status as string);
@@ -296,7 +296,7 @@ export class AnalyticsController {
   getOccupancyDetails = async (req: Request, res: Response) => {
     try {
       console.log('📊 Occupancy details requested');
-      
+
       const professorId = req.user?.id;
       if (!professorId) {
         console.log('❌ No professor ID found');
@@ -363,40 +363,48 @@ export class AnalyticsController {
       const bookingQuery: any = { professorId };
       if (serviceType) bookingQuery.serviceType = serviceType;
       if (status) bookingQuery.status = status;
-      
+
       const bookings = await BookingModel.find(bookingQuery).lean();
       console.log('📊 Total bookings found:', bookings.length);
 
       // Filter by date range
-      const periodBookings = bookings.filter((b: any) => 
-        b.createdAt && 
-        b.createdAt >= dateRange.start && 
+      const periodBookings = bookings.filter((b: any) =>
+        b.createdAt &&
+        b.createdAt >= dateRange.start &&
         b.createdAt <= dateRange.end
       );
       console.log('📊 Period bookings:', periodBookings.length);
 
-      // Get payments and filter by serviceType if needed
-      const payments = await PaymentModel.find({ professorId, status: 'paid' }).lean();
+      // Get all payments for the professor (don't filter by status yet)
+      const payments = await PaymentModel.find({ professorId }).lean();
       console.log('📊 Total payments found:', payments.length);
 
-      // Filter payments by date range and serviceType
+      // Filter payments by date range and criteria
+      // 1. Calculate revenue from PAID payments
+      let totalRevenue = 0;
+      const paidBookingIds = new Set<string>();
+
+      // Filter payments for period and count realized revenue
       const periodPayments = payments.filter((p: any) => {
         const isInDateRange = p.date >= dateRange.start && p.date <= dateRange.end;
-        
-        // If serviceType filter is applied, only include payments for matching bookings
-        if (serviceType) {
-          if (!p.bookingId) return false;
-          const relatedBooking = periodBookings.find((b: any) => b._id.toString() === p.bookingId.toString());
-          return isInDateRange && relatedBooking;
+        if (isInDateRange && p.status === 'paid') {
+          totalRevenue += p.amount;
+          if (p.bookingId) paidBookingIds.add(p.bookingId.toString());
+          return true;
         }
-        
-        return isInDateRange;
+        return false;
       });
-      console.log('📊 Period payments:', periodPayments.length);
 
-      // Calculate total revenue
-      const totalRevenue = periodPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
-      console.log('📊 Total revenue:', totalRevenue);
+      // 2. Add Accrued Revenue from COMPLETED bookings that don't have a PAID payment
+      periodBookings.forEach((booking: any) => {
+        if (booking.status === 'completed' && !paidBookingIds.has(booking._id.toString())) {
+          // If it's completed and not paid, we count it as accrued revenue using the booking price
+          const price = booking.price || 0;
+          totalRevenue += price;
+        }
+      });
+
+      console.log('📊 Total revenue (Realized + Accrued):', totalRevenue);
 
       // Get completed bookings
       const completedBookings = periodBookings.filter((b: any) => b.status === 'completed');
@@ -409,11 +417,11 @@ export class AnalyticsController {
 
       // Get occupancy rate
       const schedules = await ScheduleModel.find({ professorId }).lean();
-      const periodSchedules = schedules.filter((s: any) => 
+      const periodSchedules = schedules.filter((s: any) =>
         s.date >= dateRange.start && s.date <= dateRange.end
       );
       const occupiedSchedules = periodSchedules.filter((s: any) => !s.isAvailable);
-      const occupancyRate = periodSchedules.length > 0 
+      const occupancyRate = periodSchedules.length > 0
         ? Math.round((occupiedSchedules.length / periodSchedules.length) * 100)
         : 0;
       console.log('📊 Occupancy rate:', occupancyRate);
@@ -422,18 +430,30 @@ export class AnalyticsController {
       const previousDateRange = this.getPreviousPeriod(dateRange);
       const previousPayments = payments.filter((p: any) => {
         const isInPreviousDateRange = p.date >= previousDateRange.start && p.date <= previousDateRange.end;
-        
+
+        // Check if payment should be counted (same logic as above)
+        let shouldCount = p.status === 'paid';
+
+        if (!shouldCount && p.bookingId) {
+          const relatedBooking = bookings.find((b: any) => b._id.toString() === p.bookingId.toString());
+          if (relatedBooking && relatedBooking.status === 'completed') {
+            shouldCount = true;
+          }
+        }
+
+        if (!shouldCount) return false;
+
         // If serviceType filter is applied, only include payments for matching bookings
         if (serviceType) {
           if (!p.bookingId) return false;
           const relatedBooking = periodBookings.find((b: any) => b._id.toString() === p.bookingId.toString());
           return isInPreviousDateRange && relatedBooking;
         }
-        
+
         return isInPreviousDateRange;
       });
       const previousRevenue = previousPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
-      const revenueChange = previousRevenue > 0 
+      const revenueChange = previousRevenue > 0
         ? Math.round(((totalRevenue - previousRevenue) / previousRevenue) * 100)
         : 0;
 
@@ -514,14 +534,14 @@ export class AnalyticsController {
   private async getRevenueChart(professorId: string, dateRange: { start: Date; end: Date }, serviceType?: string, status?: string) {
     const PaymentModel = require('../../infrastructure/database/models/PaymentModel').PaymentModel;
     const BookingModel = require('../../infrastructure/database/models/BookingModel').BookingModel;
-    
+
     // Get all bookings first
     const allBookings = await BookingModel.find({ professorId }).lean();
-    
+
     // Apply filters to get only relevant bookings
-    const filteredBookings = allBookings.filter((b: any) => 
-      b.createdAt && 
-      b.createdAt >= dateRange.start && 
+    const filteredBookings = allBookings.filter((b: any) =>
+      b.createdAt &&
+      b.createdAt >= dateRange.start &&
       b.createdAt <= dateRange.end &&
       (!serviceType || b.serviceType === serviceType) &&
       (!status || b.status === status)
@@ -530,32 +550,43 @@ export class AnalyticsController {
     // Get all payments
     const allPayments = await PaymentModel.find({ professorId }).lean();
     const periodPayments = allPayments.filter((p: any) => {
-      const isInDateRange = p.date >= dateRange.start && p.date <= dateRange.end && p.status === 'paid';
-      
+      const isInDateRange = p.date >= dateRange.start && p.date <= dateRange.end;
+
+      // Check if payment should be counted
+      let shouldCount = p.status === 'paid';
+      if (!shouldCount && p.bookingId) {
+        const relatedBooking = allBookings.find((b: any) => b._id.toString() === p.bookingId.toString());
+        if (relatedBooking && relatedBooking.status === 'completed') {
+          shouldCount = true;
+        }
+      }
+
+      if (!shouldCount) return false;
+
       // If serviceType filter is applied, only include payments for matching bookings
       if (serviceType) {
         if (!p.bookingId) return false;
         const relatedBooking = filteredBookings.find((b: any) => b._id.toString() === p.bookingId.toString());
         return isInDateRange && relatedBooking;
       }
-      
+
       return isInDateRange;
     });
 
     // Group by service type and month
     const serviceTypeMonthlyData = new Map<string, Map<string, number>>();
-    
+
     for (const payment of periodPayments) {
       if (payment.bookingId) {
         const relatedBooking = filteredBookings.find((b: any) => b._id.toString() === payment.bookingId.toString());
         if (relatedBooking) {
           const serviceType = relatedBooking.serviceType || 'unknown';
           const month = payment.date.toISOString().substring(0, 7); // YYYY-MM
-          
+
           if (!serviceTypeMonthlyData.has(serviceType)) {
             serviceTypeMonthlyData.set(serviceType, new Map());
           }
-          
+
           const monthlyMap = serviceTypeMonthlyData.get(serviceType)!;
           monthlyMap.set(month, (monthlyMap.get(month) || 0) + payment.amount);
         }
@@ -563,7 +594,7 @@ export class AnalyticsController {
     }
 
     // Convert to chart data format - flatten for Flutter compatibility
-    const data = Array.from(serviceTypeMonthlyData.entries()).flatMap(([serviceType, monthlyData]) => 
+    const data = Array.from(serviceTypeMonthlyData.entries()).flatMap(([serviceType, monthlyData]) =>
       Array.from(monthlyData.entries()).map(([month, amount]) => ({
         label: new Date(month + '-01').toLocaleDateString('es-ES', { month: 'short' }),
         value: amount,
@@ -599,9 +630,9 @@ export class AnalyticsController {
   private async getBookingsChart(professorId: string, dateRange: { start: Date; end: Date }, serviceType?: string, status?: string) {
     const BookingModel = require('../../infrastructure/database/models/BookingModel').BookingModel;
     const bookings = await BookingModel.find({ professorId }).lean();
-    const periodBookings = bookings.filter((b: any) => 
-      b.createdAt && 
-      b.createdAt >= dateRange.start && 
+    const periodBookings = bookings.filter((b: any) =>
+      b.createdAt &&
+      b.createdAt >= dateRange.start &&
       b.createdAt <= dateRange.end &&
       (!serviceType || b.serviceType === serviceType) &&
       (!status || b.status === status)
@@ -630,7 +661,7 @@ export class AnalyticsController {
 
   private async getStudentsChart(professorId: string, dateRange: { start: Date; end: Date }) {
     const students = await this.professors.listStudents(professorId);
-    
+
     // Group by membership type
     const membershipCount = new Map<string, number>();
     students.forEach((student: any) => {
@@ -676,23 +707,23 @@ export class AnalyticsController {
     console.log('🔍 BREAKDOWN DEBUG - Starting breakdown calculation');
     console.log('🔍 BREAKDOWN DEBUG - Filters:', { serviceType, status });
     console.log('🔍 BREAKDOWN DEBUG - Date range:', dateRange);
-    
+
     const PaymentModel = require('../../infrastructure/database/models/PaymentModel').PaymentModel;
     const BookingModel = require('../../infrastructure/database/models/BookingModel').BookingModel;
 
     // Get bookings first to apply serviceType filter
     const bookings = await BookingModel.find({ professorId }).lean();
     console.log('🔍 BREAKDOWN DEBUG - Total bookings found:', bookings.length);
-    
-    const periodBookings = bookings.filter((b: any) => 
-      b.createdAt && 
-      b.createdAt >= dateRange.start && 
+
+    const periodBookings = bookings.filter((b: any) =>
+      b.createdAt &&
+      b.createdAt >= dateRange.start &&
       b.createdAt <= dateRange.end &&
       (!serviceType || b.serviceType === serviceType) &&
       (!status || b.status === status)
     );
     console.log('🔍 BREAKDOWN DEBUG - Period bookings:', periodBookings.length);
-    
+
     // Log service types in period bookings
     const serviceTypesInBookings = [...new Set(periodBookings.map((b: any) => b.serviceType))];
     console.log('🔍 BREAKDOWN DEBUG - Service types in bookings:', serviceTypesInBookings);
@@ -700,16 +731,27 @@ export class AnalyticsController {
     // Get payments related to filtered bookings
     const payments = await PaymentModel.find({ professorId }).lean();
     console.log('🔍 BREAKDOWN DEBUG - Total payments found:', payments.length);
-    
+
     const periodPayments = payments.filter((p: any) => {
-      const isInDateRange = p.date >= dateRange.start && p.date <= dateRange.end && p.status === 'paid';
-      
+      const isInDateRange = p.date >= dateRange.start && p.date <= dateRange.end;
+
+      // Check if payment should be counted
+      let shouldCount = p.status === 'paid';
+      if (!shouldCount && p.bookingId) {
+        const relatedBooking = bookings.find((b: any) => b._id.toString() === p.bookingId.toString());
+        if (relatedBooking && relatedBooking.status === 'completed') {
+          shouldCount = true;
+        }
+      }
+
+      if (!shouldCount) return false;
+
       if (serviceType) {
         if (!p.bookingId) return false;
         const relatedBooking = periodBookings.find((b: any) => b._id.toString() === p.bookingId.toString());
         return isInDateRange && relatedBooking;
       }
-      
+
       return isInDateRange;
     });
     console.log('🔍 BREAKDOWN DEBUG - Period payments:', periodPayments.length);
@@ -756,9 +798,9 @@ export class AnalyticsController {
     const BookingModel = require('../../infrastructure/database/models/BookingModel').BookingModel;
 
     const bookings = await BookingModel.find({ professorId }).lean();
-    const periodBookings = bookings.filter((b: any) => 
-      b.createdAt && 
-      b.createdAt >= dateRange.start && 
+    const periodBookings = bookings.filter((b: any) =>
+      b.createdAt &&
+      b.createdAt >= dateRange.start &&
       b.createdAt <= dateRange.end &&
       (!serviceType || b.serviceType === serviceType) &&
       (!status || b.status === status)
@@ -815,9 +857,9 @@ export class AnalyticsController {
 
       // Get bookings for this month
       const bookings = await BookingModel.find({ professorId }).lean();
-      const monthBookings = bookings.filter((b: any) => 
-        b.createdAt && 
-        b.createdAt >= monthStart && 
+      const monthBookings = bookings.filter((b: any) =>
+        b.createdAt &&
+        b.createdAt >= monthStart &&
         b.createdAt <= monthEnd &&
         (!serviceType || b.serviceType === serviceType) &&
         (!status || b.status === status)
@@ -827,18 +869,18 @@ export class AnalyticsController {
       const payments = await PaymentModel.find({ professorId }).lean();
       const monthPayments = payments.filter((p: any) => {
         const isInMonth = p.date >= monthStart && p.date <= monthEnd && p.status === 'paid';
-        
+
         if (serviceType) {
           if (!p.bookingId) return false;
           const relatedBooking = monthBookings.find((b: any) => b._id.toString() === p.bookingId.toString());
           return isInMonth && relatedBooking;
         }
-        
+
         return isInMonth;
       });
 
       const totalRevenue = monthPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
-      
+
       trendData.push({
         period: month.name,
         value: totalRevenue,
@@ -859,9 +901,9 @@ export class AnalyticsController {
       const monthEnd = new Date(month.year, month.month, 0, 23, 59, 59);
 
       const bookings = await BookingModel.find({ professorId }).lean();
-      const monthBookings = bookings.filter((b: any) => 
-        b.createdAt && 
-        b.createdAt >= monthStart && 
+      const monthBookings = bookings.filter((b: any) =>
+        b.createdAt &&
+        b.createdAt >= monthStart &&
         b.createdAt <= monthEnd &&
         (!serviceType || b.serviceType === serviceType) &&
         (!status || b.status === status)
@@ -876,7 +918,7 @@ export class AnalyticsController {
     return { trend: trendData };
   }
 
-  private getMonthsForPeriod(period: string): Array<{name: string, month: number, year: number}> {
+  private getMonthsForPeriod(period: string): Array<{ name: string, month: number, year: number }> {
     const now = new Date();
     const months = [];
 
@@ -952,13 +994,13 @@ export class AnalyticsController {
 
     // Get all bookings first
     const allBookings = await BookingModel.find({ professorId }).lean();
-    
+
     // Apply filters to get only relevant bookings
-    const filteredBookings = allBookings.filter((b: any) => 
+    const filteredBookings = allBookings.filter((b: any) =>
       (!serviceType || b.serviceType === serviceType) &&
       (!status || b.status === status)
     );
-    
+
     // Get unique students from filtered bookings only
     const uniqueStudentIds = [...new Set(filteredBookings.map((b: any) => b.studentId.toString()))];
 
@@ -972,14 +1014,14 @@ export class AnalyticsController {
 
     for (const studentId of uniqueStudentIds) {
       // Check if student has had a class in the last 30 days (using filtered bookings)
-      const recentBookings = filteredBookings.filter((b: any) => 
+      const recentBookings = filteredBookings.filter((b: any) =>
         b.studentId.toString() === studentId &&
         b.createdAt &&
         b.createdAt >= thirtyDaysAgo
       );
 
       // Check if student has upcoming classes in the next 7 days (using filtered bookings)
-      const upcomingBookings = filteredBookings.filter((b: any) => 
+      const upcomingBookings = filteredBookings.filter((b: any) =>
         b.studentId.toString() === studentId &&
         b.createdAt &&
         b.createdAt > now &&
@@ -991,9 +1033,9 @@ export class AnalyticsController {
 
       if (hasRecentActivity || hasUpcomingClasses) {
         activeStudents++;
-        
+
         // Get the most recent booking for this student
-        const lastBooking = recentBookings.sort((a: any, b: any) => 
+        const lastBooking = recentBookings.sort((a: any, b: any) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         )[0];
 
@@ -1057,9 +1099,9 @@ export class AnalyticsController {
 
       // Get all bookings for this month
       const bookings = await BookingModel.find({ professorId }).lean();
-      const monthBookings = bookings.filter((b: any) => 
-        b.createdAt && 
-        b.createdAt >= monthStart && 
+      const monthBookings = bookings.filter((b: any) =>
+        b.createdAt &&
+        b.createdAt >= monthStart &&
         b.createdAt <= monthEnd &&
         (!serviceType || b.serviceType === serviceType) &&
         (!status || b.status === status)
@@ -1080,7 +1122,7 @@ export class AnalyticsController {
   private async getOccupancyDetailsData(professorId: string, period: string) {
     try {
       console.log('📊 Getting occupancy details data for professor:', professorId, 'period:', period);
-      
+
       const ScheduleModel = require('../../infrastructure/database/models/ScheduleModel').ScheduleModel;
       const BookingModel = require('../../infrastructure/database/models/BookingModel').BookingModel;
 
@@ -1131,7 +1173,7 @@ export class AnalyticsController {
 
         const totalSlots = slotSchedules.length;
         const occupancy = totalSlots > 0 ? Math.round((occupiedCount / totalSlots) * 100) : 0;
-        
+
         let status = 'Bajo';
         if (occupancy >= 80) status = 'Alto';
         else if (occupancy >= 60) status = 'Medio';
@@ -1167,7 +1209,7 @@ export class AnalyticsController {
           }
         }
 
-        const monthOccupancy = monthSchedules.length > 0 
+        const monthOccupancy = monthSchedules.length > 0
           ? Math.round((monthOccupiedCount / monthSchedules.length) * 100)
           : 0;
 
@@ -1185,7 +1227,7 @@ export class AnalyticsController {
         breakdown: breakdown,
         trend: trend,
         totalSchedules: allSchedules.length,
-        averageOccupancy: breakdown.length > 0 
+        averageOccupancy: breakdown.length > 0
           ? Math.round(breakdown.reduce((sum, slot) => sum + slot.occupancy, 0) / breakdown.length)
           : 0,
       };
@@ -1198,7 +1240,7 @@ export class AnalyticsController {
   private getMonthsInRange(startDate: Date, endDate: Date) {
     const months = [];
     const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-    
+
     while (current <= endDate) {
       months.push({
         year: current.getFullYear(),
@@ -1207,7 +1249,7 @@ export class AnalyticsController {
       });
       current.setMonth(current.getMonth() + 1);
     }
-    
+
     return months;
   }
 

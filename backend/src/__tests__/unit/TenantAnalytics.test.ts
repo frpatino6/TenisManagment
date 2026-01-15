@@ -35,7 +35,7 @@ describe('TenantAdminController - Analytics', () => {
         req = {
             tenantId: '507f1f77bcf86cd799439011',
             query: { period: 'month' }
-        };
+        } as any;
         jest.clearAllMocks();
     });
 
@@ -68,7 +68,8 @@ describe('TenantAdminController - Analytics', () => {
                     createdAt: now,
                     bookingDate: now,
                     studentId: new Types.ObjectId(),
-                    serviceType: 'individual_class'
+                    serviceType: 'individual_class',
+                    price: 150 // Not used for revenue if paid, but good practice
                 },
                 {
                     _id: new Types.ObjectId('507f1f77bcf86cd799439013'),
@@ -76,7 +77,8 @@ describe('TenantAdminController - Analytics', () => {
                     createdAt: now,
                     bookingDate: now,
                     studentId: new Types.ObjectId(),
-                    serviceType: 'group_class'
+                    serviceType: 'group_class',
+                    price: 50 // <--- This was missing!
                 }
             ];
 

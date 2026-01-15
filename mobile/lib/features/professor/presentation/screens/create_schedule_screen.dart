@@ -279,7 +279,7 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                           vertical: 16,
                         ),
                       ),
-                      value: _selectedCourtId,
+                      initialValue: _selectedCourtId,
                       hint: Text(
                         'Seleccionar cancha',
                         style: GoogleFonts.inter(color: colorScheme.outline),

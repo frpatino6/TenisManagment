@@ -51,7 +51,6 @@ void main() {
 
       // 3. Select Tenant (If prompted)
       if (find.text('Seleccionar Centro').evaluate().isNotEmpty) {
-        print('DEBUG: At Tenant Selection Screen');
         await tester.pumpAndSettle();
 
         // Tap the first available tenant in the list
@@ -93,13 +92,11 @@ void main() {
       await tester.pumpAndSettle();
 
       final int professorCount = professorCardsFinder.evaluate().length;
-      print('DEBUG: Found $professorCount professors');
 
       bool bookingInitiated = false;
 
       // Try up to 3 professors
       for (int i = 0; i < professorCount && i < 3; i++) {
-        print('DEBUG: Checking professor index $i');
         final card = professorCardsFinder.at(i);
 
         // Ensure card is visible and tap
@@ -114,8 +111,6 @@ void main() {
         // Check availability of "Reservar" buttons
         final bookButtonFinder = find.text('Reservar');
         if (bookButtonFinder.evaluate().isNotEmpty) {
-          print('DEBUG: Found schedules for professor $i');
-
           // Scroll to the first 'Reservar' button
           await tester.scrollUntilVisible(
             bookButtonFinder.first,
@@ -128,7 +123,6 @@ void main() {
           bookingInitiated = true;
           break;
         } else {
-          print('DEBUG: No schedules for professor $i');
           // Continue to next
         }
       }

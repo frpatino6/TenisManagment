@@ -89,7 +89,6 @@ void main() {
         await tester.tap(stringTimeChips.first);
         await tester.pumpAndSettle();
       } else {
-        print('No slots available for test');
         return;
       }
 
@@ -191,24 +190,15 @@ void main() {
 
               // 5. Verify Success
               expect(find.textContaining('exitosamente'), findsOneWidget);
-            } else {
-              print('No slots available for the second tenant');
             }
-          } else {
-            print('No courts available for the second tenant');
           }
         } else {
-          print('Skipping Tenant Change verify: Only 1 tenant available');
           // Click the first one to close it or verify content
           if (menuItems.evaluate().isNotEmpty) {
             await tester.tap(menuItems.first);
             await tester.pumpAndSettle();
           }
         }
-      } else {
-        print(
-          'No Tenant Dropdown found - possibly only one tenant or error state',
-        );
       }
     });
   });

@@ -11,6 +11,6 @@ router.post('/init', firebaseAuthMiddleware, extractTenantId, controller.initPay
 
 // Webhook Wompi (Público, validación de firma interna)
 router.post('/webhooks/wompi', controller.wompiWebhook);
-router.get('/webhooks/wompi', (_req, res) => res.status(200).send('OK (Validation)'));
+router.get('/webhooks/wompi', (_req, res) => res.status(200).type('text/plain').send('OK'));
 
 export default router;

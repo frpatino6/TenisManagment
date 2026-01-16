@@ -977,6 +977,7 @@ export class ProfessorDashboardController {
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
+
       const { scheduleId } = req.params;
       const { reason, courtId } = req.body;
 
@@ -1115,6 +1116,7 @@ export class ProfessorDashboardController {
           studentId: schedule.studentId,
           professorId: professor._id,
           bookingId: booking._id,
+          tenantId: booking.tenantId,
           amount: paymentAmount,
           date: new Date(),
           status: 'paid',

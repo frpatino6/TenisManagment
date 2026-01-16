@@ -7,14 +7,14 @@ import 'core/config/firebase_config.dart';
 import 'main_common.dart';
 
 /// Entrypoint para el ambiente de PRODUCCIÓN
-/// 
+///
 /// Este es el punto de entrada cuando ejecutas:
 /// - flutter run --flavor prod -t lib/main_prod.dart
 /// - flutter run (por defecto via main.dart)
 /// - ./scripts/run_prod.sh
-/// 
+///
 /// Configuración:
-/// - Backend: https://tenismanagment.onrender.com
+/// - Backend: https://cloudflow-uat.duckdns.org
 /// - Firebase: tennis-management-fcd54
 /// - Debug logs: Deshabilitados
 /// - App name: "Tennis Management"

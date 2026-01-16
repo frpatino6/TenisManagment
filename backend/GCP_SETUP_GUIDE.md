@@ -42,7 +42,7 @@ Para que tu backend siempre tenga la misma dirección y el puerto 3000 esté abi
     *   **Nombre:** `allow-backend-3000`.
     *   **Destinos:** `Todas las instancias de la red`.
     *   **Rangos de IP de origen:** `0.0.0.0/0` (Todo el mundo).
-    *   **Protocolos y puertos:** Marca `TCP` y escribe `3000`.
+    *   **Protocolos y puertos:** Marca `TCP` y escribe `3000, 80, 443`.
     *   Haz clic en **Crear**.
 
 ---
@@ -98,15 +98,49 @@ sudo usermod -aG docker $USER
     nano .env
     # Pega tu contenido. Guarda con Ctrl+O, Enter. Sal con Ctrl+X.
     ```
+    > ⚠️ **Importante**:
+    > 1. Asegúrate de que `MONGO_URI` sea la URL de conexión a MongoDB Atlas.
+    > 2. Agrega esta línea para permitir que tu Flutter Web (Localhost) se conecte:
+    >    `CORS_ORIGINS=http://localhost:XYZ,https://tennis-management-fcd54.web.app` 
+    >    *(Reemplaza XYZ con el puerto que use tu flutter run -d chrome, suelen ser variables)*
     > ⚠️ **Importante**: Asegúrate de que `MONGO_URI` sea la URL de conexión a MongoDB Atlas, no `localhost`.
 
 4.  Copia el `docker-compose.yml` que creamos:
     ```bash
     nano docker-compose.yml
-    # Pega el contenido del docker-compose.yml de tu proyecto.
-    # Asegúrate de cambiar 'image:' por la URL de tu imagen en GitHub (ghcr.io/...)
+    # Pega el contenido con Caddy (ver abajo)
     ```
-    *Para ver la URL exacta de tu imagen, ve a la página principal de tu repo en GitHub, columna derecha "Packages"*.
+
+    **Contenido de docker-compose.yml:**
+    ```yaml
+    services:
+      backend:
+        container_name: tennis-backend
+        image: ghcr.io/frpatino6/tenismanagment/backend:latest
+        restart: always
+        # Ports are handled by Caddy
+        # ports:
+        #   - "3000:3000" 
+        env_file:
+          - .env
+        environment:
+          - NODE_ENV=production
+        logging:
+          driver: "json-file"
+          options:
+            max-size: "10m"
+            max-file: "3"
+
+      caddy:
+        image: caddy:2-alpine
+        restart: always
+        ports:
+          - "80:80"
+          - "443:443"
+        command: caddy reverse-proxy --from https://cloudflow-uat.duckdns.org --to http://backend:3000
+        depends_on:
+          - backend
+    ```
 
 ### C. Iniciar Servicio
 ```bash
@@ -119,4 +153,41 @@ docker compose pull
 docker compose up -d
 ```
 
-¡Listo! Tu backend debería estar corriendo en `http://TU_IP_PUBLICA:3000`.
+¡Listo! Tu backend debería estar corriendo en `https://cloudflow-uat.duckdns.org` (Seguro con HTTPS).
+
+---
+
+## 5. 🔄 Rutina de Despliegue (Actualizar versión)
+
+Cada vez que quieras subir cambios nuevos a producción:
+
+1.  **En GitHub:**
+    *   Haz merge de tus cambios a `main`.
+    *   Ve a **Actions** -> **Build & Push Backend** -> **Run workflow**.
+
+2.  **En la VM (SSH):**
+    ```bash
+    # 1. Descargar la nueva versión de la imagen (FUNDAMENTAL)
+    sudo docker compose pull
+
+    # 2. Recrear el contenedor con esa nueva imagen
+    sudo docker compose up -d --remove-orphans
+    ```
+
+---
+
+## 6. ⚙️ Actualizar Variables de Entorno (.env)
+
+Si necesitas cambiar la base de datos, claves o configuración CORS:
+
+1.  **Edita el archivo (Recomendado usar nano):**
+    ```bash
+    nano .env
+    # Edita, Ctrl+O (Guardar), Ctrl+X (Salir)
+    ```
+
+2.  **⚠️ IMPORTANTE: Aplicar cambios**
+    No uses `restart`. Debes recrear el contenedor para que lea las variables nuevas:
+    ```bash
+    sudo docker compose up -d --force-recreate backend
+    ```

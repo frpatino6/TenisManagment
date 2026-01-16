@@ -37,11 +37,11 @@ class AppConfig {
         }
 
       case Environment.production:
-        return 'https://tenismanagment.onrender.com';
+        return 'https://cloudflow-uat.duckdns.org';
 
       case Environment.uat:
         // TEMP: Apuntando a Prod mientras se resuelve el servicio UAT dedicado
-        return 'https://tenismanagment.onrender.com';
+        return 'https://cloudflow-uat.duckdns.org';
     }
   }
 

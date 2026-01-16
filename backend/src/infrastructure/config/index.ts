@@ -24,6 +24,8 @@ const EnvSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional().default('"Tennis Management" <noreply@tennismanagement.com>'),
+  // Payments
+  WOMPI_CHECKOUT_URL: z.string().url().default('https://checkout.wompi.co/p/'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);
@@ -68,6 +70,11 @@ export const config = {
     user: env.SMTP_USER,
     pass: env.SMTP_PASS,
     from: env.SMTP_FROM,
+  },
+  payments: {
+    wompi: {
+      checkoutUrl: env.WOMPI_CHECKOUT_URL,
+    },
   },
 } as const;
 

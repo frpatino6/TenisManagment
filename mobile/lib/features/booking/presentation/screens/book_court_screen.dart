@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../payment/presentation/widgets/payment_dialog.dart';
 import '../../../../core/constants/timeouts.dart';
 import '../../domain/models/court_model.dart';
 import '../../domain/services/court_service.dart';
@@ -1295,25 +1296,75 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   }
 
   Widget _buildBookButton(BuildContext context) {
-    return FilledButton(
-      onPressed: _isBooking ? null : _handleBooking,
-      style: FilledButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      child: _isBooking
-          ? const SizedBox(
+    // Default duration is 1 hour
+    final price = _selectedCourt!.pricePerHour;
+
+    return Consumer(
+      builder: (context, ref, child) {
+        final studentInfoAsync = ref.watch(studentInfoProvider);
+
+        return studentInfoAsync.when(
+          data: (info) {
+            final balance = (info['balance'] as num?)?.toDouble() ?? 0.0;
+            final isInsufficient = balance < price;
+            final missingAmount = price - balance;
+
+            if (isInsufficient) {
+              return FilledButton.icon(
+                onPressed: () =>
+                    showDialog(
+                      context: context,
+                      builder: (_) =>
+                          PaymentDialog(initialAmount: missingAmount),
+                    ).then((_) {
+                      ref.invalidate(studentInfoProvider);
+                    }),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Colors.orange,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.add_card),
+                label: const Text('Recargar y Reservar'),
+              );
+            }
+
+            return FilledButton(
+              onPressed: _isBooking ? null : _handleBooking,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: _isBooking
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(
+                      'Confirmar Reserva',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            );
+          },
+          loading: () => const FilledButton(
+            onPressed: null,
+            child: SizedBox(
               height: 20,
               width: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : Text(
-              'Confirmar Reserva',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
             ),
+          ),
+          error: (error, _) => Center(child: Text('Error: $error')),
+        );
+      },
     );
   }
 

@@ -621,7 +621,7 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
                           vertical: 16,
                         ),
                       ),
-                      value: selectedCourtId,
+                      initialValue: selectedCourtId,
                       items: [
                         DropdownMenuItem<String>(
                           value: null,

@@ -67,8 +67,7 @@ android {
             
             // Configuraciones adicionales para UAT
             buildConfigField("String", "ENVIRONMENT", "\"uat\"")
-            // TEMP: Apuntando a Prod mientras se resuelve el servicio UAT dedicado
-            buildConfigField("String", "API_BASE_URL", "\"https://tenismanagment.onrender.com/api\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://cloudflow-uat.duckdns.org/api\"")
         }
 
         create("prod") {
@@ -79,7 +78,7 @@ android {
             
             // Configuraciones adicionales para producción
             buildConfigField("String", "ENVIRONMENT", "\"production\"")
-            buildConfigField("String", "API_BASE_URL", "\"https://tenismanagment.onrender.com/api\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://cloudflow-uat.duckdns.org/api\"")
         }
     }
 

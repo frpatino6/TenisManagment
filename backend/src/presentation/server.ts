@@ -17,7 +17,7 @@ import { requestLoggerMiddleware } from '../application/middleware/requestLogger
 const app: Application = express();
 const logger = new Logger({ service: 'backend', env: config.nodeEnv });
 
-// Security middlewares
+// 1. Security middlewares
 app.use(helmet());
 app.use(requestIdMiddleware);
 app.use(requestLoggerMiddleware);

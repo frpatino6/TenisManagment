@@ -23,6 +23,18 @@ export interface TenantConfig {
     close?: string; // Format: "HH:mm" (deprecated, use schedule)
     daysOfWeek?: number[]; // 0-6 (deprecated, use schedule)
   };
+  payments?: {
+    activeProvider: 'wompi' | 'stripe';
+    wompi?: {
+      pubKey: string;
+      eventsKey: string; // To validate webhook signature
+      integrityKey: string; // To sign payment requests
+      isTest: boolean;
+    };
+    stripe?: {
+      // Future Stripe config
+    };
+  };
 }
 
 /**
@@ -61,6 +73,15 @@ const TenantConfigSchema = new Schema<TenantConfig>(
       open: { type: String },
       close: { type: String },
       daysOfWeek: { type: [Number] },
+    },
+    payments: {
+      activeProvider: { type: String, enum: ['wompi', 'stripe'] },
+      wompi: {
+        pubKey: { type: String },
+        eventsKey: { type: String },
+        integrityKey: { type: String },
+        isTest: { type: Boolean, default: false },
+      },
     },
   },
   { _id: false },

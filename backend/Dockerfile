@@ -9,7 +9,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instalamos TODAS las dependencias (incluyendo devDependencies para compilar TS)
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 # Copiamos el código fuente
 COPY . .
@@ -27,7 +27,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instalamos SOLO dependencias de producción (ahorra espacio)
-RUN npm ci --only=production
+RUN npm ci --only=production --ignore-scripts
 
 # Copiamos los archivos compilados del stage anterior (builder)
 COPY --from=builder /app/dist ./dist

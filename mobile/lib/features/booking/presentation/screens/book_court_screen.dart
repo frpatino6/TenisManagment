@@ -36,6 +36,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isBooking = false;
+  bool _isSyncing = false;
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -179,32 +180,36 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               return _buildErrorState(context, error);
             },
           ),
-          if (_isBooking)
-            Container(
-              color: Colors.black.withOpacity(0.5),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircularProgressIndicator(color: Colors.white),
-                    const Gap(16),
-                    Text(
-                      'Procesando reserva...',
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+          if (_isBooking || _isSyncing)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.7),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
-                    ),
-                    const Gap(8),
-                    Text(
-                      'Sincronizando con el centro...',
-                      style: GoogleFonts.inter(
-                        color: Colors.white70,
-                        fontSize: 14,
+                      const Gap(20),
+                      Text(
+                        'Procesando reserva...',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
+                      const Gap(8),
+                      Text(
+                        'Estamos sincronizando con el servidor',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1404,7 +1409,12 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                       builder: (_) =>
                           PaymentDialog(initialAmount: missingAmount),
                     ).then((_) {
-                      ref.invalidate(studentInfoProvider);
+                      if (mounted) {
+                        setState(() {
+                          _isSyncing = true;
+                        });
+                        ref.invalidate(studentInfoProvider);
+                      }
                     }),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1464,6 +1474,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
 
     setState(() {
       _isBooking = true;
+      _isSyncing = true;
     });
 
     try {
@@ -1547,6 +1558,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       if (mounted) {
         setState(() {
           _isBooking = false;
+          _isSyncing = false;
         });
       }
     }

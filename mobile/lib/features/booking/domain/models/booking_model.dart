@@ -9,6 +9,7 @@ class BookingModel {
   final String serviceType;
   final double price;
   final String status;
+  final DateTime? bookingDate;
   final DateTime createdAt;
 
   BookingModel({
@@ -22,6 +23,7 @@ class BookingModel {
     required this.serviceType,
     required this.price,
     required this.status,
+    this.bookingDate,
     required this.createdAt,
   });
 
@@ -42,8 +44,16 @@ class BookingModel {
       serviceType: json['serviceType'] as String? ?? 'individual_class',
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       status: json['status'] as String? ?? 'pending',
+      bookingDate: json['bookingDate'] != null
+          ? DateTime.parse(json['bookingDate'] as String)
+          : (json['date'] != null
+                ? DateTime.parse(json['date'] as String)
+                : null),
       createdAt: DateTime.parse(
-        json['date'] ?? json['createdAt'] ?? DateTime.now().toIso8601String(),
+        json['createdAt'] ??
+            json['date'] ??
+            json['bookingDate'] ??
+            DateTime.now().toIso8601String(),
       ),
     );
   }

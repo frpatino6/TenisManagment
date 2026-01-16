@@ -11,21 +11,52 @@ const logger = new Logger({ module: 'BookingService' });
 
 export interface CreateBookingData {
     tenantId: string | Types.ObjectId;
-    scheduleId: string | Types.ObjectId;
+    scheduleId?: string | Types.ObjectId; // Optional for court_rental
     studentId: string | Types.ObjectId;
     serviceType: 'individual_class' | 'group_class' | 'court_rental';
     price: number;
+    // New fields for court rental
+    courtId?: string | Types.ObjectId;
+    startTime?: Date;
+    endTime?: Date;
 }
 
 export class BookingService {
     private tenantService = new TenantService();
 
     /**
-     * Creates a booking and updates the schedule.
+     * Checks if a court is available for a given time range.
+     */
+    async checkCourtConflict(tenantId: Types.ObjectId, courtId: Types.ObjectId, startTime: Date, endTime: Date): Promise<boolean> {
+        // Let's refine the conflict check to be more robust
+        const bookings = await BookingModel.find({
+            tenantId,
+            courtId,
+            status: { $in: ['confirmed', 'pending'] }
+        });
+
+        for (const b of bookings) {
+            const bStart = b.bookingDate;
+            if (!bStart) continue;
+
+            // Assume 1 hour for rentals if context is missing, 
+            // but for court_rental we know the requested range.
+            const bEnd = new Date(bStart.getTime() + 60 * 60 * 1000);
+
+            if (startTime < bEnd && endTime > bStart) {
+                return true; // Conflict found
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Creates a booking and updates the schedule/court status.
      * Centralized logic to be used by controllers and webhooks.
      */
     async createBooking(data: CreateBookingData): Promise<BookingDocument> {
-        const { tenantId, scheduleId, studentId, serviceType, price } = data;
+        const { tenantId, scheduleId, studentId, serviceType, price, courtId, startTime, endTime } = data;
 
         try {
             // 1. Get student and check balance
@@ -38,71 +69,88 @@ export class BookingService {
                 throw new Error('Saldo insuficiente para realizar esta reserva');
             }
 
-            // 2. Get schedule and validate
-            const schedule = await ScheduleModel.findById(scheduleId);
-            if (!schedule) {
-                throw new Error('Horario no encontrado');
-            }
+            let finalCourtId: Types.ObjectId | undefined;
+            let professorId: Types.ObjectId | undefined;
+            let bookingStartTime: Date;
 
-            if (!schedule.isAvailable) {
-                throw new Error('Este horario ya no está disponible');
-            }
+            if (serviceType === 'court_rental') {
+                // 2. Court Rental Logic
+                if (!courtId || !startTime || !endTime) {
+                    throw new Error('courtId, startTime y endTime son requeridos para arrendamiento de cancha');
+                }
 
-            // 3. Validate professor is active in tenant
-            const professorTenant = await ProfessorTenantModel.findOne({
-                professorId: schedule.professorId,
-                tenantId: tenantId,
-                isActive: true
-            });
+                const court = await CourtModel.findById(courtId);
+                if (!court || !court.isActive) {
+                    throw new Error('Cancha no encontrada o no está activa');
+                }
 
-            if (!professorTenant) {
-                throw new Error('El profesor ya no está asociado activamente a este centro');
+                // Check for conflicts
+                const hasConflict = await this.checkCourtConflict(
+                    new Types.ObjectId(tenantId.toString()),
+                    new Types.ObjectId(courtId.toString()),
+                    startTime,
+                    endTime
+                );
+
+                if (hasConflict) {
+                    throw new Error('El horario seleccionado para esta cancha ya está ocupado');
+                }
+
+                finalCourtId = new Types.ObjectId(courtId.toString());
+                bookingStartTime = startTime;
+
+            } else {
+                // 3. Lesson Logic
+                if (!scheduleId) {
+                    throw new Error('scheduleId es requerido para clases');
+                }
+
+                const schedule = await ScheduleModel.findById(scheduleId);
+                if (!schedule || !schedule.isAvailable) {
+                    throw new Error('El horario ya no está disponible');
+                }
+
+                // Update schedule status
+                schedule.isAvailable = false;
+                schedule.status = 'confirmed';
+                schedule.studentId = new Types.ObjectId(studentId.toString());
+                await schedule.save();
+
+                finalCourtId = schedule.courtId;
+                professorId = schedule.professorId;
+                bookingStartTime = schedule.date;
             }
 
             // 4. Ensure StudentTenant relationship exists
             await this.tenantService.addStudentToTenant(studentId.toString(), tenantId.toString());
 
-            // 5. Find an available court
-            const availableCourt = await this.findAvailableCourt(
-                new Types.ObjectId(tenantId.toString()),
-                schedule.startTime,
-                schedule.endTime
-            );
-
-            if (!availableCourt) {
-                throw new Error('No hay canchas disponibles para este horario');
-            }
-
-            // 6. Create the booking
-            const booking = await BookingModel.create({
+            // 5. Create the booking record
+            const bookingData: any = {
                 tenantId: new Types.ObjectId(tenantId.toString()),
-                scheduleId: schedule._id,
                 studentId: new Types.ObjectId(studentId.toString()),
-                professorId: schedule.professorId,
-                courtId: availableCourt._id,
+                courtId: finalCourtId,
                 serviceType: serviceType,
                 price: price,
                 status: 'confirmed',
-                notes: `Reserva de ${serviceType} - Cancha: ${availableCourt.name}`
-            });
+                notes: `Reserva de ${serviceType}`,
+                bookingDate: bookingStartTime
+            };
 
-            // 7. Deduct balance from student
+            if (scheduleId) bookingData.scheduleId = new Types.ObjectId(scheduleId.toString());
+            if (professorId) bookingData.professorId = professorId;
+
+            const booking = await BookingModel.create(bookingData);
+
+            // 6. Deduct balance from student
             await StudentModel.findByIdAndUpdate(studentId, {
                 $inc: { balance: -price }
             });
 
-            // 8. Update schedule
-            schedule.isAvailable = false;
-            schedule.studentId = new Types.ObjectId(studentId.toString());
-            schedule.status = 'confirmed';
-            await schedule.save();
-
             logger.info('Booking created and balance deducted successfully', {
                 bookingId: booking._id.toString(),
-                scheduleId: scheduleId.toString(),
+                serviceType,
                 studentId: studentId.toString(),
-                price: price,
-                newBalance: student.balance - price
+                price: price
             });
 
             return booking;

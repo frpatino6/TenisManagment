@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../payment/presentation/widgets/payment_dialog.dart';
 import '../../../../core/constants/timeouts.dart';
+import '../../../../core/logging/logger.dart';
 import '../../domain/models/court_model.dart';
 import '../../domain/services/court_service.dart';
 import '../providers/booking_provider.dart';
@@ -30,6 +31,7 @@ class BookCourtScreen extends ConsumerStatefulWidget {
 }
 
 class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
+  final _logger = AppLogger.tag('BookCourtScreen');
   CourtModel? _selectedCourt;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
@@ -96,6 +98,63 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       return _buildNoTenantScreen(context);
     }
 
+    // Automation Logic: Listen for confirmed bookings
+    ref.listen(myBookingsProvider, (previous, next) {
+      if (next.hasValue &&
+          _selectedCourt != null &&
+          _selectedDate != null &&
+          _selectedTime != null) {
+        // Calculate the same start time used for booking to match
+        final startDateTime = DateTime.utc(
+          _selectedDate!.year,
+          _selectedDate!.month,
+          _selectedDate!.day,
+          _selectedTime!.hour,
+          _selectedTime!.minute,
+        );
+
+        final booking = next.value!
+            .where(
+              (b) =>
+                  b.courtId == _selectedCourt?.id &&
+                  b.status == 'confirmed' &&
+                  b.bookingDate?.isAtSameMomentAs(startDateTime) == true,
+            )
+            .firstOrNull;
+
+        if (booking != null && mounted && !_isBooking) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('¡Reserva de cancha confirmada automáticamente!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          context.go('/home');
+        }
+      }
+    });
+
+    // Automation Logic: Listen for balance updates to trigger booking
+    ref.listen(studentInfoProvider, (previous, next) {
+      if (next.hasValue &&
+          _selectedCourt != null &&
+          _selectedDate != null &&
+          _selectedTime != null) {
+        final info = next.value!;
+        final balance = (info['balance'] as num?)?.toDouble() ?? 0.0;
+
+        // Re-calculate price
+        final price = _selectedCourt!.pricePerHour; // 1 hour default
+
+        if (balance >= price && !_isBooking) {
+          _logger.info(
+            'Saldo suficiente (Cancha). Iniciando reserva automática...',
+          );
+          _handleBooking();
+        }
+      }
+    });
+
     final tenantAsync = ref.watch(currentTenantProvider);
 
     return Scaffold(
@@ -106,17 +165,50 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         ),
         centerTitle: true,
       ),
-      body: courtsAsync.when(
-        data: (courts) {
-          if (courts.isEmpty) {
-            return _buildEmptyState(context);
-          }
-          return _buildContent(context, courts, tenantAsync);
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) {
-          return _buildErrorState(context, error);
-        },
+      body: Stack(
+        children: [
+          courtsAsync.when(
+            data: (courts) {
+              if (courts.isEmpty) {
+                return _buildEmptyState(context);
+              }
+              return _buildContent(context, courts, tenantAsync);
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stackTrace) {
+              return _buildErrorState(context, error);
+            },
+          ),
+          if (_isBooking)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(color: Colors.white),
+                    const Gap(16),
+                    Text(
+                      'Procesando reserva...',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Gap(8),
+                    Text(
+                      'Sincronizando con el centro...',
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -341,7 +433,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                           color: Theme.of(context)
                               .colorScheme
                               .surfaceContainerHighest
-                              .withValues(alpha: 0.3),
+                              .withOpacity(0.3),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: Theme.of(context).colorScheme.outlineVariant,
@@ -493,9 +585,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      color: Theme.of(
-        context,
-      ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: tenantsAsync.when(
@@ -576,8 +666,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? Theme.of(context).colorScheme.primaryContainer
-                                .withValues(alpha: 0.2)
+                          ? Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer.withOpacity(0.2)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -997,7 +1088,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           return Card(
             color: Theme.of(
               context,
-            ).colorScheme.errorContainer.withValues(alpha: 0.3),
+            ).colorScheme.errorContainer.withOpacity(0.3),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -1125,9 +1216,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             errorMessage.contains('no tiene horarios');
 
         return Card(
-          color: Theme.of(
-            context,
-          ).colorScheme.errorContainer.withValues(alpha: 0.3),
+          color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -1199,9 +1288,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     }
 
     return Card(
-      color: Theme.of(
-        context,
-      ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

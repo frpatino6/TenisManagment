@@ -195,7 +195,11 @@ export class PaymentController {
                                 studentId: transaction.studentId.toString(),
                                 scheduleId: bInfo.scheduleId,
                                 serviceType: bInfo.serviceType,
-                                price: bInfo.price
+                                price: bInfo.price,
+                                // Pass court rental fields if present in metadata
+                                courtId: bInfo.courtId,
+                                startTime: bInfo.startTime ? new Date(bInfo.startTime) : undefined,
+                                endTime: bInfo.endTime ? new Date(bInfo.endTime) : undefined
                             });
                             this.logger.info(`[PaymentController] Auto-booking SUCCESS for ref: ${reference}`);
                         } catch (bookingError: any) {

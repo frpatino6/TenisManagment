@@ -7,6 +7,7 @@ import '../../domain/models/schedule_model.dart';
 import '../providers/booking_provider.dart';
 import '../../../payment/presentation/widgets/payment_dialog.dart';
 import '../../../student/presentation/providers/student_provider.dart';
+import '../../../../core/logging/logger.dart';
 
 /// Screen to confirm a booking before creating it
 ///
@@ -33,6 +34,7 @@ class ConfirmBookingScreen extends ConsumerStatefulWidget {
 }
 
 class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
+  final _logger = AppLogger.tag('ConfirmBookingScreen');
   bool _isBooking = false;
   double _price = 0.0; // Will be calculated based on service type
 
@@ -90,6 +92,29 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen for bookings to handle auto-confirmation after recharge
+    ref.listen(myBookingsProvider, (previous, next) {
+      if (next.hasValue) {
+        final booking = next.value!
+            .where(
+              (b) =>
+                  b.scheduleId == widget.schedule.id && b.status == 'confirmed',
+            )
+            .firstOrNull;
+
+        if (booking != null && mounted && !_isBooking) {
+          _logger.info('Reserva detectada automáticamente (webhook)');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('¡Reserva confirmada exitosamente!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          context.go('/home');
+        }
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(title: const Text('Confirmar Reserva')),
       body: SingleChildScrollView(
@@ -233,6 +258,7 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                                     if (context.mounted) {
                                       // Refresh balance and bookings after payment
                                       ref.invalidate(studentInfoProvider);
+                                      ref.invalidate(myBookingsProvider);
                                       ref.invalidate(bookingServiceProvider);
                                     }
                                   },

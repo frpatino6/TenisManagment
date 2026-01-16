@@ -101,7 +101,7 @@ sudo usermod -aG docker $USER
     > ⚠️ **Importante**:
     > 1. Asegúrate de que `MONGO_URI` sea la URL de conexión a MongoDB Atlas.
     > 2. Agrega esta línea para permitir que tu Flutter Web (Localhost) se conecte:
-    >    `CORS_ORIGINS=http://localhost:XYZ,https://tu-app-en-render.com` 
+    >    `CORS_ORIGINS=http://localhost:XYZ,https://tennis-management-fcd54.web.app` 
     >    *(Reemplaza XYZ con el puerto que use tu flutter run -d chrome, suelen ser variables)*
     > ⚠️ **Importante**: Asegúrate de que `MONGO_URI` sea la URL de conexión a MongoDB Atlas, no `localhost`.
 
@@ -167,10 +167,10 @@ Cada vez que quieras subir cambios nuevos a producción:
 
 2.  **En la VM (SSH):**
     ```bash
-    # Descargar la última versión de tu imagen
+    # 1. Descargar la nueva versión de la imagen (FUNDAMENTAL)
     sudo docker compose pull
 
-    # Reiniciar los servicios (Caddy y Backend)
+    # 2. Recrear el contenedor con esa nueva imagen
     sudo docker compose up -d --remove-orphans
     ```
 

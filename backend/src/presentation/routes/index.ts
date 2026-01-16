@@ -8,6 +8,7 @@ import pricing from './pricing';
 import admin from './admin';
 import tenant from './tenant';
 import config from './config';
+import payment from './payment';
 
 const router = Router();
 
@@ -25,5 +26,6 @@ router.use('/pricing', pricing);
 router.use('/admin', admin);
 router.use('/tenant', tenant);
 router.use('/config', config);
+router.use('/payments', payment);
 
 export default router;

@@ -5,6 +5,8 @@ import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/constants/timeouts.dart';
 import '../../domain/models/schedule_model.dart';
 import '../providers/booking_provider.dart';
+import '../../../payment/presentation/widgets/payment_dialog.dart';
+import '../../../student/presentation/providers/student_provider.dart';
 
 /// Screen to confirm a booking before creating it
 ///
@@ -199,23 +201,65 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   flex: 2,
-                  child: ElevatedButton(
-                    onPressed: _isBooking ? null : _confirmBooking,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: _isBooking
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
+                  child: Consumer(
+                    builder: (context, ref, child) {
+                      final studentInfoAsync = ref.watch(studentInfoProvider);
+
+                      return studentInfoAsync.when(
+                        data: (info) {
+                          final balance =
+                              (info['balance'] as num?)?.toDouble() ?? 0.0;
+                          final isInsufficient = balance < _price;
+                          final missingAmount = _price - balance;
+
+                          if (isInsufficient) {
+                            return ElevatedButton.icon(
+                              onPressed: () =>
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => PaymentDialog(
+                                      initialAmount: missingAmount,
+                                    ),
+                                  ).then((_) {
+                                    // Refresh balance after dialog closes
+                                    ref.invalidate(studentInfoProvider);
+                                  }),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                backgroundColor: Colors.orange,
                               ),
+                              icon: const Icon(Icons.add_card),
+                              label: const Text('Recargar y Reservar'),
+                            );
+                          }
+
+                          return ElevatedButton(
+                            onPressed: _isBooking ? null : _confirmBooking,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
-                          )
-                        : const Text('Confirmar Reserva'),
+                            child: _isBooking
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Text('Confirmar Reserva'),
+                          );
+                        },
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (error, stack) =>
+                            Center(child: Text('Error: $error')),
+                      );
+                    },
                   ),
                 ),
               ],

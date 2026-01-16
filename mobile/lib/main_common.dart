@@ -6,6 +6,7 @@ import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'core/config/app_config.dart';
+import 'core/constants/timeouts.dart';
 import 'core/providers/tenant_provider.dart';
 import 'features/student/presentation/providers/student_provider.dart';
 import 'features/booking/presentation/providers/booking_provider.dart';
@@ -28,8 +29,13 @@ class _TennisManagementAppState extends ConsumerState<TennisManagementApp>
     with WidgetsBindingObserver {
   void _handleFocusEvent() {
     // Refresh data when window regains focus (web only)
-    ref.invalidate(studentInfoProvider);
-    ref.invalidate(bookingServiceProvider);
+    // Add a small delay to ensure webhooks are processed
+    Future.delayed(Timeouts.snackbarSuccess, () {
+      if (mounted) {
+        ref.invalidate(studentInfoProvider);
+        ref.invalidate(bookingServiceProvider);
+      }
+    });
   }
 
   @override
@@ -64,9 +70,13 @@ class _TennisManagementAppState extends ConsumerState<TennisManagementApp>
     super.didChangeAppLifecycleState(state);
     // When app resumes (user returns from Wompi), refresh student data
     if (state == AppLifecycleState.resumed) {
-      // Import the student provider
-      ref.invalidate(studentInfoProvider);
-      ref.invalidate(bookingServiceProvider);
+      // Add delay to allow webhooks to process
+      Future.delayed(Timeouts.snackbarSuccess, () {
+        if (mounted) {
+          ref.invalidate(studentInfoProvider);
+          ref.invalidate(bookingServiceProvider);
+        }
+      });
     }
   }
 

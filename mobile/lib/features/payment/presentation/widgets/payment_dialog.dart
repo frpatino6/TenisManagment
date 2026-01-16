@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:url_launcher/url_launcher.dart';
 import '../providers/payment_providers.dart';
 import '../../../../core/exceptions/exceptions.dart';
 import '../screens/wompi_webview_screen.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../booking/presentation/providers/booking_provider.dart';
 import '../../../../core/constants/timeouts.dart';
+import '../../../../core/utils/web_utils_stub.dart'
+    if (dart.library.js_interop) '../../../../core/utils/web_utils_web.dart';
 
 class PaymentDialog extends ConsumerStatefulWidget {
   final double? initialAmount;
@@ -107,23 +108,18 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                             bool? paymentCompleted;
 
                             if (kIsWeb) {
-                              // On web: use url_launcher (WebView doesn't work on web)
-                              final url = Uri.parse(result['checkoutUrl']);
-                              if (await canLaunchUrl(url)) {
-                                await launchUrl(
-                                  url,
-                                  mode: LaunchMode.externalApplication,
+                              // On web: use WebUtils to navigate in the same tab
+                              // This prevents mobile Safari from blocking it as a popup
+                              final url = result['checkoutUrl'];
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Redirigiendo a Wompi...'),
+                                  ),
                                 );
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Redirigiendo a Wompi...'),
-                                    ),
-                                  );
-                                }
                               }
-                              paymentCompleted =
-                                  null; // Can't detect completion on web
+                              WebUtils.openUrl(url);
+                              paymentCompleted = null;
                             } else {
                               // On mobile (Android/iOS): use WebView
                               paymentCompleted = await Navigator.push<bool>(

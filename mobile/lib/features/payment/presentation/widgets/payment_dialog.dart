@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/payment_providers.dart';
 import '../../../../core/exceptions/exceptions.dart';
 import '../screens/wompi_webview_screen.dart';
@@ -99,20 +101,42 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                           Navigator.pop(context); // Close dialog
 
                           if (result != null && result['checkoutUrl'] != null) {
-                            // Open Wompi in WebView instead of external browser
-                            final paymentCompleted = await Navigator.push<bool>(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => WompiWebViewScreen(
-                                  checkoutUrl: result['checkoutUrl'],
-                                  redirectUrl:
-                                      widget.redirectUrl ??
-                                      'https://tenis-uat.casacam.net/payment-complete',
-                                ),
-                              ),
-                            );
+                            bool? paymentCompleted;
 
-                            // IMMEDIATELY refresh data after WebView closes (regardless of payment status)
+                            if (kIsWeb) {
+                              // On web: use url_launcher (WebView doesn't work on web)
+                              final url = Uri.parse(result['checkoutUrl']);
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(
+                                  url,
+                                  mode: LaunchMode.externalApplication,
+                                );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Redirigiendo a Wompi...'),
+                                    ),
+                                  );
+                                }
+                              }
+                              paymentCompleted =
+                                  null; // Can't detect completion on web
+                            } else {
+                              // On mobile (Android/iOS): use WebView
+                              paymentCompleted = await Navigator.push<bool>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => WompiWebViewScreen(
+                                    checkoutUrl: result['checkoutUrl'],
+                                    redirectUrl:
+                                        widget.redirectUrl ??
+                                        'https://tenis-uat.casacam.net/payment-complete',
+                                  ),
+                                ),
+                              );
+                            }
+
+                            // IMMEDIATELY refresh data after payment flow
                             if (context.mounted) {
                               ref.invalidate(studentInfoProvider);
                               ref.invalidate(bookingServiceProvider);

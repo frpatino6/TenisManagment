@@ -114,7 +114,7 @@ export class PaymentController {
 
             if (!transactionData) {
                 this.logger.warn('[PaymentController] Webhook received without transaction data');
-                return res.status(200).send('OK');
+                return res.status(200).type('text/plain').send('OK');
             }
 
             const reference = transactionData.reference;
@@ -122,14 +122,14 @@ export class PaymentController {
             const transaction = await TransactionModel.findOne({ reference });
             if (!transaction) {
                 this.logger.warn(`[PaymentController] Transaction not found for ref: ${reference}`);
-                return res.status(200).send('OK');
+                return res.status(200).type('text/plain').send('OK');
             }
 
             // Re-fetch tenant to ensure we have the document with config
             const tenant = await TenantModel.findById(transaction.tenantId);
             if (!tenant) {
                 this.logger.warn(`[PaymentController] Tenant missing for transaction: ${reference}`);
-                return res.status(200).send('OK');
+                return res.status(200).type('text/plain').send('OK');
             }
 
             const result = await this.paymentGateway.validateTransaction(data, tenant);
@@ -167,7 +167,7 @@ export class PaymentController {
                 }
             }
 
-            return res.status(200).send('OK');
+            return res.status(200).type('text/plain').send('OK');
 
         } catch (error) {
             this.logger.error('[PaymentController] Webhook error', { error });

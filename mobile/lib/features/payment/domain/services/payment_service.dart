@@ -59,9 +59,16 @@ class PaymentService {
         });
         return data;
       } else {
+        String errorMessage = 'Error al iniciar pago';
+        try {
+          final errorData = jsonDecode(response.body);
+          errorMessage =
+              errorData['error'] ?? errorData['details'] ?? errorMessage;
+        } catch (_) {}
+
         _logger.error('Failed to init payment', error: response.body);
         throw NetworkException.serverError(
-          message: 'Error al iniciar pago',
+          message: errorMessage,
           statusCode: response.statusCode,
         );
       }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/payment_providers.dart';
+import '../../../../core/exceptions/exceptions.dart';
 
 class PaymentDialog extends ConsumerStatefulWidget {
   final double? initialAmount;
@@ -111,10 +112,15 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                             }
                           } else {
                             if (context.mounted) {
+                              final error = paymentState.error;
+                              final message = error is AppException
+                                  ? error.userMessage
+                                  : error?.toString() ?? "Desconocido";
+
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    'Error al iniciar pago: ${paymentState.error ?? "Desconocido"}',
+                                    'Error al iniciar pago: $message',
                                   ),
                                 ),
                               );

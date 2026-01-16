@@ -36,6 +36,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isBooking = false;
+  bool _shouldAutoConfirm = false; // Flag to prevent ghost bookings
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -146,9 +147,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         // Re-calculate price
         final price = _selectedCourt!.pricePerHour; // 1 hour default
 
-        if (balance >= price && !_isBooking) {
+        if (balance >= price && !_isBooking && _shouldAutoConfirm) {
           _logger.info(
-            'Saldo suficiente (Cancha). Iniciando reserva automática...',
+            'Saldo suficiente (Cancha) tras recarga. Iniciando reserva automática...',
           );
           _handleBooking();
         }
@@ -181,7 +182,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           ),
           if (_isBooking)
             Container(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1399,11 +1400,39 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             if (isInsufficient) {
               return FilledButton.icon(
                 onPressed: () =>
-                    showDialog(
+                    showDialog<String>(
                       context: context,
-                      builder: (_) =>
-                          PaymentDialog(initialAmount: missingAmount),
-                    ).then((_) {
+                      builder: (_) => PaymentDialog(
+                        initialAmount: missingAmount,
+                        bookingData: {
+                          'courtId': _selectedCourt?.id,
+                          'startTime': DateTime.utc(
+                            _selectedDate!.year,
+                            _selectedDate!.month,
+                            _selectedDate!.day,
+                            _selectedTime!.hour,
+                            _selectedTime!.minute,
+                          ).toIso8601String(),
+                          'endTime': DateTime.utc(
+                            _selectedDate!.year,
+                            _selectedDate!.month,
+                            _selectedDate!.day,
+                            _selectedTime!.hour + 1, // Default 1 hour
+                            _selectedTime!.minute,
+                          ).toIso8601String(),
+                          'serviceType': 'court_rental',
+                          'price': price,
+                        },
+                      ),
+                    ).then((transactionId) {
+                      if (transactionId != null) {
+                        if (mounted) {
+                          setState(() {
+                            _isBooking = true;
+                            _shouldAutoConfirm = true;
+                          });
+                        }
+                      }
                       ref.invalidate(studentInfoProvider);
                     }),
                 style: FilledButton.styleFrom(

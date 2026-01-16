@@ -16,8 +16,19 @@ class MyBalanceScreen extends ConsumerStatefulWidget {
 }
 
 class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
+  bool _isRecharging = false;
+
   @override
   Widget build(BuildContext context) {
+    // Listen for balance updates to hide the recharging overlay
+    ref.listen(studentInfoProvider, (previous, next) {
+      if (next.hasValue && _isRecharging) {
+        setState(() {
+          _isRecharging = false;
+        });
+      }
+    });
+
     final studentInfoAsync = ref.watch(studentInfoProvider);
 
     return Scaffold(
@@ -34,10 +45,43 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
           ),
         ],
       ),
-      body: studentInfoAsync.when(
-        data: (studentInfo) => _buildBalanceContent(context, studentInfo),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _buildErrorState(context, error.toString()),
+      body: Stack(
+        children: [
+          studentInfoAsync.when(
+            data: (studentInfo) => _buildBalanceContent(context, studentInfo),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => _buildErrorState(context, error.toString()),
+          ),
+          if (_isRecharging)
+            Container(
+              color: Colors.black.withValues(alpha: 0.5),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(color: Colors.white),
+                    const Gap(16),
+                    Text(
+                      'Sincronizando saldo...',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Gap(8),
+                    Text(
+                      'Estamos actualizando tu información',
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -448,13 +492,26 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   }
 
   Future<void> _showTopUpDialog(BuildContext context) async {
-    await showDialog(
+    final result = await showDialog<String>(
       context: context,
-      builder: (context) => PaymentDialog(
-        onPaymentComplete: () {
-          ref.invalidate(studentInfoProvider);
-        },
-      ),
+      builder: (context) => const PaymentDialog(),
     );
+
+    if (result != null) {
+      if (mounted) {
+        setState(() {
+          _isRecharging = true;
+        });
+      }
+      ref.invalidate(studentInfoProvider);
+      // Automatically hide overlay after a few seconds or when data changes
+      // In this screen, we can use the provider listener to reset it
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Use addPostFrameCallback to listen to provider changes if needed
   }
 }

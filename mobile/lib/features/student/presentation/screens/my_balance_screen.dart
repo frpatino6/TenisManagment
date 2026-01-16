@@ -16,9 +16,20 @@ class MyBalanceScreen extends ConsumerStatefulWidget {
 }
 
 class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
+  bool _isSyncing = false;
+
   @override
   Widget build(BuildContext context) {
     final studentInfoAsync = ref.watch(studentInfoProvider);
+
+    // Listen for balance updates to hide loading overlay
+    ref.listen(studentInfoProvider, (previous, next) {
+      if (next.hasValue && _isSyncing && mounted) {
+        setState(() {
+          _isSyncing = false;
+        });
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -34,10 +45,47 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
           ),
         ],
       ),
-      body: studentInfoAsync.when(
-        data: (studentInfo) => _buildBalanceContent(context, studentInfo),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _buildErrorState(context, error.toString()),
+      body: Stack(
+        children: [
+          studentInfoAsync.when(
+            data: (studentInfo) => _buildBalanceContent(context, studentInfo),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => _buildErrorState(context, error.toString()),
+          ),
+          if (_isSyncing)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.7),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                      const Gap(20),
+                      Text(
+                        'Actualizando saldo...',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Gap(8),
+                      Text(
+                        'Estamos sincronizando con el servidor',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -456,5 +504,12 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
         },
       ),
     );
+
+    if (mounted) {
+      setState(() {
+        _isSyncing = true;
+      });
+      ref.invalidate(studentInfoProvider);
+    }
   }
 }

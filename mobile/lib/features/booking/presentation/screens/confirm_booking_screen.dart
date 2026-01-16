@@ -32,33 +32,15 @@ class ConfirmBookingScreen extends ConsumerStatefulWidget {
       _ConfirmBookingScreenState();
 }
 
-class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen>
-    with WidgetsBindingObserver {
+class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
   bool _isBooking = false;
   double _price = 0.0; // Will be calculated based on service type
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     // Default price for individual class (can be improved with pricing from professor)
     _price = 50000.0; // Default price in COP
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    // When app resumes (user returns from Wompi), refresh balance and bookings
-    if (state == AppLifecycleState.resumed) {
-      ref.invalidate(studentInfoProvider);
-      ref.invalidate(bookingServiceProvider);
-    }
   }
 
   Future<void> _confirmBooking() async {

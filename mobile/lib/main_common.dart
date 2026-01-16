@@ -6,6 +6,8 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'core/config/app_config.dart';
 import 'core/providers/tenant_provider.dart';
+import 'features/student/presentation/providers/student_provider.dart';
+import 'features/booking/presentation/providers/booking_provider.dart';
 
 /// Widget principal de la aplicación
 ///
@@ -19,15 +21,34 @@ class TennisManagementApp extends ConsumerStatefulWidget {
       _TennisManagementAppState();
 }
 
-class _TennisManagementAppState extends ConsumerState<TennisManagementApp> {
+class _TennisManagementAppState extends ConsumerState<TennisManagementApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Load tenant from backend on app startup
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // Load tenant through notifier (service is stateless, no initialization needed)
       await ref.read(tenantNotifierProvider.notifier).loadTenant();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // When app resumes (user returns from Wompi), refresh student data
+    if (state == AppLifecycleState.resumed) {
+      // Import the student provider
+      ref.invalidate(studentInfoProvider);
+      ref.invalidate(bookingServiceProvider);
+    }
   }
 
   @override

@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../../payment/presentation/widgets/payment_dialog.dart';
 import '../../../../core/utils/currency_utils.dart';
-import '../../domain/services/student_service.dart';
+import '../providers/student_provider.dart';
 
 class MyBalanceScreen extends ConsumerStatefulWidget {
   const MyBalanceScreen({super.key});
@@ -16,50 +16,10 @@ class MyBalanceScreen extends ConsumerStatefulWidget {
 }
 
 class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
-  final StudentService _studentService = StudentService();
-  Map<String, dynamic>? _studentInfo;
-  bool _isLoading = true;
-  String? _error;
-  bool _isFirstBuild = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadStudentInfo();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Refresh data every time this screen is displayed (except first time)
-    if (!_isFirstBuild) {
-      _loadStudentInfo();
-    }
-    _isFirstBuild = false;
-  }
-
-  Future<void> _loadStudentInfo() async {
-    try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-
-      final info = await _studentService.getStudentInfo();
-      setState(() {
-        _studentInfo = info;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final studentInfoAsync = ref.watch(studentInfoProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -70,31 +30,19 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadStudentInfo,
+            onPressed: () => ref.invalidate(studentInfoProvider),
           ),
         ],
       ),
-      body: _buildBody(context),
+      body: studentInfoAsync.when(
+        data: (studentInfo) => _buildBalanceContent(context, studentInfo),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => _buildErrorState(context, error.toString()),
+      ),
     );
   }
 
-  Widget _buildBody(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_error != null) {
-      return _buildErrorState(context);
-    }
-
-    if (_studentInfo == null) {
-      return _buildEmptyState(context);
-    }
-
-    return _buildBalanceContent(context);
-  }
-
-  Widget _buildErrorState(BuildContext context) {
+  Widget _buildErrorState(BuildContext context, String error) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -113,7 +61,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
           ),
           const Gap(8),
           Text(
-            _error ?? 'Error desconocido',
+            error,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -121,7 +69,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
           ),
           const Gap(32),
           ElevatedButton.icon(
-            onPressed: _loadStudentInfo,
+            onPressed: () => ref.invalidate(studentInfoProvider),
             icon: const Icon(Icons.refresh),
             label: const Text('Reintentar'),
           ),
@@ -130,41 +78,14 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.account_balance_wallet_outlined,
-            size: 80,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const Gap(24),
-          Text(
-            'No se encontró información',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const Gap(8),
-          Text(
-            'No se pudo cargar la información de tu balance',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBalanceContent(BuildContext context) {
-    final balance = (_studentInfo!['balance'] as num?)?.toDouble() ?? 0.0;
-    final totalSpent = (_studentInfo!['totalSpent'] as num?)?.toDouble() ?? 0.0;
-    final totalClasses = _studentInfo!['totalClasses'] as int? ?? 0;
-    final totalPayments = _studentInfo!['totalPayments'] as int? ?? 0;
+  Widget _buildBalanceContent(
+    BuildContext context,
+    Map<String, dynamic> studentInfo,
+  ) {
+    final balance = (studentInfo['balance'] as num?)?.toDouble() ?? 0.0;
+    final totalSpent = (studentInfo['totalSpent'] as num?)?.toDouble() ?? 0.0;
+    final totalClasses = studentInfo['totalClasses'] as int? ?? 0;
+    final totalPayments = studentInfo['totalPayments'] as int? ?? 0;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -529,7 +450,11 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   Future<void> _showTopUpDialog(BuildContext context) async {
     await showDialog(
       context: context,
-      builder: (context) => PaymentDialog(onPaymentComplete: _loadStudentInfo),
+      builder: (context) => PaymentDialog(
+        onPaymentComplete: () {
+          ref.invalidate(studentInfoProvider);
+        },
+      ),
     );
   }
 }

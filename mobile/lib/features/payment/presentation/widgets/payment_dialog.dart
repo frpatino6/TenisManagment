@@ -7,6 +7,7 @@ import '../../../../core/exceptions/exceptions.dart';
 import '../screens/wompi_webview_screen.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../booking/presentation/providers/booking_provider.dart';
+import '../../../../core/constants/timeouts.dart';
 
 class PaymentDialog extends ConsumerStatefulWidget {
   final double? initialAmount;
@@ -138,21 +139,25 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                               );
                             }
 
-                            // IMMEDIATELY refresh data after payment flow
+                            // Refresh data after payment flow with a small delay to allow webhook processing
                             if (context.mounted) {
-                              ref.invalidate(studentInfoProvider);
-                              ref.invalidate(bookingServiceProvider);
-
-                              // Notify parent screen to refresh
-                              widget.onPaymentComplete?.call();
+                              Future.delayed(Timeouts.snackbarSuccess, () {
+                                if (context.mounted) {
+                                  ref.invalidate(studentInfoProvider);
+                                  ref.invalidate(bookingServiceProvider);
+                                  // Notify parent screen to refresh
+                                  widget.onPaymentComplete?.call();
+                                }
+                              });
 
                               if (paymentCompleted == true) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(
-                                      'Pago completado exitosamente',
+                                      'Pago procesado. Actualizando saldo...',
                                     ),
                                     backgroundColor: Colors.green,
+                                    duration: Timeouts.snackbarSuccess,
                                   ),
                                 );
                               }

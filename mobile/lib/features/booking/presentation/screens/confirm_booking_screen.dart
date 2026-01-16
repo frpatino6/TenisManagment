@@ -225,10 +225,16 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                                   },
                                   redirectUrl:
                                       'https://tenis-uat.casacam.net/payment-complete',
-                                  onPaymentComplete: () {
-                                    // Refresh balance and bookings after payment
-                                    ref.invalidate(studentInfoProvider);
-                                    ref.invalidate(bookingServiceProvider);
+                                  onPaymentComplete: () async {
+                                    // Small delay to allow webhook to process
+                                    await Future.delayed(
+                                      const Duration(seconds: 2),
+                                    );
+                                    if (context.mounted) {
+                                      // Refresh balance and bookings after payment
+                                      ref.invalidate(studentInfoProvider);
+                                      ref.invalidate(bookingServiceProvider);
+                                    }
                                   },
                                 ),
                               ),

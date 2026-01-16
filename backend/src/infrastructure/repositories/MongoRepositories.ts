@@ -33,28 +33,28 @@ export class MongoProfessorRepository implements ProfessorRepository {
     const doc = await ProfessorModel.findById(id).lean();
     return doc
       ? {
-          id: doc._id.toString(),
-          name: doc.name,
-          email: doc.email,
-          phone: doc.phone,
-          specialties: doc.specialties,
-          hourlyRate: doc.hourlyRate,
-          experienceYears: doc.experienceYears,
-        }
+        id: doc._id.toString(),
+        name: doc.name,
+        email: doc.email,
+        phone: doc.phone,
+        specialties: doc.specialties,
+        hourlyRate: doc.hourlyRate,
+        experienceYears: doc.experienceYears,
+      }
       : null;
   }
   async findByEmail(email: string): Promise<Professor | null> {
     const doc = await ProfessorModel.findOne({ email }).lean();
     return doc
       ? {
-          id: doc._id.toString(),
-          name: doc.name,
-          email: doc.email,
-          phone: doc.phone,
-          specialties: doc.specialties,
-          hourlyRate: doc.hourlyRate,
-          experienceYears: doc.experienceYears,
-        }
+        id: doc._id.toString(),
+        name: doc.name,
+        email: doc.email,
+        phone: doc.phone,
+        specialties: doc.specialties,
+        hourlyRate: doc.hourlyRate,
+        experienceYears: doc.experienceYears,
+      }
       : null;
   }
   async listStudents(professorId: string): Promise<Student[]> {
@@ -95,14 +95,14 @@ export class MongoProfessorRepository implements ProfessorRepository {
     const doc = await ProfessorModel.findByIdAndUpdate(id, update, { new: true }).lean();
     return doc
       ? {
-          id: doc._id.toString(),
-          name: doc.name,
-          email: doc.email,
-          phone: doc.phone,
-          specialties: doc.specialties,
-          hourlyRate: doc.hourlyRate,
-          experienceYears: doc.experienceYears,
-        }
+        id: doc._id.toString(),
+        name: doc.name,
+        email: doc.email,
+        phone: doc.phone,
+        specialties: doc.specialties,
+        hourlyRate: doc.hourlyRate,
+        experienceYears: doc.experienceYears,
+      }
       : null;
   }
 }
@@ -116,26 +116,26 @@ export class MongoStudentRepository implements StudentRepository {
     const doc = await StudentModel.findById(id).lean();
     return doc
       ? {
-          id: doc._id.toString(),
-          name: doc.name,
-          email: doc.email,
-          phone: doc.phone ?? '',
-          membershipType: doc.membershipType,
-          balance: doc.balance,
-        }
+        id: doc._id.toString(),
+        name: doc.name,
+        email: doc.email,
+        phone: doc.phone ?? '',
+        membershipType: doc.membershipType,
+        balance: doc.balance,
+      }
       : null;
   }
   async findByEmail(email: string): Promise<Student | null> {
     const doc = await StudentModel.findOne({ email }).lean();
     return doc
       ? {
-          id: doc._id.toString(),
-          name: doc.name,
-          email: doc.email,
-          phone: doc.phone ?? '',
-          membershipType: doc.membershipType,
-          balance: doc.balance,
-        }
+        id: doc._id.toString(),
+        name: doc.name,
+        email: doc.email,
+        phone: doc.phone ?? '',
+        membershipType: doc.membershipType,
+        balance: doc.balance,
+      }
       : null;
   }
   async updateBalance(id: string, delta: number): Promise<Student | null> {
@@ -146,13 +146,13 @@ export class MongoStudentRepository implements StudentRepository {
     ).lean();
     return doc
       ? {
-          id: doc._id.toString(),
-          name: doc.name,
-          email: doc.email,
-          phone: doc.phone ?? '',
-          membershipType: doc.membershipType,
-          balance: doc.balance,
-        }
+        id: doc._id.toString(),
+        name: doc.name,
+        email: doc.email,
+        phone: doc.phone ?? '',
+        membershipType: doc.membershipType,
+        balance: doc.balance,
+      }
       : null;
   }
 }
@@ -201,30 +201,30 @@ export class MongoScheduleRepository implements ScheduleRepository {
     const d = await ScheduleModel.findById(id).lean();
     return d
       ? {
-          id: d._id.toString(),
-          professorId: d.professorId.toString(),
-          date: d.date,
-          startTime: (d.startTime as Date).toISOString(),
-          endTime: (d.endTime as Date).toISOString(),
-          isAvailable: d.isAvailable,
-          notes: d.notes,
-          status: d.status,
-        }
+        id: d._id.toString(),
+        professorId: d.professorId.toString(),
+        date: d.date,
+        startTime: (d.startTime as Date).toISOString(),
+        endTime: (d.endTime as Date).toISOString(),
+        isAvailable: d.isAvailable,
+        notes: d.notes,
+        status: d.status,
+      }
       : null;
   }
   async update(id: string, update: Partial<Schedule>): Promise<Schedule | null> {
     const d = await ScheduleModel.findByIdAndUpdate(id, update, { new: true }).lean();
     return d
       ? {
-          id: d._id.toString(),
-          professorId: d.professorId.toString(),
-          date: d.date,
-          startTime: (d.startTime as Date).toISOString(),
-          endTime: (d.endTime as Date).toISOString(),
-          isAvailable: d.isAvailable,
-          notes: d.notes,
-          status: d.status,
-        }
+        id: d._id.toString(),
+        professorId: d.professorId.toString(),
+        date: d.date,
+        startTime: (d.startTime as Date).toISOString(),
+        endTime: (d.endTime as Date).toISOString(),
+        isAvailable: d.isAvailable,
+        notes: d.notes,
+        status: d.status,
+      }
       : null;
   }
   async delete(id: string): Promise<void> {
@@ -287,17 +287,17 @@ export class MongoBookingRepository implements BookingRepository {
     const d = await BookingModel.findByIdAndUpdate(id, update, { new: true }).lean();
     return d
       ? {
-          id: d._id.toString(),
-          studentId: d.studentId.toString(),
-          scheduleId: d.scheduleId?.toString(),
-          courtId: d.courtId?.toString(),
-          serviceType: d.serviceType,
-          status: d.status,
-          price: d.price,
-          notes: d.notes,
-          bookingDate: d.bookingDate,
-          createdAt: d.createdAt,
-        }
+        id: d._id.toString(),
+        studentId: d.studentId.toString(),
+        scheduleId: d.scheduleId?.toString(),
+        courtId: d.courtId?.toString(),
+        serviceType: d.serviceType,
+        status: d.status,
+        price: d.price,
+        notes: d.notes,
+        bookingDate: d.bookingDate,
+        createdAt: d.createdAt,
+      }
       : null;
   }
 }
@@ -307,12 +307,12 @@ export class MongoPaymentRepository implements PaymentRepository {
     const created = await PaymentModel.create({
       ...payment,
       studentId: new Types.ObjectId(payment.studentId),
-      professorId: new Types.ObjectId(payment.professorId),
+      professorId: payment.professorId ? new Types.ObjectId(payment.professorId) : undefined,
     });
     return {
       id: created._id.toString(),
       studentId: created.studentId.toString(),
-      professorId: created.professorId.toString(),
+      professorId: created.professorId?.toString(),
       amount: created.amount,
       date: created.date,
       method: created.method,
@@ -330,7 +330,7 @@ export class MongoPaymentRepository implements PaymentRepository {
     return docs.map((d) => ({
       id: d._id.toString(),
       studentId: d.studentId.toString(),
-      professorId: d.professorId.toString(),
+      professorId: d.professorId?.toString(),
       amount: d.amount,
       date: d.date,
       method: d.method,
@@ -354,12 +354,12 @@ export class MongoServiceRepository implements ServiceRepository {
     const d = await ServiceModel.findByIdAndUpdate(id, update, { new: true }).lean();
     return d
       ? {
-          id: d._id.toString(),
-          name: d.name,
-          description: d.description,
-          price: d.price,
-          category: d.category,
-        }
+        id: d._id.toString(),
+        name: d.name,
+        description: d.description,
+        price: d.price,
+        category: d.category,
+      }
       : null;
   }
   async list(): Promise<Service[]> {

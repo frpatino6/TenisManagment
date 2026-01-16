@@ -4,7 +4,7 @@ export interface PaymentDocument {
   _id: Types.ObjectId;
   tenantId: Types.ObjectId; // Reference to Tenant (required for multi-tenancy)
   studentId: Types.ObjectId;
-  professorId: Types.ObjectId;
+  professorId?: Types.ObjectId;
   bookingId?: Types.ObjectId;
   amount: number;
   date: Date;
@@ -25,7 +25,7 @@ const PaymentSchema = new Schema<PaymentDocument>(
       index: true,
     },
     studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: true, index: true },
-    professorId: { type: Schema.Types.ObjectId, ref: 'Professor', required: true, index: true },
+    professorId: { type: Schema.Types.ObjectId, ref: 'Professor', index: true },
     bookingId: { type: Schema.Types.ObjectId, ref: 'Booking' },
     amount: { type: Number, required: true },
     date: { type: Date, required: true, index: true },

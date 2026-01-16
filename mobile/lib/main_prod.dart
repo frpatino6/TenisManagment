@@ -14,7 +14,7 @@ import 'main_common.dart';
 /// - ./scripts/run_prod.sh
 ///
 /// Configuración:
-/// - Backend: https://cloudflow-uat.duckdns.org
+/// - Backend: https://tenis-uat.casacam.net
 /// - Firebase: tennis-management-fcd54
 /// - Debug logs: Deshabilitados
 /// - App name: "Tennis Management"

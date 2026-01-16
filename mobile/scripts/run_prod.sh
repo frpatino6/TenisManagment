@@ -11,7 +11,7 @@ set -e
 
 echo "🚀 Ejecutando Tennis Management en modo PRODUCCIÓN"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "🌐 Backend: https://cloudflow-uat.duckdns.org"
+echo "🌐 Backend: https://tenis-uat.casacam.net"
 echo "🔧 Flavor: prod"
 echo "📦 App Name: Tennis Management"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

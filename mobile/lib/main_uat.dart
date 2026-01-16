@@ -13,7 +13,7 @@ import 'main_common.dart';
 /// - ./scripts/run_uat.sh
 ///
 /// Configuración:
-/// - Backend: https://cloudflow-uat.duckdns.org
+/// - Backend: https://tenis-uat.casacam.net
 /// - Firebase: tennis-management-fcd54 (Mismo que prod por ahora)
 /// - Debug logs: Habilitados
 /// - App name: "Tennis UAT"

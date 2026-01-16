@@ -67,7 +67,7 @@ android {
             
             // Configuraciones adicionales para UAT
             buildConfigField("String", "ENVIRONMENT", "\"uat\"")
-            buildConfigField("String", "API_BASE_URL", "\"https://cloudflow-uat.duckdns.org/api\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://tenis-uat.casacam.net/api\"")
         }
 
         create("prod") {
@@ -78,7 +78,7 @@ android {
             
             // Configuraciones adicionales para producción
             buildConfigField("String", "ENVIRONMENT", "\"production\"")
-            buildConfigField("String", "API_BASE_URL", "\"https://cloudflow-uat.duckdns.org/api\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://tenis-uat.casacam.net/api\"")
         }
     }
 

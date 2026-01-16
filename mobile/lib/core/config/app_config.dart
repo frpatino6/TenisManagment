@@ -37,11 +37,11 @@ class AppConfig {
         }
 
       case Environment.production:
-        return 'https://cloudflow-uat.duckdns.org';
+        return 'https://tenis-uat.casacam.net';
 
       case Environment.uat:
         // TEMP: Apuntando a Prod mientras se resuelve el servicio UAT dedicado
-        return 'https://cloudflow-uat.duckdns.org';
+        return 'https://tenis-uat.casacam.net';
     }
   }
 

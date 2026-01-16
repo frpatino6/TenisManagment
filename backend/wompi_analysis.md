@@ -149,7 +149,7 @@ Necesitamos un modelo para auditar **intentos** de pago independientemente de si
 *   **Idempotencia**: El webhook debe manejar reintentos de Wompi sin duplicar saldos. (Usar `reference` como llave de idempotencia).
 
 
-https://34.57.81.166.nip.io/api/payments/webhooks/wompi
+https://cloudflow-uat.duckdns.org/api/payments/webhooks/wompi
 
 
 

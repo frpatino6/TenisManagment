@@ -137,7 +137,7 @@ sudo usermod -aG docker $USER
         ports:
           - "80:80"
           - "443:443"
-        command: caddy reverse-proxy --from https://34.57.81.166.nip.io --to http://backend:3000
+        command: caddy reverse-proxy --from https://cloudflow-uat.duckdns.org --to http://backend:3000
         depends_on:
           - backend
     ```
@@ -153,7 +153,7 @@ docker compose pull
 docker compose up -d
 ```
 
-¡Listo! Tu backend debería estar corriendo en `https://34.57.81.166.nip.io` (Seguro con HTTPS).
+¡Listo! Tu backend debería estar corriendo en `https://cloudflow-uat.duckdns.org` (Seguro con HTTPS).
 
 ---
 

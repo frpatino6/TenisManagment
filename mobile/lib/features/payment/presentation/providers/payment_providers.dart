@@ -16,7 +16,11 @@ class PaymentController extends _$PaymentController {
   @override
   FutureOr<void> build() {}
 
-  Future<Map<String, dynamic>?> initPayment(double amount) async {
+  Future<Map<String, dynamic>?> initPayment(
+    double amount, {
+    Map<String, dynamic>? bookingData,
+    String? redirectUrl,
+  }) async {
     state = const AsyncLoading();
     try {
       final tenantId = ref.read(currentTenantIdProvider);
@@ -24,7 +28,12 @@ class PaymentController extends _$PaymentController {
         throw Exception('No se ha seleccionado un centro');
       }
       final service = ref.read(paymentServiceProvider);
-      final result = await service.initPayment(amount, tenantId);
+      final result = await service.initPayment(
+        amount,
+        tenantId,
+        bookingData: bookingData,
+        redirectUrl: redirectUrl,
+      );
       state = const AsyncData(null);
       return result;
     } catch (e, st) {

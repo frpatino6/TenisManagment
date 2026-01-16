@@ -19,8 +19,10 @@ class PaymentService {
 
   Future<Map<String, dynamic>> initPayment(
     double amount,
-    String tenantId,
-  ) async {
+    String tenantId, {
+    Map<String, dynamic>? bookingData,
+    String? redirectUrl,
+  }) async {
     _logger.info('Initializing payment for amount: $amount, tenant: $tenantId');
 
     try {
@@ -48,7 +50,12 @@ class PaymentService {
               'Authorization': 'Bearer $idToken',
               'X-Tenant-ID': tenantId,
             },
-            body: jsonEncode({'amount': amount, 'currency': 'COP'}),
+            body: jsonEncode({
+              'amount': amount,
+              'currency': 'COP',
+              if (bookingData != null) 'bookingInfo': bookingData,
+              if (redirectUrl != null) 'redirectUrl': redirectUrl,
+            }),
           )
           .timeout(Timeouts.httpRequest);
 

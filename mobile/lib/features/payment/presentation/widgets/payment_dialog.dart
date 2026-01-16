@@ -6,8 +6,15 @@ import '../../../../core/exceptions/exceptions.dart';
 
 class PaymentDialog extends ConsumerStatefulWidget {
   final double? initialAmount;
+  final Map<String, dynamic>? bookingData;
+  final String? redirectUrl;
 
-  const PaymentDialog({super.key, this.initialAmount});
+  const PaymentDialog({
+    super.key,
+    this.initialAmount,
+    this.bookingData,
+    this.redirectUrl,
+  });
 
   @override
   ConsumerState<PaymentDialog> createState() => _PaymentDialogState();
@@ -80,7 +87,11 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                         // Using read instead of watch for actions
                         final result = await ref
                             .read(paymentControllerProvider.notifier)
-                            .initPayment(amount);
+                            .initPayment(
+                              amount,
+                              bookingData: widget.bookingData,
+                              redirectUrl: widget.redirectUrl,
+                            );
 
                         if (context.mounted) {
                           Navigator.pop(context); // Close dialog

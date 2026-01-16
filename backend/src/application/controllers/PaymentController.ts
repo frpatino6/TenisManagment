@@ -1,34 +1,54 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { Logger } from '../../infrastructure/services/Logger';
 import { PaymentGateway } from '../../domain/services/payment/PaymentGateway';
 import { WompiAdapter } from '../../infrastructure/services/payment/adapters/WompiAdapter';
 import { TransactionModel } from '../../infrastructure/database/models/TransactionModel';
 import { TenantModel, TenantDocument } from '../../infrastructure/database/models/TenantModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
 import { StudentModel } from '../../infrastructure/database/models/StudentModel';
-import { AuthUserModel } from '../../infrastructure/database/models/AuthUserModel';
+import { AuthUserModel, UserRole } from '../../infrastructure/database/models/AuthUserModel';
+import { TenantService } from '../services/TenantService';
+import { BookingService } from '../services/BookingService';
+import { Logger } from '../../infrastructure/services/Logger';
+
+interface AuthenticatedRequest extends Request {
+    user?: {
+        id: string;
+        role: UserRole;
+        uid?: string;
+        email?: string;
+    };
+    tenantId?: string;
+}
 
 export class PaymentController {
-    private logger = new Logger();
     private paymentGateway: PaymentGateway;
+    private logger = new Logger();
+    private tenantService = new TenantService();
+    private bookingService = new BookingService();
 
-    constructor() {
-        this.paymentGateway = new WompiAdapter();
+    constructor(paymentGateway: PaymentGateway) {
+        this.paymentGateway = paymentGateway;
     }
 
     /**
      * Inicia una transacción de pago
      * POST /api/payments/init
      */
-    public initPayment = async (req: Request, res: Response) => {
+    public initPayment = async (req: AuthenticatedRequest, res: Response) => {
         try {
             const schema = z.object({
                 amount: z.number().min(1000, 'El monto mínimo es 1000'),
                 currency: z.enum(['COP']).default('COP'),
+                bookingInfo: z.object({
+                    scheduleId: z.string(),
+                    serviceType: z.enum(['individual_class', 'group_class', 'court_rental']),
+                    price: z.number()
+                }).optional(),
+                redirectUrl: z.string().url().optional(),
             });
 
-            const { amount, currency } = schema.parse(req.body);
+            const { amount, currency, bookingInfo, redirectUrl } = schema.parse(req.body);
 
             // req.user is populated by authMiddleware { id, role }
             const userId = req.user?.id;
@@ -66,7 +86,7 @@ export class PaymentController {
             }
 
             // 1. Crear Intent en el Gateway (Wompi)
-            const intent = await this.paymentGateway.createPaymentIntent(amount, currency, user, tenant);
+            const intent = await this.paymentGateway.createPaymentIntent(amount, currency, user, tenant, { redirectUrl });
 
             // 2. Transacción
             const transaction = new TransactionModel({
@@ -79,7 +99,8 @@ export class PaymentController {
                 status: 'PENDING',
                 gateway: 'WOMPI',
                 metadata: {
-                    initialResponse: intent
+                    initialResponse: intent,
+                    bookingInfo: bookingInfo
                 }
             });
 
@@ -163,6 +184,28 @@ export class PaymentController {
                     });
 
                     this.logger.info(`[PaymentController] Payment processed for ${reference}`);
+
+                    // Check if there is a pending booking to be auto-confirmed
+                    if (transaction.metadata?.bookingInfo) {
+                        try {
+                            const bInfo = transaction.metadata.bookingInfo;
+                            this.logger.info(`[PaymentController] Auto-booking for ref: ${reference}`);
+                            await this.bookingService.createBooking({
+                                tenantId: transaction.tenantId.toString(),
+                                studentId: transaction.studentId.toString(),
+                                scheduleId: bInfo.scheduleId,
+                                serviceType: bInfo.serviceType,
+                                price: bInfo.price
+                            });
+                            this.logger.info(`[PaymentController] Auto-booking SUCCESS for ref: ${reference}`);
+                        } catch (bookingError: any) {
+                            this.logger.error(`[PaymentController] Auto-booking FAILED for ref: ${reference}`, {
+                                error: bookingError.message
+                            });
+                            // We don't fail the webhook because the payment IS already processed.
+                            // The user has the balance to manually retry if needed.
+                        }
+                    }
                 }
             }
 

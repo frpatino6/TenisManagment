@@ -227,7 +227,8 @@ export class StudentDashboardController {
         level: 'Principiante', // Default level, can be extended in future
         totalClasses: totalBookings,
         totalPayments: totalPayments,
-        totalSpent: totalSpent.length > 0 ? totalSpent[0].total : 0
+        totalSpent: totalSpent.length > 0 ? totalSpent[0].total : 0,
+        balance: student.balance
       });
     } catch (error) {
       console.error('Error getting student info:', error);

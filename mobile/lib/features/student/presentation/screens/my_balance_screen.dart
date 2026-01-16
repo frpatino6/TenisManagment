@@ -161,6 +161,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   }
 
   Widget _buildBalanceContent(BuildContext context) {
+    final balance = (_studentInfo!['balance'] as num?)?.toDouble() ?? 0.0;
     final totalSpent = (_studentInfo!['totalSpent'] as num?)?.toDouble() ?? 0.0;
     final totalClasses = _studentInfo!['totalClasses'] as int? ?? 0;
     final totalPayments = _studentInfo!['totalPayments'] as int? ?? 0;
@@ -170,7 +171,13 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildBalanceCard(context, totalSpent, totalClasses, totalPayments)
+          _buildBalanceCard(
+                context,
+                balance,
+                totalSpent,
+                totalClasses,
+                totalPayments,
+              )
               .animate()
               .fadeIn(duration: 400.ms, delay: 200.ms)
               .slideY(begin: 0.2, end: 0),
@@ -189,7 +196,13 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
 
           const Gap(16),
 
-          _buildStatsGrid(context, totalSpent, totalClasses, totalPayments)
+          _buildStatsGrid(
+                context,
+                balance,
+                totalSpent,
+                totalClasses,
+                totalPayments,
+              )
               .animate()
               .fadeIn(duration: 400.ms, delay: 600.ms)
               .slideY(begin: 0.2, end: 0),
@@ -219,6 +232,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
 
   Widget _buildBalanceCard(
     BuildContext context,
+    double balance,
     double totalSpent,
     int totalClasses,
     int totalPayments,
@@ -263,13 +277,13 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Total Invertido',
+                        'Saldo Disponible',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white.withValues(alpha: 0.9),
                         ),
                       ),
                       Text(
-                        CurrencyUtils.format(totalSpent),
+                        CurrencyUtils.format(balance),
                         style: Theme.of(context).textTheme.headlineLarge
                             ?.copyWith(
                               color: Colors.white,
@@ -345,6 +359,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
 
   Widget _buildStatsGrid(
     BuildContext context,
+    double balance,
     double totalSpent,
     int totalClasses,
     int totalPayments,

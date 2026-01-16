@@ -114,21 +114,22 @@ export class PaymentController {
 
             if (!transactionData) {
                 this.logger.warn('[PaymentController] Webhook received without transaction data');
-                return res.status(200).send('OK (Ignored)');
+                return res.status(200).send('OK');
             }
 
             const reference = transactionData.reference;
 
             const transaction = await TransactionModel.findOne({ reference });
             if (!transaction) {
-                this.logger.error(`[PaymentController] Transaction not found for ref: ${reference}`);
-                return res.status(200).send('OK (Not Found)');
+                this.logger.warn(`[PaymentController] Transaction not found for ref: ${reference}`);
+                return res.status(200).send('OK');
             }
 
             // Re-fetch tenant to ensure we have the document with config
             const tenant = await TenantModel.findById(transaction.tenantId);
             if (!tenant) {
-                return res.status(200).send('OK (Tenant Missing)');
+                this.logger.warn(`[PaymentController] Tenant missing for transaction: ${reference}`);
+                return res.status(200).send('OK');
             }
 
             const result = await this.paymentGateway.validateTransaction(data, tenant);
@@ -139,7 +140,7 @@ export class PaymentController {
             transaction.metadata = { ...transaction.metadata, webhookEvent: data };
             await transaction.save();
 
-            if (result.status === 'APPROVED') {
+            if (result.status === 'APPROVED' && !isNaN(result.amount) && result.amount > 0) {
                 const existingPayment = await PaymentModel.findOne({
                     description: { $regex: reference }
                 });

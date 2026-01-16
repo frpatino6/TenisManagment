@@ -147,3 +147,13 @@ Necesitamos un modelo para auditar **intentos** de pago independientemente de si
 *   **NUNCA** manejar tarjetas de crédito directamente en el backend (PCI DSS). Usar siempre el Checkout de Wompi o Tokenización.
 *   **Firmas de Integridad**: Es crucial validar las firmas tanto al enviar a Wompi como al recibir el webhook para evitar manipulación de montos o estados.
 *   **Idempotencia**: El webhook debe manejar reintentos de Wompi sin duplicar saldos. (Usar `reference` como llave de idempotencia).
+
+
+https://34.57.81.166.nip.io/api/payments/webhooks/wompi
+
+
+
+
+
+
+

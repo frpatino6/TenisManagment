@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
@@ -8,6 +9,8 @@ import 'core/config/app_config.dart';
 import 'core/providers/tenant_provider.dart';
 import 'features/student/presentation/providers/student_provider.dart';
 import 'features/booking/presentation/providers/booking_provider.dart';
+import 'core/utils/web_utils_stub.dart'
+    if (dart.library.js_interop) 'core/utils/web_utils_web.dart';
 
 /// Widget principal de la aplicación
 ///
@@ -23,10 +26,22 @@ class TennisManagementApp extends ConsumerStatefulWidget {
 
 class _TennisManagementAppState extends ConsumerState<TennisManagementApp>
     with WidgetsBindingObserver {
+  void _handleFocusEvent() {
+    // Refresh data when window regains focus (web only)
+    ref.invalidate(studentInfoProvider);
+    ref.invalidate(bookingServiceProvider);
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // On web: also listen for window focus events (tab changes)
+    if (kIsWeb) {
+      WebUtils.addWindowFocusListener(_handleFocusEvent);
+    }
+
     // Load tenant from backend on app startup
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // Load tenant through notifier (service is stateless, no initialization needed)
@@ -37,6 +52,10 @@ class _TennisManagementAppState extends ConsumerState<TennisManagementApp>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    // On web: remove window focus listener
+    if (kIsWeb) {
+      WebUtils.removeWindowFocusListener(_handleFocusEvent);
+    }
     super.dispose();
   }
 

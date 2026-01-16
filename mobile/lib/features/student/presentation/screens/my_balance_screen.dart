@@ -20,11 +20,22 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   Map<String, dynamic>? _studentInfo;
   bool _isLoading = true;
   String? _error;
+  bool _isFirstBuild = true;
 
   @override
   void initState() {
     super.initState();
     _loadStudentInfo();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh data every time this screen is displayed (except first time)
+    if (!_isFirstBuild) {
+      _loadStudentInfo();
+    }
+    _isFirstBuild = false;
   }
 
   Future<void> _loadStudentInfo() async {

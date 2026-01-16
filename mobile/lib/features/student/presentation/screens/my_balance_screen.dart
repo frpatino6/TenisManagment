@@ -4,6 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import '../../../payment/presentation/widgets/payment_dialog.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../domain/services/student_service.dart';
 
@@ -452,6 +453,23 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
+            onPressed: () => _showTopUpDialog(context),
+            icon: const Icon(Icons.add_card),
+            label: const Text('Recargar Saldo'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        const Gap(12),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
             onPressed: () => context.push('/book-class'),
             icon: const Icon(Icons.book_online),
             label: const Text('Reservar Nueva Clase'),
@@ -479,6 +497,13 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _showTopUpDialog(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder: (context) => const PaymentDialog(),
     );
   }
 }

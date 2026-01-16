@@ -1,0 +1,15 @@
+import { Router } from 'express';
+import { PaymentController } from '../../application/controllers/PaymentController';
+import { firebaseAuthMiddleware } from '../../application/middleware/firebaseAuth';
+import { extractTenantId } from '../../application/middleware/tenant';
+
+const router = Router();
+const controller = new PaymentController();
+
+// Inicializar pago (Usuario autenticado con Firebase)
+router.post('/init', firebaseAuthMiddleware, extractTenantId, controller.initPayment);
+
+// Webhook Wompi (Público, validación de firma interna)
+router.post('/webhooks/wompi', controller.wompiWebhook);
+
+export default router;

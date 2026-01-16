@@ -214,24 +214,24 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
 
                           if (isInsufficient) {
                             return ElevatedButton.icon(
-                              onPressed: () =>
-                                  showDialog(
-                                    context: context,
-                                    builder: (_) => PaymentDialog(
-                                      initialAmount: missingAmount,
-                                      bookingData: {
-                                        'scheduleId': widget.schedule.id,
-                                        'serviceType': 'individual_class',
-                                        'price': _price,
-                                      },
-                                      redirectUrl:
-                                          'https://tenis-uat.casacam.net/payment-complete',
-                                    ),
-                                  ).then((_) {
-                                    // Refresh balance and bookings after dialog closes
+                              onPressed: () => showDialog(
+                                context: context,
+                                builder: (_) => PaymentDialog(
+                                  initialAmount: missingAmount,
+                                  bookingData: {
+                                    'scheduleId': widget.schedule.id,
+                                    'serviceType': 'individual_class',
+                                    'price': _price,
+                                  },
+                                  redirectUrl:
+                                      'https://tenis-uat.casacam.net/payment-complete',
+                                  onPaymentComplete: () {
+                                    // Refresh balance and bookings after payment
                                     ref.invalidate(studentInfoProvider);
                                     ref.invalidate(bookingServiceProvider);
-                                  }),
+                                  },
+                                ),
+                              ),
                               style: ElevatedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 16,

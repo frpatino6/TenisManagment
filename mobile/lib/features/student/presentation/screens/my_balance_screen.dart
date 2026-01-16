@@ -503,7 +503,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   Future<void> _showTopUpDialog(BuildContext context) async {
     await showDialog(
       context: context,
-      builder: (context) => const PaymentDialog(),
+      builder: (context) => PaymentDialog(onPaymentComplete: _loadStudentInfo),
     );
   }
 }

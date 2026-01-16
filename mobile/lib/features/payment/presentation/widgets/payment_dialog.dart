@@ -12,12 +12,14 @@ class PaymentDialog extends ConsumerStatefulWidget {
   final double? initialAmount;
   final Map<String, dynamic>? bookingData;
   final String? redirectUrl;
+  final VoidCallback? onPaymentComplete;
 
   const PaymentDialog({
     super.key,
     this.initialAmount,
     this.bookingData,
     this.redirectUrl,
+    this.onPaymentComplete,
   });
 
   @override
@@ -140,6 +142,9 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                             if (context.mounted) {
                               ref.invalidate(studentInfoProvider);
                               ref.invalidate(bookingServiceProvider);
+
+                              // Notify parent screen to refresh
+                              widget.onPaymentComplete?.call();
 
                               if (paymentCompleted == true) {
                                 ScaffoldMessenger.of(context).showSnackBar(

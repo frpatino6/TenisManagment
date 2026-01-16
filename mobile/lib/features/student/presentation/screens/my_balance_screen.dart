@@ -17,19 +17,11 @@ class MyBalanceScreen extends ConsumerStatefulWidget {
 
 class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   bool _isSyncing = false;
+  double? _previousBalance;
 
   @override
   Widget build(BuildContext context) {
     final studentInfoAsync = ref.watch(studentInfoProvider);
-
-    // Listen for balance updates to hide loading overlay
-    ref.listen(studentInfoProvider, (previous, next) {
-      if (next.hasValue && _isSyncing && mounted) {
-        setState(() {
-          _isSyncing = false;
-        });
-      }
-    });
 
     return Scaffold(
       appBar: AppBar(
@@ -48,7 +40,26 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
       body: Stack(
         children: [
           studentInfoAsync.when(
-            data: (studentInfo) => _buildBalanceContent(context, studentInfo),
+            data: (studentInfo) {
+              final currentBalance =
+                  (studentInfo['balance'] as num?)?.toDouble() ?? 0.0;
+
+              // Hide overlay if balance changed after syncing
+              if (_isSyncing &&
+                  _previousBalance != null &&
+                  currentBalance != _previousBalance) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    setState(() {
+                      _isSyncing = false;
+                      _previousBalance = currentBalance;
+                    });
+                  }
+                });
+              }
+
+              return _buildBalanceContent(context, studentInfo);
+            },
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, _) => _buildErrorState(context, error.toString()),
           ),
@@ -496,6 +507,10 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   }
 
   Future<void> _showTopUpDialog(BuildContext context) async {
+    // Capture current balance before payment
+    final currentInfo = ref.read(studentInfoProvider).value;
+    final currentBalance = (currentInfo?['balance'] as num?)?.toDouble() ?? 0.0;
+
     await showDialog(
       context: context,
       builder: (context) => PaymentDialog(
@@ -507,6 +522,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
 
     if (mounted) {
       setState(() {
+        _previousBalance = currentBalance;
         _isSyncing = true;
       });
       ref.invalidate(studentInfoProvider);

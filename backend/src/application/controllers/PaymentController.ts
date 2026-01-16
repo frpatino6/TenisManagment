@@ -95,7 +95,6 @@ export class PaymentController {
                 stack: error.stack,
                 details: error
             });
-            console.error('FULL ERROR:', error); // Direct console log for debugging
             if (error instanceof z.ZodError) {
                 return res.status(400).json({ error: error.errors });
             }
@@ -167,11 +166,11 @@ export class PaymentController {
                 }
             }
 
-            return res.status(200).type('text/plain').send('OK');
+            return res.status(200).json({ status: 'ok' });
 
         } catch (error) {
             this.logger.error('[PaymentController] Webhook error', { error });
-            return res.status(500).send('Internal Error');
+            return res.status(500).json({ error: 'Internal Error' });
         }
     };
 }

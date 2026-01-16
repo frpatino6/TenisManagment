@@ -31,6 +31,7 @@ class PaymentDialog extends ConsumerStatefulWidget {
 class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   late final TextEditingController _amountController;
   final _formKey = GlobalKey<FormState>();
+  String? _checkoutUrl; // Store URL for two-step launch on web
 
   @override
   void initState() {
@@ -86,6 +87,21 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
           builder: (context, ref, child) {
             final paymentState = ref.watch(paymentControllerProvider);
 
+            if (kIsWeb && _checkoutUrl != null) {
+              return FilledButton.icon(
+                onPressed: () {
+                  WebUtils.openUrl(_checkoutUrl!, newTab: true);
+                  Navigator.pop(context);
+                },
+                icon: const Icon(Icons.open_in_new),
+                label: const Text('Ir a la pasarela de pago'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              );
+            }
+
             return FilledButton(
               onPressed: paymentState.isLoading
                   ? null
@@ -102,77 +118,77 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                             );
 
                         if (context.mounted) {
-                          Navigator.pop(context); // Close dialog
-
                           if (result != null && result['checkoutUrl'] != null) {
-                            bool? paymentCompleted;
+                            final checkoutUrl = result['checkoutUrl'];
 
                             if (kIsWeb) {
-                              // On web: use WebUtils to navigate in the same tab
-                              // This prevents mobile Safari from blocking it as a popup
-                              final url = result['checkoutUrl'];
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Redirigiendo a Wompi...'),
+                              // On web: update state to show the "Proceed" button
+                              // This ensures the next click is a direct user interaction
+                              setState(() {
+                                _checkoutUrl = checkoutUrl;
+                              });
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'URL de pago lista. Haz clic para continuar.',
                                   ),
-                                );
-                              }
-                              WebUtils.openUrl(url);
-                              paymentCompleted = null;
+                                  duration: Duration(seconds: 4),
+                                ),
+                              );
                             } else {
-                              // On mobile (Android/iOS): use WebView
+                              // On mobile: keep automatic redirection with WebView
+                              Navigator.pop(context); // Close dialog
+                              final bool?
                               paymentCompleted = await Navigator.push<bool>(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => WompiWebViewScreen(
-                                    checkoutUrl: result['checkoutUrl'],
+                                    checkoutUrl: checkoutUrl,
                                     redirectUrl:
                                         widget.redirectUrl ??
                                         'https://tenis-uat.casacam.net/payment-complete',
                                   ),
                                 ),
                               );
-                            }
 
-                            // Refresh data after payment flow with a small delay to allow webhook processing
-                            if (context.mounted) {
-                              Future.delayed(Timeouts.snackbarSuccess, () {
-                                if (context.mounted) {
-                                  ref.invalidate(studentInfoProvider);
-                                  ref.invalidate(bookingServiceProvider);
-                                  // Notify parent screen to refresh
-                                  widget.onPaymentComplete?.call();
-                                }
-                              });
+                              // Refresh logic for mobile
+                              if (context.mounted) {
+                                Future.delayed(Timeouts.snackbarSuccess, () {
+                                  if (context.mounted) {
+                                    ref.invalidate(studentInfoProvider);
+                                    ref.invalidate(bookingServiceProvider);
+                                    widget.onPaymentComplete?.call();
+                                  }
+                                });
 
-                              if (paymentCompleted == true) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Pago procesado. Actualizando saldo...',
+                                if (paymentCompleted == true) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Pago procesado. Actualizando saldo...',
+                                      ),
+                                      backgroundColor: Colors.green,
+                                      duration: Timeouts.snackbarSuccess,
                                     ),
-                                    backgroundColor: Colors.green,
-                                    duration: Timeouts.snackbarSuccess,
-                                  ),
-                                );
+                                  );
+                                }
                               }
                             }
                           } else {
-                            if (context.mounted) {
-                              final error = paymentState.error;
-                              final message = error is AppException
-                                  ? error.userMessage
-                                  : error?.toString() ?? "Desconocido";
+                            // Error handling remains same
+                            final error = paymentState.error;
+                            final message = error is AppException
+                                ? error.userMessage
+                                : error?.toString() ?? "Desconocido";
 
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Error al iniciar pago: $message',
-                                  ),
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Error al iniciar pago: $message',
                                 ),
-                              );
-                            }
+                              ),
+                            );
                           }
                         }
                       }

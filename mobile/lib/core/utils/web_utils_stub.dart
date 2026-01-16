@@ -6,7 +6,7 @@ class WebUtils {
   }
 
   /// Stub for mobile - does nothing
-  static void openUrl(String url) {
+  static void openUrl(String url, {bool newTab = false}) {
     // No hace nada en móvil
   }
 

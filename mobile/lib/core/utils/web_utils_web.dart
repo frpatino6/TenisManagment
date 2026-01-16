@@ -8,9 +8,13 @@ class WebUtils {
     web.window.location.reload();
   }
 
-  /// Open a URL in the same window (prevents popup blockers on mobile Safari)
-  static void openUrl(String url) {
-    web.window.location.assign(url);
+  /// Open a URL (prevents popup blockers on mobile Safari if used in direct interaction)
+  static void openUrl(String url, {bool newTab = false}) {
+    if (newTab) {
+      web.window.open(url, '_blank');
+    } else {
+      web.window.location.assign(url);
+    }
   }
 
   /// Add listener for window focus events and visibility changes (when user returns to tab)

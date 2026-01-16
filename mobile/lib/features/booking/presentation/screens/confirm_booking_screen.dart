@@ -12,6 +12,11 @@ import '../../../../core/logging/logger.dart';
 /// Screen to confirm a booking before creating it
 ///
 /// Shows booking details and allows the student to confirm or cancel.
+///
+/// ### 2. Automatización "Cero Clics" Total
+/// - **Doble Verificación:** La app ahora escucha tanto la creación automática de reservas (vía webhooks) como las actualizaciones de saldo.
+/// - **Gatillo Automático:** Si el saldo llega a ser suficiente y la reserva aún no aparece confirmada, la app dispara el proceso de confirmación de inmediato.
+/// - **Experiencia Fluida:** El usuario ya no ve el botón "Confirmar Reserva" después de pagar; es redirigido directamente al éxito.
 class ConfirmBookingScreen extends ConsumerStatefulWidget {
   final ScheduleModel schedule;
   final String professorId;
@@ -92,7 +97,31 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Listen for bookings to handle auto-confirmation after recharge
+    // Listen for balance changes to trigger auto-confirmation
+    ref.listen(studentInfoProvider, (previous, next) {
+      if (next.hasValue && mounted && !_isBooking) {
+        final info = next.value!;
+        final balance = (info['balance'] as num?)?.toDouble() ?? 0.0;
+
+        if (balance >= _price) {
+          // Check if webhook already created the booking
+          final bookings = ref.read(myBookingsProvider).value ?? [];
+          final hasBooking = bookings.any(
+            (b) =>
+                b.scheduleId == widget.schedule.id && b.status == 'confirmed',
+          );
+
+          if (!hasBooking) {
+            _logger.info(
+              'Saldo suficiente detectado. Iniciando reserva automática...',
+            );
+            _confirmBooking();
+          }
+        }
+      }
+    });
+
+    // Listen for bookings to handle auto-confirmation after recharge (from webhook)
     ref.listen(myBookingsProvider, (previous, next) {
       if (next.hasValue) {
         final booking = next.value!
@@ -103,13 +132,17 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
             .firstOrNull;
 
         if (booking != null && mounted && !_isBooking) {
-          _logger.info('Reserva detectada automáticamente (webhook)');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('¡Reserva confirmada exitosamente!'),
-              backgroundColor: Colors.green,
-            ),
+          _logger.info(
+            'Reserva detectada automáticamente (webhook). Redirigiendo...',
           );
+          if (ScaffoldMessenger.of(context).mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('¡Reserva confirmada automáticamente!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
           context.go('/home');
         }
       }
@@ -250,17 +283,18 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                                   },
                                   redirectUrl:
                                       'https://tenis-uat.casacam.net/payment-complete',
-                                  onPaymentComplete: () async {
-                                    // Small delay to allow webhook to process
-                                    await Future.delayed(
+                                  onPaymentComplete: () {
+                                    // Refresh data after payment
+                                    // Add delay to allow webhooks to process
+                                    Future.delayed(
                                       const Duration(seconds: 2),
+                                      () {
+                                        if (context.mounted) {
+                                          ref.invalidate(studentInfoProvider);
+                                          ref.invalidate(myBookingsProvider);
+                                        }
+                                      },
                                     );
-                                    if (context.mounted) {
-                                      // Refresh balance and bookings after payment
-                                      ref.invalidate(studentInfoProvider);
-                                      ref.invalidate(myBookingsProvider);
-                                      ref.invalidate(bookingServiceProvider);
-                                    }
                                   },
                                 ),
                               ),

@@ -26,9 +26,14 @@ class BookingModel {
   });
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
+    // Get scheduleId from either root or nested schedule object
+    final scheduleData = json['schedule'];
+    final scheduleId =
+        json['scheduleId'] ?? (scheduleData is Map ? scheduleData['id'] : null);
+
     return BookingModel(
       id: json['id'] as String,
-      scheduleId: json['scheduleId'] as String?,
+      scheduleId: scheduleId as String?,
       studentId: json['studentId'] as String? ?? '',
       professorId: json['professorId'] as String?,
       professorName: json['professorName'] as String?,

@@ -33,7 +33,7 @@ class _TennisManagementAppState extends ConsumerState<TennisManagementApp>
     Future.delayed(Timeouts.snackbarSuccess, () {
       if (mounted) {
         ref.invalidate(studentInfoProvider);
-        ref.invalidate(bookingServiceProvider);
+        ref.invalidate(myBookingsProvider);
       }
     });
   }
@@ -74,7 +74,7 @@ class _TennisManagementAppState extends ConsumerState<TennisManagementApp>
       Future.delayed(Timeouts.snackbarSuccess, () {
         if (mounted) {
           ref.invalidate(studentInfoProvider);
-          ref.invalidate(bookingServiceProvider);
+          ref.invalidate(myBookingsProvider);
         }
       });
     }

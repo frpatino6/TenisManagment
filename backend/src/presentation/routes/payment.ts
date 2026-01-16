@@ -2,9 +2,10 @@ import { Router } from 'express';
 import { PaymentController } from '../../application/controllers/PaymentController';
 import { firebaseAuthMiddleware } from '../../application/middleware/firebaseAuth';
 import { extractTenantId } from '../../application/middleware/tenant';
+import { WompiAdapter } from '../../infrastructure/services/payment/adapters/WompiAdapter';
 
 const router = Router();
-const controller = new PaymentController();
+const controller = new PaymentController(new WompiAdapter());
 
 // Inicializar pago (Usuario autenticado con Firebase)
 router.post('/init', firebaseAuthMiddleware, extractTenantId, controller.initPayment);

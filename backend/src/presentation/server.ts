@@ -13,17 +13,11 @@ import { config } from '../infrastructure/config';
 import { Logger } from '../infrastructure/services/Logger';
 import { requestIdMiddleware } from '../application/middleware/requestId';
 import { requestLoggerMiddleware } from '../application/middleware/requestLogger';
-import { PaymentController } from '../application/controllers/PaymentController';
 
 const app: Application = express();
 const logger = new Logger({ service: 'backend', env: config.nodeEnv });
-const paymentController = new PaymentController();
 
-// 1. Webhook routes (Public & Exempt from security middleware to satisfy strict validators)
-app.get('/api/payments/webhooks/wompi', (_req, res) => res.status(200).type('text/plain').send('OK'));
-app.post('/api/payments/webhooks/wompi', (req, res) => paymentController.wompiWebhook(req, res));
-
-// 2. Security middlewares
+// 1. Security middlewares
 app.use(helmet());
 app.use(requestIdMiddleware);
 app.use(requestLoggerMiddleware);

@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 import { BookingModel, BookingDocument } from '../../infrastructure/database/models/BookingModel';
 import { ScheduleModel } from '../../infrastructure/database/models/ScheduleModel';
 import { CourtModel } from '../../infrastructure/database/models/CourtModel';
+import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { ProfessorTenantModel } from '../../infrastructure/database/models/ProfessorTenantModel';
 import { TenantService } from './TenantService';
 import { Logger } from '../../infrastructure/services/Logger';
@@ -27,7 +28,17 @@ export class BookingService {
         const { tenantId, scheduleId, studentId, serviceType, price } = data;
 
         try {
-            // 1. Get schedule and validate
+            // 1. Get student and check balance
+            const student = await StudentModel.findById(studentId);
+            if (!student) {
+                throw new Error('Estudiante no encontrado');
+            }
+
+            if (student.balance < price) {
+                throw new Error('Saldo insuficiente para realizar esta reserva');
+            }
+
+            // 2. Get schedule and validate
             const schedule = await ScheduleModel.findById(scheduleId);
             if (!schedule) {
                 throw new Error('Horario no encontrado');
@@ -37,7 +48,7 @@ export class BookingService {
                 throw new Error('Este horario ya no está disponible');
             }
 
-            // 2. Validate professor is active in tenant
+            // 3. Validate professor is active in tenant
             const professorTenant = await ProfessorTenantModel.findOne({
                 professorId: schedule.professorId,
                 tenantId: tenantId,
@@ -48,10 +59,10 @@ export class BookingService {
                 throw new Error('El profesor ya no está asociado activamente a este centro');
             }
 
-            // 3. Ensure StudentTenant relationship exists
+            // 4. Ensure StudentTenant relationship exists
             await this.tenantService.addStudentToTenant(studentId.toString(), tenantId.toString());
 
-            // 4. Find an available court
+            // 5. Find an available court
             const availableCourt = await this.findAvailableCourt(
                 new Types.ObjectId(tenantId.toString()),
                 schedule.startTime,
@@ -62,7 +73,7 @@ export class BookingService {
                 throw new Error('No hay canchas disponibles para este horario');
             }
 
-            // 5. Create the booking
+            // 6. Create the booking
             const booking = await BookingModel.create({
                 tenantId: new Types.ObjectId(tenantId.toString()),
                 scheduleId: schedule._id,
@@ -75,16 +86,23 @@ export class BookingService {
                 notes: `Reserva de ${serviceType} - Cancha: ${availableCourt.name}`
             });
 
-            // 6. Update schedule
+            // 7. Deduct balance from student
+            await StudentModel.findByIdAndUpdate(studentId, {
+                $inc: { balance: -price }
+            });
+
+            // 8. Update schedule
             schedule.isAvailable = false;
             schedule.studentId = new Types.ObjectId(studentId.toString());
             schedule.status = 'confirmed';
             await schedule.save();
 
-            logger.info('Booking created successfully', {
+            logger.info('Booking created and balance deducted successfully', {
                 bookingId: booking._id.toString(),
                 scheduleId: scheduleId.toString(),
-                studentId: studentId.toString()
+                studentId: studentId.toString(),
+                price: price,
+                newBalance: student.balance - price
             });
 
             return booking;

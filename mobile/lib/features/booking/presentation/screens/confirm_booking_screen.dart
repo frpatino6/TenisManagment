@@ -8,6 +8,7 @@ import '../providers/booking_provider.dart';
 import '../../../payment/presentation/widgets/payment_dialog.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../../core/logging/logger.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 /// Screen to confirm a booking before creating it
 ///
@@ -41,6 +42,8 @@ class ConfirmBookingScreen extends ConsumerStatefulWidget {
 class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
   final _logger = AppLogger.tag('ConfirmBookingScreen');
   bool _isBooking = false;
+  bool _isSyncing = false;
+  bool _shouldAutoConfirm = false;
   double _price = 0.0; // Will be calculated based on service type
 
   @override
@@ -55,6 +58,7 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
 
     setState(() {
       _isBooking = true;
+      _isSyncing = true;
     });
 
     try {
@@ -84,6 +88,7 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
 
       setState(() {
         _isBooking = false;
+        _isSyncing = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -97,9 +102,8 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Listen for balance changes to trigger auto-confirmation
     ref.listen(studentInfoProvider, (previous, next) {
-      if (next.hasValue && mounted && !_isBooking) {
+      if (next.hasValue && mounted && !_isBooking && _shouldAutoConfirm) {
         final info = next.value!;
         final balance = (info['balance'] as num?)?.toDouble() ?? 0.0;
 
@@ -113,7 +117,7 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
 
           if (!hasBooking) {
             _logger.info(
-              'Saldo suficiente detectado. Iniciando reserva automática...',
+              'Saldo suficiente tras recarga. Iniciando reserva automática...',
             );
             _confirmBooking();
           }
@@ -150,196 +154,255 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Confirmar Reserva')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header card
-            Card(
-              elevation: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Detalles de la Reserva',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(
-                      Icons.person,
-                      'Profesor',
-                      widget.professorName,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDetailRow(
-                      Icons.business,
-                      'Centro',
-                      widget.tenantName,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDetailRow(
-                      Icons.calendar_today,
-                      'Fecha',
-                      widget.schedule.formattedDate,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDetailRow(
-                      Icons.access_time,
-                      'Horario',
-                      widget.schedule.timeRange,
-                    ),
-                    if (widget.schedule.courtName != null) ...[
-                      const SizedBox(height: 12),
-                      _buildDetailRow(
-                        Icons.stadium,
-                        'Cancha',
-                        widget.schedule.courtName!,
-                      ),
-                    ],
-                    if (widget.schedule.notes != null &&
-                        widget.schedule.notes!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: _buildDetailRow(
-                          Icons.note,
-                          'Notas',
-                          widget.schedule.notes!,
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header card
+                Card(
+                  elevation: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Detalles de la Reserva',
+                          style: GoogleFonts.outfit(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Price card
-            Card(
-              elevation: 2,
-              color: Theme.of(context).colorScheme.primaryContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Precio',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                        const SizedBox(height: 16),
+                        _buildDetailRow(
+                          Icons.person,
+                          'Profesor',
+                          widget.professorName,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildDetailRow(
+                          Icons.business,
+                          'Centro',
+                          widget.tenantName,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildDetailRow(
+                          Icons.calendar_today,
+                          'Fecha',
+                          widget.schedule.formattedDate,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildDetailRow(
+                          Icons.access_time,
+                          'Horario',
+                          widget.schedule.timeRange,
+                        ),
+                        if (widget.schedule.courtName != null) ...[
+                          const SizedBox(height: 12),
+                          _buildDetailRow(
+                            Icons.stadium,
+                            'Cancha',
+                            widget.schedule.courtName!,
+                          ),
+                        ],
+                        if (widget.schedule.notes != null &&
+                            widget.schedule.notes!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: _buildDetailRow(
+                              Icons.note,
+                              'Notas',
+                              widget.schedule.notes!,
+                            ),
+                          ),
+                      ],
                     ),
-                    Text(
-                      CurrencyUtils.format(_price),
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Price card
+                Card(
+                  elevation: 2,
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Precio',
+                          style: GoogleFonts.outfit(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          CurrencyUtils.format(_price),
+                          style: GoogleFonts.outfit(
+                            fontSize: 28,
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).colorScheme.primary,
                           ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // Action buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _isSyncing ? null : () => context.pop(),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text('Cancelar'),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 2,
+                      child: Consumer(
+                        builder: (context, ref, child) {
+                          final studentInfoAsync = ref.watch(
+                            studentInfoProvider,
+                          );
+
+                          return studentInfoAsync.when(
+                            data: (info) {
+                              final balance =
+                                  (info['balance'] as num?)?.toDouble() ?? 0.0;
+                              final isInsufficient = balance < _price;
+                              final missingAmount = _price - balance;
+
+                              if (isInsufficient) {
+                                return ElevatedButton.icon(
+                                  onPressed: () =>
+                                      showDialog(
+                                        context: context,
+                                        builder: (_) => PaymentDialog(
+                                          initialAmount: missingAmount,
+                                          bookingData: {
+                                            'scheduleId': widget.schedule.id,
+                                            'serviceType': 'individual_class',
+                                            'price': _price,
+                                            'professorId': widget.professorId,
+                                            'tenantId': widget.tenantId,
+                                          },
+                                          redirectUrl:
+                                              'https://tenis-uat.casacam.net/payment-complete',
+                                          onPaymentComplete: () {
+                                            // Refresh data after payment
+                                            Future.delayed(
+                                              const Duration(seconds: 2),
+                                              () {
+                                                if (context.mounted) {
+                                                  ref.invalidate(
+                                                    studentInfoProvider,
+                                                  );
+                                                  ref.invalidate(
+                                                    myBookingsProvider,
+                                                  );
+                                                }
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ).then((_) {
+                                        if (mounted) {
+                                          setState(() {
+                                            _shouldAutoConfirm = true;
+                                            _isSyncing = true;
+                                          });
+                                          ref.invalidate(studentInfoProvider);
+                                        }
+                                      }),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                  icon: const Icon(Icons.add_card),
+                                  label: const Text('Recargar y Reservar'),
+                                );
+                              }
+
+                              return ElevatedButton(
+                                onPressed: _isSyncing ? null : _confirmBooking,
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                                child: _isBooking
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                        ),
+                                      )
+                                    : const Text('Confirmar Reserva'),
+                              );
+                            },
+                            loading: () => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                            error: (error, stack) =>
+                                Center(child: Text('Error: $error')),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 32),
-            // Action buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _isBooking ? null : () => context.pop(),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text('Cancelar'),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  flex: 2,
-                  child: Consumer(
-                    builder: (context, ref, child) {
-                      final studentInfoAsync = ref.watch(studentInfoProvider);
-
-                      return studentInfoAsync.when(
-                        data: (info) {
-                          final balance =
-                              (info['balance'] as num?)?.toDouble() ?? 0.0;
-                          final isInsufficient = balance < _price;
-                          final missingAmount = _price - balance;
-
-                          if (isInsufficient) {
-                            return ElevatedButton.icon(
-                              onPressed: () => showDialog(
-                                context: context,
-                                builder: (_) => PaymentDialog(
-                                  initialAmount: missingAmount,
-                                  bookingData: {
-                                    'scheduleId': widget.schedule.id,
-                                    'serviceType': 'individual_class',
-                                    'price': _price,
-                                  },
-                                  redirectUrl:
-                                      'https://tenis-uat.casacam.net/payment-complete',
-                                  onPaymentComplete: () {
-                                    // Refresh data after payment
-                                    // Add delay to allow webhooks to process
-                                    Future.delayed(
-                                      const Duration(seconds: 2),
-                                      () {
-                                        if (context.mounted) {
-                                          ref.invalidate(studentInfoProvider);
-                                          ref.invalidate(myBookingsProvider);
-                                        }
-                                      },
-                                    );
-                                  },
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                                backgroundColor: Colors.orange,
-                              ),
-                              icon: const Icon(Icons.add_card),
-                              label: const Text('Recargar y Reservar'),
-                            );
-                          }
-
-                          return ElevatedButton(
-                            onPressed: _isBooking ? null : _confirmBooking,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            child: _isBooking
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
-                                    ),
-                                  )
-                                : const Text('Confirmar Reserva'),
-                          );
-                        },
-                        loading: () =>
-                            const Center(child: CircularProgressIndicator()),
-                        error: (error, stack) =>
-                            Center(child: Text('Error: $error')),
-                      );
-                    },
-                  ),
-                ),
               ],
             ),
-          ],
-        ),
+          ),
+          if (_isSyncing)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.7),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Procesando reserva...',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Estamos sincronizando con el servidor',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

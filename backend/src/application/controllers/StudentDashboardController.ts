@@ -326,8 +326,7 @@ export class StudentDashboardController {
         return res.status(400).json({ error: 'professorId es requerido' });
       }
 
-      // Get all schedules for the professor that don't have a booking yet
-      const schedules = await ScheduleModel.find({
+      const query: any = {
         professorId,
         startTime: { $gte: new Date() }, // Only future schedules
         isAvailable: true, // Only available slots
@@ -335,7 +334,15 @@ export class StudentDashboardController {
           { isBlocked: { $exists: false } },
           { isBlocked: false }
         ]
-      })
+      };
+
+      // Strict tenant filtering: If a tenant is selected, ONLY show schedules for that tenant
+      if (req.tenantId) {
+        query.tenantId = new Types.ObjectId(req.tenantId);
+      }
+
+      // Get all schedules for the professor that don't have a booking yet
+      const schedules = await ScheduleModel.find(query)
         .populate('tenantId', 'name slug config')
         .populate('courtId', 'name')
         .sort({ startTime: 1 })
@@ -400,7 +407,7 @@ export class StudentDashboardController {
       }
 
       // Get all available schedules for the professor
-      const schedules = await ScheduleModel.find({
+      const query: any = {
         professorId: new Types.ObjectId(professorId),
         startTime: { $gte: new Date() }, // Only future schedules
         isAvailable: true, // Only available slots
@@ -408,7 +415,15 @@ export class StudentDashboardController {
           { isBlocked: { $exists: false } },
           { isBlocked: false }
         ]
-      })
+      };
+
+      // Cast to AuthenticatedRequest to access tenantId
+      const authReq = req as AuthenticatedRequest;
+      if (authReq.tenantId) {
+        query.tenantId = new Types.ObjectId(authReq.tenantId);
+      }
+
+      const schedules = await ScheduleModel.find(query)
         .populate('tenantId', 'name slug config')
         .populate('courtId', 'name')
         .sort({ startTime: 1 })

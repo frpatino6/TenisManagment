@@ -138,7 +138,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                               );
                             } else {
                               // On mobile: keep automatic redirection with WebView
-                              Navigator.pop(context); // Close dialog
+                              // Don't pop yet, wait for webview result
+
                               final bool?
                               paymentCompleted = await Navigator.push<bool>(
                                 context,
@@ -152,15 +153,12 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                                 ),
                               );
 
-                              // Refresh logic for mobile
                               if (context.mounted) {
-                                Future.delayed(Timeouts.snackbarSuccess, () {
-                                  if (context.mounted) {
-                                    ref.invalidate(studentInfoProvider);
-                                    ref.invalidate(bookingServiceProvider);
-                                    widget.onPaymentComplete?.call();
-                                  }
-                                });
+                                Navigator.pop(context); // Close dialog now
+
+                                ref.invalidate(studentInfoProvider);
+                                ref.invalidate(bookingServiceProvider);
+                                widget.onPaymentComplete?.call();
 
                                 if (paymentCompleted == true) {
                                   ScaffoldMessenger.of(context).showSnackBar(

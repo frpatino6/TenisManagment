@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -45,12 +46,79 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
   bool _isSyncing = false;
   bool _shouldAutoConfirm = false;
   double _price = 0.0; // Will be calculated based on service type
+  Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
     // Default price for individual class (can be improved with pricing from professor)
     _price = 50000.0; // Default price in COP
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPaymentPolling() {
+    _logger.info('Starting robust payment polling using ref.refresh...');
+    _pollingTimer?.cancel();
+
+    _pollingTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+      if (!mounted || !_shouldAutoConfirm || _isBooking) {
+        timer.cancel();
+        return;
+      }
+
+      _logger.info('Polling for payment completion (attempt ${timer.tick})...');
+
+      try {
+        // Robust refresh: Wait for the futures to complete with new data from server
+        // ref.refresh(provider.future) invalidates the provider AND returns the new future
+        final studentInfo = await ref.refresh(studentInfoProvider.future);
+        final bookings = await ref.refresh(myBookingsProvider.future);
+
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+
+        // Check if webhook already created the booking
+        final hasBooking = bookings.any(
+          (b) => b.scheduleId == widget.schedule.id && b.status == 'confirmed',
+        );
+
+        if (hasBooking) {
+          _logger.info('Booking detected by webhook, redirecting...');
+          timer.cancel();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('¡Reserva confirmada automáticamente!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            context.go('/home');
+          }
+          return;
+        }
+
+        // Check if balance is sufficient
+        final balance = (studentInfo['balance'] as num?)?.toDouble() ?? 0.0;
+
+        if (balance >= _price) {
+          _logger.info(
+            'Balance sufficient ($balance >= $_price), confirming booking...',
+          );
+          timer.cancel();
+          _confirmBooking();
+        }
+      } catch (e) {
+        _logger.error('Error during polling refresh', error: e);
+        // Continue polling on error, as transient network errors shouldn't stop the polling
+      }
+    });
   }
 
   Future<void> _confirmBooking() async {
@@ -102,56 +170,6 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(studentInfoProvider, (previous, next) {
-      if (next.hasValue && mounted && !_isBooking && _shouldAutoConfirm) {
-        final info = next.value!;
-        final balance = (info['balance'] as num?)?.toDouble() ?? 0.0;
-
-        if (balance >= _price) {
-          // Check if webhook already created the booking
-          final bookings = ref.read(myBookingsProvider).value ?? [];
-          final hasBooking = bookings.any(
-            (b) =>
-                b.scheduleId == widget.schedule.id && b.status == 'confirmed',
-          );
-
-          if (!hasBooking) {
-            _logger.info(
-              'Saldo suficiente tras recarga. Iniciando reserva automática...',
-            );
-            _confirmBooking();
-          }
-        }
-      }
-    });
-
-    // Listen for bookings to handle auto-confirmation after recharge (from webhook)
-    ref.listen(myBookingsProvider, (previous, next) {
-      if (next.hasValue) {
-        final booking = next.value!
-            .where(
-              (b) =>
-                  b.scheduleId == widget.schedule.id && b.status == 'confirmed',
-            )
-            .firstOrNull;
-
-        if (booking != null && mounted && !_isBooking) {
-          _logger.info(
-            'Reserva detectada automáticamente (webhook). Redirigiendo...',
-          );
-          if (ScaffoldMessenger.of(context).mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('¡Reserva confirmada automáticamente!'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
-          context.go('/home');
-        }
-      }
-    });
-
     return Scaffold(
       appBar: AppBar(title: const Text('Confirmar Reserva')),
       body: Stack(
@@ -319,7 +337,8 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                                             _shouldAutoConfirm = true;
                                             _isSyncing = true;
                                           });
-                                          ref.invalidate(studentInfoProvider);
+                                          // Start polling to check payment completion
+                                          _startPaymentPolling();
                                         }
                                       }),
                                   style: ElevatedButton.styleFrom(

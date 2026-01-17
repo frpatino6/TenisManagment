@@ -6,7 +6,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../../payment/presentation/widgets/payment_dialog.dart';
 import '../../../../core/utils/currency_utils.dart';
-import '../../domain/services/student_service.dart';
+import '../providers/student_provider.dart';
+
+import '../../../../core/providers/tenant_provider.dart';
+import '../../../../core/logging/logger.dart';
 
 class MyBalanceScreen extends ConsumerStatefulWidget {
   const MyBalanceScreen({super.key});
@@ -16,39 +19,59 @@ class MyBalanceScreen extends ConsumerStatefulWidget {
 }
 
 class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
-  final StudentService _studentService = StudentService();
-  Map<String, dynamic>? _studentInfo;
-  bool _isLoading = true;
-  String? _error;
+  bool _isSyncing = false;
+  double? _previousBalance;
+  final _logger = AppLogger.tag('MyBalanceScreen');
+
+  bool get _hasWompiConfigured {
+    final tenant = ref.read(currentTenantProvider).value;
+    final config = tenant?.config;
+    _logger.info('DEBUG: Tenant ${tenant?.name} config: $config');
+    if (config == null) return false;
+
+    // Check for nested structure: config -> payments -> wompi -> pubKey
+    if (config.containsKey('payments')) {
+      final payments = config['payments'];
+      if (payments is Map) {
+        final wompi = payments['wompi'];
+        if (wompi is Map) {
+          final pubKey = wompi['pubKey'];
+          if (pubKey != null && pubKey.toString().trim().isNotEmpty) {
+            _logger.info('DEBUG: Found Wompi key in nested config');
+            return true;
+          }
+        }
+      }
+    }
+
+    // Fallback: Check for flat structure (backward compatibility)
+    bool isValid(String key) {
+      if (!config.containsKey(key)) return false;
+      final value = config[key];
+      return value != null && value.toString().trim().isNotEmpty;
+    }
+
+    final hasKey = isValid('wompi_public_key') || isValid('wompiPublicKey');
+    _logger.info('DEBUG: Has Wompi config? (flat check): $hasKey');
+    return hasKey;
+  }
 
   @override
   void initState() {
     super.initState();
-    _loadStudentInfo();
-  }
-
-  Future<void> _loadStudentInfo() async {
-    try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-
-      final info = await _studentService.getStudentInfo();
-      setState(() {
-        _studentInfo = info;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Refresh tenant data to ensure we have the latest config (e.g. Wompi keys)
+      final _ = ref.refresh(currentTenantProvider);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final studentInfoAsync = ref.watch(studentInfoProvider);
+    // Watch tenant to rebuild when config refreshes
+    ref.watch(currentTenantProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -59,31 +82,75 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadStudentInfo,
+            onPressed: () => ref.invalidate(studentInfoProvider),
           ),
         ],
       ),
-      body: _buildBody(context),
+      body: Stack(
+        children: [
+          studentInfoAsync.when(
+            data: (studentInfo) {
+              final currentBalance =
+                  (studentInfo['balance'] as num?)?.toDouble() ?? 0.0;
+
+              // Hide overlay if balance changed after syncing
+              if (_isSyncing &&
+                  _previousBalance != null &&
+                  currentBalance != _previousBalance) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    setState(() {
+                      _isSyncing = false;
+                      _previousBalance = currentBalance;
+                    });
+                  }
+                });
+              }
+
+              return _buildBalanceContent(context, studentInfo);
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => _buildErrorState(context, error.toString()),
+          ),
+          if (_isSyncing)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.7),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                      const Gap(20),
+                      Text(
+                        'Actualizando saldo...',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Gap(8),
+                      Text(
+                        'Estamos sincronizando con el servidor',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
-  Widget _buildBody(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_error != null) {
-      return _buildErrorState(context);
-    }
-
-    if (_studentInfo == null) {
-      return _buildEmptyState(context);
-    }
-
-    return _buildBalanceContent(context);
-  }
-
-  Widget _buildErrorState(BuildContext context) {
+  Widget _buildErrorState(BuildContext context, String error) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -102,7 +169,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
           ),
           const Gap(8),
           Text(
-            _error ?? 'Error desconocido',
+            error,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -110,7 +177,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
           ),
           const Gap(32),
           ElevatedButton.icon(
-            onPressed: _loadStudentInfo,
+            onPressed: () => ref.invalidate(studentInfoProvider),
             icon: const Icon(Icons.refresh),
             label: const Text('Reintentar'),
           ),
@@ -119,47 +186,27 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.account_balance_wallet_outlined,
-            size: 80,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const Gap(24),
-          Text(
-            'No se encontró información',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const Gap(8),
-          Text(
-            'No se pudo cargar la información de tu balance',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBalanceContent(BuildContext context) {
-    final totalSpent = (_studentInfo!['totalSpent'] as num?)?.toDouble() ?? 0.0;
-    final totalClasses = _studentInfo!['totalClasses'] as int? ?? 0;
-    final totalPayments = _studentInfo!['totalPayments'] as int? ?? 0;
+  Widget _buildBalanceContent(
+    BuildContext context,
+    Map<String, dynamic> studentInfo,
+  ) {
+    final balance = (studentInfo['balance'] as num?)?.toDouble() ?? 0.0;
+    final totalSpent = (studentInfo['totalSpent'] as num?)?.toDouble() ?? 0.0;
+    final totalClasses = studentInfo['totalClasses'] as int? ?? 0;
+    final totalPayments = studentInfo['totalPayments'] as int? ?? 0;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildBalanceCard(context, totalSpent, totalClasses, totalPayments)
+          _buildBalanceCard(
+                context,
+                balance,
+                totalSpent,
+                totalClasses,
+                totalPayments,
+              )
               .animate()
               .fadeIn(duration: 400.ms, delay: 200.ms)
               .slideY(begin: 0.2, end: 0),
@@ -178,7 +225,13 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
 
           const Gap(16),
 
-          _buildStatsGrid(context, totalSpent, totalClasses, totalPayments)
+          _buildStatsGrid(
+                context,
+                balance,
+                totalSpent,
+                totalClasses,
+                totalPayments,
+              )
               .animate()
               .fadeIn(duration: 400.ms, delay: 600.ms)
               .slideY(begin: 0.2, end: 0),
@@ -208,6 +261,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
 
   Widget _buildBalanceCard(
     BuildContext context,
+    double balance,
     double totalSpent,
     int totalClasses,
     int totalPayments,
@@ -252,13 +306,13 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Total Invertido',
+                        'Saldo Disponible',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white.withValues(alpha: 0.9),
                         ),
                       ),
                       Text(
-                        CurrencyUtils.format(totalSpent),
+                        CurrencyUtils.format(balance),
                         style: Theme.of(context).textTheme.headlineLarge
                             ?.copyWith(
                               color: Colors.white,
@@ -334,6 +388,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
 
   Widget _buildStatsGrid(
     BuildContext context,
+    double balance,
     double totalSpent,
     int totalClasses,
     int totalPayments,
@@ -450,22 +505,24 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   Widget _buildActionButtons(BuildContext context) {
     return Column(
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () => _showTopUpDialog(context),
-            icon: const Icon(Icons.add_card),
-            label: const Text('Recargar Saldo'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+        if (_hasWompiConfigured)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _showTopUpDialog(context),
+              icon: const Icon(Icons.add_card),
+              label: const Text('Recargar Saldo'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
-        ),
+        if (_hasWompiConfigured) const Gap(12),
         const Gap(12),
         SizedBox(
           width: double.infinity,
@@ -501,9 +558,25 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   }
 
   Future<void> _showTopUpDialog(BuildContext context) async {
+    // Capture current balance before payment
+    final currentInfo = ref.read(studentInfoProvider).value;
+    final currentBalance = (currentInfo?['balance'] as num?)?.toDouble() ?? 0.0;
+
     await showDialog(
       context: context,
-      builder: (context) => const PaymentDialog(),
+      builder: (context) => PaymentDialog(
+        onPaymentComplete: () {
+          ref.invalidate(studentInfoProvider);
+        },
+      ),
     );
+
+    if (mounted) {
+      setState(() {
+        _previousBalance = currentBalance;
+        _isSyncing = true;
+      });
+      ref.invalidate(studentInfoProvider);
+    }
   }
 }

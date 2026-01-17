@@ -5,6 +5,7 @@ import '../../../../core/services/http_client.dart';
 import '../../../../core/exceptions/exceptions.dart';
 import '../models/professor_model.dart';
 import '../models/available_schedule_model.dart';
+import '../models/booking_model.dart';
 
 /// Service for managing booking operations for students
 /// Handles professor selection, schedule availability, and lesson booking
@@ -13,10 +14,8 @@ class BookingService {
   final FirebaseAuth _auth;
   final AppHttpClient _http;
 
-  BookingService(
-    this._http, {
-    FirebaseAuth? firebaseAuth,
-  }) : _auth = firebaseAuth ?? FirebaseAuth.instance;
+  BookingService(this._http, {FirebaseAuth? firebaseAuth})
+    : _auth = firebaseAuth ?? FirebaseAuth.instance;
 
   /// Retrieves the list of all available professors
   ///
@@ -193,6 +192,47 @@ class BookingService {
             statusCode: response.statusCode,
           );
         }
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Retrieves the list of bookings for the current student
+  Future<List<BookingModel>> getBookings() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw AuthException.notAuthenticated();
+      }
+
+      final idToken = await user.getIdToken(true);
+      if (idToken == null) {
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
+      }
+
+      final response = await _http.get(
+        Uri.parse('$_baseUrl/student-dashboard/bookings'),
+        headers: {'Authorization': 'Bearer $idToken'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final items = data['items'] as List<dynamic>;
+
+        return items
+            .cast<Map<String, dynamic>>()
+            .map((item) => BookingModel.fromJson(item))
+            .toList();
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else {
+        throw NetworkException.serverError(
+          message: 'Error al obtener tus reservas',
+          statusCode: response.statusCode,
+        );
       }
     } catch (e) {
       rethrow;

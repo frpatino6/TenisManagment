@@ -44,7 +44,8 @@ export class WompiAdapter implements PaymentGateway {
         amount: number,
         currency: string,
         user: AuthUserDocument,
-        tenant: TenantDocument
+        tenant: TenantDocument,
+        options?: { redirectUrl?: string }
     ): Promise<PaymentIntent> {
         const config = this.getWompiConfig(tenant);
         const reference = this.generateReference();
@@ -66,7 +67,11 @@ export class WompiAdapter implements PaymentGateway {
         // Ensure base URL ends with / if not present (though regex in Zod should handle, simple safety)
         const safeBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
 
-        const checkoutUrl = `${safeBaseUrl}?public-key=${config.pubKey}&currency=${currency}&amount-in-cents=${amountInCents}&reference=${reference}&signature:integrity=${signature}`;
+        let checkoutUrl = `${safeBaseUrl}?public-key=${config.pubKey}&currency=${currency}&amount-in-cents=${amountInCents}&reference=${reference}&signature:integrity=${signature}`;
+
+        if (options?.redirectUrl) {
+            checkoutUrl += `&redirect-url=${encodeURIComponent(options.redirectUrl)}`;
+        }
 
         return {
             reference,
@@ -84,10 +89,26 @@ export class WompiAdapter implements PaymentGateway {
         // Wompi sends { event: '...', data: { transaction: ... }, signature: ... }
         const eventData = data.data.transaction;
 
-        // TODO: Verify signature using config.eventsKey if available
-        // const incomingSignature = data.signature.checksum;
-        if (config.eventsKey) {
-            // logic for signature verification
+        // Verify signature using config.eventsKey if available
+        if (config.eventsKey && data.signature && data.signature.checksum) {
+            const { checksum } = data.signature;
+            const timestamp = data.timestamp;
+            const { id, status, amount_in_cents } = eventData;
+
+            // Concatenación según documentación de Wompi: 
+            // id + status + amount_in_cents + timestamp + eventsKey
+            const rawString = `${id}${status}${amount_in_cents}${timestamp}${config.eventsKey}`;
+            const calculatedChecksum = createHash('sha256').update(rawString).digest('hex');
+
+            if (calculatedChecksum !== checksum) {
+                this.logger.error('[WompiAdapter] Invalid webhook signature', {
+                    reference: eventData.reference,
+                    expected: calculatedChecksum,
+                    received: checksum
+                });
+                throw new Error('Invalid signature');
+            }
+            this.logger.info(`[WompiAdapter] Signature verified for ref: ${eventData.reference}`);
         }
 
         const statusMap: Record<string, 'APPROVED' | 'DECLINED' | 'VOIDED' | 'ERROR'> = {

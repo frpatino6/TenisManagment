@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../payment/presentation/widgets/payment_dialog.dart';
 import '../../../../core/constants/timeouts.dart';
+import '../../../../core/logging/logger.dart';
 import '../../domain/models/court_model.dart';
 import '../../domain/services/court_service.dart';
 import '../providers/booking_provider.dart';
@@ -30,17 +31,55 @@ class BookCourtScreen extends ConsumerStatefulWidget {
 }
 
 class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
+  final _logger = AppLogger.tag('BookCourtScreen');
   CourtModel? _selectedCourt;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isBooking = false;
+  bool _isSyncing = false;
   final ScrollController _scrollController = ScrollController();
+
+  bool get _hasWompiConfigured {
+    final tenant = ref.read(currentTenantProvider).value;
+    final config = tenant?.config;
+    _logger.info('DEBUG: Tenant ${tenant?.name} config: $config');
+    if (config == null) return false;
+
+    // Check for nested structure: config -> payments -> wompi -> pubKey
+    if (config.containsKey('payments')) {
+      final payments = config['payments'];
+      if (payments is Map) {
+        final wompi = payments['wompi'];
+        if (wompi is Map) {
+          final pubKey = wompi['pubKey'];
+          if (pubKey != null && pubKey.toString().trim().isNotEmpty) {
+            _logger.info('DEBUG: Found Wompi key in nested config');
+            return true;
+          }
+        }
+      }
+    }
+
+    // Fallback: Check for flat structure (backward compatibility)
+    bool isValid(String key) {
+      if (!config.containsKey(key)) return false;
+      final value = config[key];
+      return value != null && value.toString().trim().isNotEmpty;
+    }
+
+    final hasKey = isValid('wompi_public_key') || isValid('wompiPublicKey');
+    _logger.info('DEBUG: Has Wompi config? (flat check): $hasKey');
+    return hasKey;
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // Refresh tenant data to ensure we have the latest config (e.g. Wompi keys)
+      final _ = ref.refresh(currentTenantProvider);
+
       final tenantState = ref.read(tenantNotifierProvider);
       tenantState.when(
         data: (favoriteTenantId) {
@@ -96,6 +135,63 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       return _buildNoTenantScreen(context);
     }
 
+    // Automation Logic: Listen for confirmed bookings
+    ref.listen(myBookingsProvider, (previous, next) {
+      if (next.hasValue &&
+          _selectedCourt != null &&
+          _selectedDate != null &&
+          _selectedTime != null) {
+        // Calculate the same start time used for booking to match
+        final startDateTime = DateTime.utc(
+          _selectedDate!.year,
+          _selectedDate!.month,
+          _selectedDate!.day,
+          _selectedTime!.hour,
+          _selectedTime!.minute,
+        );
+
+        final booking = next.value!
+            .where(
+              (b) =>
+                  b.courtId == _selectedCourt?.id &&
+                  b.status == 'confirmed' &&
+                  b.bookingDate?.isAtSameMomentAs(startDateTime) == true,
+            )
+            .firstOrNull;
+
+        if (booking != null && mounted && !_isBooking) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('¡Reserva de cancha confirmada automáticamente!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          context.go('/home');
+        }
+      }
+    });
+
+    // Automation Logic: Listen for balance updates to trigger booking
+    ref.listen(studentInfoProvider, (previous, next) {
+      if (next.hasValue &&
+          _selectedCourt != null &&
+          _selectedDate != null &&
+          _selectedTime != null) {
+        final info = next.value!;
+        final balance = (info['balance'] as num?)?.toDouble() ?? 0.0;
+
+        // Re-calculate price
+        final price = _selectedCourt!.pricePerHour; // 1 hour default
+
+        if (balance >= price && !_isBooking) {
+          _logger.info(
+            'Saldo suficiente (Cancha). Iniciando reserva automática...',
+          );
+          _handleBooking();
+        }
+      }
+    });
+
     final tenantAsync = ref.watch(currentTenantProvider);
 
     return Scaffold(
@@ -106,17 +202,54 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         ),
         centerTitle: true,
       ),
-      body: courtsAsync.when(
-        data: (courts) {
-          if (courts.isEmpty) {
-            return _buildEmptyState(context);
-          }
-          return _buildContent(context, courts, tenantAsync);
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) {
-          return _buildErrorState(context, error);
-        },
+      body: Stack(
+        children: [
+          courtsAsync.when(
+            data: (courts) {
+              if (courts.isEmpty) {
+                return _buildEmptyState(context);
+              }
+              return _buildContent(context, courts, tenantAsync);
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stackTrace) {
+              return _buildErrorState(context, error);
+            },
+          ),
+          if (_isBooking || _isSyncing)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.7),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                      const Gap(20),
+                      Text(
+                        'Procesando reserva...',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const Gap(8),
+                      Text(
+                        'Estamos sincronizando con el servidor',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -341,7 +474,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                           color: Theme.of(context)
                               .colorScheme
                               .surfaceContainerHighest
-                              .withValues(alpha: 0.3),
+                              .withOpacity(0.3),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: Theme.of(context).colorScheme.outlineVariant,
@@ -493,9 +626,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      color: Theme.of(
-        context,
-      ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: tenantsAsync.when(
@@ -576,8 +707,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? Theme.of(context).colorScheme.primaryContainer
-                                .withValues(alpha: 0.2)
+                          ? Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer.withOpacity(0.2)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -997,7 +1129,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           return Card(
             color: Theme.of(
               context,
-            ).colorScheme.errorContainer.withValues(alpha: 0.3),
+            ).colorScheme.errorContainer.withOpacity(0.3),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -1125,9 +1257,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             errorMessage.contains('no tiene horarios');
 
         return Card(
-          color: Theme.of(
-            context,
-          ).colorScheme.errorContainer.withValues(alpha: 0.3),
+          color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -1199,9 +1329,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     }
 
     return Card(
-      color: Theme.of(
-        context,
-      ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -1309,7 +1437,10 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             final isInsufficient = balance < price;
             final missingAmount = price - balance;
 
-            if (isInsufficient) {
+            // Watch tenant to rebuild when config refreshes
+            ref.watch(currentTenantProvider);
+
+            if (isInsufficient && _hasWompiConfigured) {
               return FilledButton.icon(
                 onPressed: () =>
                     showDialog(
@@ -1317,7 +1448,12 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                       builder: (_) =>
                           PaymentDialog(initialAmount: missingAmount),
                     ).then((_) {
-                      ref.invalidate(studentInfoProvider);
+                      if (mounted) {
+                        setState(() {
+                          _isSyncing = true;
+                        });
+                        ref.invalidate(studentInfoProvider);
+                      }
                     }),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1377,6 +1513,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
 
     setState(() {
       _isBooking = true;
+      _isSyncing = true;
     });
 
     try {
@@ -1460,6 +1597,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       if (mounted) {
         setState(() {
           _isBooking = false;
+          _isSyncing = false;
         });
       }
     }

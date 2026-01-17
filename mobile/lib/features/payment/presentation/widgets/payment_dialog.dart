@@ -1,13 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../providers/payment_providers.dart';
 import '../../../../core/exceptions/exceptions.dart';
+import '../screens/wompi_webview_screen.dart';
+import '../../../student/presentation/providers/student_provider.dart';
+import '../../../booking/presentation/providers/booking_provider.dart';
+import '../../../../core/constants/timeouts.dart';
+import '../../../../core/utils/web_utils_stub.dart'
+    if (dart.library.js_interop) '../../../../core/utils/web_utils_web.dart';
 
 class PaymentDialog extends ConsumerStatefulWidget {
   final double? initialAmount;
+  final Map<String, dynamic>? bookingData;
+  final String? redirectUrl;
+  final VoidCallback? onPaymentComplete;
 
-  const PaymentDialog({super.key, this.initialAmount});
+  const PaymentDialog({
+    super.key,
+    this.initialAmount,
+    this.bookingData,
+    this.redirectUrl,
+    this.onPaymentComplete,
+  });
 
   @override
   ConsumerState<PaymentDialog> createState() => _PaymentDialogState();
@@ -16,6 +31,7 @@ class PaymentDialog extends ConsumerStatefulWidget {
 class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   late final TextEditingController _amountController;
   final _formKey = GlobalKey<FormState>();
+  String? _checkoutUrl; // Store URL for two-step launch on web
 
   @override
   void initState() {
@@ -71,6 +87,21 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
           builder: (context, ref, child) {
             final paymentState = ref.watch(paymentControllerProvider);
 
+            if (kIsWeb && _checkoutUrl != null) {
+              return FilledButton.icon(
+                onPressed: () {
+                  WebUtils.openUrl(_checkoutUrl!, newTab: true);
+                  Navigator.pop(context);
+                },
+                icon: const Icon(Icons.open_in_new),
+                label: const Text('Ir a la pasarela de pago'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              );
+            }
+
             return FilledButton(
               onPressed: paymentState.isLoading
                   ? null
@@ -80,51 +111,82 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                         // Using read instead of watch for actions
                         final result = await ref
                             .read(paymentControllerProvider.notifier)
-                            .initPayment(amount);
+                            .initPayment(
+                              amount,
+                              bookingData: widget.bookingData,
+                              redirectUrl: widget.redirectUrl,
+                            );
 
                         if (context.mounted) {
-                          Navigator.pop(context); // Close dialog
-
                           if (result != null && result['checkoutUrl'] != null) {
-                            final url = Uri.parse(result['checkoutUrl']);
-                            if (await canLaunchUrl(url)) {
-                              await launchUrl(
-                                url,
-                                mode: LaunchMode.externalApplication,
-                              );
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Redirigiendo a Wompi...'),
-                                  ),
-                                );
-                              }
-                            } else {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'No se pudo abrir el navegador',
-                                    ),
-                                  ),
-                                );
-                              }
-                            }
-                          } else {
-                            if (context.mounted) {
-                              final error = paymentState.error;
-                              final message = error is AppException
-                                  ? error.userMessage
-                                  : error?.toString() ?? "Desconocido";
+                            final checkoutUrl = result['checkoutUrl'];
+
+                            if (kIsWeb) {
+                              // On web: update state to show the "Proceed" button
+                              // This ensures the next click is a direct user interaction
+                              setState(() {
+                                _checkoutUrl = checkoutUrl;
+                              });
 
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
+                                const SnackBar(
                                   content: Text(
-                                    'Error al iniciar pago: $message',
+                                    'URL de pago lista. Haz clic para continuar.',
+                                  ),
+                                  duration: Duration(seconds: 4),
+                                ),
+                              );
+                            } else {
+                              // On mobile: keep automatic redirection with WebView
+                              // Don't pop yet, wait for webview result
+
+                              final bool?
+                              paymentCompleted = await Navigator.push<bool>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => WompiWebViewScreen(
+                                    checkoutUrl: checkoutUrl,
+                                    redirectUrl:
+                                        widget.redirectUrl ??
+                                        'https://tenis-uat.casacam.net/payment-complete',
                                   ),
                                 ),
                               );
+
+                              if (context.mounted) {
+                                Navigator.pop(context); // Close dialog now
+
+                                ref.invalidate(studentInfoProvider);
+                                ref.invalidate(bookingServiceProvider);
+                                widget.onPaymentComplete?.call();
+
+                                if (paymentCompleted == true) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Pago procesado. Actualizando saldo...',
+                                      ),
+                                      backgroundColor: Colors.green,
+                                      duration: Timeouts.snackbarSuccess,
+                                    ),
+                                  );
+                                }
+                              }
                             }
+                          } else {
+                            // Error handling remains same
+                            final error = paymentState.error;
+                            final message = error is AppException
+                                ? error.userMessage
+                                : error?.toString() ?? "Desconocido";
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Error al iniciar pago: $message',
+                                ),
+                              ),
+                            );
                           }
                         }
                       }

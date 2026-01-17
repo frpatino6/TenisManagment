@@ -30,7 +30,8 @@ export interface PaymentGateway {
         amount: number,
         currency: string,
         user: AuthUserDocument,
-        tenant: TenantDocument
+        tenant: TenantDocument,
+        options?: { redirectUrl?: string }
     ): Promise<PaymentIntent>;
 
     /**

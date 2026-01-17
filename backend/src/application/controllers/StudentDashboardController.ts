@@ -13,6 +13,7 @@ import { StudentTenantModel } from '../../infrastructure/database/models/Student
 import { ProfessorTenantModel } from '../../infrastructure/database/models/ProfessorTenantModel';
 import { UserPreferencesModel } from '../../infrastructure/database/models/UserPreferencesModel';
 import { TenantService } from '../services/TenantService';
+import { BookingService } from '../services/BookingService';
 import { Types } from 'mongoose';
 
 // Default base pricing
@@ -41,113 +42,36 @@ interface AuthenticatedRequest extends Request {
 
 export class StudentDashboardController {
   private tenantService: TenantService;
+  private bookingService: BookingService;
 
   constructor() {
     this.tenantService = new TenantService();
+    this.bookingService = new BookingService();
   }
 
-  /**
-   * Find an available court for a given time range
-   * Returns the first available court, or null if none available
-   */
-  private async findAvailableCourt(
-    tenantId: Types.ObjectId,
-    startTime: Date,
-    endTime: Date,
-  ): Promise<{ _id: Types.ObjectId; name: string } | null> {
-    // Get all active courts for this tenant
-    const courts = await CourtModel.find({
-      tenantId: tenantId,
-      isActive: true,
-    }).lean();
-
-    if (courts.length === 0) {
-      return null;
-    }
-
-    // Find all bookings that have a courtId assigned and might overlap with the requested time
-    // We need to check both court_rental (using bookingDate) and lessons (using scheduleId)
-    const bookingsWithCourt = await BookingModel.find({
-      tenantId: tenantId,
-      courtId: { $exists: true, $ne: null },
-      status: { $in: ['confirmed', 'pending'] },
-    })
-      .populate('scheduleId')
-      .lean();
-
-    // Create a set of occupied court IDs during this time
-    const occupiedCourtIds = new Set<string>();
-
-    bookingsWithCourt.forEach((booking) => {
-      if (!booking.courtId) return;
-
-      let bookingStart: Date;
-      let bookingEnd: Date;
-
-      if (booking.serviceType === 'court_rental' && booking.bookingDate) {
-        // Court rental: use bookingDate as start, assume 1 hour duration
-        bookingStart = new Date(booking.bookingDate);
-        bookingEnd = new Date(bookingStart);
-        bookingEnd.setUTCHours(bookingEnd.getUTCHours() + 1);
-      } else if (booking.scheduleId && (booking.scheduleId as any).startTime) {
-        // Lesson: use schedule times
-        const schedule = booking.scheduleId as any;
-        bookingStart = new Date(schedule.startTime);
-        bookingEnd = new Date(schedule.endTime);
-      } else {
-        // Can't determine time, skip
-        return;
-      }
-
-      // Check if time ranges overlap
-      const overlaps =
-        (startTime >= bookingStart && startTime < bookingEnd) ||
-        (endTime > bookingStart && endTime <= bookingEnd) ||
-        (startTime <= bookingStart && endTime >= bookingEnd);
-
-      if (overlaps) {
-        occupiedCourtIds.add(booking.courtId.toString());
-      }
-    });
-
-    // Find first available court
-    for (const court of courts) {
-      if (!occupiedCourtIds.has(court._id.toString())) {
-        return { _id: court._id, name: court.name };
-      }
-    }
-
-    return null;
-  }
   /**
    * Get student's recent activities (bookings, payments, service requests)
    */
   public getRecentActivities = async (req: AuthenticatedRequest, res: Response) => {
-    console.log('=== StudentDashboardController.getRecentActivities called ===');
-    console.log('req.user:', req.user);
 
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
-        console.log('No firebaseUid found in req.user');
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
       // Get AuthUser by Firebase UID
       const authUser = await AuthUserModel.findOne({ firebaseUid });
       if (!authUser) {
-        console.log('AuthUser not found for Firebase UID:', firebaseUid);
         return res.status(404).json({ error: 'Usuario no encontrado' });
       }
 
       // Get Student profile
       const student = await StudentModel.findOne({ authUserId: authUser._id });
       if (!student) {
-        console.log('Student profile not found for authUserId:', authUser._id);
         return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
       }
 
-      console.log('Student found:', student._id);
 
       // Get recent activities (last 30 days)
       const thirtyDaysAgo = new Date();
@@ -247,7 +171,6 @@ export class StudentDashboardController {
       // Return top 10 most recent activities
       const recentActivities = activities.slice(0, 10);
 
-      console.log(`Found ${recentActivities.length} recent activities for student ${student._id}`);
 
       res.json({
         items: recentActivities
@@ -263,7 +186,6 @@ export class StudentDashboardController {
    * Get student info/profile
    */
   public getStudentInfo = async (req: AuthenticatedRequest, res: Response) => {
-    console.log('=== StudentDashboardController.getStudentInfo called ===');
 
     try {
       const firebaseUid = req.user?.uid;
@@ -279,6 +201,25 @@ export class StudentDashboardController {
       const student = await StudentModel.findOne({ authUserId: authUser._id });
       if (!student) {
         return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
+      }
+
+      // Recalculate balance for synchronization
+      const totalPaymentsSum = await PaymentModel.aggregate([
+        { $match: { studentId: student._id, status: 'paid' } },
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]);
+
+      const totalBookingsSum = await BookingModel.aggregate([
+        { $match: { studentId: student._id, status: 'confirmed' } },
+        { $group: { _id: null, total: { $sum: '$price' } } }
+      ]);
+
+      const recalculatedBalance = (totalPaymentsSum[0]?.total || 0) - (totalBookingsSum[0]?.total || 0);
+
+      // Update balance in DB if it's different (or just to be safe)
+      if (student.balance !== recalculatedBalance) {
+        student.balance = recalculatedBalance;
+        await student.save();
       }
 
       // Get statistics
@@ -297,7 +238,9 @@ export class StudentDashboardController {
         level: 'Principiante', // Default level, can be extended in future
         totalClasses: totalBookings,
         totalPayments: totalPayments,
-        totalSpent: totalSpent.length > 0 ? totalSpent[0].total : 0
+        totalSpent: totalPaymentsSum[0]?.total || 0,
+        balance: student.balance,
+        totalReservationsValue: totalBookingsSum[0]?.total || 0
       });
     } catch (error) {
       console.error('Error getting student info:', error);
@@ -375,7 +318,6 @@ export class StudentDashboardController {
    * TEN-90: Actualizado para mantener compatibilidad
    */
   public getAvailableSchedules = async (req: AuthenticatedRequest, res: Response) => {
-    console.log('=== StudentDashboardController.getAvailableSchedules called ===');
 
     try {
       const { professorId } = req.query;
@@ -384,8 +326,7 @@ export class StudentDashboardController {
         return res.status(400).json({ error: 'professorId es requerido' });
       }
 
-      // Get all schedules for the professor that don't have a booking yet
-      const schedules = await ScheduleModel.find({
+      const query: any = {
         professorId,
         startTime: { $gte: new Date() }, // Only future schedules
         isAvailable: true, // Only available slots
@@ -393,7 +334,15 @@ export class StudentDashboardController {
           { isBlocked: { $exists: false } },
           { isBlocked: false }
         ]
-      })
+      };
+
+      // Strict tenant filtering: If a tenant is selected, ONLY show schedules for that tenant
+      if (req.tenantId) {
+        query.tenantId = new Types.ObjectId(req.tenantId);
+      }
+
+      // Get all schedules for the professor that don't have a booking yet
+      const schedules = await ScheduleModel.find(query)
         .populate('tenantId', 'name slug config')
         .populate('courtId', 'name')
         .sort({ startTime: 1 })
@@ -430,7 +379,6 @@ export class StudentDashboardController {
         });
       }
 
-      console.log(`Found ${schedulesData.length} available schedules for professor ${professorId}`);
       res.json({ items: schedulesData });
     } catch (error) {
       console.error('Error getting available schedules:', error);
@@ -444,7 +392,6 @@ export class StudentDashboardController {
    * GET /api/student-dashboard/professors/:professorId/schedules
    */
   getProfessorSchedules = async (req: Request, res: Response) => {
-    console.log('=== StudentDashboardController.getProfessorSchedules called ===');
 
     try {
       const { professorId } = req.params;
@@ -460,7 +407,7 @@ export class StudentDashboardController {
       }
 
       // Get all available schedules for the professor
-      const schedules = await ScheduleModel.find({
+      const query: any = {
         professorId: new Types.ObjectId(professorId),
         startTime: { $gte: new Date() }, // Only future schedules
         isAvailable: true, // Only available slots
@@ -468,7 +415,15 @@ export class StudentDashboardController {
           { isBlocked: { $exists: false } },
           { isBlocked: false }
         ]
-      })
+      };
+
+      // Cast to AuthenticatedRequest to access tenantId
+      const authReq = req as AuthenticatedRequest;
+      if (authReq.tenantId) {
+        query.tenantId = new Types.ObjectId(authReq.tenantId);
+      }
+
+      const schedules = await ScheduleModel.find(query)
         .populate('tenantId', 'name slug config')
         .populate('courtId', 'name')
         .sort({ startTime: 1 })
@@ -511,7 +466,6 @@ export class StudentDashboardController {
         schedules: Object.values(groupedByTenant),
       };
 
-      console.log(`Found ${schedules.length} schedules for professor ${professorId}, grouped into ${Object.keys(groupedByTenant).length} tenants`);
       res.json(result);
     } catch (error) {
       console.error('Error getting professor schedules:', error);
@@ -525,7 +479,6 @@ export class StudentDashboardController {
    * GET /api/student-dashboard/tenants/:tenantId/schedules
    */
   getTenantSchedules = async (req: Request, res: Response) => {
-    console.log('=== StudentDashboardController.getTenantSchedules called ===');
 
     try {
       const { tenantId } = req.params;
@@ -602,7 +555,6 @@ export class StudentDashboardController {
         schedules: Object.values(groupedByProfessor),
       };
 
-      console.log(`Found ${schedules.length} schedules for tenant ${tenantId}, grouped into ${Object.keys(groupedByProfessor).length} professors`);
       res.json(result);
     } catch (error) {
       console.error('Error getting tenant schedules:', error);
@@ -616,7 +568,6 @@ export class StudentDashboardController {
    * GET /api/student-dashboard/available-schedules
    */
   getAllAvailableSchedules = async (req: Request, res: Response) => {
-    console.log('=== StudentDashboardController.getAllAvailableSchedules called ===');
 
     try {
       // Get all available schedules across all tenants
@@ -695,7 +646,6 @@ export class StudentDashboardController {
         professors: Object.values(tenantGroup.professors),
       }));
 
-      console.log(`Found ${schedules.length} available schedules, grouped into ${result.length} tenants`);
       res.json({ items: result });
     } catch (error) {
       console.error('Error getting all available schedules:', error);
@@ -707,7 +657,6 @@ export class StudentDashboardController {
    * Book a lesson
    */
   public bookLesson = async (req: AuthenticatedRequest, res: Response) => {
-    console.log('=== StudentDashboardController.bookLesson called ===');
 
     try {
       const firebaseUid = req.user?.uid;
@@ -717,7 +666,6 @@ export class StudentDashboardController {
 
       const { scheduleId, serviceType, price } = req.body;
 
-      console.log('Request body:', { scheduleId, serviceType, price });
 
       if (!scheduleId) {
         return res.status(400).json({ error: 'scheduleId es requerido' });
@@ -734,21 +682,17 @@ export class StudentDashboardController {
       // Get student
       const authUser = await AuthUserModel.findOne({ firebaseUid });
       if (!authUser) {
-        console.log('ERROR: AuthUser not found for firebaseUid:', firebaseUid);
         return res.status(404).json({ error: 'Usuario no encontrado' });
       }
 
       const student = await StudentModel.findOne({ authUserId: authUser._id });
       if (!student) {
-        console.log('ERROR: Student not found for authUserId:', authUser._id);
         return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
       }
 
-      console.log('Looking for schedule:', scheduleId);
 
       // Check if schedule exists and is available
       const schedule = await ScheduleModel.findById(scheduleId);
-      console.log('Schedule found:', !!schedule);
       if (!schedule) {
         return res.status(404).json({ error: 'Horario no encontrado' });
       }
@@ -765,62 +709,15 @@ export class StudentDashboardController {
 
       // Get tenantId from schedule (required for multi-tenancy)
       const tenantId = schedule.tenantId;
-      if (!tenantId) {
-        return res.status(400).json({ error: 'El horario no tiene un tenant asociado' });
-      }
 
-      // Verify if the professor is still active in this tenant
-      const professorTenant = await ProfessorTenantModel.findOne({
-        professorId: professor._id,
-        tenantId: tenantId,
-        isActive: true
+      // Create booking using service
+      const booking = await this.bookingService.createBooking({
+        tenantId: tenantId.toString(),
+        scheduleId: scheduleId.toString(),
+        studentId: student._id.toString(),
+        serviceType: serviceType as any,
+        price: price
       });
-
-      if (!professorTenant) {
-        return res.status(403).json({
-          error: 'El profesor ya no está asociado activamente a este centro. No se pueden realizar reservas.'
-        });
-      }
-
-      // Ensure StudentTenant relationship exists (creates if not exists)
-      await this.tenantService.addStudentToTenant(
-        student._id.toString(),
-        tenantId.toString(),
-      );
-
-      // Find an available court for this lesson
-      const availableCourt = await this.findAvailableCourt(
-        tenantId,
-        schedule.startTime,
-        schedule.endTime,
-      );
-
-      if (!availableCourt) {
-        return res.status(409).json({
-          error: 'No hay canchas disponibles para este horario. Por favor, intenta con otro horario.',
-        });
-      }
-
-      // Create booking with tenantId and assigned courtId
-      const booking = await BookingModel.create({
-        tenantId: tenantId,
-        scheduleId: schedule._id,
-        studentId: student._id,
-        professorId: professor._id,
-        courtId: availableCourt._id,
-        serviceType: serviceType,
-        price: price,
-        status: 'confirmed',
-        notes: `Reserva de ${serviceType} - Cancha: ${availableCourt.name}`
-      });
-
-      // Update schedule availability
-      schedule.isAvailable = false;
-      schedule.studentId = student._id;
-      schedule.status = 'confirmed';
-      await schedule.save();
-
-      console.log(`Booking created: ${booking._id} with court: ${availableCourt.name}`);
 
       res.status(201).json({
         id: booking._id,
@@ -842,31 +739,25 @@ export class StudentDashboardController {
    * Get student bookings
    */
   public getBookings = async (req: AuthenticatedRequest, res: Response) => {
-    console.log('=== StudentDashboardController.getBookings called ===');
-    console.log('req.user:', req.user);
 
     try {
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
-        console.log('No firebaseUid found in req.user');
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
       // Get AuthUser by Firebase UID
       const authUser = await AuthUserModel.findOne({ firebaseUid });
       if (!authUser) {
-        console.log('AuthUser not found for Firebase UID:', firebaseUid);
         return res.status(404).json({ error: 'Usuario no encontrado' });
       }
 
       // Get Student profile
       const student = await StudentModel.findOne({ authUserId: authUser._id });
       if (!student) {
-        console.log('Student profile not found for authUserId:', authUser._id);
         return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
       }
 
-      console.log('Student found:', student._id);
 
       // Get base pricing for professor pricing calculation
       const baseConfig = await SystemConfigModel.findOne({ key: 'base_pricing' });
@@ -905,7 +796,6 @@ export class StudentDashboardController {
         })
         .sort({ createdAt: -1 });
 
-      console.log(`Found ${bookings.length} bookings for student ${student._id}`);
 
       // Format bookings according to frontend BookingModel structure
       const bookingsData = bookings.map((booking) => {
@@ -979,7 +869,6 @@ export class StudentDashboardController {
         };
       });
 
-      console.log(`Returning ${bookingsData.length} formatted bookings`);
 
       res.json({ items: bookingsData });
     } catch (error) {
@@ -994,7 +883,6 @@ export class StudentDashboardController {
    * TEN-89: MT-BACK-007
    */
   public bookCourt = async (req: AuthenticatedRequest, res: Response) => {
-    console.log('=== StudentDashboardController.bookCourt called ===');
 
     try {
       const firebaseUid = req.user?.uid;
@@ -1004,7 +892,6 @@ export class StudentDashboardController {
 
       const { courtId, startTime, endTime, price } = req.body;
 
-      console.log('Request body:', { courtId, startTime, endTime, price });
 
       if (!courtId) {
         return res.status(400).json({ error: 'courtId es requerido' });
@@ -1021,21 +908,17 @@ export class StudentDashboardController {
       // Get student
       const authUser = await AuthUserModel.findOne({ firebaseUid });
       if (!authUser) {
-        console.log('ERROR: AuthUser not found for firebaseUid:', firebaseUid);
         return res.status(404).json({ error: 'Usuario no encontrado' });
       }
 
       const student = await StudentModel.findOne({ authUserId: authUser._id });
       if (!student) {
-        console.log('ERROR: Student not found for authUserId:', authUser._id);
         return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
       }
 
-      console.log('Looking for court:', courtId);
 
       // Check if court exists and is available
       const court = await CourtModel.findById(courtId);
-      console.log('Court found:', !!court);
       if (!court) {
         return res.status(404).json({ error: 'Cancha no encontrada' });
       }
@@ -1175,7 +1058,6 @@ export class StudentDashboardController {
    * GET /api/student-dashboard/tenants
    */
   public getMyTenants = async (req: AuthenticatedRequest, res: Response) => {
-    console.log('=== StudentDashboardController.getMyTenants called ===');
 
     try {
       const firebaseUid = req.user?.uid;
@@ -1234,7 +1116,6 @@ export class StudentDashboardController {
         })
       );
 
-      console.log(`Found ${tenantsWithActivity.length} active tenants for student ${student._id}`);
       res.json({ items: tenantsWithActivity });
     } catch (error) {
       console.error('Error getting student tenants:', error);
@@ -1314,12 +1195,6 @@ export class StudentDashboardController {
 
       const nextDay = new Date(targetDate);
       nextDay.setUTCDate(nextDay.getUTCDate() + 1);
-
-      console.log('Checking availability for date:', {
-        inputDate: date,
-        targetDateUTC: targetDate.toISOString(),
-        nextDayUTC: nextDay.toISOString(),
-      });
 
       // Verify court exists and belongs to tenant
       const court = await CourtModel.findOne({

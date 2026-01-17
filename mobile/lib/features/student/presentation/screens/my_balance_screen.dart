@@ -8,6 +8,9 @@ import '../../../payment/presentation/widgets/payment_dialog.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../providers/student_provider.dart';
 
+import '../../../../core/providers/tenant_provider.dart';
+import '../../../../core/logging/logger.dart';
+
 class MyBalanceScreen extends ConsumerStatefulWidget {
   const MyBalanceScreen({super.key});
 
@@ -18,10 +21,56 @@ class MyBalanceScreen extends ConsumerStatefulWidget {
 class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   bool _isSyncing = false;
   double? _previousBalance;
+  final _logger = AppLogger.tag('MyBalanceScreen');
+
+  bool get _hasWompiConfigured {
+    final tenant = ref.read(currentTenantProvider).value;
+    final config = tenant?.config;
+    _logger.info('DEBUG: Tenant ${tenant?.name} config: $config');
+    if (config == null) return false;
+
+    // Check for nested structure: config -> payments -> wompi -> pubKey
+    if (config.containsKey('payments')) {
+      final payments = config['payments'];
+      if (payments is Map) {
+        final wompi = payments['wompi'];
+        if (wompi is Map) {
+          final pubKey = wompi['pubKey'];
+          if (pubKey != null && pubKey.toString().trim().isNotEmpty) {
+            _logger.info('DEBUG: Found Wompi key in nested config');
+            return true;
+          }
+        }
+      }
+    }
+
+    // Fallback: Check for flat structure (backward compatibility)
+    bool isValid(String key) {
+      if (!config.containsKey(key)) return false;
+      final value = config[key];
+      return value != null && value.toString().trim().isNotEmpty;
+    }
+
+    final hasKey = isValid('wompi_public_key') || isValid('wompiPublicKey');
+    _logger.info('DEBUG: Has Wompi config? (flat check): $hasKey');
+    return hasKey;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // Refresh tenant data to ensure we have the latest config (e.g. Wompi keys)
+      final _ = ref.refresh(currentTenantProvider);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final studentInfoAsync = ref.watch(studentInfoProvider);
+    // Watch tenant to rebuild when config refreshes
+    ref.watch(currentTenantProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -456,22 +505,24 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   Widget _buildActionButtons(BuildContext context) {
     return Column(
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () => _showTopUpDialog(context),
-            icon: const Icon(Icons.add_card),
-            label: const Text('Recargar Saldo'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+        if (_hasWompiConfigured)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _showTopUpDialog(context),
+              icon: const Icon(Icons.add_card),
+              label: const Text('Recargar Saldo'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
-        ),
+        if (_hasWompiConfigured) const Gap(12),
         const Gap(12),
         SizedBox(
           width: double.infinity,

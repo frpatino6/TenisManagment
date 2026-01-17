@@ -39,11 +39,47 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   bool _isSyncing = false;
   final ScrollController _scrollController = ScrollController();
 
+  bool get _hasWompiConfigured {
+    final tenant = ref.read(currentTenantProvider).value;
+    final config = tenant?.config;
+    _logger.info('DEBUG: Tenant ${tenant?.name} config: $config');
+    if (config == null) return false;
+
+    // Check for nested structure: config -> payments -> wompi -> pubKey
+    if (config.containsKey('payments')) {
+      final payments = config['payments'];
+      if (payments is Map) {
+        final wompi = payments['wompi'];
+        if (wompi is Map) {
+          final pubKey = wompi['pubKey'];
+          if (pubKey != null && pubKey.toString().trim().isNotEmpty) {
+            _logger.info('DEBUG: Found Wompi key in nested config');
+            return true;
+          }
+        }
+      }
+    }
+
+    // Fallback: Check for flat structure (backward compatibility)
+    bool isValid(String key) {
+      if (!config.containsKey(key)) return false;
+      final value = config[key];
+      return value != null && value.toString().trim().isNotEmpty;
+    }
+
+    final hasKey = isValid('wompi_public_key') || isValid('wompiPublicKey');
+    _logger.info('DEBUG: Has Wompi config? (flat check): $hasKey');
+    return hasKey;
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // Refresh tenant data to ensure we have the latest config (e.g. Wompi keys)
+      final _ = ref.refresh(currentTenantProvider);
+
       final tenantState = ref.read(tenantNotifierProvider);
       tenantState.when(
         data: (favoriteTenantId) {
@@ -1401,7 +1437,10 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             final isInsufficient = balance < price;
             final missingAmount = price - balance;
 
-            if (isInsufficient) {
+            // Watch tenant to rebuild when config refreshes
+            ref.watch(currentTenantProvider);
+
+            if (isInsufficient && _hasWompiConfigured) {
               return FilledButton.icon(
                 onPressed: () =>
                     showDialog(

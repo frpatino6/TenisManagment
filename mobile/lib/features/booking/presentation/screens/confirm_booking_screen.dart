@@ -10,6 +10,7 @@ import '../../../payment/presentation/widgets/payment_dialog.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../../core/logging/logger.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/providers/tenant_provider.dart';
 
 /// Screen to confirm a booking before creating it
 ///
@@ -53,12 +54,50 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
     super.initState();
     // Default price for individual class (can be improved with pricing from professor)
     _price = 50000.0; // Default price in COP
+
+    // Refresh tenant data to ensure we have the latest config (e.g. Wompi keys)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final _ = ref.refresh(currentTenantProvider);
+    });
   }
 
   @override
   void dispose() {
     _pollingTimer?.cancel();
     super.dispose();
+  }
+
+  bool get _hasWompiConfigured {
+    final tenant = ref.read(currentTenantProvider).value;
+    final config = tenant?.config;
+    _logger.info('DEBUG: Tenant ${tenant?.name} config: $config');
+    if (config == null) return false;
+
+    // Check for nested structure: config -> payments -> wompi -> pubKey
+    if (config.containsKey('payments')) {
+      final payments = config['payments'];
+      if (payments is Map) {
+        final wompi = payments['wompi'];
+        if (wompi is Map) {
+          final pubKey = wompi['pubKey'];
+          if (pubKey != null && pubKey.toString().trim().isNotEmpty) {
+            _logger.info('DEBUG: Found Wompi key in nested config');
+            return true;
+          }
+        }
+      }
+    }
+
+    // Fallback: Check for flat structure (backward compatibility)
+    bool isValid(String key) {
+      if (!config.containsKey(key)) return false;
+      final value = config[key];
+      return value != null && value.toString().trim().isNotEmpty;
+    }
+
+    final hasKey = isValid('wompi_public_key') || isValid('wompiPublicKey');
+    _logger.info('DEBUG: Has Wompi config? (flat check): $hasKey');
+    return hasKey;
   }
 
   void _startPaymentPolling() {
@@ -107,7 +146,7 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
         // Check if balance is sufficient
         final balance = (studentInfo['balance'] as num?)?.toDouble() ?? 0.0;
 
-        if (balance >= _price) {
+        if (balance >= _price || !_hasWompiConfigured) {
           _logger.info(
             'Balance sufficient ($balance >= $_price), confirming booking...',
           );
@@ -290,6 +329,8 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                           final studentInfoAsync = ref.watch(
                             studentInfoProvider,
                           );
+                          // Watch tenant to rebuild when config refreshes
+                          ref.watch(currentTenantProvider);
 
                           return studentInfoAsync.when(
                             data: (info) {
@@ -298,7 +339,7 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                               final isInsufficient = balance < _price;
                               final missingAmount = _price - balance;
 
-                              if (isInsufficient) {
+                              if (isInsufficient && _hasWompiConfigured) {
                                 return ElevatedButton.icon(
                                   onPressed: () =>
                                       showDialog(

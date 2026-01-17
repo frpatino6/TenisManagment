@@ -41,6 +41,7 @@ export interface UserTenantInfo {
   isActive: boolean;
   joinedAt: Date;
   role?: 'tenant_admin' | 'professor' | 'student';
+  config?: TenantConfig;
 }
 
 export interface TenantAccessResult {
@@ -201,6 +202,7 @@ export class TenantService {
               isActive: ta.isActive,
               joinedAt: ta.joinedAt,
               role: 'tenant_admin',
+              config: tenant.config,
             });
           }
         }
@@ -223,6 +225,7 @@ export class TenantService {
                 isActive: pt.isActive,
                 joinedAt: pt.joinedAt,
                 role: 'professor',
+                config: tenant.config,
               });
             }
           }
@@ -246,6 +249,7 @@ export class TenantService {
                 isActive: st.isActive,
                 joinedAt: st.joinedAt,
                 role: 'student',
+                config: tenant.config,
               });
             }
           }

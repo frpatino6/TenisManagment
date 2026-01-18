@@ -1025,6 +1025,7 @@ export class StudentDashboardController {
         status: 'confirmed',
         notes: `Reserva de cancha: ${court.name} - ${requestedStart.toISOString()} a ${requestedEnd.toISOString()}`,
         bookingDate: requestedStart,
+        endTime: requestedEnd,
       });
 
 

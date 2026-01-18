@@ -350,8 +350,6 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                                             'scheduleId': widget.schedule.id,
                                             'serviceType': 'individual_class',
                                             'price': _price,
-                                            'professorId': widget.professorId,
-                                            'tenantId': widget.tenantId,
                                           },
                                           redirectUrl:
                                               'https://tenis-uat.casacam.net/payment-complete',
@@ -372,8 +370,8 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                                             );
                                           },
                                         ),
-                                      ).then((_) {
-                                        if (mounted) {
+                                      ).then((paymentStarted) {
+                                        if (mounted && paymentStarted == true) {
                                           setState(() {
                                             _shouldAutoConfirm = true;
                                             _isSyncing = true;

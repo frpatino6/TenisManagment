@@ -562,7 +562,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
     final currentInfo = ref.read(studentInfoProvider).value;
     final currentBalance = (currentInfo?['balance'] as num?)?.toDouble() ?? 0.0;
 
-    await showDialog(
+    final paymentStarted = await showDialog<bool>(
       context: context,
       builder: (context) => PaymentDialog(
         onPaymentComplete: () {
@@ -571,7 +571,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
       ),
     );
 
-    if (mounted) {
+    if (mounted && paymentStarted == true) {
       setState(() {
         _previousBalance = currentBalance;
         _isSyncing = true;

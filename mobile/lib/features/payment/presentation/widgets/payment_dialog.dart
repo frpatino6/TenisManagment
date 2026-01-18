@@ -7,6 +7,8 @@ import '../screens/wompi_webview_screen.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../booking/presentation/providers/booking_provider.dart';
 import '../../../../core/constants/timeouts.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/utils/web_utils_stub.dart'
     if (dart.library.js_interop) '../../../../core/utils/web_utils_web.dart';
 
@@ -36,9 +38,15 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   @override
   void initState() {
     super.initState();
+    final initialValue = widget.initialAmount?.toStringAsFixed(0) ?? '';
     _amountController = TextEditingController(
-      text: widget.initialAmount?.toStringAsFixed(0) ?? '',
+      text: initialValue.isNotEmpty ? _formatNumber(initialValue) : '',
     );
+  }
+
+  String _formatNumber(String s) {
+    if (s.isEmpty) return '';
+    return NumberFormat.decimalPattern('es_CO').format(int.parse(s));
   }
 
   @override
@@ -59,6 +67,10 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             TextFormField(
               controller: _amountController,
               keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                CurrencyInputFormatter(),
+              ],
               decoration: const InputDecoration(
                 labelText: 'Monto a recargar',
                 prefixText: '\$ ',
@@ -68,7 +80,9 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                 if (value == null || value.isEmpty) {
                   return 'Ingresa un monto';
                 }
-                final amount = double.tryParse(value);
+                // Remove formatting to validate
+                final cleanValue = value.replaceAll('.', '');
+                final amount = double.tryParse(cleanValue);
                 if (amount == null || amount < 10000) {
                   return 'El monto mínimo es \$10.000';
                 }
@@ -107,7 +121,12 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                   ? null
                   : () async {
                       if (_formKey.currentState!.validate()) {
-                        final amount = double.parse(_amountController.text);
+                        // Remove formatting before sending to backend
+                        final cleanAmount = _amountController.text.replaceAll(
+                          '.',
+                          '',
+                        );
+                        final amount = double.parse(cleanAmount);
                         // Using read instead of watch for actions
                         final result = await ref
                             .read(paymentControllerProvider.notifier)
@@ -154,10 +173,13 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                               );
 
                               if (context.mounted) {
-                                Navigator.pop(context); // Close dialog now
+                                Navigator.pop(
+                                  context,
+                                  paymentCompleted,
+                                ); // Return status
 
                                 ref.invalidate(studentInfoProvider);
-                                ref.invalidate(bookingServiceProvider);
+                                ref.invalidate(myBookingsProvider);
                                 widget.onPaymentComplete?.call();
 
                                 if (paymentCompleted == true) {
@@ -205,6 +227,27 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
           },
         ),
       ],
+    );
+  }
+}
+
+class CurrencyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    final int value = int.parse(newValue.text.replaceAll('.', ''));
+    final formatter = NumberFormat.decimalPattern('es_CO');
+    final String newText = formatter.format(value);
+
+    return newValue.copyWith(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
     );
   }
 }

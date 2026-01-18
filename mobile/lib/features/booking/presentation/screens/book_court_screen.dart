@@ -160,6 +160,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             .firstOrNull;
 
         if (booking != null && mounted && !_isBooking) {
+          setState(() {
+            _isSyncing = false;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('¡Reserva de cancha confirmada automáticamente!'),
@@ -219,7 +222,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           if (_isBooking || _isSyncing)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withValues(alpha: 0.7),
+                color: Colors.black.withOpacity(0.7),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -1443,12 +1446,12 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             if (isInsufficient && _hasWompiConfigured) {
               return FilledButton.icon(
                 onPressed: () =>
-                    showDialog(
+                    showDialog<bool>(
                       context: context,
                       builder: (_) =>
                           PaymentDialog(initialAmount: missingAmount),
-                    ).then((_) {
-                      if (mounted) {
+                    ).then((paymentStarted) {
+                      if (mounted && paymentStarted == true) {
                         setState(() {
                           _isSyncing = true;
                         });

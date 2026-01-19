@@ -16,6 +16,7 @@ class PaymentDialog extends ConsumerStatefulWidget {
   final double? initialAmount;
   final Map<String, dynamic>? bookingData;
   final String? redirectUrl;
+  final VoidCallback? onPaymentStart;
   final VoidCallback? onPaymentComplete;
 
   const PaymentDialog({
@@ -23,6 +24,7 @@ class PaymentDialog extends ConsumerStatefulWidget {
     this.initialAmount,
     this.bookingData,
     this.redirectUrl,
+    this.onPaymentStart,
     this.onPaymentComplete,
   });
 
@@ -104,6 +106,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             if (kIsWeb && _checkoutUrl != null) {
               return FilledButton.icon(
                 onPressed: () {
+                  widget.onPaymentStart?.call();
                   WebUtils.openUrl(_checkoutUrl!, newTab: true);
                   Navigator.pop(context);
                 },
@@ -159,6 +162,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                               // On mobile: keep automatic redirection with WebView
                               // Don't pop yet, wait for webview result
 
+                              widget.onPaymentStart?.call();
                               final bool?
                               paymentCompleted = await Navigator.push<bool>(
                                 context,

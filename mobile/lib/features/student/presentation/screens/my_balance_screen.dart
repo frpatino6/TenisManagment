@@ -19,7 +19,6 @@ class MyBalanceScreen extends ConsumerStatefulWidget {
 }
 
 class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
-  bool _isSyncing = false;
   double? _previousBalance;
   final _logger = AppLogger.tag('MyBalanceScreen');
 
@@ -69,6 +68,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   @override
   Widget build(BuildContext context) {
     final studentInfoAsync = ref.watch(studentInfoProvider);
+    final isSyncing = ref.watch(balanceSyncProvider);
     // Watch tenant to rebuild when config refreshes
     ref.watch(currentTenantProvider);
 
@@ -94,13 +94,13 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
                   (studentInfo['balance'] as num?)?.toDouble() ?? 0.0;
 
               // Hide overlay if balance changed after syncing
-              if (_isSyncing &&
+              if (isSyncing &&
                   _previousBalance != null &&
                   currentBalance != _previousBalance) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) {
                     setState(() {
-                      _isSyncing = false;
+                      ref.read(balanceSyncProvider.notifier).stop();
                       _previousBalance = currentBalance;
                     });
                   }
@@ -112,7 +112,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, _) => _buildErrorState(context, error.toString()),
           ),
-          if (_isSyncing)
+          if (isSyncing)
             Positioned.fill(
               child: Container(
                 color: Colors.black.withValues(alpha: 0.7),
@@ -565,6 +565,13 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
     final paymentStarted = await showDialog<bool>(
       context: context,
       builder: (context) => PaymentDialog(
+        onPaymentStart: () {
+          if (!mounted) return;
+          setState(() {
+            _previousBalance = currentBalance;
+          });
+          ref.read(balanceSyncProvider.notifier).start();
+        },
         onPaymentComplete: () {
           ref.invalidate(studentInfoProvider);
         },
@@ -574,8 +581,8 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
     if (mounted && paymentStarted == true) {
       setState(() {
         _previousBalance = currentBalance;
-        _isSyncing = true;
       });
+      ref.read(balanceSyncProvider.notifier).start();
       ref.invalidate(studentInfoProvider);
     }
   }

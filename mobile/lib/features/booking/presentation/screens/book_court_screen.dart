@@ -23,8 +23,25 @@ final availableTenantsProvider = FutureProvider.autoDispose<List<TenantModel>>((
   return service.getAvailableTenants();
 });
 
+typedef BookCourtPaymentDialogBuilder = Widget Function(
+  BuildContext context,
+  double initialAmount,
+  VoidCallback onPaymentStart,
+);
+
 class BookCourtScreen extends ConsumerStatefulWidget {
-  const BookCourtScreen({super.key});
+  final CourtModel? initialCourt;
+  final DateTime? initialDate;
+  final TimeOfDay? initialTime;
+  final BookCourtPaymentDialogBuilder? paymentDialogBuilder;
+
+  const BookCourtScreen({
+    super.key,
+    this.initialCourt,
+    this.initialDate,
+    this.initialTime,
+    this.paymentDialogBuilder,
+  });
 
   @override
   ConsumerState<BookCourtScreen> createState() => _BookCourtScreenState();
@@ -75,6 +92,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedCourt = widget.initialCourt;
+    _selectedDate = widget.initialDate;
+    _selectedTime = widget.initialTime;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       // Refresh tenant data to ensure we have the latest config (e.g. Wompi keys)
@@ -1444,12 +1464,27 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             ref.watch(currentTenantProvider);
 
             if (isInsufficient && _hasWompiConfigured) {
+              final onPaymentStart = () {
+                if (!mounted) return;
+                setState(() {
+                  _isSyncing = true;
+                });
+              };
+
               return FilledButton.icon(
                 onPressed: () =>
                     showDialog<bool>(
                       context: context,
-                      builder: (_) =>
-                          PaymentDialog(initialAmount: missingAmount),
+                      builder: (dialogContext) =>
+                          widget.paymentDialogBuilder?.call(
+                            dialogContext,
+                            missingAmount,
+                            onPaymentStart,
+                          ) ??
+                          PaymentDialog(
+                            initialAmount: missingAmount,
+                            onPaymentStart: onPaymentStart,
+                          ),
                     ).then((paymentStarted) {
                       if (mounted && paymentStarted == true) {
                         setState(() {

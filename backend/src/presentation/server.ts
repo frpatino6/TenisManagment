@@ -91,6 +91,10 @@ app.get('/health', (req: Request, res: Response) => {
 // Payment redirect landing page (for web checkout return)
 app.get('/payment-complete', (_req: Request, res: Response) => {
   res
+    .set(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'unsafe-inline'",
+    )
     .status(200)
     .type('html')
     .send(

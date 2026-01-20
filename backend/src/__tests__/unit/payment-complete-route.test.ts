@@ -7,6 +7,9 @@ describe('Payment complete redirect page', () => {
 
     expect(response.status).toBe(200);
     expect(response.headers['content-type']).toContain('text/html');
+    expect(response.headers['content-security-policy']).toContain(
+      "script-src 'unsafe-inline'",
+    );
     expect(response.text).toContain('Pago recibido');
     expect(response.text).toContain('postMessage');
   });

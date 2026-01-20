@@ -94,7 +94,7 @@ app.get('/payment-complete', (_req: Request, res: Response) => {
     .status(200)
     .type('html')
     .send(
-      '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pago completado</title></head><body style="font-family:Arial,Helvetica,sans-serif;padding:24px"><h1>Pago recibido</h1><p>Puedes cerrar esta pestaña y volver a la app.</p></body></html>',
+      '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pago completado</title></head><body style="font-family:Arial,Helvetica,sans-serif;padding:24px"><h1>Pago recibido</h1><p>Puedes cerrar esta pestaña y volver a la app.</p><script>(function(){try{if(window.opener){window.opener.postMessage(window.location.href,"*");}window.close();}catch(e){}})();</script></body></html>',
     );
 });
 

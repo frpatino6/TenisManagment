@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/utils/web_utils_stub.dart'
     if (dart.library.js_interop) '../../../../core/utils/web_utils_web.dart';
+import '../utils/wompi_redirect_utils.dart';
 
 class PaymentDialog extends ConsumerStatefulWidget {
   final double? initialAmount;
@@ -39,6 +40,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   late final TextEditingController _amountController;
   final _formKey = GlobalKey<FormState>();
   String? _checkoutUrl; // Store URL for two-step launch on web
+  bool _isWaitingForWebResult = false;
+  void Function()? _removeMessageListener;
 
   @override
   void initState() {
@@ -56,8 +59,43 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
   @override
   void dispose() {
+    _removeMessageListener?.call();
     _amountController.dispose();
     super.dispose();
+  }
+
+  void _handleWebMessage(String message) {
+    final redirectUrl = widget.redirectUrl ?? AppConfig.paymentRedirectUrl;
+    final messageUrl = extractRedirectUrlFromMessage(message);
+    if (messageUrl == null || !messageUrl.contains(redirectUrl)) {
+      return;
+    }
+
+    final isApproved = isWompiPaymentApproved(redirectUrl, messageUrl);
+
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+
+    ref.invalidate(studentInfoProvider);
+    ref.invalidate(myBookingsProvider);
+
+    if (isApproved) {
+      widget.onPaymentComplete?.call();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Pago procesado. Actualizando saldo...'),
+          backgroundColor: Colors.green,
+          duration: Timeouts.snackbarSuccess,
+        ),
+      );
+    } else {
+      widget.onPaymentFailed?.call();
+    }
+
+    _removeMessageListener?.call();
+    _removeMessageListener = null;
+
+    Navigator.pop(context, isApproved);
   }
 
   @override
@@ -108,13 +146,24 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
             if (kIsWeb && _checkoutUrl != null) {
               return FilledButton.icon(
-                onPressed: () {
-                  widget.onPaymentStart?.call();
-                  WebUtils.openUrl(_checkoutUrl!, newTab: true);
-                  Navigator.pop(context);
-                },
+                onPressed: _isWaitingForWebResult
+                    ? null
+                    : () {
+                        _removeMessageListener?.call();
+                        _removeMessageListener =
+                            WebUtils.addWindowMessageListener(_handleWebMessage);
+                        setState(() {
+                          _isWaitingForWebResult = true;
+                        });
+                        widget.onPaymentStart?.call();
+                        WebUtils.openUrl(_checkoutUrl!, newTab: true);
+                      },
                 icon: const Icon(Icons.open_in_new),
-                label: const Text('Ir a la pasarela de pago'),
+                label: Text(
+                  _isWaitingForWebResult
+                      ? 'Esperando confirmación...'
+                      : 'Ir a la pasarela de pago',
+                ),
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.green,
                   padding: const EdgeInsets.symmetric(vertical: 12),

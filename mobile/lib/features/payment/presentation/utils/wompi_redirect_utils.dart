@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 bool isWompiPaymentApproved(String redirectUrl, String url) {
   if (!url.contains(redirectUrl)) {
     return false;
@@ -38,6 +40,24 @@ bool isWompiPaymentApproved(String redirectUrl, String url) {
   }
 
   return true;
+}
+
+String? extractRedirectUrlFromMessage(String message) {
+  final uri = Uri.tryParse(message);
+  if (uri != null && uri.hasScheme) {
+    return message;
+  }
+
+  try {
+    final decoded = jsonDecode(message);
+    if (decoded is Map &&
+        decoded['type'] == 'wompi_payment' &&
+        decoded['url'] is String) {
+      return decoded['url'] as String;
+    }
+  } catch (_) {}
+
+  return null;
 }
 
 bool _isApprovedStatus(String status) {

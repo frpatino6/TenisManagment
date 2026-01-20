@@ -19,4 +19,11 @@ class WebUtils {
   static void removeWindowFocusListener(void Function() callback) {
     // No hace nada en móvil
   }
+
+  /// Stub for mobile - does nothing
+  static void Function() addWindowMessageListener(
+    void Function(String message) callback,
+  ) {
+    return () {};
+  }
 }

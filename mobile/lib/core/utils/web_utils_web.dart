@@ -36,4 +36,19 @@ class WebUtils {
     // Note: removing visibilitychange listener is more complex if not stored,
     // but in main_common it lasts for the app life.
   }
+
+  /// Add listener for window message events (postMessage)
+  static void Function() addWindowMessageListener(
+    void Function(String message) callback,
+  ) {
+    final jsListener = ((web.MessageEvent event) {
+      final data = event.data;
+      if (data != null) {
+        callback(data.toString());
+      }
+    }).toJS;
+
+    web.window.addEventListener('message', jsListener);
+    return () => web.window.removeEventListener('message', jsListener);
+  }
 }

@@ -30,4 +30,23 @@ void main() {
       expect(result, isFalse);
     });
   });
+
+  group('extractRedirectUrlFromMessage', () {
+    test('returns url when message is a full redirect URL', () {
+      final url = extractRedirectUrlFromMessage(
+        'https://example.com/payment-complete?status=APPROVED',
+      );
+
+      expect(
+        url,
+        equals('https://example.com/payment-complete?status=APPROVED'),
+      );
+    });
+
+    test('returns null for non-url message', () {
+      final url = extractRedirectUrlFromMessage('not-a-url');
+
+      expect(url, isNull);
+    });
+  });
 }

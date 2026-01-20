@@ -83,16 +83,20 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     if (resolvedStatus == null && transactionId != null) {
       final tenantId = ref.read(currentTenantIdProvider);
       if (tenantId != null) {
-        final service = ref.read(paymentServiceProvider);
-        final result =
-            await service.getTransactionStatus(transactionId, tenantId);
-        final backendStatus = result['status'] as String?;
-        if (backendStatus == 'APPROVED') {
-          resolvedStatus = true;
-        } else if (backendStatus == 'DECLINED' ||
-            backendStatus == 'VOIDED' ||
-            backendStatus == 'ERROR') {
-          resolvedStatus = false;
+        try {
+          final service = ref.read(paymentServiceProvider);
+          final result =
+              await service.getTransactionStatus(transactionId, tenantId);
+          final backendStatus = result['status'] as String?;
+          if (backendStatus == 'APPROVED') {
+            resolvedStatus = true;
+          } else if (backendStatus == 'DECLINED' ||
+              backendStatus == 'VOIDED' ||
+              backendStatus == 'ERROR') {
+            resolvedStatus = false;
+          }
+        } catch (_) {
+          resolvedStatus = null;
         }
       }
     }
@@ -274,22 +278,26 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                                     currentTenantIdProvider,
                                   );
                                   if (tenantId != null) {
-                                    final service = ref.read(
-                                      paymentServiceProvider,
-                                    );
-                                    final result = await service
-                                        .getTransactionStatus(
-                                          transactionId,
-                                          tenantId,
-                                        );
-                                    final backendStatus =
-                                        result['status'] as String?;
-                                    if (backendStatus == 'APPROVED') {
-                                      resolvedStatus = true;
-                                    } else if (backendStatus == 'DECLINED' ||
-                                        backendStatus == 'VOIDED' ||
-                                        backendStatus == 'ERROR') {
-                                      resolvedStatus = false;
+                                    try {
+                                      final service = ref.read(
+                                        paymentServiceProvider,
+                                      );
+                                      final result = await service
+                                          .getTransactionStatus(
+                                            transactionId,
+                                            tenantId,
+                                          );
+                                      final backendStatus =
+                                          result['status'] as String?;
+                                      if (backendStatus == 'APPROVED') {
+                                        resolvedStatus = true;
+                                      } else if (backendStatus == 'DECLINED' ||
+                                          backendStatus == 'VOIDED' ||
+                                          backendStatus == 'ERROR') {
+                                        resolvedStatus = false;
+                                      }
+                                    } catch (_) {
+                                      resolvedStatus = null;
                                     }
                                   }
                                 }

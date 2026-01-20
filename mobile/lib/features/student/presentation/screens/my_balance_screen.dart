@@ -565,6 +565,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
     final paymentStarted = await showDialog<bool>(
       context: context,
       builder: (context) => PaymentDialog(
+        redirectUrl: 'https://tenis-uat.casacam.net/payment-complete',
         onPaymentStart: () {
           if (!mounted) return;
           setState(() {

@@ -6,6 +6,7 @@ import 'package:tennis_management/features/booking/domain/models/booking_model.d
 import 'package:tennis_management/features/booking/domain/models/court_model.dart';
 import 'package:tennis_management/features/booking/presentation/providers/booking_provider.dart';
 import 'package:tennis_management/features/booking/presentation/screens/book_court_screen.dart';
+import 'package:tennis_management/features/payment/presentation/widgets/payment_dialog.dart';
 import 'package:tennis_management/features/student/presentation/providers/student_provider.dart';
 import 'package:tennis_management/features/tenant/domain/models/tenant_model.dart';
 
@@ -61,9 +62,7 @@ void main() {
               'totalPayments': 0,
             },
           ),
-          myBookingsProvider.overrideWith(
-            (ref) async => <BookingModel>[],
-          ),
+          myBookingsProvider.overrideWith((ref) async => <BookingModel>[]),
         ],
       );
 
@@ -98,6 +97,81 @@ void main() {
       await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.text('Procesando reserva...'), findsOneWidget);
+
+      await tester.pumpWidget(Container());
+      container.dispose();
+    });
+
+    testWidgets('should pass redirectUrl to PaymentDialog', (
+      WidgetTester tester,
+    ) async {
+      final court = CourtModel(
+        id: 'court-1',
+        name: 'Court 1',
+        type: 'tennis',
+        pricePerHour: 20000,
+      );
+      final selectedDate = DateTime.now().add(const Duration(days: 1));
+      final selectedTime = const TimeOfDay(hour: 10, minute: 0);
+      final testTenant = TenantModel(
+        id: 'tenant-1',
+        name: 'Test Center',
+        slug: 'test-center',
+        isActive: true,
+        config: {
+          'payments': {
+            'wompi': {'pubKey': 'test-key'},
+          },
+        },
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          tenantNotifierProvider.overrideWith(TestTenantNotifier.new),
+          hasTenantProvider.overrideWith((ref) => true),
+          currentTenantProvider.overrideWith((ref) async => testTenant),
+          courtsProvider.overrideWith((ref) async => [court]),
+          courtAvailableSlotsProvider.overrideWith(
+            (ref, params) async => {
+              'availableSlots': ['10:00'],
+              'bookedSlots': <String>[],
+            },
+          ),
+          studentInfoProvider.overrideWith(
+            (ref) async => {
+              'balance': 0,
+              'totalSpent': 0,
+              'totalClasses': 0,
+              'totalPayments': 0,
+            },
+          ),
+          myBookingsProvider.overrideWith((ref) async => <BookingModel>[]),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: BookCourtScreen(
+              initialCourt: court,
+              initialDate: selectedDate,
+              initialTime: selectedTime,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Recargar y Reservar'));
+      await tester.pumpAndSettle();
+
+      final dialog = tester.widget<PaymentDialog>(find.byType(PaymentDialog));
+      expect(
+        dialog.redirectUrl,
+        equals('https://tenis-uat.casacam.net/payment-complete'),
+      );
 
       await tester.pumpWidget(Container());
       container.dispose();

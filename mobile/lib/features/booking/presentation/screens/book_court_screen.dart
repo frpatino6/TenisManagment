@@ -23,11 +23,12 @@ final availableTenantsProvider = FutureProvider.autoDispose<List<TenantModel>>((
   return service.getAvailableTenants();
 });
 
-typedef BookCourtPaymentDialogBuilder = Widget Function(
-  BuildContext context,
-  double initialAmount,
-  VoidCallback onPaymentStart,
-);
+typedef BookCourtPaymentDialogBuilder =
+    Widget Function(
+      BuildContext context,
+      double initialAmount,
+      VoidCallback onPaymentStart,
+    );
 
 class BookCourtScreen extends ConsumerStatefulWidget {
   final CourtModel? initialCourt;
@@ -1484,6 +1485,8 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                           PaymentDialog(
                             initialAmount: missingAmount,
                             onPaymentStart: onPaymentStart,
+                            redirectUrl:
+                                'https://tenis-uat.casacam.net/payment-complete',
                           ),
                     ).then((paymentStarted) {
                       if (mounted && paymentStarted == true) {

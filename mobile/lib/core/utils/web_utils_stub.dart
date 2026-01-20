@@ -26,4 +26,13 @@ class WebUtils {
   ) {
     return () {};
   }
+
+  /// Stub for mobile - does nothing
+  static void Function() addWindowStorageListener(
+    void Function(String key, String? value) callback,
+  ) {
+    return () {};
+  }
+
+  static void removeLocalStorageItem(String key) {}
 }

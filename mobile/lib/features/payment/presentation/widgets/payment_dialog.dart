@@ -45,6 +45,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   String? _checkoutUrl; // Store URL for two-step launch on web
   bool _isWaitingForWebResult = false;
   void Function()? _removeMessageListener;
+  void Function()? _removeStorageListener;
+  static const String _webPaymentStorageKey = 'wompi_payment_redirect';
 
   @override
   void initState() {
@@ -63,6 +65,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   @override
   void dispose() {
     _removeMessageListener?.call();
+    _removeStorageListener?.call();
     _amountController.dispose();
     super.dispose();
   }
@@ -85,8 +88,10 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       if (tenantId != null) {
         try {
           final service = ref.read(paymentServiceProvider);
-          final result =
-              await service.getTransactionStatus(transactionId, tenantId);
+          final result = await service.getTransactionStatus(
+            transactionId,
+            tenantId,
+          );
           final backendStatus = result['status'] as String?;
           if (backendStatus == 'APPROVED') {
             resolvedStatus = true;
@@ -124,6 +129,9 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
     _removeMessageListener?.call();
     _removeMessageListener = null;
+    _removeStorageListener?.call();
+    _removeStorageListener = null;
+    WebUtils.removeLocalStorageItem(_webPaymentStorageKey);
 
     Navigator.pop(context, resolvedStatus);
   }
@@ -180,8 +188,18 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                     ? null
                     : () {
                         _removeMessageListener?.call();
+                        _removeStorageListener?.call();
                         _removeMessageListener =
-                            WebUtils.addWindowMessageListener(_handleWebMessage);
+                            WebUtils.addWindowMessageListener(
+                              _handleWebMessage,
+                            );
+                        _removeStorageListener =
+                            WebUtils.addWindowStorageListener((key, value) {
+                              if (key == _webPaymentStorageKey &&
+                                  value != null) {
+                                _handleWebMessage(value);
+                              }
+                            });
                         setState(() {
                           _isWaitingForWebResult = true;
                         });
@@ -259,8 +277,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                                   );
 
                               if (context.mounted) {
-                                final messenger =
-                                    ScaffoldMessenger.of(context);
+                                final messenger = ScaffoldMessenger.of(context);
                                 bool? status;
                                 String? transactionId;
                                 if (paymentResult is Map) {

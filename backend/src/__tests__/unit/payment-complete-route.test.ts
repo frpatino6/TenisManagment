@@ -12,5 +12,6 @@ describe('Payment complete redirect page', () => {
     );
     expect(response.text).toContain('Pago recibido');
     expect(response.text).toContain('postMessage');
+    expect(response.text).toContain('wompi_payment_redirect');
   });
 });

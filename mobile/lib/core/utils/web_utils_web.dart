@@ -51,4 +51,23 @@ class WebUtils {
     web.window.addEventListener('message', jsListener);
     return () => web.window.removeEventListener('message', jsListener);
   }
+
+  /// Add listener for localStorage changes (storage events)
+  static void Function() addWindowStorageListener(
+    void Function(String key, String? value) callback,
+  ) {
+    final jsListener = ((web.StorageEvent event) {
+      final key = event.key;
+      if (key != null) {
+        callback(key, event.newValue);
+      }
+    }).toJS;
+
+    web.window.addEventListener('storage', jsListener);
+    return () => web.window.removeEventListener('storage', jsListener);
+  }
+
+  static void removeLocalStorageItem(String key) {
+    web.window.localStorage.removeItem(key);
+  }
 }

@@ -203,18 +203,96 @@ export class StudentDashboardController {
         return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
       }
 
-      // Recalculate balance for synchronization
+      const tenantId = req.tenantId || student.activeTenantId?.toString();
+
+      if (tenantId) {
+        if (!Types.ObjectId.isValid(tenantId)) {
+          return res.status(400).json({ error: 'tenantId inválido' });
+        }
+
+        const tenantObjectId = new Types.ObjectId(tenantId);
+
+        const totalPaymentsSum = await PaymentModel.aggregate([
+          {
+            $match: {
+              studentId: student._id,
+              status: 'paid',
+              tenantId: tenantObjectId,
+            },
+          },
+          { $group: { _id: null, total: { $sum: '$amount' } } },
+        ]);
+
+        const totalBookingsSum = await BookingModel.aggregate([
+          {
+            $match: {
+              studentId: student._id,
+              status: 'confirmed',
+              tenantId: tenantObjectId,
+            },
+          },
+          { $group: { _id: null, total: { $sum: '$price' } } },
+        ]);
+
+        const recalculatedBalance =
+          (totalPaymentsSum[0]?.total || 0) -
+          (totalBookingsSum[0]?.total || 0);
+
+        let studentTenant = await StudentTenantModel.findOne({
+          studentId: student._id,
+          tenantId: tenantObjectId,
+        });
+
+        if (!studentTenant) {
+          studentTenant = await StudentTenantModel.create({
+            studentId: student._id,
+            tenantId: tenantObjectId,
+            balance: recalculatedBalance,
+            isActive: true,
+          });
+        } else if (studentTenant.balance !== recalculatedBalance) {
+          studentTenant.balance = recalculatedBalance;
+          await studentTenant.save();
+        }
+
+        const totalBookings = await BookingModel.countDocuments({
+          studentId: student._id,
+          tenantId: tenantObjectId,
+        });
+        const totalPayments = await PaymentModel.countDocuments({
+          studentId: student._id,
+          tenantId: tenantObjectId,
+        });
+
+        res.json({
+          id: student._id,
+          name: student.name,
+          email: student.email,
+          phone: student.phone,
+          level: 'Principiante',
+          totalClasses: totalBookings,
+          totalPayments: totalPayments,
+          totalSpent: totalPaymentsSum[0]?.total || 0,
+          balance: recalculatedBalance,
+          totalReservationsValue: totalBookingsSum[0]?.total || 0,
+        });
+        return;
+      }
+
+      // Recalculate balance for synchronization (global)
       const totalPaymentsSum = await PaymentModel.aggregate([
         { $match: { studentId: student._id, status: 'paid' } },
-        { $group: { _id: null, total: { $sum: '$amount' } } }
+        { $group: { _id: null, total: { $sum: '$amount' } } },
       ]);
 
       const totalBookingsSum = await BookingModel.aggregate([
         { $match: { studentId: student._id, status: 'confirmed' } },
-        { $group: { _id: null, total: { $sum: '$price' } } }
+        { $group: { _id: null, total: { $sum: '$price' } } },
       ]);
 
-      const recalculatedBalance = (totalPaymentsSum[0]?.total || 0) - (totalBookingsSum[0]?.total || 0);
+      const recalculatedBalance =
+        (totalPaymentsSum[0]?.total || 0) -
+        (totalBookingsSum[0]?.total || 0);
 
       // Update balance in DB if it's different (or just to be safe)
       if (student.balance !== recalculatedBalance) {
@@ -227,7 +305,7 @@ export class StudentDashboardController {
       const totalPayments = await PaymentModel.countDocuments({ studentId: student._id });
       const totalSpent = await PaymentModel.aggregate([
         { $match: { studentId: student._id } },
-        { $group: { _id: null, total: { $sum: '$amount' } } }
+        { $group: { _id: null, total: { $sum: '$amount' } } },
       ]);
 
       res.json({
@@ -240,7 +318,7 @@ export class StudentDashboardController {
         totalPayments: totalPayments,
         totalSpent: totalPaymentsSum[0]?.total || 0,
         balance: student.balance,
-        totalReservationsValue: totalBookingsSum[0]?.total || 0
+        totalReservationsValue: totalBookingsSum[0]?.total || 0,
       });
     } catch (error) {
       console.error('Error getting student info:', error);

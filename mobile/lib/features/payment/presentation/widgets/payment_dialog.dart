@@ -19,6 +19,7 @@ class PaymentDialog extends ConsumerStatefulWidget {
   final String? redirectUrl;
   final VoidCallback? onPaymentStart;
   final VoidCallback? onPaymentComplete;
+  final VoidCallback? onPaymentFailed;
 
   const PaymentDialog({
     super.key,
@@ -27,6 +28,7 @@ class PaymentDialog extends ConsumerStatefulWidget {
     this.redirectUrl,
     this.onPaymentStart,
     this.onPaymentComplete,
+    this.onPaymentFailed,
   });
 
   @override
@@ -178,17 +180,18 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                                   );
 
                               if (context.mounted) {
-                                Navigator.pop(
-                                  context,
-                                  paymentCompleted,
-                                ); // Return status
+                                final messenger =
+                                    ScaffoldMessenger.of(context);
+                                final isApproved = paymentCompleted == true;
+
+                                Navigator.pop(context, isApproved);
 
                                 ref.invalidate(studentInfoProvider);
                                 ref.invalidate(myBookingsProvider);
-                                widget.onPaymentComplete?.call();
 
-                                if (paymentCompleted == true) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                if (isApproved) {
+                                  widget.onPaymentComplete?.call();
+                                  messenger.showSnackBar(
                                     const SnackBar(
                                       content: Text(
                                         'Pago procesado. Actualizando saldo...',
@@ -197,6 +200,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                                       duration: Timeouts.snackbarSuccess,
                                     ),
                                   );
+                                } else {
+                                  widget.onPaymentFailed?.call();
                                 }
                               }
                             }

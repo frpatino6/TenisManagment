@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import '../utils/wompi_redirect_utils.dart';
 
 /// WebView screen for Wompi payment
 ///
@@ -40,8 +41,12 @@ class _WompiWebViewScreenState extends State<WompiWebViewScreen> {
             });
             // Check if we've been redirected to the success URL
             if (url.contains(widget.redirectUrl)) {
+              final isApproved = isWompiPaymentApproved(
+                widget.redirectUrl,
+                url,
+              );
               // Close WebView and return to app
-              Navigator.of(context).pop(true);
+              Navigator.of(context).pop(isApproved);
             }
           },
           onWebResourceError: (WebResourceError error) {

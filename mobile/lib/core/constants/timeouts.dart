@@ -78,4 +78,7 @@ class Timeouts {
 
   /// Delay para animaciones de widgets
   static const Duration widgetAnimation = Duration(milliseconds: 1000);
+
+  /// Timeout para esperar confirmación de pago (Wompi)
+  static const Duration paymentSyncTimeout = Duration(seconds: 60);
 }

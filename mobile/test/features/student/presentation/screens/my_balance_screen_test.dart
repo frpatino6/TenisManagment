@@ -123,5 +123,66 @@ void main() {
       await tester.pumpWidget(Container());
       container.dispose();
     });
+
+    testWidgets('should stop syncing when payment fails', (
+      WidgetTester tester,
+    ) async {
+      final testTenant = TenantModel(
+        id: 'tenant-1',
+        name: 'Test Center',
+        slug: 'test-center',
+        isActive: true,
+        config: {
+          'payments': {
+            'wompi': {'pubKey': 'test-key'},
+          },
+        },
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          studentInfoProvider.overrideWith(
+            (ref) async => {
+              'balance': 10000,
+              'totalSpent': 20000,
+              'totalClasses': 3,
+              'totalPayments': 2,
+            },
+          ),
+          currentTenantProvider.overrideWith((ref) async => testTenant),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: MyBalanceScreen()),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
+
+      await tester.ensureVisible(find.text('Recargar Saldo'));
+      await tester.tap(find.text('Recargar Saldo'));
+      await tester.pump();
+
+      final dialog = tester.widget<PaymentDialog>(find.byType(PaymentDialog));
+      dialog.onPaymentStart?.call();
+      await tester.pump();
+
+      expect(find.text('Actualizando saldo...'), findsOneWidget);
+
+      dialog.onPaymentFailed?.call();
+      await tester.pump();
+
+      expect(find.text('Actualizando saldo...'), findsNothing);
+
+      await tester.tap(find.text('Cancelar'));
+      await tester.pump();
+
+      await tester.pumpWidget(Container());
+      container.dispose();
+    });
   });
 }

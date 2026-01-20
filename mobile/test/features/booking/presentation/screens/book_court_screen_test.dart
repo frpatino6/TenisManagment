@@ -104,6 +104,90 @@ void main() {
       container.dispose();
     });
 
+    testWidgets('stops syncing when payment fails', (
+      WidgetTester tester,
+    ) async {
+      final court = CourtModel(
+        id: 'court-1',
+        name: 'Court 1',
+        type: 'tennis',
+        pricePerHour: 20000,
+      );
+      final selectedDate = DateTime.now().add(const Duration(days: 1));
+      final selectedTime = const TimeOfDay(hour: 10, minute: 0);
+      final testTenant = TenantModel(
+        id: 'tenant-1',
+        name: 'Test Center',
+        slug: 'test-center',
+        isActive: true,
+        config: {
+          'payments': {
+            'wompi': {'pubKey': 'test-key'},
+          },
+        },
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          tenantNotifierProvider.overrideWith(TestTenantNotifier.new),
+          hasTenantProvider.overrideWith((ref) => true),
+          currentTenantProvider.overrideWith((ref) async => testTenant),
+          courtsProvider.overrideWith((ref) async => [court]),
+          courtAvailableSlotsProvider.overrideWith(
+            (ref, params) async => {
+              'availableSlots': ['10:00'],
+              'bookedSlots': <String>[],
+            },
+          ),
+          studentInfoProvider.overrideWith(
+            (ref) async => {
+              'balance': 0,
+              'totalSpent': 0,
+              'totalClasses': 0,
+              'totalPayments': 0,
+            },
+          ),
+          myBookingsProvider.overrideWith((ref) async => <BookingModel>[]),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: BookCourtScreen(
+              initialCourt: court,
+              initialDate: selectedDate,
+              initialTime: selectedTime,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('Recargar y Reservar'));
+      await tester.tap(find.text('Recargar y Reservar'));
+      await tester.pump();
+
+      final dialog = tester.widget<PaymentDialog>(find.byType(PaymentDialog));
+      dialog.onPaymentStart?.call();
+      await tester.pump();
+
+      expect(find.text('Procesando reserva...'), findsOneWidget);
+
+      dialog.onPaymentFailed?.call();
+      await tester.pump();
+
+      expect(find.text('Procesando reserva...'), findsNothing);
+
+      await tester.tap(find.text('Cancelar'));
+      await tester.pump();
+
+      await tester.pumpWidget(Container());
+      container.dispose();
+    });
+
     testWidgets('should pass redirectUrl to PaymentDialog', (
       WidgetTester tester,
     ) async {

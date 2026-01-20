@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
@@ -11,6 +12,7 @@ import '../providers/student_provider.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../../../core/logging/logger.dart';
 import '../../../../core/config/app_config.dart';
+import '../../../../core/constants/timeouts.dart';
 
 class MyBalanceScreen extends ConsumerStatefulWidget {
   const MyBalanceScreen({super.key});
@@ -22,6 +24,7 @@ class MyBalanceScreen extends ConsumerStatefulWidget {
 class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   double? _previousBalance;
   final _logger = AppLogger.tag('MyBalanceScreen');
+  Timer? _syncTimeoutTimer;
 
   bool get _hasWompiConfigured {
     final tenant = ref.read(currentTenantProvider).value;
@@ -67,6 +70,32 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   }
 
   @override
+  void dispose() {
+    _syncTimeoutTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startSyncTimeout() {
+    _syncTimeoutTimer?.cancel();
+    _syncTimeoutTimer = Timer(Timeouts.paymentSyncTimeout, () {
+      if (!mounted) return;
+      ref.read(balanceSyncProvider.notifier).stop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('El pago no fue aprobado. Intenta nuevamente.'),
+          backgroundColor: Colors.red,
+          duration: Timeouts.snackbarError,
+        ),
+      );
+    });
+  }
+
+  void _stopSyncTimeout() {
+    _syncTimeoutTimer?.cancel();
+    _syncTimeoutTimer = null;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final studentInfoAsync = ref.watch(studentInfoProvider);
     final isSyncing = ref.watch(balanceSyncProvider);
@@ -104,6 +133,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
                       ref.read(balanceSyncProvider.notifier).stop();
                       _previousBalance = currentBalance;
                     });
+                    _stopSyncTimeout();
                   }
                 });
               }
@@ -563,7 +593,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
     final currentInfo = ref.read(studentInfoProvider).value;
     final currentBalance = (currentInfo?['balance'] as num?)?.toDouble() ?? 0.0;
 
-    final paymentStarted = await showDialog<bool>(
+    await showDialog<bool>(
       context: context,
       builder: (context) => PaymentDialog(
         redirectUrl: AppConfig.paymentRedirectUrl,
@@ -573,19 +603,24 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
             _previousBalance = currentBalance;
           });
           ref.read(balanceSyncProvider.notifier).start();
+          _startSyncTimeout();
         },
         onPaymentComplete: () {
           ref.invalidate(studentInfoProvider);
         },
+        onPaymentFailed: () {
+          if (!mounted) return;
+          ref.read(balanceSyncProvider.notifier).stop();
+          _stopSyncTimeout();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('El pago no fue aprobado. Intenta nuevamente.'),
+              backgroundColor: Colors.red,
+              duration: Timeouts.snackbarError,
+            ),
+          );
+        },
       ),
     );
-
-    if (mounted && paymentStarted == true) {
-      setState(() {
-        _previousBalance = currentBalance;
-      });
-      ref.read(balanceSyncProvider.notifier).start();
-      ref.invalidate(studentInfoProvider);
-    }
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tennis_management/core/config/app_config.dart';
 import 'package:tennis_management/core/providers/tenant_provider.dart';
 import 'package:tennis_management/features/payment/presentation/widgets/payment_dialog.dart';
 import 'package:tennis_management/features/student/presentation/providers/student_provider.dart';
@@ -8,6 +10,21 @@ import 'package:tennis_management/features/student/presentation/screens/my_balan
 import 'package:tennis_management/features/tenant/domain/models/tenant_model.dart';
 
 void main() {
+  late Duration originalDuration;
+  late Curve originalCurve;
+
+  setUpAll(() {
+    originalDuration = Animate.defaultDuration;
+    originalCurve = Animate.defaultCurve;
+    Animate.defaultDuration = Duration.zero;
+    Animate.defaultCurve = Curves.linear;
+  });
+
+  tearDownAll(() {
+    Animate.defaultDuration = originalDuration;
+    Animate.defaultCurve = originalCurve;
+  });
+
   group('MyBalanceScreen', () {
     testWidgets('should show syncing overlay when balance is syncing', (
       WidgetTester tester,
@@ -48,7 +65,7 @@ void main() {
       );
 
       await tester.pump();
-      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
 
       expect(find.text('Actualizando saldo...'), findsOneWidget);
 
@@ -92,16 +109,16 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
 
+      await tester.ensureVisible(find.text('Recargar Saldo'));
       await tester.tap(find.text('Recargar Saldo'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 1));
 
       final dialog = tester.widget<PaymentDialog>(find.byType(PaymentDialog));
-      expect(
-        dialog.redirectUrl,
-        equals('https://tenis-uat.casacam.net/payment-complete'),
-      );
+      expect(dialog.redirectUrl, equals(AppConfig.paymentRedirectUrl));
 
       await tester.pumpWidget(Container());
       container.dispose();

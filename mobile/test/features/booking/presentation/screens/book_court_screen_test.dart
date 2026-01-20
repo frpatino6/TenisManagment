@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tennis_management/core/config/app_config.dart';
 import 'package:tennis_management/core/providers/tenant_provider.dart';
 import 'package:tennis_management/features/booking/domain/models/booking_model.dart';
 import 'package:tennis_management/features/booking/domain/models/court_model.dart';
@@ -92,6 +93,7 @@ void main() {
 
       await tester.pump();
 
+      await tester.ensureVisible(find.text('Recargar y Reservar'));
       await tester.tap(find.text('Recargar y Reservar'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
@@ -164,14 +166,13 @@ void main() {
 
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(find.text('Recargar y Reservar'));
       await tester.tap(find.text('Recargar y Reservar'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
       final dialog = tester.widget<PaymentDialog>(find.byType(PaymentDialog));
-      expect(
-        dialog.redirectUrl,
-        equals('https://tenis-uat.casacam.net/payment-complete'),
-      );
+      expect(dialog.redirectUrl, equals(AppConfig.paymentRedirectUrl));
 
       await tester.pumpWidget(Container());
       container.dispose();

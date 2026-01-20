@@ -14,6 +14,7 @@ import '../../../tenant/domain/services/tenant_service.dart' as tenant_domain;
 import '../../../tenant/domain/models/tenant_model.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../../core/widgets/web_image.dart';
+import '../../../../core/config/app_config.dart';
 
 /// Provider for available tenants for dropdown selection
 final availableTenantsProvider = FutureProvider.autoDispose<List<TenantModel>>((
@@ -1485,8 +1486,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                           PaymentDialog(
                             initialAmount: missingAmount,
                             onPaymentStart: onPaymentStart,
-                            redirectUrl:
-                                'https://tenis-uat.casacam.net/payment-complete',
+                            redirectUrl: AppConfig.paymentRedirectUrl,
                           ),
                     ).then((paymentStarted) {
                       if (mounted && paymentStarted == true) {

@@ -7,6 +7,7 @@ import '../screens/wompi_webview_screen.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../booking/presentation/providers/booking_provider.dart';
 import '../../../../core/constants/timeouts.dart';
+import '../../../../core/config/app_config.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/utils/web_utils_stub.dart'
@@ -163,18 +164,18 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                               // Don't pop yet, wait for webview result
 
                               widget.onPaymentStart?.call();
-                              final bool?
-                              paymentCompleted = await Navigator.push<bool>(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => WompiWebViewScreen(
-                                    checkoutUrl: checkoutUrl,
-                                    redirectUrl:
-                                        widget.redirectUrl ??
-                                        'https://tenis-uat.casacam.net/payment-complete',
-                                  ),
-                                ),
-                              );
+                              final bool? paymentCompleted =
+                                  await Navigator.push<bool>(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => WompiWebViewScreen(
+                                        checkoutUrl: checkoutUrl,
+                                        redirectUrl:
+                                            widget.redirectUrl ??
+                                            AppConfig.paymentRedirectUrl,
+                                      ),
+                                    ),
+                                  );
 
                               if (context.mounted) {
                                 Navigator.pop(

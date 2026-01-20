@@ -10,6 +10,7 @@ import '../providers/student_provider.dart';
 
 import '../../../../core/providers/tenant_provider.dart';
 import '../../../../core/logging/logger.dart';
+import '../../../../core/config/app_config.dart';
 
 class MyBalanceScreen extends ConsumerStatefulWidget {
   const MyBalanceScreen({super.key});
@@ -565,7 +566,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
     final paymentStarted = await showDialog<bool>(
       context: context,
       builder: (context) => PaymentDialog(
-        redirectUrl: 'https://tenis-uat.casacam.net/payment-complete',
+        redirectUrl: AppConfig.paymentRedirectUrl,
         onPaymentStart: () {
           if (!mounted) return;
           setState(() {

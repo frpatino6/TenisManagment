@@ -51,6 +51,9 @@ class AppConfig {
   /// Obtiene la URL base de autenticación
   static String get authBaseUrl => '$backendUrl/api/auth';
 
+  /// URL de redirección para finalizar pagos
+  static String get paymentRedirectUrl => '$backendUrl/payment-complete';
+
   /// Nombre de la aplicación según el ambiente
   static String get appName {
     switch (_environment) {

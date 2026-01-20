@@ -11,6 +11,7 @@ import '../../../student/presentation/providers/student_provider.dart';
 import '../../../../core/logging/logger.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/providers/tenant_provider.dart';
+import '../../../../core/config/app_config.dart';
 
 /// Screen to confirm a booking before creating it
 ///
@@ -351,8 +352,7 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                                             'serviceType': 'individual_class',
                                             'price': _price,
                                           },
-                                          redirectUrl:
-                                              'https://tenis-uat.casacam.net/payment-complete',
+                                          redirectUrl: AppConfig.paymentRedirectUrl,
                                           onPaymentComplete: () {
                                             // Refresh data after payment
                                             Future.delayed(

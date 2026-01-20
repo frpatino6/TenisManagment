@@ -9,6 +9,12 @@ const controller = new PaymentController(new WompiAdapter());
 
 // Inicializar pago (Usuario autenticado con Firebase)
 router.post('/init', firebaseAuthMiddleware, extractTenantId, controller.initPayment);
+router.get(
+  '/transaction-status',
+  firebaseAuthMiddleware,
+  extractTenantId,
+  controller.getTransactionStatus,
+);
 
 // Webhook Wompi
 router.post('/webhooks/wompi', controller.wompiWebhook);

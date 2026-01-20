@@ -220,4 +220,110 @@ export class PaymentController {
             return res.status(500).json({ error: 'Internal Error' });
         }
     };
+
+    /**
+     * Consulta el estado de una transacción en Wompi.
+     *
+     * @param req - Request autenticado con tenantId y transactionId en query.
+     * @param res - Response HTTP.
+     * @returns Estado normalizado de la transacción.
+     */
+    public getTransactionStatus = async (
+        req: AuthenticatedRequest,
+        res: Response,
+    ) => {
+        try {
+            const schema = z.object({
+                transactionId: z.string().min(1, 'transactionId requerido'),
+            });
+
+            const { transactionId } = schema.parse(req.query);
+            const tenantId = req.tenantId;
+
+            if (!tenantId) {
+                return res.status(401).json({ error: 'Tenant no identificado' });
+            }
+
+            const tenant = await TenantModel.findById(tenantId);
+            if (!tenant) {
+                return res.status(404).json({ error: 'Tenant no encontrado' });
+            }
+
+            const result = await this.paymentGateway.getTransactionStatus(
+                transactionId,
+                tenant,
+            );
+
+            const transaction =
+                (await TransactionModel.findOne({ reference: result.reference })) ||
+                (await TransactionModel.findOne({ externalId: result.externalId }));
+
+            if (transaction) {
+                transaction.status = result.status;
+                transaction.externalId = result.externalId;
+                transaction.updatedAt = new Date();
+                transaction.metadata = { ...transaction.metadata, statusQuery: result.metadata };
+                await transaction.save();
+
+                if (result.status === 'APPROVED' && !isNaN(result.amount) && result.amount > 0) {
+                    const existingPayment = await PaymentModel.findOne({
+                        description: { $regex: result.reference }
+                    });
+
+                    if (!existingPayment) {
+                        const newPayment = new PaymentModel({
+                            tenantId: transaction.tenantId,
+                            studentId: transaction.studentId,
+                            professorId: null,
+                            amount: result.amount,
+                            date: new Date(),
+                            status: 'paid',
+                            method: 'card',
+                            description: `Recarga Wompi Ref: ${result.reference}`,
+                            concept: 'Recarga de Saldo'
+                        });
+                        await newPayment.save();
+
+                        await StudentModel.findByIdAndUpdate(transaction.studentId, {
+                            $inc: { balance: result.amount }
+                        });
+
+                        if (transaction.metadata?.bookingInfo) {
+                            try {
+                                const bInfo = transaction.metadata.bookingInfo;
+                                await this.bookingService.createBooking({
+                                    tenantId: transaction.tenantId.toString(),
+                                    studentId: transaction.studentId.toString(),
+                                    scheduleId: bInfo.scheduleId,
+                                    serviceType: bInfo.serviceType,
+                                    price: bInfo.price,
+                                    courtId: bInfo.courtId,
+                                    startTime: bInfo.startTime,
+                                    endTime: bInfo.endTime,
+                                });
+                            } catch (error) {
+                                this.logger.error('[PaymentController] Auto-booking failed', {
+                                    error: error instanceof Error ? error.message : String(error),
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            return res.status(200).json({
+                status: result.status,
+                reference: result.reference,
+            });
+        } catch (error: any) {
+            if (error instanceof z.ZodError) {
+                return res.status(400).json({ error: error.errors });
+            }
+            this.logger.error('[PaymentController] Error getting transaction status', {
+                message: error.message,
+                stack: error.stack,
+            });
+            return res.status(500).json({ error: 'Error interno consultando transacción' });
+        }
+    };
 }

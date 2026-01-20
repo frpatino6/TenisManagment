@@ -1,13 +1,13 @@
 import 'dart:convert';
 
-bool isWompiPaymentApproved(String redirectUrl, String url) {
+bool? parseWompiPaymentStatus(String redirectUrl, String url) {
   if (!url.contains(redirectUrl)) {
-    return false;
+    return null;
   }
 
   final uri = Uri.tryParse(url);
   if (uri == null) {
-    return true;
+    return null;
   }
 
   final params = <String, String>{...uri.queryParameters};
@@ -28,7 +28,7 @@ bool isWompiPaymentApproved(String redirectUrl, String url) {
   ].whereType<String>().toList();
 
   if (statusCandidates.isEmpty) {
-    return true;
+    return null;
   }
 
   if (statusCandidates.any(_isDeclinedStatus)) {
@@ -39,7 +39,11 @@ bool isWompiPaymentApproved(String redirectUrl, String url) {
     return true;
   }
 
-  return true;
+  return null;
+}
+
+bool isWompiPaymentApproved(String redirectUrl, String url) {
+  return parseWompiPaymentStatus(redirectUrl, url) == true;
 }
 
 String? extractRedirectUrlFromMessage(String message) {

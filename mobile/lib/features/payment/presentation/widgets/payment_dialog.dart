@@ -8,6 +8,7 @@ import '../../../student/presentation/providers/student_provider.dart';
 import '../../../booking/presentation/providers/booking_provider.dart';
 import '../../../../core/constants/timeouts.dart';
 import '../../../../core/config/app_config.dart';
+import '../../../../core/providers/tenant_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/utils/web_utils_stub.dart'
@@ -21,6 +22,7 @@ class PaymentDialog extends ConsumerStatefulWidget {
   final VoidCallback? onPaymentStart;
   final VoidCallback? onPaymentComplete;
   final VoidCallback? onPaymentFailed;
+  final VoidCallback? onPaymentPending;
 
   const PaymentDialog({
     super.key,
@@ -30,6 +32,7 @@ class PaymentDialog extends ConsumerStatefulWidget {
     this.onPaymentStart,
     this.onPaymentComplete,
     this.onPaymentFailed,
+    this.onPaymentPending,
   });
 
   @override
@@ -64,14 +67,35 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     super.dispose();
   }
 
-  void _handleWebMessage(String message) {
+  Future<void> _handleWebMessage(String message) async {
     final redirectUrl = widget.redirectUrl ?? AppConfig.paymentRedirectUrl;
     final messageUrl = extractRedirectUrlFromMessage(message);
     if (messageUrl == null || !messageUrl.contains(redirectUrl)) {
       return;
     }
 
-    final isApproved = isWompiPaymentApproved(redirectUrl, messageUrl);
+    final status = parseWompiPaymentStatus(redirectUrl, messageUrl);
+    final uri = Uri.tryParse(messageUrl);
+    final transactionId =
+        uri?.queryParameters['id'] ?? uri?.queryParameters['transaction_id'];
+
+    bool? resolvedStatus = status;
+    if (resolvedStatus == null && transactionId != null) {
+      final tenantId = ref.read(currentTenantIdProvider);
+      if (tenantId != null) {
+        final service = ref.read(paymentServiceProvider);
+        final result =
+            await service.getTransactionStatus(transactionId, tenantId);
+        final backendStatus = result['status'] as String?;
+        if (backendStatus == 'APPROVED') {
+          resolvedStatus = true;
+        } else if (backendStatus == 'DECLINED' ||
+            backendStatus == 'VOIDED' ||
+            backendStatus == 'ERROR') {
+          resolvedStatus = false;
+        }
+      }
+    }
 
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
@@ -79,7 +103,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     ref.invalidate(studentInfoProvider);
     ref.invalidate(myBookingsProvider);
 
-    if (isApproved) {
+    if (resolvedStatus == true) {
       widget.onPaymentComplete?.call();
       messenger.showSnackBar(
         const SnackBar(
@@ -88,14 +112,16 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
           duration: Timeouts.snackbarSuccess,
         ),
       );
-    } else {
+    } else if (resolvedStatus == false) {
       widget.onPaymentFailed?.call();
+    } else {
+      widget.onPaymentPending?.call();
     }
 
     _removeMessageListener?.call();
     _removeMessageListener = null;
 
-    Navigator.pop(context, isApproved);
+    Navigator.pop(context, resolvedStatus);
   }
 
   @override
@@ -215,8 +241,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                               // Don't pop yet, wait for webview result
 
                               widget.onPaymentStart?.call();
-                              final bool? paymentCompleted =
-                                  await Navigator.push<bool>(
+                              final dynamic paymentResult =
+                                  await Navigator.push<dynamic>(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => WompiWebViewScreen(
@@ -231,14 +257,49 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                               if (context.mounted) {
                                 final messenger =
                                     ScaffoldMessenger.of(context);
-                                final isApproved = paymentCompleted == true;
+                                bool? status;
+                                String? transactionId;
+                                if (paymentResult is Map) {
+                                  status = paymentResult['status'] as bool?;
+                                  transactionId =
+                                      paymentResult['transactionId'] as String?;
+                                } else if (paymentResult is bool) {
+                                  status = paymentResult;
+                                }
 
-                                Navigator.pop(context, isApproved);
+                                bool? resolvedStatus = status;
+                                if (resolvedStatus == null &&
+                                    transactionId != null) {
+                                  final tenantId = ref.read(
+                                    currentTenantIdProvider,
+                                  );
+                                  if (tenantId != null) {
+                                    final service = ref.read(
+                                      paymentServiceProvider,
+                                    );
+                                    final result = await service
+                                        .getTransactionStatus(
+                                          transactionId,
+                                          tenantId,
+                                        );
+                                    final backendStatus =
+                                        result['status'] as String?;
+                                    if (backendStatus == 'APPROVED') {
+                                      resolvedStatus = true;
+                                    } else if (backendStatus == 'DECLINED' ||
+                                        backendStatus == 'VOIDED' ||
+                                        backendStatus == 'ERROR') {
+                                      resolvedStatus = false;
+                                    }
+                                  }
+                                }
+
+                                Navigator.pop(context, resolvedStatus);
 
                                 ref.invalidate(studentInfoProvider);
                                 ref.invalidate(myBookingsProvider);
 
-                                if (isApproved) {
+                                if (resolvedStatus == true) {
                                   widget.onPaymentComplete?.call();
                                   messenger.showSnackBar(
                                     const SnackBar(
@@ -249,8 +310,10 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                                       duration: Timeouts.snackbarSuccess,
                                     ),
                                   );
-                                } else {
+                                } else if (resolvedStatus == false) {
                                   widget.onPaymentFailed?.call();
+                                } else {
+                                  widget.onPaymentPending?.call();
                                 }
                               }
                             }

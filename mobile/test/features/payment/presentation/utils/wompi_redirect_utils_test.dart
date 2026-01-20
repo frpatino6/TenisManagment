@@ -2,9 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:tennis_management/features/payment/presentation/utils/wompi_redirect_utils.dart';
 
 void main() {
-  group('isWompiPaymentApproved', () {
+  group('parseWompiPaymentStatus', () {
     test('returns true for approved status', () {
-      final result = isWompiPaymentApproved(
+      final result = parseWompiPaymentStatus(
         'https://example.com/payment-complete',
         'https://example.com/payment-complete?status=APPROVED',
       );
@@ -13,7 +13,7 @@ void main() {
     });
 
     test('returns false for declined status', () {
-      final result = isWompiPaymentApproved(
+      final result = parseWompiPaymentStatus(
         'https://example.com/payment-complete',
         'https://example.com/payment-complete?status=DECLINED',
       );
@@ -22,12 +22,21 @@ void main() {
     });
 
     test('reads status from fragment', () {
-      final result = isWompiPaymentApproved(
+      final result = parseWompiPaymentStatus(
         'https://example.com/payment-complete',
         'https://example.com/payment-complete#status=DECLINED',
       );
 
       expect(result, isFalse);
+    });
+
+    test('returns null when status is missing', () {
+      final result = parseWompiPaymentStatus(
+        'https://example.com/payment-complete',
+        'https://example.com/payment-complete',
+      );
+
+      expect(result, isNull);
     });
   });
 

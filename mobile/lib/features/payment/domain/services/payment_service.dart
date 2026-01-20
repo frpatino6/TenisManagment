@@ -85,4 +85,53 @@ class PaymentService {
       throw NetworkException.serverError(message: 'Error de conexión');
     }
   }
+
+  Future<Map<String, dynamic>> getTransactionStatus(
+    String transactionId,
+    String tenantId,
+  ) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw AuthException.notAuthenticated();
+      }
+
+      final idToken = await user.getIdToken(true);
+      if (idToken == null) {
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
+      }
+
+      final response = await _httpClient
+          .get(
+            Uri.parse(
+              '$_baseUrl/payments/transaction-status?transactionId=$transactionId',
+            ),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $idToken',
+              'X-Tenant-ID': tenantId,
+            },
+          )
+          .timeout(Timeouts.httpRequestShort);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+
+      throw NetworkException.serverError(
+        message: 'Error consultando estado de pago',
+        statusCode: response.statusCode,
+      );
+    } catch (e, stack) {
+      _logger.error(
+        'Error getting transaction status',
+        error: e,
+        stackTrace: stack,
+      );
+      if (e is AppException) rethrow;
+      throw NetworkException.serverError(message: 'Error de conexión');
+    }
+  }
 }

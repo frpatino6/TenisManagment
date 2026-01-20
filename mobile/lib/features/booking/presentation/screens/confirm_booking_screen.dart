@@ -49,7 +49,6 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
   bool _shouldAutoConfirm = false;
   double _price = 0.0; // Will be calculated based on service type
   Timer? _pollingTimer;
-  Timer? _syncTimeoutTimer;
 
   @override
   void initState() {
@@ -66,32 +65,7 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
   @override
   void dispose() {
     _pollingTimer?.cancel();
-    _syncTimeoutTimer?.cancel();
     super.dispose();
-  }
-
-  void _startSyncTimeout() {
-    _syncTimeoutTimer?.cancel();
-    _syncTimeoutTimer = Timer(Timeouts.paymentSyncTimeout, () {
-      if (!mounted) return;
-      _pollingTimer?.cancel();
-      setState(() {
-        _shouldAutoConfirm = false;
-        _isSyncing = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('El pago no fue aprobado. Intenta nuevamente.'),
-          backgroundColor: Colors.red,
-          duration: Timeouts.snackbarError,
-        ),
-      );
-    });
-  }
-
-  void _stopSyncTimeout() {
-    _syncTimeoutTimer?.cancel();
-    _syncTimeoutTimer = null;
   }
 
   bool get _hasWompiConfigured {
@@ -158,7 +132,6 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
         if (hasBooking) {
           _logger.info('Booking detected by webhook, redirecting...');
           timer.cancel();
-          _stopSyncTimeout();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -179,7 +152,6 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
             'Balance sufficient ($balance >= $_price), confirming booking...',
           );
           timer.cancel();
-          _stopSyncTimeout();
           _confirmBooking();
         }
       } catch (e) {
@@ -218,7 +190,6 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
       );
 
       // Navigate back to home
-      _stopSyncTimeout();
       context.go('/home');
     } catch (error) {
       if (!mounted) return;
@@ -227,7 +198,6 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
         _isBooking = false;
         _isSyncing = false;
       });
-      _stopSyncTimeout();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -386,13 +356,15 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                                           onPaymentStart: () {
                                             if (!mounted) return;
                                             setState(() {
-                                              _shouldAutoConfirm = true;
                                               _isSyncing = true;
                                             });
-                                            _startPaymentPolling();
-                                            _startSyncTimeout();
                                           },
                                           onPaymentComplete: () {
+                                            if (!mounted) return;
+                                            setState(() {
+                                              _shouldAutoConfirm = true;
+                                            });
+                                            _startPaymentPolling();
                                             // Refresh data after payment
                                             Future.delayed(
                                               const Duration(seconds: 2),
@@ -415,7 +387,6 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                                               _shouldAutoConfirm = false;
                                               _isSyncing = false;
                                             });
-                                            _stopSyncTimeout();
                                             ScaffoldMessenger.of(context)
                                                 .showSnackBar(
                                               const SnackBar(
@@ -424,6 +395,24 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                                                 ),
                                                 backgroundColor: Colors.red,
                                                 duration: Timeouts.snackbarError,
+                                              ),
+                                            );
+                                          },
+                                          onPaymentPending: () {
+                                            if (!mounted) return;
+                                            _pollingTimer?.cancel();
+                                            setState(() {
+                                              _shouldAutoConfirm = false;
+                                              _isSyncing = false;
+                                            });
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Pago en verificación. Revisa tu saldo en breve.',
+                                                ),
+                                                backgroundColor: Colors.orange,
+                                                duration: Timeouts.snackbarInfo,
                                               ),
                                             );
                                           },

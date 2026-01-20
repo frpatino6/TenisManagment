@@ -41,21 +41,20 @@ class _WompiWebViewScreenState extends State<WompiWebViewScreen> {
             });
             // Check if we've been redirected to the success URL
             if (url.contains(widget.redirectUrl)) {
-              final isApproved = isWompiPaymentApproved(
-                widget.redirectUrl,
-                url,
-              );
+              final status = parseWompiPaymentStatus(widget.redirectUrl, url);
+              final uri = Uri.tryParse(url);
+              final transactionId =
+                  uri?.queryParameters['id'] ??
+                  uri?.queryParameters['transaction_id'];
               // Close WebView and return to app
-              Navigator.of(context).pop(isApproved);
+              Navigator.of(context).pop({
+                'status': status,
+                'transactionId': transactionId,
+              });
             }
           },
           onWebResourceError: (WebResourceError error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error al cargar Wompi: ${error.description}'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            // No UI feedback here to avoid flashing errors during checkout.
           },
         ),
       )

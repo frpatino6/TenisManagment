@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -58,7 +57,6 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   bool _isBooking = false;
   bool _isSyncing = false;
   final ScrollController _scrollController = ScrollController();
-  Timer? _syncTimeoutTimer;
 
   bool get _hasWompiConfigured {
     final tenant = ref.read(currentTenantProvider).value;
@@ -129,30 +127,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     // If we need to restore the original tenant, it should be done before dispose
     // or through a different mechanism that doesn't rely on ref
     _scrollController.dispose();
-    _syncTimeoutTimer?.cancel();
     super.dispose();
-  }
-
-  void _startSyncTimeout() {
-    _syncTimeoutTimer?.cancel();
-    _syncTimeoutTimer = Timer(Timeouts.paymentSyncTimeout, () {
-      if (!mounted) return;
-      setState(() {
-        _isSyncing = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('El pago no fue aprobado. Intenta nuevamente.'),
-          backgroundColor: Colors.red,
-          duration: Timeouts.snackbarError,
-        ),
-      );
-    });
-  }
-
-  void _stopSyncTimeout() {
-    _syncTimeoutTimer?.cancel();
-    _syncTimeoutTimer = null;
   }
 
   @override
@@ -210,7 +185,6 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           setState(() {
             _isSyncing = false;
           });
-          _stopSyncTimeout();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('¡Reserva de cancha confirmada automáticamente!'),
@@ -1497,7 +1471,6 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                 setState(() {
                   _isSyncing = true;
                 });
-                _startSyncTimeout();
               };
 
               return FilledButton.icon(
@@ -1518,7 +1491,6 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                               setState(() {
                                 _isSyncing = false;
                               });
-                              _stopSyncTimeout();
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
@@ -1526,6 +1498,21 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                                   ),
                                   backgroundColor: Colors.red,
                                   duration: Timeouts.snackbarError,
+                                ),
+                              );
+                            },
+                            onPaymentPending: () {
+                              if (!mounted) return;
+                              setState(() {
+                                _isSyncing = false;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Pago en verificación. Revisa tu saldo en breve.',
+                                  ),
+                                  backgroundColor: Colors.orange,
+                                  duration: Timeouts.snackbarInfo,
                                 ),
                               );
                             },
@@ -1683,7 +1670,6 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           _isBooking = false;
           _isSyncing = false;
         });
-        _stopSyncTimeout();
       }
     }
   }

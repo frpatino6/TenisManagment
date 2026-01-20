@@ -88,4 +88,27 @@ describe('PaymentController.getTransactionStatus', () => {
     expect(transaction.save).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(200);
   });
+
+  it('returns status for reference without calling gateway', async () => {
+    const req: any = {
+      tenantId: 'tenant-1',
+      query: { reference: 'TRX-REF-1' },
+    };
+    const res = buildRes();
+
+    jest.spyOn(TenantModel, 'findById').mockResolvedValueOnce({ _id: 't' } as any);
+    jest.spyOn(TransactionModel, 'findOne').mockResolvedValueOnce({
+      status: 'APPROVED',
+      reference: 'TRX-REF-1',
+    } as any);
+
+    await controller.getTransactionStatus(req, res);
+
+    expect(paymentGateway.getTransactionStatus).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      status: 'APPROVED',
+      reference: 'TRX-REF-1',
+    });
+  });
 });

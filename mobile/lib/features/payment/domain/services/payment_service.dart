@@ -86,10 +86,16 @@ class PaymentService {
     }
   }
 
-  Future<Map<String, dynamic>> getTransactionStatus(
-    String transactionId,
-    String tenantId,
-  ) async {
+  Future<Map<String, dynamic>> getTransactionStatus({
+    String? transactionId,
+    String? reference,
+    required String tenantId,
+  }) async {
+    if ((transactionId == null || transactionId.isEmpty) &&
+        (reference == null || reference.isEmpty)) {
+      throw ValidationException('transactionId o reference requerido');
+    }
+
     try {
       final user = _auth.currentUser;
       if (user == null) {
@@ -106,7 +112,9 @@ class PaymentService {
       final response = await _httpClient
           .get(
             Uri.parse(
-              '$_baseUrl/payments/transaction-status?transactionId=$transactionId',
+              '$_baseUrl/payments/transaction-status'
+              '?transactionId=${transactionId ?? ''}'
+              '&reference=${reference ?? ''}',
             ),
             headers: {
               'Content-Type': 'application/json',

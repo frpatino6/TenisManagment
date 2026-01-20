@@ -16,6 +16,13 @@ class WebUtils {
   }
 
   /// Stub for mobile - does nothing
+  static void Function() addWindowFocusListenerWithDispose(
+    void Function() callback,
+  ) {
+    return () {};
+  }
+
+  /// Stub for mobile - does nothing
   static void removeWindowFocusListener(void Function() callback) {
     // No hace nada en móvil
   }

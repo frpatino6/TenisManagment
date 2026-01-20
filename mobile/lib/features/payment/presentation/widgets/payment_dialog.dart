@@ -43,9 +43,11 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   late final TextEditingController _amountController;
   final _formKey = GlobalKey<FormState>();
   String? _checkoutUrl; // Store URL for two-step launch on web
+  String? _paymentReference;
   bool _isWaitingForWebResult = false;
   void Function()? _removeMessageListener;
   void Function()? _removeStorageListener;
+  void Function()? _removeFocusListener;
   static const String _webPaymentStorageKey = 'wompi_payment_redirect';
 
   @override
@@ -66,6 +68,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   void dispose() {
     _removeMessageListener?.call();
     _removeStorageListener?.call();
+    _removeFocusListener?.call();
     _amountController.dispose();
     super.dispose();
   }
@@ -83,30 +86,56 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         uri?.queryParameters['id'] ?? uri?.queryParameters['transaction_id'];
 
     bool? resolvedStatus = status;
-    if (resolvedStatus == null && transactionId != null) {
-      final tenantId = ref.read(currentTenantIdProvider);
-      if (tenantId != null) {
-        try {
-          final service = ref.read(paymentServiceProvider);
-          final result = await service.getTransactionStatus(
-            transactionId,
-            tenantId,
-          );
-          final backendStatus = result['status'] as String?;
-          if (backendStatus == 'APPROVED') {
-            resolvedStatus = true;
-          } else if (backendStatus == 'DECLINED' ||
-              backendStatus == 'VOIDED' ||
-              backendStatus == 'ERROR') {
-            resolvedStatus = false;
-          }
-        } catch (_) {
-          resolvedStatus = null;
-        }
-      }
+    if (resolvedStatus == null) {
+      resolvedStatus = await _resolveStatusFromBackend(
+        transactionId: transactionId,
+        reference: _paymentReference,
+      );
     }
 
     if (!mounted) return;
+    await _handleStatusResult(resolvedStatus);
+  }
+
+  Future<bool?> _resolveStatusFromBackend({
+    String? transactionId,
+    String? reference,
+  }) async {
+    final tenantId = ref.read(currentTenantIdProvider);
+    if (tenantId == null) return null;
+
+    try {
+      final service = ref.read(paymentServiceProvider);
+      final result = await service.getTransactionStatus(
+        transactionId: transactionId,
+        reference: reference,
+        tenantId: tenantId,
+      );
+      final backendStatus = result['status'] as String?;
+      if (backendStatus == 'APPROVED') {
+        return true;
+      }
+      if (backendStatus == 'DECLINED' ||
+          backendStatus == 'VOIDED' ||
+          backendStatus == 'ERROR') {
+        return false;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _handleFocusReturn() async {
+    if (!_isWaitingForWebResult) return;
+    final resolvedStatus = await _resolveStatusFromBackend(
+      reference: _paymentReference,
+    );
+    if (!mounted || !_isWaitingForWebResult) return;
+    await _handleStatusResult(resolvedStatus);
+  }
+
+  Future<void> _handleStatusResult(bool? resolvedStatus) async {
     final messenger = ScaffoldMessenger.of(context);
 
     ref.invalidate(studentInfoProvider);
@@ -131,9 +160,14 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     _removeMessageListener = null;
     _removeStorageListener?.call();
     _removeStorageListener = null;
+    _removeFocusListener?.call();
+    _removeFocusListener = null;
     WebUtils.removeLocalStorageItem(_webPaymentStorageKey);
+    _isWaitingForWebResult = false;
 
-    Navigator.pop(context, resolvedStatus);
+    if (mounted) {
+      Navigator.pop(context, resolvedStatus);
+    }
   }
 
   @override
@@ -189,6 +223,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                     : () {
                         _removeMessageListener?.call();
                         _removeStorageListener?.call();
+                        _removeFocusListener?.call();
                         _removeMessageListener =
                             WebUtils.addWindowMessageListener(
                               _handleWebMessage,
@@ -200,6 +235,10 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                                 _handleWebMessage(value);
                               }
                             });
+                        _removeFocusListener =
+                            WebUtils.addWindowFocusListenerWithDispose(
+                              _handleFocusReturn,
+                            );
                         setState(() {
                           _isWaitingForWebResult = true;
                         });
@@ -242,6 +281,10 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                         if (context.mounted) {
                           if (result != null && result['checkoutUrl'] != null) {
                             final checkoutUrl = result['checkoutUrl'];
+                            final reference = result['reference']?.toString();
+                            if (reference != null && reference.isNotEmpty) {
+                              _paymentReference = reference;
+                            }
 
                             if (kIsWeb) {
                               // On web: update state to show the "Proceed" button
@@ -301,8 +344,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                                       );
                                       final result = await service
                                           .getTransactionStatus(
-                                            transactionId,
-                                            tenantId,
+                                            transactionId: transactionId,
+                                            tenantId: tenantId,
                                           );
                                       final backendStatus =
                                           result['status'] as String?;

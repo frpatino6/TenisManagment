@@ -234,10 +234,14 @@ export class PaymentController {
     ) => {
         try {
             const schema = z.object({
-                transactionId: z.string().min(1, 'transactionId requerido'),
-            });
+                transactionId: z.string().optional(),
+                reference: z.string().optional(),
+            }).refine(
+                (data) => Boolean(data.transactionId || data.reference),
+                { message: 'transactionId o reference requerido' },
+            );
 
-            const { transactionId } = schema.parse(req.query);
+            const { transactionId, reference } = schema.parse(req.query);
             const tenantId = req.tenantId;
 
             if (!tenantId) {
@@ -249,8 +253,24 @@ export class PaymentController {
                 return res.status(404).json({ error: 'Tenant no encontrado' });
             }
 
+            if (!transactionId && reference) {
+                const transaction = await TransactionModel.findOne({
+                    tenantId,
+                    reference,
+                });
+
+                if (!transaction) {
+                    return res.status(200).json({ status: 'PENDING', reference });
+                }
+
+                return res.status(200).json({
+                    status: transaction.status,
+                    reference: transaction.reference,
+                });
+            }
+
             const result = await this.paymentGateway.getTransactionStatus(
-                transactionId,
+                transactionId as string,
                 tenant,
             );
 

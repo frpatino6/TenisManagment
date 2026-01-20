@@ -37,6 +37,26 @@ class WebUtils {
     // but in main_common it lasts for the app life.
   }
 
+  /// Add listener for window focus events with disposer
+  static void Function() addWindowFocusListenerWithDispose(
+    void Function() callback,
+  ) {
+    final jsFocusListener = callback.toJS;
+    final jsVisibilityListener = ((web.Event e) {
+      if (web.document.visibilityState == 'visible') {
+        callback();
+      }
+    }).toJS;
+
+    web.window.addEventListener('focus', jsFocusListener);
+    web.document.addEventListener('visibilitychange', jsVisibilityListener);
+
+    return () {
+      web.window.removeEventListener('focus', jsFocusListener);
+      web.document.removeEventListener('visibilitychange', jsVisibilityListener);
+    };
+  }
+
   /// Add listener for window message events (postMessage)
   static void Function() addWindowMessageListener(
     void Function(String message) callback,

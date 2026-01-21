@@ -26,8 +26,9 @@
 
                 <div class="p-8 flex-1">
                     <h3 class="text-xl font-semibold text-gray-900">{{ plan.name }}</h3>
+                    <p class="mt-2 text-sm text-gray-500">{{ plan.description }}</p>
                     <div class="mt-4 flex items-baseline text-gray-900">
-                        <span class="text-4xl font-extrabold tracking-tight">{{ plan.price.startsWith('C') ? '' : '€'
+                        <span class="text-4xl font-extrabold tracking-tight">{{ plan.price.startsWith('C') ? '' : '$'
                             }}{{ plan.price }}</span>
                         <span *ngIf="!plan.price.startsWith('C')"
                             class="ml-1 text-xl font-semibold text-gray-500">/mes</span>
@@ -36,7 +37,7 @@
                     <ul role="list" class="mt-8 space-y-4">
                         <li *ngFor="let feature of plan.features" class="flex items-start">
                             <div class="flex-shrink-0">
-                                <svg class="flex-shrink-0 h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24"
+                                <svg class="flex-shrink-0 h-6 w-6 text-tenis-green" fill="none" viewBox="0 0 24 24"
                                     stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M5 13l4 4L19 7" />
@@ -52,5 +53,8 @@
                 </div>
             </div>
         </div>
+        <p class="mt-10 text-center text-sm text-gray-500">
+            Todos nuestros planes incluyen el sistema White Label: Tu logo y tus colores en la app de tus socios.
+        </p>
     </div>
 </section>

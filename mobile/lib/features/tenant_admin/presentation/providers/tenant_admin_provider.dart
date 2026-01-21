@@ -260,6 +260,39 @@ final paymentsDateRangeProvider =
       PaymentsDateRangeNotifier.new,
     );
 
+class PaymentStatusFilterNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void setStatus(String? value) => state = value;
+}
+
+final paymentStatusFilterProvider =
+    NotifierProvider<PaymentStatusFilterNotifier, String?>(
+      PaymentStatusFilterNotifier.new,
+    );
+
+class PaymentMethodFilterNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void setMethod(String? value) => state = value;
+}
+
+final paymentMethodFilterProvider =
+    NotifierProvider<PaymentMethodFilterNotifier, String?>(
+      PaymentMethodFilterNotifier.new,
+    );
+
+class PaymentChannelFilterNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void setChannel(String? value) => state = value;
+}
+
+final paymentChannelFilterProvider =
+    NotifierProvider<PaymentChannelFilterNotifier, String?>(
+      PaymentChannelFilterNotifier.new,
+    );
+
 final tenantPaymentsProvider =
     FutureProvider.autoDispose<TenantPaymentsResponse>((ref) async {
       final tenantId = ref.watch(currentTenantIdProvider);
@@ -269,6 +302,9 @@ final tenantPaymentsProvider =
       final service = ref.read(tenantAdminServiceProvider);
       final page = ref.watch(paymentsPageProvider);
       final dateRange = ref.watch(paymentsDateRangeProvider);
+      final status = ref.watch(paymentStatusFilterProvider);
+      final method = ref.watch(paymentMethodFilterProvider);
+      final channel = ref.watch(paymentChannelFilterProvider);
 
       return await service.getPayments(
         page: page,
@@ -276,6 +312,9 @@ final tenantPaymentsProvider =
         from: dateRange?.start,
         to: dateRange?.end,
         gateway: 'WOMPI',
+        status: status,
+        paymentMethodType: method,
+        channel: channel,
       );
 });
 

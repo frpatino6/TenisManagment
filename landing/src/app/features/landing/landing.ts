@@ -6,6 +6,10 @@ import { FeaturesComponent } from './components/features/features';
 import { LeadGenComponent } from './components/lead-gen/lead-gen';
 import { PricingComponent } from './components/pricing/pricing';
 import { FaqComponent } from './components/faq/faq';
+import { SavingsCalculatorComponent } from './components/savings-calculator/savings-calculator';
+import { WhiteLabelComponent } from './components/white-label/white-label';
+import { LoyaltyComponent } from './components/loyalty/loyalty';
+import { ProofComponent } from './components/proof/proof';
 import { SeoService } from '../../core/services/seo.service';
 
 @Component({
@@ -15,8 +19,12 @@ import { SeoService } from '../../core/services/seo.service';
         HeaderComponent,
         FooterComponent,
         HeroComponent,
+        ProofComponent,
+        WhiteLabelComponent,
         FeaturesComponent,
+        LoyaltyComponent,
         PricingComponent,
+        SavingsCalculatorComponent,
         FaqComponent,
         LeadGenComponent
     ],
@@ -26,8 +34,8 @@ import { SeoService } from '../../core/services/seo.service';
 export class LandingComponent {
     constructor(private seo: SeoService) {
         this.seo.updateMetaTags({
-            title: 'TenisManagement - La plataforma integral para tu Club de Raqueta',
-            description: 'Gestiona reservas, profesores, alumnos y cobros en una sola aplicación. Potencia tu club con TenisManagement.',
+            title: 'CourtFlow BI - Control financiero para clubes de raqueta',
+            description: 'Tome decisiones basadas en datos con dashboard ejecutivo, ahorro por monedero y desglose por servicio.',
             image: 'assets/og-image.jpg'
         });
     }

@@ -1,0 +1,47 @@
+<section id="savings-calculator" class="py-16 bg-gray-50">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 sm:p-10">
+            <div class="text-center max-w-3xl mx-auto">
+                <h3 class="text-2xl sm:text-3xl font-extrabold text-tenis-dark">Calcula tu ahorro real</h3>
+                <p class="mt-3 text-lg text-gray-500">
+                    Vea cómo CourtFlow y el Plan Profesional se pagan solos gracias a nuestro ecosistema de pagos propios.
+                </p>
+            </div>
+
+            <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+                <div>
+                    <label class="text-sm font-semibold text-gray-600">Facturación mensual del club</label>
+                    <div class="mt-4">
+                        <input type="range" class="w-full accent-tenis-green" [min]="minBilling"
+                            [max]="maxBilling" [step]="step" [(ngModel)]="monthlyBilling"
+                            (ngModelChange)="onBillingChange()">
+                    </div>
+                    <div class="mt-4 flex items-center justify-between text-sm text-gray-500">
+                        <span>{{ formatCurrency(minBilling) }}</span>
+                        <span>{{ formatCurrency(maxBilling) }}</span>
+                    </div>
+                    <div class="mt-6 text-center">
+                        <p class="text-sm uppercase text-gray-400">Facturación seleccionada</p>
+                        <p class="mt-2 text-2xl font-semibold text-gray-900">
+                            {{ formatCurrency(monthlyBilling) }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="text-center lg:text-left">
+                    <p class="text-sm uppercase text-gray-400">Ahorro mensual estimado</p>
+                    <p class="mt-3 text-4xl sm:text-5xl font-extrabold text-[#2ECC71]"
+                        [class.animate-pulse]="isAnimating">
+                        {{ formatCurrency(monthlySavings) }}
+                    </p>
+                    <p class="mt-4 text-base text-gray-600">
+                        Con este ahorro, tu suscripción de $99/mes en CourtFlow te sale prácticamente gratis.
+                    </p>
+                    <p class="mt-2 text-xs text-gray-400">
+                        Cálculo basado en un ahorro promedio del 3% en comisiones externas.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

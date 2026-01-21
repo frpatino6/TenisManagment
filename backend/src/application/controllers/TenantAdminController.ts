@@ -160,20 +160,68 @@ export class TenantAdminController {
           .enum(['PENDING', 'APPROVED', 'DECLINED', 'VOIDED', 'ERROR'])
           .optional(),
         gateway: z.enum(['WOMPI', 'STRIPE']).optional(),
+        paymentMethodType: z.string().optional(),
+        channel: z.enum(['wallet', 'direct']).optional(),
       });
 
-      const { page, limit, from, to, status, gateway } = schema.parse(
+      const {
+        page,
+        limit,
+        from,
+        to,
+        status,
+        gateway,
+        paymentMethodType,
+        channel,
+      } = schema.parse(
         req.query,
       );
 
       const filter: Record<string, unknown> = {
         tenantId: new Types.ObjectId(tenantId),
       };
+      const andClauses: Record<string, unknown>[] = [];
       if (status) {
         filter.status = status;
       }
       if (gateway) {
         filter.gateway = gateway;
+      }
+      if (paymentMethodType) {
+        const normalizedMethod = paymentMethodType.toUpperCase();
+        andClauses.push({
+          $or: [
+            { paymentMethodType: paymentMethodType },
+            { paymentMethodType: normalizedMethod },
+            {
+              'metadata.webhookEvent.data.transaction.payment_method_type':
+                paymentMethodType,
+            },
+            {
+              'metadata.webhookEvent.data.transaction.payment_method_type':
+                normalizedMethod,
+            },
+            {
+              'metadata.webhookEvent.data.transaction.payment_method.type':
+                paymentMethodType,
+            },
+            {
+              'metadata.webhookEvent.data.transaction.payment_method.type':
+                normalizedMethod,
+            },
+          ],
+        });
+      }
+      if (channel === 'direct') {
+        andClauses.push({ 'metadata.bookingInfo': { $exists: true } });
+      }
+      if (channel === 'wallet') {
+        andClauses.push({
+          $or: [
+            { 'metadata.bookingInfo': { $exists: false } },
+            { 'metadata.bookingInfo': null },
+          ],
+        });
       }
 
       if (from || to) {
@@ -196,6 +244,9 @@ export class TenantAdminController {
           createdAtFilter.$lte = endDate;
         }
         filter.createdAt = createdAtFilter;
+      }
+      if (andClauses.length > 0) {
+        filter.$and = andClauses;
       }
 
       const skip = (page - 1) * limit;
@@ -221,6 +272,7 @@ export class TenantAdminController {
           (transaction.studentId as { name?: string })?.name ?? 'Estudiante',
         paymentMethodType: transaction.paymentMethodType ?? null,
         customerEmail: transaction.customerEmail ?? null,
+        channel: transaction.metadata?.bookingInfo ? 'direct' : 'wallet',
       }));
 
       res.json({

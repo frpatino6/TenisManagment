@@ -168,6 +168,7 @@ describe('TenantAdminController', () => {
           customerEmail: 'cliente2@gmail.com',
           paymentMethodType: 'CARD',
           createdAt: new Date('2026-01-10T10:00:00Z'),
+          metadata: { bookingInfo: { price: 50000 } },
         },
         {
           tenantId: tenantObjectId,
@@ -185,6 +186,8 @@ describe('TenantAdminController', () => {
         from: '2026-01-01',
         to: '2026-01-31',
         gateway: 'WOMPI',
+        channel: 'direct',
+        paymentMethodType: 'CARD',
         page: '1',
         limit: '10',
       };
@@ -204,6 +207,7 @@ describe('TenantAdminController', () => {
         'cliente2@gmail.com',
       );
       expect(responsePayload.payments[0].paymentMethodType).toBe('CARD');
+      expect(responsePayload.payments[0].channel).toBe('direct');
     });
   });
 

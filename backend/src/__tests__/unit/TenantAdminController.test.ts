@@ -165,6 +165,8 @@ describe('TenantAdminController', () => {
           currency: 'COP',
           status: 'APPROVED',
           gateway: 'WOMPI',
+          customerEmail: 'cliente2@gmail.com',
+          paymentMethodType: 'CARD',
           createdAt: new Date('2026-01-10T10:00:00Z'),
         },
         {
@@ -198,6 +200,10 @@ describe('TenantAdminController', () => {
       expect(responsePayload.payments[0].reference).toBe('TRX-1');
       expect(responsePayload.payments[0].gateway).toBe('WOMPI');
       expect(responsePayload.payments[0].studentName).toBe('Cliente Pago');
+      expect(responsePayload.payments[0].customerEmail).toBe(
+        'cliente2@gmail.com',
+      );
+      expect(responsePayload.payments[0].paymentMethodType).toBe('CARD');
     });
   });
 

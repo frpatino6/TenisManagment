@@ -219,6 +219,8 @@ export class TenantAdminController {
         date: transaction.createdAt,
         studentName:
           (transaction.studentId as { name?: string })?.name ?? 'Estudiante',
+        paymentMethodType: transaction.paymentMethodType ?? null,
+        customerEmail: transaction.customerEmail ?? null,
       }));
 
       res.json({

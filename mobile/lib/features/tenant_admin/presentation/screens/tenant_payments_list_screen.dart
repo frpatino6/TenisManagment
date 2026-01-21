@@ -192,6 +192,22 @@ class _TenantPaymentsListScreenState
               'Referencia: ${payment.reference}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
+            if (payment.customerEmail != null &&
+                payment.customerEmail!.isNotEmpty) ...[
+              const Gap(2),
+              Text(
+                payment.customerEmail!,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+            if (payment.paymentMethodType != null &&
+                payment.paymentMethodType!.isNotEmpty) ...[
+              const Gap(2),
+              Text(
+                'Método: ${_formatMethodType(payment.paymentMethodType!)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
             const Gap(4),
             Text(
               'Gateway: ${payment.gateway}',
@@ -273,6 +289,21 @@ class _TenantPaymentsListScreenState
         return 'Error';
       default:
         return status;
+    }
+  }
+
+  String _formatMethodType(String method) {
+    switch (method.toUpperCase()) {
+      case 'CARD':
+        return 'Tarjeta';
+      case 'PSE':
+        return 'PSE';
+      case 'NEQUI':
+        return 'Nequi';
+      case 'BANCOLOMBIA_TRANSFER':
+        return 'Transferencia';
+      default:
+        return method;
     }
   }
 

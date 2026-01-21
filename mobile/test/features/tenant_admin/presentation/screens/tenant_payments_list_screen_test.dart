@@ -18,6 +18,8 @@ void main() {
           gateway: 'WOMPI',
           date: DateTime(2026, 1, 10),
           studentName: 'Cliente Pago',
+          customerEmail: 'cliente2@gmail.com',
+          paymentMethodType: 'CARD',
         ),
       ],
       pagination: PaymentsPagination(
@@ -43,5 +45,7 @@ void main() {
     expect(find.byIcon(Icons.refresh), findsOneWidget);
     expect(find.text('Referencia: TRX-1'), findsOneWidget);
     expect(find.text('Cliente Pago'), findsOneWidget);
+    expect(find.text('cliente2@gmail.com'), findsOneWidget);
+    expect(find.text('Método: Tarjeta'), findsOneWidget);
   });
 }

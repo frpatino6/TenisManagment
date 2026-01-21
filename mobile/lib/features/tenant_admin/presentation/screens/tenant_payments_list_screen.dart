@@ -45,6 +45,7 @@ class _TenantPaymentsListScreenState
       body: Column(
         children: [
           _buildDateRangeBanner(context, dateRange),
+          _buildQuickRanges(context, dateRange),
           Expanded(
             child: paymentsAsync.when(
               data: (data) => _buildPaymentsList(context, data, theme),
@@ -83,6 +84,57 @@ class _TenantPaymentsListScreenState
             child: const Text('Limpiar'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuickRanges(
+    BuildContext context,
+    DateTimeRange? currentRange,
+  ) {
+    final now = DateTime.now();
+    final ranges = [
+      _QuickRange(
+        label: '7 días',
+        range: DateTimeRange(
+          start: DateTime(now.year, now.month, now.day - 6),
+          end: now,
+        ),
+      ),
+      _QuickRange(
+        label: '30 días',
+        range: DateTimeRange(
+          start: DateTime(now.year, now.month, now.day - 29),
+          end: now,
+        ),
+      ),
+      _QuickRange(
+        label: '90 días',
+        range: DateTimeRange(
+          start: DateTime(now.year, now.month, now.day - 89),
+          end: now,
+        ),
+      ),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Wrap(
+        spacing: 8,
+        children: ranges.map((range) {
+          final isSelected = currentRange != null &&
+              _isSameDay(currentRange.start, range.range.start) &&
+              _isSameDay(currentRange.end, range.range.end);
+
+          return ChoiceChip(
+            label: Text(range.label),
+            selected: isSelected,
+            onSelected: (_) {
+              ref.read(paymentsDateRangeProvider.notifier).setRange(range.range);
+              ref.read(paymentsPageProvider.notifier).setPage(1);
+            },
+          );
+        }).toList(),
       ),
     );
   }
@@ -323,4 +375,15 @@ class _TenantPaymentsListScreenState
         return Theme.of(context).colorScheme.onSurfaceVariant;
     }
   }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+}
+
+class _QuickRange {
+  final String label;
+  final DateTimeRange range;
+
+  _QuickRange({required this.label, required this.range});
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/tenant_metrics_model.dart';
 import '../../domain/models/tenant_config_model.dart';
@@ -7,6 +8,8 @@ import '../../domain/services/tenant_admin_service.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../domain/models/tenant_student_model.dart';
 import '../../domain/models/tenant_booking_model.dart';
+import '../../domain/models/booking_stats_model.dart';
+import '../../domain/models/tenant_payment_model.dart';
 
 import '../../../../core/services/http_client.dart';
 
@@ -206,7 +209,9 @@ final tenantBookingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
 );
 
 /// Provider for booking statistics
-final bookingStatsProvider = FutureProvider.autoDispose<dynamic>((ref) async {
+final bookingStatsProvider = FutureProvider.autoDispose<BookingStatsModel>((
+  ref,
+) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null || tenantId.isEmpty) {
     throw Exception('Tenant ID requerido');
@@ -214,6 +219,50 @@ final bookingStatsProvider = FutureProvider.autoDispose<dynamic>((ref) async {
   final service = ref.read(tenantAdminServiceProvider);
   return await service.getBookingStats();
 });
+
+// ============================================================================
+// PAYMENTS PROVIDERS
+// ============================================================================
+
+class PaymentsPageNotifier extends Notifier<int> {
+  @override
+  int build() => 1;
+  void setPage(int page) => state = page;
+}
+
+final paymentsPageProvider = NotifierProvider<PaymentsPageNotifier, int>(
+  PaymentsPageNotifier.new,
+);
+
+class PaymentsDateRangeNotifier extends Notifier<DateTimeRange?> {
+  @override
+  DateTimeRange? build() => null;
+  void setRange(DateTimeRange? range) => state = range;
+}
+
+final paymentsDateRangeProvider =
+    NotifierProvider<PaymentsDateRangeNotifier, DateTimeRange?>(
+      PaymentsDateRangeNotifier.new,
+    );
+
+final tenantPaymentsProvider =
+    FutureProvider.autoDispose<TenantPaymentsResponse>((ref) async {
+      final tenantId = ref.watch(currentTenantIdProvider);
+      if (tenantId == null || tenantId.isEmpty) {
+        throw Exception('Tenant ID requerido');
+      }
+      final service = ref.read(tenantAdminServiceProvider);
+      final page = ref.watch(paymentsPageProvider);
+      final dateRange = ref.watch(paymentsDateRangeProvider);
+
+      return await service.getPayments(
+        page: page,
+        limit: 20,
+        from: dateRange?.start,
+        to: dateRange?.end,
+        gateway: 'WOMPI',
+      );
+    });
 
 /// Provider for booking calendar
 final bookingCalendarProvider = FutureProvider.autoDispose

@@ -1,7 +1,9 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
+import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../../../../core/widgets/error_widget.dart';
 import '../providers/tenant_admin_provider.dart';
@@ -17,11 +19,18 @@ class TenantBookingStatsScreen extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Estadísticas de Reservas')),
+      appBar: AppBar(
+        title: const Text('Estadísticas de Reservas'),
+        actions: [
+          IconButton(
+            onPressed: () => ref.refresh(bookingStatsProvider),
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Actualizar',
+          ),
+        ],
+      ),
       body: statsAsync.when(
-        data: (stats) {
-          final bookingStats = stats as BookingStatsModel;
-
+        data: (bookingStats) {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -65,40 +74,19 @@ class TenantBookingStatsScreen extends ConsumerWidget {
                 _buildServiceTypeBarChart(context, bookingStats),
                 const Gap(24),
 
-                // Top Courts
-                if (bookingStats.topCourts.isNotEmpty) ...[
-                  _buildSectionHeader(context, 'Canchas más rentables'),
-                  const Gap(12),
-                  ...bookingStats.topCourts
-                      .take(3)
-                      .map(
-                        (court) => _buildTopItem(
-                          context,
-                          court.courtName,
-                          '${court.bookingsCount} reservas',
-                          '\$${court.revenue.toStringAsFixed(0)}',
-                          Icons.sports_tennis,
-                        ),
-                      ),
-                  const Gap(24),
-                ],
+                _buildSectionHeader(context, 'Consolidado de ingresos'),
+                const Gap(12),
+                _buildRevenueSummaryCard(context, bookingStats),
+                const Gap(24),
 
-                // Top Professors
-                if (bookingStats.topProfessors.isNotEmpty) ...[
-                  _buildSectionHeader(context, 'Profesores más activos'),
-                  const Gap(12),
-                  ...bookingStats.topProfessors
-                      .take(3)
-                      .map(
-                        (prof) => _buildTopItem(
-                          context,
-                          prof.professorName,
-                          '${prof.bookingsCount} reservas',
-                          '\$${prof.revenue.toStringAsFixed(0)}',
-                          Icons.person,
-                        ),
-                      ),
-                ],
+                _buildSectionHeader(context, 'Totales por servicio'),
+                const Gap(12),
+                _buildTotalsByService(context, bookingStats),
+                const Gap(24),
+
+                _buildSectionHeader(context, 'Totales por estado'),
+                const Gap(12),
+                _buildTotalsByStatus(context, bookingStats),
               ],
             ),
           );
@@ -153,6 +141,183 @@ class TenantBookingStatsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildRevenueSummaryCard(
+    BuildContext context,
+    BookingStatsModel stats,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: colorScheme.surface,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Total facturado',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const Gap(8),
+            Text(
+              CurrencyUtils.format(stats.totalRevenue),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.primary,
+              ),
+            ),
+            const Gap(8),
+            Text(
+              'Ticket promedio: ${CurrencyUtils.format(stats.averagePrice)}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const Gap(12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => context.push('/tenant-admin-home/bookings'),
+                icon: const Icon(Icons.receipt_long),
+                label: const Text('Ver detalle'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTotalsByService(BuildContext context, BookingStatsModel stats) {
+    if (stats.byServiceType.isEmpty) {
+      return _buildEmptyTotalsCard(context, 'Sin datos por servicio');
+    }
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: stats.byServiceType.entries.map((entry) {
+            final label = _serviceLabel(entry.key);
+            return _buildTotalsRow(
+              context,
+              label: label,
+              count: entry.value.count,
+              amount: entry.value.revenue,
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTotalsByStatus(BuildContext context, BookingStatsModel stats) {
+    if (stats.byStatus.isEmpty) {
+      return _buildEmptyTotalsCard(context, 'Sin datos por estado');
+    }
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            if (stats.byStatus.containsKey('confirmed'))
+              _buildTotalsRow(
+                context,
+                label: 'Confirmadas',
+                count: stats.confirmedCount,
+                amount: stats.confirmedRevenue,
+              ),
+            if (stats.byStatus.containsKey('completed'))
+              _buildTotalsRow(
+                context,
+                label: 'Completadas',
+                count: stats.completedCount,
+                amount: stats.completedRevenue,
+              ),
+            if (stats.byStatus.containsKey('pending'))
+              _buildTotalsRow(
+                context,
+                label: 'Pendientes',
+                count: stats.pendingCount,
+                amount: stats.pendingRevenue,
+              ),
+            if (stats.byStatus.containsKey('cancelled'))
+              _buildTotalsRow(
+                context,
+                label: 'Canceladas',
+                count: stats.cancelledCount,
+                amount: stats.byStatus['cancelled']?.revenue ?? 0,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTotalsRow(
+    BuildContext context, {
+    required String label,
+    required int count,
+    required double amount,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+          Text(
+            '$count',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const Gap(12),
+          Text(
+            CurrencyUtils.format(amount),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyTotalsCard(BuildContext context, String message) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(message, style: Theme.of(context).textTheme.bodyMedium),
+      ),
+    );
+  }
+
+  String _serviceLabel(String key) {
+    switch (key) {
+      case 'court_rental':
+        return 'Alquiler de cancha';
+      case 'individual_class':
+        return 'Clase individual';
+      case 'group_class':
+        return 'Clase grupal';
+      default:
+        return key;
+    }
   }
 
   Widget _buildStatusPieChart(BuildContext context, BookingStatsModel stats) {
@@ -345,42 +510,6 @@ class TenantBookingStatsScreen extends ConsumerWidget {
                   .toList(),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopItem(
-    BuildContext context,
-    String name,
-    String subtitle,
-    String revenue,
-    IconData icon,
-  ) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
-      ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.grey.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 20),
-        ),
-        title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle),
-        trailing: Text(
-          revenue,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.green,
-          ),
         ),
       ),
     );

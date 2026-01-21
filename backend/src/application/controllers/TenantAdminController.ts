@@ -6,6 +6,7 @@
  */
 
 import { Request, Response } from 'express';
+import { z } from 'zod';
 import { TenantService, UpdateTenantInput } from '../services/TenantService';
 import { TenantModel } from '../../infrastructure/database/models/TenantModel';
 import { TenantAdminModel } from '../../infrastructure/database/models/TenantAdminModel';
@@ -16,6 +17,7 @@ import { CourtModel, CourtDocument } from '../../infrastructure/database/models/
 import { BookingModel } from '../../infrastructure/database/models/BookingModel';
 import { ScheduleModel } from '../../infrastructure/database/models/ScheduleModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
+import { TransactionModel } from '../../infrastructure/database/models/TransactionModel';
 import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
 import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { Logger } from '../../infrastructure/services/Logger';
@@ -134,6 +136,102 @@ export class TenantAdminController {
       } else {
         res.status(500).json({ error: 'Error interno del servidor' });
       }
+    }
+  };
+
+  /**
+   * GET /api/tenant/payments
+   * Listar transacciones de pago del tenant (Wompi/Stripe)
+   */
+  listPayments = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const schema = z.object({
+        page: z.coerce.number().int().min(1).default(1),
+        limit: z.coerce.number().int().min(1).max(100).default(20),
+        from: z.string().optional(),
+        to: z.string().optional(),
+        status: z
+          .enum(['PENDING', 'APPROVED', 'DECLINED', 'VOIDED', 'ERROR'])
+          .optional(),
+        gateway: z.enum(['WOMPI', 'STRIPE']).optional(),
+      });
+
+      const { page, limit, from, to, status, gateway } = schema.parse(
+        req.query,
+      );
+
+      const filter: Record<string, unknown> = {
+        tenantId: new Types.ObjectId(tenantId),
+      };
+      if (status) {
+        filter.status = status;
+      }
+      if (gateway) {
+        filter.gateway = gateway;
+      }
+
+      if (from || to) {
+        const createdAtFilter: { $gte?: Date; $lte?: Date } = {};
+        if (from) {
+          const startDate = new Date(from);
+          if (Number.isNaN(startDate.getTime())) {
+            res.status(400).json({ error: 'Fecha inválida (from)' });
+            return;
+          }
+          createdAtFilter.$gte = startDate;
+        }
+        if (to) {
+          const endDate = new Date(to);
+          if (Number.isNaN(endDate.getTime())) {
+            res.status(400).json({ error: 'Fecha inválida (to)' });
+            return;
+          }
+          endDate.setHours(23, 59, 59, 999);
+          createdAtFilter.$lte = endDate;
+        }
+        filter.createdAt = createdAtFilter;
+      }
+
+      const skip = (page - 1) * limit;
+      const [transactions, total] = await Promise.all([
+        TransactionModel.find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean(),
+        TransactionModel.countDocuments(filter),
+      ]);
+
+      const payments = transactions.map((transaction) => ({
+        id: transaction._id.toString(),
+        reference: transaction.reference,
+        amount: transaction.amount,
+        currency: transaction.currency,
+        status: transaction.status,
+        gateway: transaction.gateway,
+        date: transaction.createdAt,
+      }));
+
+      res.json({
+        payments,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
+    } catch (error) {
+      logger.error('Error listando pagos del tenant', {
+        error: (error as Error).message,
+      });
+      res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
 

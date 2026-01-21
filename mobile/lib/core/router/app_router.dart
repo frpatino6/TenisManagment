@@ -37,6 +37,7 @@ import '../../features/tenant_admin/presentation/screens/tenant_booking_calendar
 import '../../features/tenant_admin/presentation/screens/tenant_students_list_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_student_details_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_professor_details_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_payments_list_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../providers/tenant_provider.dart';
 
@@ -236,6 +237,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 },
               ),
             ],
+          ),
+          GoRoute(
+            path: 'payments',
+            name: 'tenant-admin-payments',
+            builder: (context, state) => const TenantPaymentsListScreen(),
           ),
           GoRoute(
             path: 'students',

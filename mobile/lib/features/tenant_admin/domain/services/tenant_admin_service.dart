@@ -11,6 +11,7 @@ import '../models/tenant_court_model.dart';
 import '../models/tenant_booking_model.dart';
 import '../models/booking_stats_model.dart';
 import '../models/tenant_student_model.dart';
+import '../models/tenant_payment_model.dart';
 
 /// Service responsible for tenant admin operations
 /// Handles API communication for tenant admin endpoints
@@ -95,6 +96,73 @@ class TenantAdminService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
         return TenantConfigModel.fromJson(data);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw TenantException.notFound();
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
+  /// GET /api/tenant/payments
+  /// List tenant payment transactions
+  Future<TenantPaymentsResponse> getPayments({
+    int page = 1,
+    int limit = 20,
+    DateTime? from,
+    DateTime? to,
+    String? status,
+    String? gateway,
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final queryParams = <String, String>{
+        'page': page.toString(),
+        'limit': limit.toString(),
+      };
+      if (from != null) {
+        queryParams['from'] = from.toIso8601String();
+      }
+      if (to != null) {
+        queryParams['to'] = to.toIso8601String();
+      }
+      if (status != null) {
+        queryParams['status'] = status;
+      }
+      if (gateway != null) {
+        queryParams['gateway'] = gateway;
+      }
+
+      final uri = Uri.parse(
+        '$_baseUrl/tenant/payments',
+      ).replace(queryParameters: queryParams);
+
+      final response = await _httpClient.get(
+        uri,
+        headers: headers,
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return TenantPaymentsResponse.fromJson(data);
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         throw AuthException.tokenExpired();
       } else if (response.statusCode == 404) {

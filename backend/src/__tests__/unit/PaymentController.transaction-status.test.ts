@@ -34,6 +34,8 @@ describe('PaymentController.getTransactionStatus', () => {
       amount: 50000,
       currency: 'COP',
       success: false,
+      customerEmail: 'user@example.com',
+      paymentMethodType: 'CARD',
       metadata: {},
     });
     jest
@@ -47,6 +49,8 @@ describe('PaymentController.getTransactionStatus', () => {
     expect(res.json).toHaveBeenCalledWith({
       status: 'DECLINED',
       reference: 'TRX-001',
+      customerEmail: 'user@example.com',
+      paymentMethodType: 'CARD',
     });
   });
 
@@ -65,6 +69,8 @@ describe('PaymentController.getTransactionStatus', () => {
       amount: 50000,
       currency: 'COP',
       success: true,
+      customerEmail: 'payer@example.com',
+      paymentMethodType: 'PSE',
       metadata: {},
     });
 
@@ -85,6 +91,8 @@ describe('PaymentController.getTransactionStatus', () => {
 
     await controller.getTransactionStatus(req, res);
 
+    expect(transaction.customerEmail).toBe('payer@example.com');
+    expect(transaction.paymentMethodType).toBe('PSE');
     expect(transaction.save).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(200);
   });

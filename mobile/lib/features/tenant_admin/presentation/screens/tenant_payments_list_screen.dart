@@ -182,6 +182,13 @@ class _TenantPaymentsListScreenState
             ),
             const Gap(4),
             Text(
+              payment.studentName,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+            const Gap(2),
+            Text(
               'Referencia: ${payment.reference}',
               style: Theme.of(context).textTheme.bodySmall,
             ),

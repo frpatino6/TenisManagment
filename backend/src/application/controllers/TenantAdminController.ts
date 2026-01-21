@@ -204,6 +204,7 @@ export class TenantAdminController {
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit)
+          .populate('studentId', 'name')
           .lean(),
         TransactionModel.countDocuments(filter),
       ]);
@@ -216,6 +217,8 @@ export class TenantAdminController {
         status: transaction.status,
         gateway: transaction.gateway,
         date: transaction.createdAt,
+        studentName:
+          (transaction.studentId as { name?: string })?.name ?? 'Estudiante',
       }));
 
       res.json({

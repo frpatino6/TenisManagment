@@ -148,6 +148,12 @@ describe('TenantAdminController', () => {
     it('should list payments with date range and gateway filters', async () => {
       const tenantObjectId = new Types.ObjectId(tenantId);
       const studentObjectId = new Types.ObjectId();
+      await StudentModel.create({
+        _id: studentObjectId,
+        authUserId: new Types.ObjectId(),
+        name: 'Cliente Pago',
+        email: 'pago@test.com',
+      });
 
       await TransactionModel.create([
         {
@@ -190,6 +196,7 @@ describe('TenantAdminController', () => {
       expect(responsePayload.payments).toHaveLength(1);
       expect(responsePayload.payments[0].reference).toBe('TRX-1');
       expect(responsePayload.payments[0].gateway).toBe('WOMPI');
+      expect(responsePayload.payments[0].studentName).toBe('Cliente Pago');
     });
   });
 

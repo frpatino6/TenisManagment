@@ -6,6 +6,7 @@ class TenantPaymentModel {
   final String status;
   final String gateway;
   final DateTime date;
+  final String studentName;
 
   TenantPaymentModel({
     required this.id,
@@ -15,6 +16,7 @@ class TenantPaymentModel {
     required this.status,
     required this.gateway,
     required this.date,
+    required this.studentName,
   });
 
   factory TenantPaymentModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +30,7 @@ class TenantPaymentModel {
       date: json['date'] != null
           ? DateTime.parse(json['date'] as String)
           : DateTime.parse(json['createdAt'] as String),
+      studentName: json['studentName'] as String? ?? 'Estudiante',
     );
   }
 }

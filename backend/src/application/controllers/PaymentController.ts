@@ -156,6 +156,8 @@ export class PaymentController {
 
             transaction.status = result.status;
             transaction.externalId = result.externalId;
+            transaction.customerEmail = result.customerEmail;
+            transaction.paymentMethodType = result.paymentMethodType;
             transaction.updatedAt = new Date();
             transaction.metadata = { ...transaction.metadata, webhookEvent: data };
             await transaction.save();
@@ -281,6 +283,8 @@ export class PaymentController {
             if (transaction) {
                 transaction.status = result.status;
                 transaction.externalId = result.externalId;
+                transaction.customerEmail = result.customerEmail;
+                transaction.paymentMethodType = result.paymentMethodType;
                 transaction.updatedAt = new Date();
                 transaction.metadata = { ...transaction.metadata, statusQuery: result.metadata };
                 await transaction.save();
@@ -334,6 +338,8 @@ export class PaymentController {
             return res.status(200).json({
                 status: result.status,
                 reference: result.reference,
+                customerEmail: result.customerEmail,
+                paymentMethodType: result.paymentMethodType,
             });
         } catch (error: any) {
             if (error instanceof z.ZodError) {

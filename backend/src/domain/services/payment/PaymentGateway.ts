@@ -18,6 +18,8 @@ export interface PaymentResult {
     amount: number;
     currency: string;
     status: 'APPROVED' | 'DECLINED' | 'VOIDED' | 'ERROR';
+    customerEmail?: string;
+    paymentMethodType?: string;
     metadata?: any;
 }
 

@@ -131,6 +131,8 @@ export class WompiAdapter implements PaymentGateway {
             amount: eventData.amount_in_cents / 100,
             currency: eventData.currency,
             status: statusMap[eventData.status] || 'ERROR',
+            customerEmail: eventData.customer_email,
+            paymentMethodType: eventData.payment_method_type,
             metadata: data
         };
     }
@@ -188,6 +190,8 @@ export class WompiAdapter implements PaymentGateway {
             amount: transaction.amount_in_cents / 100,
             currency: transaction.currency,
             status: statusMap[transaction.status] || 'ERROR',
+            customerEmail: transaction.customer_email,
+            paymentMethodType: transaction.payment_method_type,
             metadata: payload,
         };
     }

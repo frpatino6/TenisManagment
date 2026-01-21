@@ -12,33 +12,33 @@ export class FeaturesComponent {
   features = [
     {
       title: 'Dashboard Financiero',
-      description: 'Visualiza tus ingresos en tiempo real (Revenue). Controla métricas clave como ocupación de pistas y rendimiento de caja.',
+      description: 'Reportes de ingresos (Facturación) con ahorro real del club y ticket promedio por servicio.',
       icon: 'chart-bar'
     },
     {
-      title: 'Gestión de Staff y "Top Professors"',
-      description: 'Identifica a tus entrenadores estrella. Analíticas detalladas de rendimiento, reservas por profesor y retención de alumnos.',
+      title: 'Pagos Automatizados',
+      description: 'Ecosistema de pagos propios vía Wompi para eliminar micro-comisiones y acelerar la cobranza.',
+      icon: 'credit-card'
+    },
+    {
+      title: 'Penetración de Monedero',
+      description: 'Controle la adopción del monedero por parte de socios y su impacto en la recurrencia.',
       icon: 'users'
     },
     {
-      title: 'Perfil y Portal del Profesor',
-      description: 'Biografía, especialidades y experiencia visibles. Incluye gestión privada de agenda, precios y analytics de rendimiento.',
-      icon: 'id-card'
-    },
-    {
-      title: 'Base de Datos de Alumnos',
-      description: 'CRM completo. Historial de reservas, pagos y asistencia. Segmenta tu base de usuarios entre Profesores y Alumnos.',
+      title: 'Desglose Ejecutivo',
+      description: 'Rentabilidad por tipo de servicio: clases vs. alquiler de pistas.',
       icon: 'database'
     },
     {
-      title: 'Reservas Inteligentes',
-      description: 'Algoritmo de disponibilidad en tiempo real para pistas de Tenis y Pádel. Evita conflictos y maximiza la ocupación.',
+      title: 'Rendimiento por periodos',
+      description: 'Comparativa 7, 30 y 90 días para detectar picos y ajustar estrategia.',
       icon: 'calendar'
     },
     {
-      title: 'Pagos Automatizados',
-      description: 'Control total de transacciones. Automatiza el cobro de cuotas, clases sueltas y alquileres de pista.',
-      icon: 'credit-card'
+      title: 'Proyecciones y alertas',
+      description: 'Anticipe desviaciones y tome decisiones con señales tempranas del negocio.',
+      icon: 'chart-bar'
     }
   ];
 }

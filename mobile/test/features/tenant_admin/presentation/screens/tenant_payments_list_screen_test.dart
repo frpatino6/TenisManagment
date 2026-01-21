@@ -20,6 +20,7 @@ void main() {
           studentName: 'Cliente Pago',
           customerEmail: 'cliente2@gmail.com',
           paymentMethodType: 'CARD',
+          channel: 'direct',
         ),
       ],
       pagination: PaymentsPagination(
@@ -47,6 +48,10 @@ void main() {
     expect(find.text('Cliente Pago'), findsOneWidget);
     expect(find.text('cliente2@gmail.com'), findsOneWidget);
     expect(find.text('Método: Tarjeta'), findsOneWidget);
+    expect(find.text('Canal: Pago directo'), findsOneWidget);
+    expect(find.text('Estado'), findsOneWidget);
+    expect(find.text('Método'), findsOneWidget);
+    expect(find.text('Canal'), findsOneWidget);
     expect(find.text('7 días'), findsOneWidget);
     expect(find.text('30 días'), findsOneWidget);
     expect(find.text('90 días'), findsOneWidget);

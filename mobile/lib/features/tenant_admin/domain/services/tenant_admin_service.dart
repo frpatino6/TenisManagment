@@ -130,6 +130,8 @@ class TenantAdminService {
     DateTime? to,
     String? status,
     String? gateway,
+    String? paymentMethodType,
+    String? channel,
   }) async {
     try {
       final headers = await _getAuthHeaders();
@@ -148,6 +150,12 @@ class TenantAdminService {
       }
       if (gateway != null) {
         queryParams['gateway'] = gateway;
+      }
+      if (paymentMethodType != null) {
+        queryParams['paymentMethodType'] = paymentMethodType;
+      }
+      if (channel != null) {
+        queryParams['channel'] = channel;
       }
 
       final uri = Uri.parse(

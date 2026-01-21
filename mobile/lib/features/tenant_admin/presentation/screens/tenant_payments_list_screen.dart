@@ -46,6 +46,7 @@ class _TenantPaymentsListScreenState
         children: [
           _buildDateRangeBanner(context, dateRange),
           _buildQuickRanges(context, dateRange),
+          _buildFiltersRow(context),
           Expanded(
             child: paymentsAsync.when(
               data: (data) => _buildPaymentsList(context, data, theme),
@@ -185,6 +186,100 @@ class _TenantPaymentsListScreenState
     );
   }
 
+  Widget _buildFiltersRow(BuildContext context) {
+    final status = ref.watch(paymentStatusFilterProvider);
+    final method = ref.watch(paymentMethodFilterProvider);
+    final channel = ref.watch(paymentChannelFilterProvider);
+
+    final statusOptions = const <String, String>{
+      'APPROVED': 'Aprobado',
+      'PENDING': 'Pendiente',
+      'DECLINED': 'Rechazado',
+      'VOIDED': 'Anulado',
+      'ERROR': 'Error',
+    };
+    final methodOptions = const <String, String>{
+      'CARD': 'Tarjeta',
+      'PSE': 'PSE',
+      'NEQUI': 'Nequi',
+      'BANCOLOMBIA_TRANSFER': 'Transferencia',
+    };
+    final channelOptions = const <String, String>{
+      'direct': 'Pago directo',
+      'wallet': 'Monedero',
+    };
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: [
+          _buildFilterChip(
+            label: 'Estado',
+            options: statusOptions,
+            value: status,
+            onSelected: (value) {
+              ref.read(paymentStatusFilterProvider.notifier).setStatus(value);
+              ref.read(paymentsPageProvider.notifier).setPage(1);
+            },
+          ),
+          _buildFilterChip(
+            label: 'Método',
+            options: methodOptions,
+            value: method,
+            onSelected: (value) {
+              ref.read(paymentMethodFilterProvider.notifier).setMethod(value);
+              ref.read(paymentsPageProvider.notifier).setPage(1);
+            },
+          ),
+          _buildFilterChip(
+            label: 'Canal',
+            options: channelOptions,
+            value: channel,
+            onSelected: (value) {
+              ref.read(paymentChannelFilterProvider.notifier).setChannel(value);
+              ref.read(paymentsPageProvider.notifier).setPage(1);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required Map<String, String> options,
+    required String? value,
+    required ValueChanged<String?> onSelected,
+  }) {
+    return PopupMenuButton<String?>(
+      tooltip: label,
+      onSelected: onSelected,
+      itemBuilder: (context) => [
+        const PopupMenuItem<String?>(
+          value: null,
+          child: Text('Todos'),
+        ),
+        ...options.entries.map(
+          (entry) => PopupMenuItem<String?>(
+            value: entry.key,
+            child: Text(entry.value),
+          ),
+        ),
+      ],
+      child: Chip(
+        label: Text(
+          value == null
+              ? label
+              : '${label}: ${options[value] ?? value}',
+        ),
+        deleteIcon: value == null ? null : const Icon(Icons.close, size: 16),
+        onDeleted: value == null ? null : () => onSelected(null),
+      ),
+    );
+  }
+
   Widget _buildPaymentCard(BuildContext context, TenantPaymentModel payment) {
     final status = _statusLabel(payment.status);
     final statusColor = _statusColor(payment.status, context);
@@ -265,6 +360,13 @@ class _TenantPaymentsListScreenState
               'Gateway: ${payment.gateway}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
+            if (payment.channel != null) ...[
+              const Gap(2),
+              Text(
+                'Canal: ${_formatChannel(payment.channel!)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
           ],
         ),
       ),
@@ -356,6 +458,17 @@ class _TenantPaymentsListScreenState
         return 'Transferencia';
       default:
         return method;
+    }
+  }
+
+  String _formatChannel(String channel) {
+    switch (channel) {
+      case 'direct':
+        return 'Pago directo';
+      case 'wallet':
+        return 'Monedero';
+      default:
+        return channel;
     }
   }
 

@@ -160,9 +160,20 @@ export class TenantAdminController {
           .enum(['PENDING', 'APPROVED', 'DECLINED', 'VOIDED', 'ERROR'])
           .optional(),
         gateway: z.enum(['WOMPI', 'STRIPE']).optional(),
+        paymentMethodType: z.string().optional(),
+        channel: z.enum(['wallet', 'direct']).optional(),
       });
 
-      const { page, limit, from, to, status, gateway } = schema.parse(
+      const {
+        page,
+        limit,
+        from,
+        to,
+        status,
+        gateway,
+        paymentMethodType,
+        channel,
+      } = schema.parse(
         req.query,
       );
 
@@ -174,6 +185,15 @@ export class TenantAdminController {
       }
       if (gateway) {
         filter.gateway = gateway;
+      }
+      if (paymentMethodType) {
+        filter.paymentMethodType = paymentMethodType;
+      }
+      if (channel === 'direct') {
+        filter['metadata.bookingInfo'] = { $exists: true };
+      }
+      if (channel === 'wallet') {
+        filter['metadata.bookingInfo'] = { $exists: false };
       }
 
       if (from || to) {
@@ -221,6 +241,7 @@ export class TenantAdminController {
           (transaction.studentId as { name?: string })?.name ?? 'Estudiante',
         paymentMethodType: transaction.paymentMethodType ?? null,
         customerEmail: transaction.customerEmail ?? null,
+        channel: transaction.metadata?.bookingInfo ? 'direct' : 'wallet',
       }));
 
       res.json({

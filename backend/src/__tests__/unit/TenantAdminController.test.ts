@@ -803,22 +803,48 @@ describe('TenantAdminController', () => {
         membershipType: 'basic',
       });
 
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
       await BookingModel.create([
         {
-          tenantId: new Types.ObjectId(tenantId),
+          tenantId: tenantObjectId,
           studentId: student._id,
           serviceType: 'court_rental',
           price: 50,
           status: 'completed',
+          bookingDate: new Date('2026-01-05T10:00:00Z'),
         },
         {
-          tenantId: new Types.ObjectId(tenantId),
+          tenantId: tenantObjectId,
           studentId: student._id,
           professorId: new Types.ObjectId(),
           scheduleId: new Types.ObjectId(),
           serviceType: 'individual_class',
           price: 100,
           status: 'confirmed',
+          bookingDate: new Date('2026-01-06T10:00:00Z'),
+        },
+      ]);
+
+      await TransactionModel.create([
+        {
+          tenantId: tenantObjectId,
+          studentId: student._id,
+          reference: 'TRX-DIRECT',
+          amount: 100000,
+          currency: 'COP',
+          status: 'APPROVED',
+          gateway: 'WOMPI',
+          metadata: { bookingInfo: { price: 100000 } },
+        },
+        {
+          tenantId: tenantObjectId,
+          studentId: student._id,
+          reference: 'TRX-WALLET',
+          amount: 40000,
+          currency: 'COP',
+          status: 'APPROVED',
+          gateway: 'WOMPI',
         },
       ]);
 
@@ -832,6 +858,12 @@ describe('TenantAdminController', () => {
             completed: expect.objectContaining({ count: 1 }),
             confirmed: expect.objectContaining({ count: 1 }),
           }),
+          directRevenue: 100000,
+          walletRevenue: 40000,
+          revenueTrend: expect.arrayContaining([
+            expect.objectContaining({ revenue: 50 }),
+            expect.objectContaining({ revenue: 100 }),
+          ]),
         }),
       );
     });

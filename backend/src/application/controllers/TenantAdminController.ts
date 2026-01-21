@@ -1826,6 +1826,74 @@ export class TenantAdminController {
 
       const stats = totalStats[0] || { total: 0, totalRevenue: 0, averagePrice: 0 };
 
+      // Tendencia de ingresos (confirmadas + completadas)
+      const revenueTrend = await BookingModel.aggregate([
+        {
+          $match: {
+            ...filter,
+            status: { $in: ['confirmed', 'completed'] },
+          },
+        },
+        {
+          $project: {
+            price: 1,
+            date: { $ifNull: ['$bookingDate', '$createdAt'] },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: '%Y-%m-%d', date: '$date' },
+            },
+            revenue: { $sum: '$price' },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]);
+
+      // Ingresos por canal (recarga vs pago directo)
+      const transactionsFilter: any = {
+        tenantId: tenantObjectId,
+        status: 'APPROVED',
+      };
+      if (from || to) {
+        transactionsFilter.createdAt = {};
+        if (from) {
+          transactionsFilter.createdAt.$gte = new Date(from as string);
+        }
+        if (to) {
+          const endDate = new Date(to as string);
+          endDate.setHours(23, 59, 59, 999);
+          transactionsFilter.createdAt.$lte = endDate;
+        }
+      }
+
+      const channelStats = await TransactionModel.aggregate([
+        { $match: transactionsFilter },
+        {
+          $addFields: {
+            hasBookingInfo: {
+              $cond: [
+                { $ifNull: ['$metadata.bookingInfo', false] },
+                true,
+                false,
+              ],
+            },
+          },
+        },
+        {
+          $group: {
+            _id: '$hasBookingInfo',
+            total: { $sum: '$amount' },
+          },
+        },
+      ]);
+
+      const directRevenue =
+        channelStats.find((item: any) => item._id === true)?.total ?? 0;
+      const walletRevenue =
+        channelStats.find((item: any) => item._id === false)?.total ?? 0;
+
       res.json({
         total: stats.total,
         totalRevenue: stats.totalRevenue,
@@ -1846,6 +1914,12 @@ export class TenantAdminController {
         }, {}),
         topCourts: courtStats,
         topProfessors: professorStats,
+        revenueTrend: revenueTrend.map((item: any) => ({
+          date: item._id,
+          revenue: item.revenue,
+        })),
+        walletRevenue,
+        directRevenue,
       });
     } catch (error) {
       logger.error('Error obteniendo estadísticas de reservas', {

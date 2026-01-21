@@ -217,8 +217,23 @@ final bookingStatsProvider = FutureProvider.autoDispose<BookingStatsModel>((
     throw Exception('Tenant ID requerido');
   }
   final service = ref.read(tenantAdminServiceProvider);
-  return await service.getBookingStats();
+  final dateRange = ref.watch(bookingStatsDateRangeProvider);
+  return await service.getBookingStats(
+    from: dateRange?.start,
+    to: dateRange?.end,
+  );
 });
+
+class BookingStatsDateRangeNotifier extends Notifier<DateTimeRange?> {
+  @override
+  DateTimeRange? build() => null;
+  void setRange(DateTimeRange? range) => state = range;
+}
+
+final bookingStatsDateRangeProvider =
+    NotifierProvider<BookingStatsDateRangeNotifier, DateTimeRange?>(
+      BookingStatsDateRangeNotifier.new,
+    );
 
 // ============================================================================
 // PAYMENTS PROVIDERS
@@ -262,7 +277,7 @@ final tenantPaymentsProvider =
         to: dateRange?.end,
         gateway: 'WOMPI',
       );
-    });
+});
 
 /// Provider for booking calendar
 final bookingCalendarProvider = FutureProvider.autoDispose

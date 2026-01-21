@@ -2,6 +2,9 @@ class BookingStatsModel {
   final int total;
   final double totalRevenue;
   final double averagePrice;
+  final double walletRevenue;
+  final double directRevenue;
+  final List<RevenueTrendPoint> revenueTrend;
   final Map<String, StatusStats> byStatus;
   final Map<String, ServiceTypeStats> byServiceType;
   final List<CourtStats> topCourts;
@@ -11,6 +14,9 @@ class BookingStatsModel {
     required this.total,
     required this.totalRevenue,
     required this.averagePrice,
+    required this.walletRevenue,
+    required this.directRevenue,
+    required this.revenueTrend,
     required this.byStatus,
     required this.byServiceType,
     required this.topCourts,
@@ -22,6 +28,11 @@ class BookingStatsModel {
       total: json['total'] as int,
       totalRevenue: (json['totalRevenue'] as num).toDouble(),
       averagePrice: (json['averagePrice'] as num).toDouble(),
+      walletRevenue: (json['walletRevenue'] as num?)?.toDouble() ?? 0,
+      directRevenue: (json['directRevenue'] as num?)?.toDouble() ?? 0,
+      revenueTrend: (json['revenueTrend'] as List<dynamic>? ?? [])
+          .map((e) => RevenueTrendPoint.fromJson(e as Map<String, dynamic>))
+          .toList(),
       byStatus: (json['byStatus'] as Map<String, dynamic>).map(
         (key, value) =>
             MapEntry(key, StatusStats.fromJson(value as Map<String, dynamic>)),
@@ -46,6 +57,9 @@ class BookingStatsModel {
       'total': total,
       'totalRevenue': totalRevenue,
       'averagePrice': averagePrice,
+      'walletRevenue': walletRevenue,
+      'directRevenue': directRevenue,
+      'revenueTrend': revenueTrend.map((e) => e.toJson()).toList(),
       'byStatus': byStatus.map((key, value) => MapEntry(key, value.toJson())),
       'byServiceType': byServiceType.map(
         (key, value) => MapEntry(key, value.toJson()),
@@ -80,6 +94,24 @@ class StatusStats {
 
   Map<String, dynamic> toJson() {
     return {'count': count, 'revenue': revenue};
+  }
+}
+
+class RevenueTrendPoint {
+  final String date;
+  final double revenue;
+
+  RevenueTrendPoint({required this.date, required this.revenue});
+
+  factory RevenueTrendPoint.fromJson(Map<String, dynamic> json) {
+    return RevenueTrendPoint(
+      date: json['date'] as String,
+      revenue: (json['revenue'] as num).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'date': date, 'revenue': revenue};
   }
 }
 

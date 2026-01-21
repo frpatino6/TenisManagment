@@ -187,6 +187,7 @@ describe('TenantAdminController', () => {
         to: '2026-01-31',
         gateway: 'WOMPI',
         channel: 'direct',
+        paymentMethodType: 'CARD',
         page: '1',
         limit: '10',
       };

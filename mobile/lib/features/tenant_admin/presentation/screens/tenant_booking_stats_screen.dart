@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../../../../core/widgets/error_widget.dart';
 import '../providers/tenant_admin_provider.dart';
@@ -37,9 +38,8 @@ class TenantBookingStatsScreen extends ConsumerWidget {
             Expanded(
               child: ExecutiveBillingSummary(
                 stats: bookingStats,
-                onViewDetails: () => Navigator.of(
-                  context,
-                ).pushNamed('/tenant-admin-home/payments'),
+                onViewDetails: () =>
+                    context.push('/tenant-admin-home/payments'),
               ),
             ),
           ],

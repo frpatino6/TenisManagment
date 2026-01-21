@@ -180,6 +180,7 @@ export class TenantAdminController {
       const filter: Record<string, unknown> = {
         tenantId: new Types.ObjectId(tenantId),
       };
+      const andClauses: Record<string, unknown>[] = [];
       if (status) {
         filter.status = status;
       }
@@ -187,13 +188,40 @@ export class TenantAdminController {
         filter.gateway = gateway;
       }
       if (paymentMethodType) {
-        filter.paymentMethodType = paymentMethodType;
+        const normalizedMethod = paymentMethodType.toUpperCase();
+        andClauses.push({
+          $or: [
+            { paymentMethodType: paymentMethodType },
+            { paymentMethodType: normalizedMethod },
+            {
+              'metadata.webhookEvent.data.transaction.payment_method_type':
+                paymentMethodType,
+            },
+            {
+              'metadata.webhookEvent.data.transaction.payment_method_type':
+                normalizedMethod,
+            },
+            {
+              'metadata.webhookEvent.data.transaction.payment_method.type':
+                paymentMethodType,
+            },
+            {
+              'metadata.webhookEvent.data.transaction.payment_method.type':
+                normalizedMethod,
+            },
+          ],
+        });
       }
       if (channel === 'direct') {
-        filter['metadata.bookingInfo'] = { $exists: true };
+        andClauses.push({ 'metadata.bookingInfo': { $exists: true } });
       }
       if (channel === 'wallet') {
-        filter['metadata.bookingInfo'] = { $exists: false };
+        andClauses.push({
+          $or: [
+            { 'metadata.bookingInfo': { $exists: false } },
+            { 'metadata.bookingInfo': null },
+          ],
+        });
       }
 
       if (from || to) {
@@ -216,6 +244,9 @@ export class TenantAdminController {
           createdAtFilter.$lte = endDate;
         }
         filter.createdAt = createdAtFilter;
+      }
+      if (andClauses.length > 0) {
+        filter.$and = andClauses;
       }
 
       const skip = (page - 1) * limit;

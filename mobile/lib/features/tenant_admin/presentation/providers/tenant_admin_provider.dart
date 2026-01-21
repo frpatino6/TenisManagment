@@ -277,7 +277,7 @@ final tenantPaymentsProvider =
         to: dateRange?.end,
         gateway: 'WOMPI',
       );
-    });
+});
 
 /// Provider for booking calendar
 final bookingCalendarProvider = FutureProvider.autoDispose

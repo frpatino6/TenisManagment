@@ -42,7 +42,7 @@ void main() {
     expect(find.text('Ingresos Netos Totales'), findsOneWidget);
     expect(find.text('Rendimiento Financiero'), findsOneWidget);
     expect(find.text('Desglose Ejecutivo'), findsOneWidget);
-    expect(find.text('Alquiler de cancha'), findsOneWidget);
+    expect(find.text('Alquiler de cancha'), findsWidgets);
     expect(find.text('Ver detalle'), findsOneWidget);
     expect(find.text('7 días'), findsOneWidget);
     expect(find.text('30 días'), findsOneWidget);

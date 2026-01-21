@@ -141,16 +141,26 @@ class ExecutiveBillingSummary extends StatelessWidget {
               ),
         ),
         const Gap(12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: metrics.map((metric) {
-            return SizedBox(
-              width: isWide ? 220 : double.infinity,
-              child: _buildMetricCard(context, metric, colorScheme),
-            );
-          }).toList(),
-        ),
+        if (isWide)
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: metrics.map((metric) {
+              return SizedBox(
+                width: 220,
+                child: _buildMetricCard(context, metric, colorScheme),
+              );
+            }).toList(),
+          )
+        else
+          Column(
+            children: metrics.map((metric) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildMetricCard(context, metric, colorScheme),
+              );
+            }).toList(),
+          ),
       ],
     );
   }

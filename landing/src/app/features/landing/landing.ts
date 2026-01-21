@@ -9,6 +9,7 @@ import { FaqComponent } from './components/faq/faq';
 import { SavingsCalculatorComponent } from './components/savings-calculator/savings-calculator';
 import { WhiteLabelComponent } from './components/white-label/white-label';
 import { LoyaltyComponent } from './components/loyalty/loyalty';
+import { ProofComponent } from './components/proof/proof';
 import { SeoService } from '../../core/services/seo.service';
 
 @Component({
@@ -18,6 +19,7 @@ import { SeoService } from '../../core/services/seo.service';
         HeaderComponent,
         FooterComponent,
         HeroComponent,
+        ProofComponent,
         WhiteLabelComponent,
         FeaturesComponent,
         LoyaltyComponent,

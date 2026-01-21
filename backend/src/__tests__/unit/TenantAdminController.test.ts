@@ -153,6 +153,7 @@ describe('TenantAdminController', () => {
         authUserId: new Types.ObjectId(),
         name: 'Cliente Pago',
         email: 'pago@test.com',
+        membershipType: 'basic',
       });
 
       await TransactionModel.create([

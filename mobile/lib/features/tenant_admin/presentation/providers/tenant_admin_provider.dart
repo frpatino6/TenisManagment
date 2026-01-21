@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/tenant_metrics_model.dart';
 import '../../domain/models/tenant_config_model.dart';
@@ -7,6 +8,8 @@ import '../../domain/services/tenant_admin_service.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../domain/models/tenant_student_model.dart';
 import '../../domain/models/tenant_booking_model.dart';
+import '../../domain/models/booking_stats_model.dart';
+import '../../domain/models/tenant_payment_model.dart';
 
 import '../../../../core/services/http_client.dart';
 
@@ -206,13 +209,113 @@ final tenantBookingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
 );
 
 /// Provider for booking statistics
-final bookingStatsProvider = FutureProvider.autoDispose<dynamic>((ref) async {
+final bookingStatsProvider = FutureProvider.autoDispose<BookingStatsModel>((
+  ref,
+) async {
   final tenantId = ref.watch(currentTenantIdProvider);
   if (tenantId == null || tenantId.isEmpty) {
     throw Exception('Tenant ID requerido');
   }
   final service = ref.read(tenantAdminServiceProvider);
-  return await service.getBookingStats();
+  final dateRange = ref.watch(bookingStatsDateRangeProvider);
+  return await service.getBookingStats(
+    from: dateRange?.start,
+    to: dateRange?.end,
+  );
+});
+
+class BookingStatsDateRangeNotifier extends Notifier<DateTimeRange?> {
+  @override
+  DateTimeRange? build() => null;
+  void setRange(DateTimeRange? range) => state = range;
+}
+
+final bookingStatsDateRangeProvider =
+    NotifierProvider<BookingStatsDateRangeNotifier, DateTimeRange?>(
+      BookingStatsDateRangeNotifier.new,
+    );
+
+// ============================================================================
+// PAYMENTS PROVIDERS
+// ============================================================================
+
+class PaymentsPageNotifier extends Notifier<int> {
+  @override
+  int build() => 1;
+  void setPage(int page) => state = page;
+}
+
+final paymentsPageProvider = NotifierProvider<PaymentsPageNotifier, int>(
+  PaymentsPageNotifier.new,
+);
+
+class PaymentsDateRangeNotifier extends Notifier<DateTimeRange?> {
+  @override
+  DateTimeRange? build() => null;
+  void setRange(DateTimeRange? range) => state = range;
+}
+
+final paymentsDateRangeProvider =
+    NotifierProvider<PaymentsDateRangeNotifier, DateTimeRange?>(
+      PaymentsDateRangeNotifier.new,
+    );
+
+class PaymentStatusFilterNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void setStatus(String? value) => state = value;
+}
+
+final paymentStatusFilterProvider =
+    NotifierProvider<PaymentStatusFilterNotifier, String?>(
+      PaymentStatusFilterNotifier.new,
+    );
+
+class PaymentMethodFilterNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void setMethod(String? value) => state = value;
+}
+
+final paymentMethodFilterProvider =
+    NotifierProvider<PaymentMethodFilterNotifier, String?>(
+      PaymentMethodFilterNotifier.new,
+    );
+
+class PaymentChannelFilterNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void setChannel(String? value) => state = value;
+}
+
+final paymentChannelFilterProvider =
+    NotifierProvider<PaymentChannelFilterNotifier, String?>(
+      PaymentChannelFilterNotifier.new,
+    );
+
+final tenantPaymentsProvider =
+    FutureProvider.autoDispose<TenantPaymentsResponse>((ref) async {
+      final tenantId = ref.watch(currentTenantIdProvider);
+      if (tenantId == null || tenantId.isEmpty) {
+        throw Exception('Tenant ID requerido');
+      }
+      final service = ref.read(tenantAdminServiceProvider);
+      final page = ref.watch(paymentsPageProvider);
+      final dateRange = ref.watch(paymentsDateRangeProvider);
+      final status = ref.watch(paymentStatusFilterProvider);
+      final method = ref.watch(paymentMethodFilterProvider);
+      final channel = ref.watch(paymentChannelFilterProvider);
+
+      return await service.getPayments(
+        page: page,
+        limit: 20,
+        from: dateRange?.start,
+        to: dateRange?.end,
+        gateway: 'WOMPI',
+        status: status,
+        paymentMethodType: method,
+        channel: channel,
+      );
 });
 
 /// Provider for booking calendar

@@ -14,6 +14,7 @@ import '../../../tenant/domain/services/tenant_service.dart' as tenant_domain;
 import '../../../tenant/domain/models/tenant_model.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../../core/widgets/web_image.dart';
+import '../../../../core/config/app_config.dart';
 
 /// Provider for available tenants for dropdown selection
 final availableTenantsProvider = FutureProvider.autoDispose<List<TenantModel>>((
@@ -23,8 +24,26 @@ final availableTenantsProvider = FutureProvider.autoDispose<List<TenantModel>>((
   return service.getAvailableTenants();
 });
 
+typedef BookCourtPaymentDialogBuilder =
+    Widget Function(
+      BuildContext context,
+      double initialAmount,
+      VoidCallback onPaymentStart,
+    );
+
 class BookCourtScreen extends ConsumerStatefulWidget {
-  const BookCourtScreen({super.key});
+  final CourtModel? initialCourt;
+  final DateTime? initialDate;
+  final TimeOfDay? initialTime;
+  final BookCourtPaymentDialogBuilder? paymentDialogBuilder;
+
+  const BookCourtScreen({
+    super.key,
+    this.initialCourt,
+    this.initialDate,
+    this.initialTime,
+    this.paymentDialogBuilder,
+  });
 
   @override
   ConsumerState<BookCourtScreen> createState() => _BookCourtScreenState();
@@ -75,6 +94,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedCourt = widget.initialCourt;
+    _selectedDate = widget.initialDate;
+    _selectedTime = widget.initialTime;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       // Refresh tenant data to ensure we have the latest config (e.g. Wompi keys)
@@ -160,6 +182,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             .firstOrNull;
 
         if (booking != null && mounted && !_isBooking) {
+          setState(() {
+            _isSyncing = false;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('¡Reserva de cancha confirmada automáticamente!'),
@@ -219,7 +244,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           if (_isBooking || _isSyncing)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withValues(alpha: 0.7),
+                color: Colors.black.withOpacity(0.7),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -1441,17 +1466,63 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             ref.watch(currentTenantProvider);
 
             if (isInsufficient && _hasWompiConfigured) {
+              final onPaymentStart = () {
+                if (!mounted) return;
+                setState(() {
+                  _isSyncing = true;
+                });
+              };
+
               return FilledButton.icon(
                 onPressed: () =>
-                    showDialog(
+                    showDialog<bool>(
                       context: context,
-                      builder: (_) =>
-                          PaymentDialog(initialAmount: missingAmount),
-                    ).then((_) {
-                      if (mounted) {
-                        setState(() {
-                          _isSyncing = true;
-                        });
+                      builder: (dialogContext) =>
+                          widget.paymentDialogBuilder?.call(
+                            dialogContext,
+                            missingAmount,
+                            onPaymentStart,
+                          ) ??
+                          PaymentDialog(
+                            initialAmount: missingAmount,
+                            onPaymentStart: onPaymentStart,
+                            onPaymentFailed: () {
+                              if (!mounted) return;
+                              setState(() {
+                                _isSyncing = false;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'El pago no fue aprobado. Intenta nuevamente.',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                  duration: Timeouts.snackbarError,
+                                ),
+                              );
+                            },
+                            onPaymentPending: () {
+                              if (!mounted) return;
+                              setState(() {
+                                _isSyncing = false;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Pago en verificación. Revisa tu saldo en breve.',
+                                  ),
+                                  backgroundColor: Colors.orange,
+                                  duration: Timeouts.snackbarInfo,
+                                ),
+                              );
+                            },
+                            onPaymentComplete: () {
+                              ref.invalidate(studentInfoProvider);
+                            },
+                            redirectUrl: AppConfig.paymentRedirectUrl,
+                          ),
+                    ).then((paymentStarted) {
+                      if (mounted && paymentStarted == true) {
                         ref.invalidate(studentInfoProvider);
                       }
                     }),

@@ -88,6 +88,20 @@ app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', requestId: req.requestId });
 });
 
+// Payment redirect landing page (for web checkout return)
+app.get('/payment-complete', (_req: Request, res: Response) => {
+  res
+    .set(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'unsafe-inline'",
+    )
+    .status(200)
+    .type('html')
+    .send(
+      '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pago completado</title></head><body style="font-family:Arial,Helvetica,sans-serif;padding:24px"><h1>Pago recibido</h1><p>Puedes cerrar esta pestaña y volver a la app.</p><script>(function(){try{if(window.localStorage){window.localStorage.setItem("wompi_payment_redirect",window.location.href);}if(window.opener){window.opener.postMessage(window.location.href,"*");}window.close();}catch(e){}})();</script></body></html>',
+    );
+});
+
 // Global error handler
 
 app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {

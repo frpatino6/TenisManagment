@@ -40,6 +40,12 @@ export class WompiAdapter implements PaymentGateway {
         return config;
     }
 
+    private getTransactionsBaseUrl(isTest: boolean): string {
+        return isTest
+            ? 'https://api-sandbox.wompi.co/v1/transactions/'
+            : 'https://api.wompi.co/v1/transactions/';
+    }
+
     async createPaymentIntent(
         amount: number,
         currency: string,
@@ -125,7 +131,68 @@ export class WompiAdapter implements PaymentGateway {
             amount: eventData.amount_in_cents / 100,
             currency: eventData.currency,
             status: statusMap[eventData.status] || 'ERROR',
+            customerEmail: eventData.customer_email,
+            paymentMethodType: eventData.payment_method_type,
             metadata: data
+        };
+    }
+
+    /**
+     * Consulta el estado de una transacción directamente en Wompi.
+     *
+     * @param transactionId - ID de transacción de Wompi.
+     * @param tenant - Tenant dueño de la transacción.
+     * @returns Estado normalizado de la transacción.
+     */
+    async getTransactionStatus(
+        transactionId: string,
+        tenant: TenantDocument,
+    ): Promise<PaymentResult> {
+        const config = this.getWompiConfig(tenant);
+        const baseUrl = this.getTransactionsBaseUrl(Boolean(config.isTest));
+        const url = `${baseUrl}${transactionId}`;
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const body = await response.text();
+            this.logger.error('[WompiAdapter] Failed to fetch transaction', {
+                transactionId,
+                status: response.status,
+                body,
+            });
+            throw new Error('Error fetching transaction status');
+        }
+
+        const payload = await response.json();
+        const transaction = payload?.data;
+
+        if (!transaction || !transaction.status) {
+            throw new Error('Invalid Wompi transaction response');
+        }
+
+        const statusMap: Record<string, 'APPROVED' | 'DECLINED' | 'VOIDED' | 'ERROR'> = {
+            'APPROVED': 'APPROVED',
+            'DECLINED': 'DECLINED',
+            'VOIDED': 'VOIDED',
+            'ERROR': 'ERROR'
+        };
+
+        return {
+            success: transaction.status === 'APPROVED',
+            reference: transaction.reference,
+            externalId: transaction.id,
+            amount: transaction.amount_in_cents / 100,
+            currency: transaction.currency,
+            status: statusMap[transaction.status] || 'ERROR',
+            customerEmail: transaction.customer_email,
+            paymentMethodType: transaction.payment_method_type,
+            metadata: payload,
         };
     }
 }

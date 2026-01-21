@@ -12,6 +12,7 @@ export interface BookingDocument {
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   notes?: string;
   bookingDate?: Date;
+  endTime?: Date; // To support precise conflict checks for variable durations
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,18 +24,18 @@ const BookingSchema = new Schema<BookingDocument>({
     required: true,
     index: true,
   },
-  scheduleId: { 
-    type: Schema.Types.ObjectId, 
-    ref: 'Schedule', 
+  scheduleId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Schedule',
     required: false, // Made explicitly optional, validation handled in pre-save hook
-    index: true 
+    index: true
   },
   studentId: { type: Schema.Types.ObjectId, ref: 'Student', required: true, index: true },
-  professorId: { 
-    type: Schema.Types.ObjectId, 
-    ref: 'Professor', 
+  professorId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Professor',
     required: false, // Made explicitly optional, validation handled in pre-save hook
-    index: true 
+    index: true
   },
   courtId: {
     type: Schema.Types.ObjectId,
@@ -42,23 +43,24 @@ const BookingSchema = new Schema<BookingDocument>({
     required: false, // Optional - can be assigned automatically or selected
     index: true,
   },
-  serviceType: { 
-    type: String, 
-    enum: ['individual_class', 'group_class', 'court_rental'], 
-    required: true 
+  serviceType: {
+    type: String,
+    enum: ['individual_class', 'group_class', 'court_rental'],
+    required: true
   },
   price: { type: Number, required: true },
-  status: { 
-    type: String, 
-    enum: ['pending', 'confirmed', 'cancelled', 'completed'], 
-    default: 'pending' 
+  status: {
+    type: String,
+    enum: ['pending', 'confirmed', 'cancelled', 'completed'],
+    default: 'pending'
   },
   notes: { type: String },
-  bookingDate: { type: Date, default: Date.now }
+  bookingDate: { type: Date, default: Date.now },
+  endTime: { type: Date }
 }, { timestamps: true });
 
 // Pre-save validation hook to ensure required fields for non-court_rental bookings
-BookingSchema.pre('save', function(next) {
+BookingSchema.pre('save', function (next) {
   // Only validate if serviceType is not court_rental
   if (this.serviceType !== 'court_rental') {
     if (!this.scheduleId) {
@@ -82,7 +84,7 @@ BookingSchema.index({ tenantId: 1, serviceType: 1, createdAt: 1 });
 // Index for checking court rental availability by date
 BookingSchema.index({ tenantId: 1, serviceType: 1, bookingDate: 1, status: 1 });
 // Index for checking court availability (all bookings for a specific court and time)
-BookingSchema.index({ courtId: 1, bookingDate: 1, status: 1 }, { sparse: true });
-BookingSchema.index({ tenantId: 1, courtId: 1, bookingDate: 1, status: 1 }, { sparse: true });
+BookingSchema.index({ courtId: 1, bookingDate: 1, endTime: 1, status: 1 }, { sparse: true });
+BookingSchema.index({ tenantId: 1, courtId: 1, bookingDate: 1, endTime: 1, status: 1 }, { sparse: true });
 
 export const BookingModel = model<BookingDocument>('Booking', BookingSchema);

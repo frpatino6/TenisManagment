@@ -9,6 +9,7 @@ import '../../../../core/widgets/loading_widget.dart';
 import '../../../../core/widgets/error_widget.dart';
 import '../../../../core/exceptions/exceptions.dart';
 import '../providers/tenant_admin_provider.dart';
+import '../../domain/models/tenant_metrics_model.dart';
 
 class TenantAdminHomeScreen extends ConsumerWidget {
   const TenantAdminHomeScreen({super.key});
@@ -56,7 +57,11 @@ class TenantAdminHomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDashboard(BuildContext context, metrics, WidgetRef ref) {
+  Widget _buildDashboard(
+    BuildContext context,
+    TenantMetricsModel metrics,
+    WidgetRef ref,
+  ) {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(tenantMetricsProvider);
@@ -220,6 +225,8 @@ class TenantAdminHomeScreen extends ConsumerWidget {
               metrics.payments.total.toString(),
               Icons.payment,
               Colors.teal,
+              onTap: () => context.push('/tenant-admin-home/payments'),
+              hint: 'Ver detalle',
             ),
           ],
         ),
@@ -232,17 +239,26 @@ class TenantAdminHomeScreen extends ConsumerWidget {
     String title,
     String value,
     IconData icon,
-    Color color,
-  ) {
+    Color color, {
+    VoidCallback? onTap,
+    String? hint,
+  }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Container(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
+            border: Border.all(
+              color: colorScheme.outline.withValues(alpha: 0.2),
+            ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -273,7 +289,30 @@ class TenantAdminHomeScreen extends ConsumerWidget {
               color: colorScheme.onSurfaceVariant,
             ),
           ),
-        ],
+              if (hint != null) ...[
+                const Gap(4),
+                Row(
+                  children: [
+                    Text(
+                      hint,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Gap(2),
+                    Icon(
+                      Icons.chevron_right,
+                      size: 14,
+                      color: colorScheme.primary,
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -401,6 +440,14 @@ class TenantAdminHomeScreen extends ConsumerWidget {
               icon: Icons.people_outline,
               color: Colors.orange,
               onTap: () => context.push('/tenant-admin-home/students'),
+            ),
+            _buildQuickActionCard(
+              context,
+              title: 'Facturación',
+              subtitle: 'Ver ingresos',
+              icon: Icons.bar_chart,
+              color: Colors.teal,
+              onTap: () => context.push('/tenant-admin-home/bookings/stats'),
             ),
           ],
         ),

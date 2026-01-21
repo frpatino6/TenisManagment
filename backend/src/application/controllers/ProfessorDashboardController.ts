@@ -9,11 +9,15 @@ import { ProfessorTenantModel } from '../../infrastructure/database/models/Profe
 import { TenantModel } from '../../infrastructure/database/models/TenantModel';
 import { UserPreferencesModel } from '../../infrastructure/database/models/UserPreferencesModel';
 import { TenantService } from '../services/TenantService';
+import { BookingService } from '../services/BookingService';
 import { Logger } from '../../infrastructure/services/Logger';
 import { Types } from 'mongoose';
 const logger = new Logger({ controller: 'ProfessorDashboardController' });
 
 export class ProfessorDashboardController {
+  private tenantService = new TenantService();
+  private bookingService = new BookingService();
+
   // Obtener información del profesor
   getProfessorInfo = async (req: Request, res: Response) => {
     logger.debug('getProfessorInfo called', { requestId: req.requestId });
@@ -286,7 +290,7 @@ export class ProfessorDashboardController {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      console.log('Filtering schedules for today:', {
+      logger.debug('Filtering schedules for today', {
         today: today.toISOString(),
         tomorrow: tomorrow.toISOString(),
         professorId: professor._id.toString()
@@ -309,9 +313,9 @@ export class ProfessorDashboardController {
         .sort({ startTime: 1 })
         .limit(5);
 
-      console.log(`Total reserved schedules for professor: ${allReservedSchedules.length}`);
+      logger.debug(`Total reserved schedules for professor: ${allReservedSchedules.length}`);
       allReservedSchedules.forEach((s, i) => {
-        console.log(`Reserved schedule ${i + 1}:`, {
+        logger.debug(`Reserved schedule ${i + 1}`, {
           id: s._id.toString(),
           startTime: s.startTime.toISOString(),
           studentName: (s.studentId as any)?.name,
@@ -366,13 +370,7 @@ export class ProfessorDashboardController {
 
       const todayClasses = todaySchedulesWithBookings;
 
-      console.log(`Found ${todayClasses.length} classes for today (between ${today.toISOString()} and ${tomorrow.toISOString()})`);
-      if (todayClasses.length > 0) {
-        console.log('First class:', {
-          startTime: todayClasses[0].startTime.toISOString(),
-          studentName: (todayClasses[0].studentId as any)?.name
-        });
-      }
+      logger.debug(`Found ${todayClasses.length} classes for today`);
 
       // Get booking info for each schedule to include price and service type
       const classesData = await Promise.all(
@@ -446,7 +444,7 @@ export class ProfessorDashboardController {
         .populate('studentId', 'name email')
         .sort({ startTime: 1 });
 
-      console.log(`Found ${weekClasses.length} classes for this week`);
+      logger.debug(`Found ${weekClasses.length} classes for this week`);
 
       // Transformar los datos para que coincidan con el formato esperado
       const classesData = weekClasses.map(schedule => ({
@@ -729,6 +727,23 @@ export class ProfessorDashboardController {
         });
       }
 
+      // NEW: Check if the court is available (if courtId is provided)
+      if (courtId && Types.ObjectId.isValid(courtId)) {
+        const isAvailable = await this.bookingService.isCourtAvailable(
+          finalTenantId,
+          new Types.ObjectId(courtId),
+          parsedStartTime,
+          parsedEndTime
+        );
+
+        if (!isAvailable) {
+          return res.status(409).json({
+            error: 'COURT_OCCUPIED',
+            message: 'La cancha seleccionada ya está ocupada por otra reserva o profesor en este horario.'
+          });
+        }
+      }
+
       // Check for consecutive schedules in different centers (warning, not error)
       // Find schedules that end right before this one starts (within 30 minutes)
       const previousSchedule = await ScheduleModel.findOne({
@@ -847,10 +862,9 @@ export class ProfessorDashboardController {
 
     try {
       const firebaseUid = req.user?.uid;
-      console.log('Firebase UID:', firebaseUid);
-
+      logger.debug('getMySchedules: checking firebaseUid');
       if (!firebaseUid) {
-        console.log('ERROR: No firebaseUid');
+        logger.warn('getMySchedules: missing firebaseUid');
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
@@ -888,15 +902,10 @@ export class ProfessorDashboardController {
         const hasStudent = !!schedule.studentId;
 
         // Debug: Log raw studentId
-        if (hasStudent) {
-          console.log('Schedule with studentId:', {
-            scheduleId: schedule._id.toString(),
-            studentIdRaw: schedule.studentId,
-            studentIdType: typeof schedule.studentId,
-            studentIdName: (schedule.studentId as any)?.name,
-            isAvailable: schedule.isAvailable
-          });
-        }
+        logger.debug('Schedule with studentId found', {
+          scheduleId: schedule._id.toString(),
+          studentName: (schedule.studentId as any)?.name
+        });
 
         const tenant = schedule.tenantId as any;
 
@@ -918,11 +927,10 @@ export class ProfessorDashboardController {
 
       // Log booked schedules for debugging
       const bookedSchedules = schedulesData.filter(s => s.studentName);
-      console.log(`Found ${schedulesData.length} total schedules, ${bookedSchedules.length} booked`);
 
       res.json({ items: schedulesData });
     } catch (error) {
-      console.error('Error getting schedules:', error);
+      logger.error('Error getting schedules', { error: (error as Error).message });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -931,7 +939,7 @@ export class ProfessorDashboardController {
    * Delete a schedule
    */
   deleteSchedule = async (req: Request, res: Response) => {
-    console.log('=== ProfessorDashboardController.deleteSchedule called ===');
+    logger.info('deleteSchedule called', { requestId: req.requestId });
 
     try {
       const firebaseUid = req.user?.uid;
@@ -957,10 +965,10 @@ export class ProfessorDashboardController {
 
       await ScheduleModel.findByIdAndDelete(scheduleId);
 
-      console.log(`Schedule deleted: ${scheduleId}`);
+      logger.info(`Schedule deleted`, { scheduleId });
       res.json({ message: 'Horario eliminado exitosamente' });
     } catch (error) {
-      console.error('Error deleting schedule:', error);
+      logger.error('Error deleting schedule', { error: (error as Error).message });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -969,7 +977,7 @@ export class ProfessorDashboardController {
    * Block a schedule (mark as unavailable for students)
    */
   blockSchedule = async (req: Request, res: Response) => {
-    console.log('=== ProfessorDashboardController.blockSchedule called ===');
+    logger.info('blockSchedule called', { requestId: req.requestId });
 
     try {
       const firebaseUid = req.user?.uid;
@@ -1017,7 +1025,7 @@ export class ProfessorDashboardController {
    * Unblock a schedule
    */
   unblockSchedule = async (req: Request, res: Response) => {
-    console.log('=== ProfessorDashboardController.unblockSchedule called ===');
+    logger.info('unblockSchedule called', { requestId: req.requestId });
 
     try {
       const firebaseUid = req.user?.uid;
@@ -1041,10 +1049,10 @@ export class ProfessorDashboardController {
       schedule.isAvailable = true;
       await schedule.save();
 
-      console.log(`Schedule unblocked: ${scheduleId}`);
+      logger.info(`Schedule unblocked`, { scheduleId });
       res.json({ message: 'Horario desbloqueado exitosamente' });
     } catch (error) {
-      console.error('Error unblocking schedule:', error);
+      logger.error('Error unblocking schedule', { error: (error as Error).message });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -1132,7 +1140,7 @@ export class ProfessorDashboardController {
         paymentId: payment?._id
       });
     } catch (error) {
-      console.error('Error completing class:', error);
+      logger.error('Error completing class', { error: (error as Error).message });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -1217,7 +1225,7 @@ export class ProfessorDashboardController {
         paymentId: payment?._id
       });
     } catch (error) {
-      console.error('Error cancelling booking:', error);
+      logger.error('Error cancelling booking', { error: (error as Error).message });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -1228,7 +1236,7 @@ export class ProfessorDashboardController {
    * GET /api/professor-dashboard/tenants
    */
   getMyTenants = async (req: Request, res: Response) => {
-    console.log('=== ProfessorDashboardController.getMyTenants called ===');
+    logger.info('getMyTenants called', { requestId: req.requestId });
 
     try {
       const firebaseUid = req.user?.uid;
@@ -1283,10 +1291,12 @@ export class ProfessorDashboardController {
         })
       );
 
-      console.log(`Found ${tenantsWithActivity.length} active tenants for professor ${professor._id}`);
+      logger.debug(`Found ${tenantsWithActivity.length} active tenants for professor`, {
+        professorId: professor._id
+      });
       res.json({ items: tenantsWithActivity });
     } catch (error) {
-      console.error('Error getting professor tenants:', error);
+      logger.error('Error getting professor tenants', { error: (error as Error).message });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -1350,7 +1360,7 @@ export class ProfessorDashboardController {
         isActive: firstFavorite.isActive,
       });
     } catch (error) {
-      console.error('Error getting active tenant:', error);
+      logger.error('Error getting active tenant', { error: (error as Error).message });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -1434,7 +1444,7 @@ export class ProfessorDashboardController {
         tenantName: tenant.name,
       });
     } catch (error) {
-      console.error('Error setting active tenant:', error);
+      logger.error('Error setting active tenant', { error: (error as Error).message });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

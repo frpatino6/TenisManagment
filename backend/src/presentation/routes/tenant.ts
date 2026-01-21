@@ -44,6 +44,9 @@ router.post('/courts', controller.createCourt);
 router.put('/courts/:id', controller.updateCourt);
 router.delete('/courts/:id', controller.deleteCourt);
 
+// Gestión de pagos (transacciones)
+router.get('/payments', controller.listPayments);
+
 // Métricas del centro
 router.get('/metrics', controller.getMetrics);
 router.get('/analytics/overview', controller.getAnalyticsOverview);

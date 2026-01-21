@@ -16,6 +16,7 @@ import { ProfessorTenantModel } from '../../infrastructure/database/models/Profe
 import { CourtModel } from '../../infrastructure/database/models/CourtModel';
 import { BookingModel } from '../../infrastructure/database/models/BookingModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
+import { TransactionModel } from '../../infrastructure/database/models/TransactionModel';
 import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
 import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { ScheduleModel } from '../../infrastructure/database/models/ScheduleModel';
@@ -61,6 +62,7 @@ describe('TenantAdminController', () => {
     await CourtModel.deleteMany({});
     await BookingModel.deleteMany({});
     await PaymentModel.deleteMany({});
+    await TransactionModel.deleteMany({});
     await StudentTenantModel.deleteMany({});
     await StudentModel.deleteMany({});
     await ScheduleModel.deleteMany({});
@@ -139,6 +141,72 @@ describe('TenantAdminController', () => {
       await controller.getTenantInfo(mockRequest as Request, mockResponse as Response);
 
       expect(mockResponse.status).toHaveBeenCalledWith(404);
+    });
+  });
+
+  describe('listPayments', () => {
+    it('should list payments with date range and gateway filters', async () => {
+      const tenantObjectId = new Types.ObjectId(tenantId);
+      const studentObjectId = new Types.ObjectId();
+      await StudentModel.create({
+        _id: studentObjectId,
+        authUserId: new Types.ObjectId(),
+        name: 'Cliente Pago',
+        email: 'pago@test.com',
+        membershipType: 'basic',
+      });
+
+      await TransactionModel.create([
+        {
+          tenantId: tenantObjectId,
+          studentId: studentObjectId,
+          reference: 'TRX-1',
+          amount: 50000,
+          currency: 'COP',
+          status: 'APPROVED',
+          gateway: 'WOMPI',
+          customerEmail: 'cliente2@gmail.com',
+          paymentMethodType: 'CARD',
+          createdAt: new Date('2026-01-10T10:00:00Z'),
+          metadata: { bookingInfo: { price: 50000 } },
+        },
+        {
+          tenantId: tenantObjectId,
+          studentId: studentObjectId,
+          reference: 'TRX-2',
+          amount: 60000,
+          currency: 'COP',
+          status: 'PENDING',
+          gateway: 'STRIPE',
+          createdAt: new Date('2026-01-10T10:00:00Z'),
+        },
+      ]);
+
+      mockRequest.query = {
+        from: '2026-01-01',
+        to: '2026-01-31',
+        gateway: 'WOMPI',
+        channel: 'direct',
+        page: '1',
+        limit: '10',
+      };
+
+      await controller.listPayments(
+        mockRequest as Request,
+        mockResponse as Response,
+      );
+
+      const responsePayload = mockResponse.json.mock.calls[0][0];
+      expect(responsePayload.pagination.total).toBe(1);
+      expect(responsePayload.payments).toHaveLength(1);
+      expect(responsePayload.payments[0].reference).toBe('TRX-1');
+      expect(responsePayload.payments[0].gateway).toBe('WOMPI');
+      expect(responsePayload.payments[0].studentName).toBe('Cliente Pago');
+      expect(responsePayload.payments[0].customerEmail).toBe(
+        'cliente2@gmail.com',
+      );
+      expect(responsePayload.payments[0].paymentMethodType).toBe('CARD');
+      expect(responsePayload.payments[0].channel).toBe('direct');
     });
   });
 
@@ -738,22 +806,48 @@ describe('TenantAdminController', () => {
         membershipType: 'basic',
       });
 
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
       await BookingModel.create([
         {
-          tenantId: new Types.ObjectId(tenantId),
+          tenantId: tenantObjectId,
           studentId: student._id,
           serviceType: 'court_rental',
           price: 50,
           status: 'completed',
+          bookingDate: new Date('2026-01-05T10:00:00Z'),
         },
         {
-          tenantId: new Types.ObjectId(tenantId),
+          tenantId: tenantObjectId,
           studentId: student._id,
           professorId: new Types.ObjectId(),
           scheduleId: new Types.ObjectId(),
           serviceType: 'individual_class',
           price: 100,
           status: 'confirmed',
+          bookingDate: new Date('2026-01-06T10:00:00Z'),
+        },
+      ]);
+
+      await TransactionModel.create([
+        {
+          tenantId: tenantObjectId,
+          studentId: student._id,
+          reference: 'TRX-DIRECT',
+          amount: 100000,
+          currency: 'COP',
+          status: 'APPROVED',
+          gateway: 'WOMPI',
+          metadata: { bookingInfo: { price: 100000 } },
+        },
+        {
+          tenantId: tenantObjectId,
+          studentId: student._id,
+          reference: 'TRX-WALLET',
+          amount: 40000,
+          currency: 'COP',
+          status: 'APPROVED',
+          gateway: 'WOMPI',
         },
       ]);
 
@@ -767,6 +861,12 @@ describe('TenantAdminController', () => {
             completed: expect.objectContaining({ count: 1 }),
             confirmed: expect.objectContaining({ count: 1 }),
           }),
+          directRevenue: 100000,
+          walletRevenue: 40000,
+          revenueTrend: expect.arrayContaining([
+            expect.objectContaining({ revenue: 50 }),
+            expect.objectContaining({ revenue: 100 }),
+          ]),
         }),
       );
     });

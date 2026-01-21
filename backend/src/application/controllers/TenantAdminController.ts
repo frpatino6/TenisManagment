@@ -6,6 +6,7 @@
  */
 
 import { Request, Response } from 'express';
+import { z } from 'zod';
 import { TenantService, UpdateTenantInput } from '../services/TenantService';
 import { TenantModel } from '../../infrastructure/database/models/TenantModel';
 import { TenantAdminModel } from '../../infrastructure/database/models/TenantAdminModel';
@@ -16,6 +17,7 @@ import { CourtModel, CourtDocument } from '../../infrastructure/database/models/
 import { BookingModel } from '../../infrastructure/database/models/BookingModel';
 import { ScheduleModel } from '../../infrastructure/database/models/ScheduleModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
+import { TransactionModel } from '../../infrastructure/database/models/TransactionModel';
 import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
 import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { Logger } from '../../infrastructure/services/Logger';
@@ -134,6 +136,128 @@ export class TenantAdminController {
       } else {
         res.status(500).json({ error: 'Error interno del servidor' });
       }
+    }
+  };
+
+  /**
+   * GET /api/tenant/payments
+   * Listar transacciones de pago del tenant (Wompi/Stripe)
+   */
+  listPayments = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const schema = z.object({
+        page: z.coerce.number().int().min(1).default(1),
+        limit: z.coerce.number().int().min(1).max(100).default(20),
+        from: z.string().optional(),
+        to: z.string().optional(),
+        status: z
+          .enum(['PENDING', 'APPROVED', 'DECLINED', 'VOIDED', 'ERROR'])
+          .optional(),
+        gateway: z.enum(['WOMPI', 'STRIPE']).optional(),
+        paymentMethodType: z.string().optional(),
+        channel: z.enum(['wallet', 'direct']).optional(),
+      });
+
+      const {
+        page,
+        limit,
+        from,
+        to,
+        status,
+        gateway,
+        paymentMethodType,
+        channel,
+      } = schema.parse(
+        req.query,
+      );
+
+      const filter: Record<string, unknown> = {
+        tenantId: new Types.ObjectId(tenantId),
+      };
+      if (status) {
+        filter.status = status;
+      }
+      if (gateway) {
+        filter.gateway = gateway;
+      }
+      if (paymentMethodType) {
+        filter.paymentMethodType = paymentMethodType;
+      }
+      if (channel === 'direct') {
+        filter['metadata.bookingInfo'] = { $exists: true };
+      }
+      if (channel === 'wallet') {
+        filter['metadata.bookingInfo'] = { $exists: false };
+      }
+
+      if (from || to) {
+        const createdAtFilter: { $gte?: Date; $lte?: Date } = {};
+        if (from) {
+          const startDate = new Date(from);
+          if (Number.isNaN(startDate.getTime())) {
+            res.status(400).json({ error: 'Fecha inválida (from)' });
+            return;
+          }
+          createdAtFilter.$gte = startDate;
+        }
+        if (to) {
+          const endDate = new Date(to);
+          if (Number.isNaN(endDate.getTime())) {
+            res.status(400).json({ error: 'Fecha inválida (to)' });
+            return;
+          }
+          endDate.setHours(23, 59, 59, 999);
+          createdAtFilter.$lte = endDate;
+        }
+        filter.createdAt = createdAtFilter;
+      }
+
+      const skip = (page - 1) * limit;
+      const [transactions, total] = await Promise.all([
+        TransactionModel.find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .populate('studentId', 'name')
+          .lean(),
+        TransactionModel.countDocuments(filter),
+      ]);
+
+      const payments = transactions.map((transaction) => ({
+        id: transaction._id.toString(),
+        reference: transaction.reference,
+        amount: transaction.amount,
+        currency: transaction.currency,
+        status: transaction.status,
+        gateway: transaction.gateway,
+        date: transaction.createdAt,
+        studentName:
+          (transaction.studentId as { name?: string })?.name ?? 'Estudiante',
+        paymentMethodType: transaction.paymentMethodType ?? null,
+        customerEmail: transaction.customerEmail ?? null,
+        channel: transaction.metadata?.bookingInfo ? 'direct' : 'wallet',
+      }));
+
+      res.json({
+        payments,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
+    } catch (error) {
+      logger.error('Error listando pagos del tenant', {
+        error: (error as Error).message,
+      });
+      res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
 
@@ -1723,6 +1847,74 @@ export class TenantAdminController {
 
       const stats = totalStats[0] || { total: 0, totalRevenue: 0, averagePrice: 0 };
 
+      // Tendencia de ingresos (confirmadas + completadas)
+      const revenueTrend = await BookingModel.aggregate([
+        {
+          $match: {
+            ...filter,
+            status: { $in: ['confirmed', 'completed'] },
+          },
+        },
+        {
+          $project: {
+            price: 1,
+            date: { $ifNull: ['$bookingDate', '$createdAt'] },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: '%Y-%m-%d', date: '$date' },
+            },
+            revenue: { $sum: '$price' },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]);
+
+      // Ingresos por canal (recarga vs pago directo)
+      const transactionsFilter: any = {
+        tenantId: tenantObjectId,
+        status: 'APPROVED',
+      };
+      if (from || to) {
+        transactionsFilter.createdAt = {};
+        if (from) {
+          transactionsFilter.createdAt.$gte = new Date(from as string);
+        }
+        if (to) {
+          const endDate = new Date(to as string);
+          endDate.setHours(23, 59, 59, 999);
+          transactionsFilter.createdAt.$lte = endDate;
+        }
+      }
+
+      const channelStats = await TransactionModel.aggregate([
+        { $match: transactionsFilter },
+        {
+          $addFields: {
+            hasBookingInfo: {
+              $cond: [
+                { $ifNull: ['$metadata.bookingInfo', false] },
+                true,
+                false,
+              ],
+            },
+          },
+        },
+        {
+          $group: {
+            _id: '$hasBookingInfo',
+            total: { $sum: '$amount' },
+          },
+        },
+      ]);
+
+      const directRevenue =
+        channelStats.find((item: any) => item._id === true)?.total ?? 0;
+      const walletRevenue =
+        channelStats.find((item: any) => item._id === false)?.total ?? 0;
+
       res.json({
         total: stats.total,
         totalRevenue: stats.totalRevenue,
@@ -1743,6 +1935,12 @@ export class TenantAdminController {
         }, {}),
         topCourts: courtStats,
         topProfessors: professorStats,
+        revenueTrend: revenueTrend.map((item: any) => ({
+          date: item._id,
+          revenue: item.revenue,
+        })),
+        walletRevenue,
+        directRevenue,
       });
     } catch (error) {
       logger.error('Error obteniendo estadísticas de reservas', {

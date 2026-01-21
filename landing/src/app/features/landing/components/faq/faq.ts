@@ -17,7 +17,7 @@ export class FaqComponent {
     },
     {
       question: '¿Necesito instalar algún software?',
-      answer: 'No, TenisManagement es una aplicación en la nube (SaaS). Puedes acceder desde cualquier navegador web o desde nuestras apps móviles.',
+      answer: 'No, CourtFlow es una aplicación en la nube (SaaS). Puedes acceder desde cualquier navegador web o desde nuestras apps móviles.',
       isOpen: false
     },
     {

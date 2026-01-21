@@ -26,29 +26,68 @@ export class BookingService {
 
     /**
      * Checks if a court is available for a given time range.
+     * Verifies both Bookings and Schedules.
      */
-    async checkCourtConflict(tenantId: Types.ObjectId, courtId: Types.ObjectId, startTime: Date, endTime: Date): Promise<boolean> {
-        // Let's refine the conflict check to be more robust
-        const bookings = await BookingModel.find({
+    async isCourtAvailable(
+        tenantId: Types.ObjectId,
+        courtId: Types.ObjectId,
+        startTime: Date,
+        endTime: Date,
+        excludeScheduleId?: Types.ObjectId
+    ): Promise<boolean> {
+        // 1. Check for Bookings that overlap
+        const conflictingBooking = await BookingModel.findOne({
             tenantId,
             courtId,
-            status: { $in: ['confirmed', 'pending'] }
+            status: { $in: ['confirmed', 'pending'] },
+            $or: [
+                { bookingDate: { $lt: endTime }, endTime: { $gt: startTime } },
+                // Fallback for old bookings without endTime
+                {
+                    $and: [
+                        { endTime: { $exists: false } },
+                        { bookingDate: { $lt: endTime, $gte: new Date(startTime.getTime() - 60 * 60 * 1000) } }
+                    ]
+                }
+            ]
         });
 
-        for (const b of bookings) {
-            const bStart = b.bookingDate;
-            if (!bStart) continue;
-
-            // Assume 1 hour for rentals if context is missing, 
-            // but for court_rental we know the requested range.
-            const bEnd = new Date(bStart.getTime() + 60 * 60 * 1000);
-
-            if (startTime < bEnd && endTime > bStart) {
-                return true; // Conflict found
-            }
+        if (conflictingBooking) {
+            logger.info('Court conflict found in Bookings', { courtId, startTime, endTime, bookingId: conflictingBooking._id });
+            return false;
         }
 
-        return false;
+        // 2. Check for Schedules that overlap
+        const scheduleQuery: any = {
+            tenantId,
+            courtId,
+            status: { $in: ['confirmed', 'pending'] },
+            isBlocked: { $ne: true },
+            $or: [
+                { startTime: { $lt: endTime }, endTime: { $gt: startTime } }
+            ]
+        };
+
+        if (excludeScheduleId) {
+            scheduleQuery._id = { $ne: excludeScheduleId };
+        }
+
+        const conflictingSchedule = await ScheduleModel.findOne(scheduleQuery);
+
+        if (conflictingSchedule) {
+            logger.info('Court conflict found in Schedules', { courtId, startTime, endTime, scheduleId: conflictingSchedule._id });
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Backward compatibility wrapper for checkCourtConflict
+     */
+    async checkCourtConflict(tenantId: Types.ObjectId, courtId: Types.ObjectId, startTime: Date, endTime: Date): Promise<boolean> {
+        const available = await this.isCourtAvailable(tenantId, courtId, startTime, endTime);
+        return !available; // returns true if there IS a conflict
     }
 
     /**
@@ -133,8 +172,16 @@ export class BookingService {
                 price: price,
                 status: 'confirmed',
                 notes: `Reserva de ${serviceType}`,
-                bookingDate: bookingStartTime
+                bookingDate: bookingStartTime,
+                endTime: serviceType === 'court_rental' ? endTime : undefined
             };
+
+            if (serviceType !== 'court_rental' && scheduleId) {
+                const schedule = await ScheduleModel.findById(scheduleId);
+                if (schedule) {
+                    bookingData.endTime = schedule.endTime;
+                }
+            }
 
             if (scheduleId) bookingData.scheduleId = new Types.ObjectId(scheduleId.toString());
             if (professorId) bookingData.professorId = professorId;
@@ -179,52 +226,14 @@ export class BookingService {
             return null;
         }
 
-        // Find all bookings that have a courtId assigned and might overlap with the requested time
-        const bookingsWithCourt = await BookingModel.find({
-            tenantId: tenantId,
-            courtId: { $exists: true, $ne: null },
-            status: { $in: ['confirmed', 'pending'] },
-        })
-            .populate('scheduleId')
-            .lean();
-
-        // Create a set of occupied court IDs during this time
-        const occupiedCourtIds = new Set<string>();
-
-        bookingsWithCourt.forEach((booking: any) => {
-            if (!booking.courtId) return;
-
-            let bookingStart: Date;
-            let bookingEnd: Date;
-
-            if (booking.serviceType === 'court_rental' && booking.bookingDate) {
-                // Court rental: use bookingDate as start, assume 1 hour duration
-                bookingStart = new Date(booking.bookingDate);
-                bookingEnd = new Date(bookingStart);
-                bookingEnd.setUTCHours(bookingEnd.getUTCHours() + 1);
-            } else if (booking.scheduleId && (booking.scheduleId as any).startTime) {
-                // Lesson: use schedule times
-                const schedule = booking.scheduleId as any;
-                bookingStart = new Date(schedule.startTime);
-                bookingEnd = new Date(schedule.endTime);
-            } else {
-                return;
-            }
-
-            // Check if time ranges overlap
-            const overlaps =
-                (startTime >= bookingStart && startTime < bookingEnd) ||
-                (endTime > bookingStart && endTime <= bookingEnd) ||
-                (startTime <= bookingStart && endTime >= bookingEnd);
-
-            if (overlaps) {
-                occupiedCourtIds.add(booking.courtId.toString());
-            }
-        });
-
-        // Find first available court
         for (const court of courts) {
-            if (!occupiedCourtIds.has(court._id.toString())) {
+            const isAvailable = await this.isCourtAvailable(
+                tenantId,
+                court._id,
+                startTime,
+                endTime
+            );
+            if (isAvailable) {
                 return { _id: court._id, name: court.name };
             }
         }

@@ -7,21 +7,32 @@ import '../screens/wompi_webview_screen.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../booking/presentation/providers/booking_provider.dart';
 import '../../../../core/constants/timeouts.dart';
+import '../../../../core/config/app_config.dart';
+import '../../../../core/providers/tenant_provider.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/utils/web_utils_stub.dart'
     if (dart.library.js_interop) '../../../../core/utils/web_utils_web.dart';
+import '../utils/wompi_redirect_utils.dart';
 
 class PaymentDialog extends ConsumerStatefulWidget {
   final double? initialAmount;
   final Map<String, dynamic>? bookingData;
   final String? redirectUrl;
+  final VoidCallback? onPaymentStart;
   final VoidCallback? onPaymentComplete;
+  final VoidCallback? onPaymentFailed;
+  final VoidCallback? onPaymentPending;
 
   const PaymentDialog({
     super.key,
     this.initialAmount,
     this.bookingData,
     this.redirectUrl,
+    this.onPaymentStart,
     this.onPaymentComplete,
+    this.onPaymentFailed,
+    this.onPaymentPending,
   });
 
   @override
@@ -32,19 +43,131 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   late final TextEditingController _amountController;
   final _formKey = GlobalKey<FormState>();
   String? _checkoutUrl; // Store URL for two-step launch on web
+  String? _paymentReference;
+  bool _isWaitingForWebResult = false;
+  void Function()? _removeMessageListener;
+  void Function()? _removeStorageListener;
+  void Function()? _removeFocusListener;
+  static const String _webPaymentStorageKey = 'wompi_payment_redirect';
 
   @override
   void initState() {
     super.initState();
+    final initialValue = widget.initialAmount?.toStringAsFixed(0) ?? '';
     _amountController = TextEditingController(
-      text: widget.initialAmount?.toStringAsFixed(0) ?? '',
+      text: initialValue.isNotEmpty ? _formatNumber(initialValue) : '',
     );
+  }
+
+  String _formatNumber(String s) {
+    if (s.isEmpty) return '';
+    return NumberFormat.decimalPattern('es_CO').format(int.parse(s));
   }
 
   @override
   void dispose() {
+    _removeMessageListener?.call();
+    _removeStorageListener?.call();
+    _removeFocusListener?.call();
     _amountController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleWebMessage(String message) async {
+    final redirectUrl = widget.redirectUrl ?? AppConfig.paymentRedirectUrl;
+    final messageUrl = extractRedirectUrlFromMessage(message);
+    if (messageUrl == null || !messageUrl.contains(redirectUrl)) {
+      return;
+    }
+
+    final status = parseWompiPaymentStatus(redirectUrl, messageUrl);
+    final uri = Uri.tryParse(messageUrl);
+    final transactionId =
+        uri?.queryParameters['id'] ?? uri?.queryParameters['transaction_id'];
+
+    bool? resolvedStatus = status;
+    if (resolvedStatus == null) {
+      resolvedStatus = await _resolveStatusFromBackend(
+        transactionId: transactionId,
+        reference: _paymentReference,
+      );
+    }
+
+    if (!mounted) return;
+    await _handleStatusResult(resolvedStatus);
+  }
+
+  Future<bool?> _resolveStatusFromBackend({
+    String? transactionId,
+    String? reference,
+  }) async {
+    final tenantId = ref.read(currentTenantIdProvider);
+    if (tenantId == null) return null;
+
+    try {
+      final service = ref.read(paymentServiceProvider);
+      final result = await service.getTransactionStatus(
+        transactionId: transactionId,
+        reference: reference,
+        tenantId: tenantId,
+      );
+      final backendStatus = result['status'] as String?;
+      if (backendStatus == 'APPROVED') {
+        return true;
+      }
+      if (backendStatus == 'DECLINED' ||
+          backendStatus == 'VOIDED' ||
+          backendStatus == 'ERROR') {
+        return false;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _handleFocusReturn() async {
+    if (!_isWaitingForWebResult) return;
+    final resolvedStatus = await _resolveStatusFromBackend(
+      reference: _paymentReference,
+    );
+    if (!mounted || !_isWaitingForWebResult) return;
+    await _handleStatusResult(resolvedStatus);
+  }
+
+  Future<void> _handleStatusResult(bool? resolvedStatus) async {
+    final messenger = ScaffoldMessenger.of(context);
+
+    ref.invalidate(studentInfoProvider);
+    ref.invalidate(myBookingsProvider);
+
+    if (resolvedStatus == true) {
+      widget.onPaymentComplete?.call();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Pago procesado. Actualizando saldo...'),
+          backgroundColor: Colors.green,
+          duration: Timeouts.snackbarSuccess,
+        ),
+      );
+    } else if (resolvedStatus == false) {
+      widget.onPaymentFailed?.call();
+    } else {
+      widget.onPaymentPending?.call();
+    }
+
+    _removeMessageListener?.call();
+    _removeMessageListener = null;
+    _removeStorageListener?.call();
+    _removeStorageListener = null;
+    _removeFocusListener?.call();
+    _removeFocusListener = null;
+    WebUtils.removeLocalStorageItem(_webPaymentStorageKey);
+    _isWaitingForWebResult = false;
+
+    if (mounted) {
+      Navigator.pop(context, resolvedStatus);
+    }
   }
 
   @override
@@ -59,6 +182,10 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             TextFormField(
               controller: _amountController,
               keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                CurrencyInputFormatter(),
+              ],
               decoration: const InputDecoration(
                 labelText: 'Monto a recargar',
                 prefixText: '\$ ',
@@ -68,7 +195,9 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                 if (value == null || value.isEmpty) {
                   return 'Ingresa un monto';
                 }
-                final amount = double.tryParse(value);
+                // Remove formatting to validate
+                final cleanValue = value.replaceAll('.', '');
+                final amount = double.tryParse(cleanValue);
                 if (amount == null || amount < 10000) {
                   return 'El monto mínimo es \$10.000';
                 }
@@ -89,12 +218,39 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
             if (kIsWeb && _checkoutUrl != null) {
               return FilledButton.icon(
-                onPressed: () {
-                  WebUtils.openUrl(_checkoutUrl!, newTab: true);
-                  Navigator.pop(context);
-                },
+                onPressed: _isWaitingForWebResult
+                    ? null
+                    : () {
+                        _removeMessageListener?.call();
+                        _removeStorageListener?.call();
+                        _removeFocusListener?.call();
+                        _removeMessageListener =
+                            WebUtils.addWindowMessageListener(
+                              _handleWebMessage,
+                            );
+                        _removeStorageListener =
+                            WebUtils.addWindowStorageListener((key, value) {
+                              if (key == _webPaymentStorageKey &&
+                                  value != null) {
+                                _handleWebMessage(value);
+                              }
+                            });
+                        _removeFocusListener =
+                            WebUtils.addWindowFocusListenerWithDispose(
+                              _handleFocusReturn,
+                            );
+                        setState(() {
+                          _isWaitingForWebResult = true;
+                        });
+                        widget.onPaymentStart?.call();
+                        WebUtils.openUrl(_checkoutUrl!, newTab: true);
+                      },
                 icon: const Icon(Icons.open_in_new),
-                label: const Text('Ir a la pasarela de pago'),
+                label: Text(
+                  _isWaitingForWebResult
+                      ? 'Esperando confirmación...'
+                      : 'Ir a la pasarela de pago',
+                ),
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.green,
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -107,7 +263,12 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                   ? null
                   : () async {
                       if (_formKey.currentState!.validate()) {
-                        final amount = double.parse(_amountController.text);
+                        // Remove formatting before sending to backend
+                        final cleanAmount = _amountController.text.replaceAll(
+                          '.',
+                          '',
+                        );
+                        final amount = double.parse(cleanAmount);
                         // Using read instead of watch for actions
                         final result = await ref
                             .read(paymentControllerProvider.notifier)
@@ -120,6 +281,10 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                         if (context.mounted) {
                           if (result != null && result['checkoutUrl'] != null) {
                             final checkoutUrl = result['checkoutUrl'];
+                            final reference = result['reference']?.toString();
+                            if (reference != null && reference.isNotEmpty) {
+                              _paymentReference = reference;
+                            }
 
                             if (kIsWeb) {
                               // On web: update state to show the "Proceed" button
@@ -140,28 +305,71 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                               // On mobile: keep automatic redirection with WebView
                               // Don't pop yet, wait for webview result
 
-                              final bool?
-                              paymentCompleted = await Navigator.push<bool>(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => WompiWebViewScreen(
-                                    checkoutUrl: checkoutUrl,
-                                    redirectUrl:
-                                        widget.redirectUrl ??
-                                        'https://tenis-uat.casacam.net/payment-complete',
-                                  ),
-                                ),
-                              );
+                              widget.onPaymentStart?.call();
+                              final dynamic paymentResult =
+                                  await Navigator.push<dynamic>(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => WompiWebViewScreen(
+                                        checkoutUrl: checkoutUrl,
+                                        redirectUrl:
+                                            widget.redirectUrl ??
+                                            AppConfig.paymentRedirectUrl,
+                                      ),
+                                    ),
+                                  );
 
                               if (context.mounted) {
-                                Navigator.pop(context); // Close dialog now
+                                final messenger = ScaffoldMessenger.of(context);
+                                bool? status;
+                                String? transactionId;
+                                if (paymentResult is Map) {
+                                  status = paymentResult['status'] as bool?;
+                                  transactionId =
+                                      paymentResult['transactionId'] as String?;
+                                } else if (paymentResult is bool) {
+                                  status = paymentResult;
+                                }
+
+                                bool? resolvedStatus = status;
+                                if (resolvedStatus == null &&
+                                    transactionId != null) {
+                                  final tenantId = ref.read(
+                                    currentTenantIdProvider,
+                                  );
+                                  if (tenantId != null) {
+                                    try {
+                                      final service = ref.read(
+                                        paymentServiceProvider,
+                                      );
+                                      final result = await service
+                                          .getTransactionStatus(
+                                            transactionId: transactionId,
+                                            tenantId: tenantId,
+                                          );
+                                      final backendStatus =
+                                          result['status'] as String?;
+                                      if (backendStatus == 'APPROVED') {
+                                        resolvedStatus = true;
+                                      } else if (backendStatus == 'DECLINED' ||
+                                          backendStatus == 'VOIDED' ||
+                                          backendStatus == 'ERROR') {
+                                        resolvedStatus = false;
+                                      }
+                                    } catch (_) {
+                                      resolvedStatus = null;
+                                    }
+                                  }
+                                }
+
+                                Navigator.pop(context, resolvedStatus);
 
                                 ref.invalidate(studentInfoProvider);
-                                ref.invalidate(bookingServiceProvider);
-                                widget.onPaymentComplete?.call();
+                                ref.invalidate(myBookingsProvider);
 
-                                if (paymentCompleted == true) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                if (resolvedStatus == true) {
+                                  widget.onPaymentComplete?.call();
+                                  messenger.showSnackBar(
                                     const SnackBar(
                                       content: Text(
                                         'Pago procesado. Actualizando saldo...',
@@ -170,6 +378,10 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                                       duration: Timeouts.snackbarSuccess,
                                     ),
                                   );
+                                } else if (resolvedStatus == false) {
+                                  widget.onPaymentFailed?.call();
+                                } else {
+                                  widget.onPaymentPending?.call();
                                 }
                               }
                             }
@@ -205,6 +417,27 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
           },
         ),
       ],
+    );
+  }
+}
+
+class CurrencyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    final int value = int.parse(newValue.text.replaceAll('.', ''));
+    final formatter = NumberFormat.decimalPattern('es_CO');
+    final String newText = formatter.format(value);
+
+    return newValue.copyWith(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
     );
   }
 }

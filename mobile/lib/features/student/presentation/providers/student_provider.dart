@@ -20,6 +20,24 @@ final studentInfoProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
   return service.getStudentInfo();
 });
 
+class BalanceSyncNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void start() {
+    state = true;
+  }
+
+  void stop() {
+    state = false;
+  }
+}
+
+final balanceSyncProvider =
+    NotifierProvider.autoDispose<BalanceSyncNotifier, bool>(
+      BalanceSyncNotifier.new,
+    );
+
 final studentBookingsProvider = FutureProvider.autoDispose<List<BookingModel>>((
   ref,
 ) async {

@@ -10,6 +10,8 @@ import '../providers/student_provider.dart';
 
 import '../../../../core/providers/tenant_provider.dart';
 import '../../../../core/logging/logger.dart';
+import '../../../../core/config/app_config.dart';
+import '../../../../core/constants/timeouts.dart';
 
 class MyBalanceScreen extends ConsumerStatefulWidget {
   const MyBalanceScreen({super.key});
@@ -19,7 +21,6 @@ class MyBalanceScreen extends ConsumerStatefulWidget {
 }
 
 class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
-  bool _isSyncing = false;
   double? _previousBalance;
   final _logger = AppLogger.tag('MyBalanceScreen');
 
@@ -69,6 +70,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
   @override
   Widget build(BuildContext context) {
     final studentInfoAsync = ref.watch(studentInfoProvider);
+    final isSyncing = ref.watch(balanceSyncProvider);
     // Watch tenant to rebuild when config refreshes
     ref.watch(currentTenantProvider);
 
@@ -94,13 +96,13 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
                   (studentInfo['balance'] as num?)?.toDouble() ?? 0.0;
 
               // Hide overlay if balance changed after syncing
-              if (_isSyncing &&
+              if (isSyncing &&
                   _previousBalance != null &&
                   currentBalance != _previousBalance) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) {
                     setState(() {
-                      _isSyncing = false;
+                      ref.read(balanceSyncProvider.notifier).stop();
                       _previousBalance = currentBalance;
                     });
                   }
@@ -112,7 +114,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, _) => _buildErrorState(context, error.toString()),
           ),
-          if (_isSyncing)
+          if (isSyncing)
             Positioned.fill(
               child: Container(
                 color: Colors.black.withValues(alpha: 0.7),
@@ -562,21 +564,43 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
     final currentInfo = ref.read(studentInfoProvider).value;
     final currentBalance = (currentInfo?['balance'] as num?)?.toDouble() ?? 0.0;
 
-    await showDialog(
+    await showDialog<bool>(
       context: context,
       builder: (context) => PaymentDialog(
+        redirectUrl: AppConfig.paymentRedirectUrl,
+        onPaymentStart: () {
+          if (!mounted) return;
+          setState(() {
+            _previousBalance = currentBalance;
+          });
+          ref.read(balanceSyncProvider.notifier).start();
+        },
         onPaymentComplete: () {
           ref.invalidate(studentInfoProvider);
         },
+        onPaymentFailed: () {
+          if (!mounted) return;
+          ref.read(balanceSyncProvider.notifier).stop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('El pago no fue aprobado. Intenta nuevamente.'),
+              backgroundColor: Colors.red,
+              duration: Timeouts.snackbarError,
+            ),
+          );
+        },
+        onPaymentPending: () {
+          if (!mounted) return;
+          ref.read(balanceSyncProvider.notifier).stop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Pago en verificación. Revisa tu saldo en breve.'),
+              backgroundColor: Colors.orange,
+              duration: Timeouts.snackbarInfo,
+            ),
+          );
+        },
       ),
     );
-
-    if (mounted) {
-      setState(() {
-        _previousBalance = currentBalance;
-        _isSyncing = true;
-      });
-      ref.invalidate(studentInfoProvider);
-    }
   }
 }

@@ -19,6 +19,8 @@ jest.mock('../../infrastructure/database/models/BookingModel', () => ({
     find: jest.fn(),
     findOne: jest.fn(),
     create: jest.fn(),
+    aggregate: jest.fn(),
+    countDocuments: jest.fn(),
   },
 }));
 
@@ -66,6 +68,16 @@ jest.mock('../../infrastructure/database/models/CourtModel', () => ({
 jest.mock('../../infrastructure/database/models/StudentTenantModel', () => ({
   StudentTenantModel: {
     find: jest.fn(),
+    findOne: jest.fn(),
+    create: jest.fn(),
+  },
+}));
+
+jest.mock('../../infrastructure/database/models/PaymentModel', () => ({
+  PaymentModel: {
+    find: jest.fn(),
+    aggregate: jest.fn(),
+    countDocuments: jest.fn(),
   },
 }));
 
@@ -716,6 +728,115 @@ describe('StudentDashboardController', () => {
       // startTime and endTime will be generated from createdAt, so they won't be empty
       expect(jsonCall.items[0].schedule.startTime).toBeDefined();
       expect(typeof jsonCall.items[0].schedule.startTime).toBe('string');
+    });
+  });
+
+  describe('getStudentInfo', () => {
+    it('should calculate balance per tenant when tenantId is provided', async () => {
+      const firebaseUid = 'test-firebase-uid';
+      const tenantId = '507f1f77bcf86cd799439011';
+
+      mockRequest.user = { uid: firebaseUid };
+      mockRequest.tenantId = tenantId;
+
+      const mockAuthUser = { _id: 'auth-user-id', firebaseUid };
+      const mockStudent = {
+        _id: 'student-id',
+        name: 'Test Student',
+        email: 'student@test.com',
+        phone: '123',
+        balance: 0,
+        save: jest.fn(),
+      };
+
+      const mockStudentTenant = {
+        balance: 0,
+        save: jest.fn(),
+      };
+
+      const { AuthUserModel } = require('../../infrastructure/database/models/AuthUserModel');
+      const { StudentModel } = require('../../infrastructure/database/models/StudentModel');
+      const { BookingModel } = require('../../infrastructure/database/models/BookingModel');
+      const { PaymentModel } = require('../../infrastructure/database/models/PaymentModel');
+      const { StudentTenantModel } = require('../../infrastructure/database/models/StudentTenantModel');
+
+      AuthUserModel.findOne.mockResolvedValue(mockAuthUser);
+      StudentModel.findOne.mockResolvedValue(mockStudent);
+
+      PaymentModel.aggregate.mockResolvedValue([{ total: 50000 }]);
+      BookingModel.aggregate.mockResolvedValue([{ total: 120000 }]);
+      PaymentModel.countDocuments.mockResolvedValue(1);
+      BookingModel.countDocuments.mockResolvedValue(2);
+
+      StudentTenantModel.findOne.mockResolvedValue(mockStudentTenant);
+
+      await controller.getStudentInfo(mockRequest, mockResponse);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          balance: -70000,
+          totalPayments: 1,
+          totalClasses: 2,
+          totalSpent: 50000,
+          totalReservationsValue: 120000,
+        }),
+      );
+
+      expect(mockStudentTenant.save).toHaveBeenCalled();
+      expect(mockStudent.save).not.toHaveBeenCalled();
+    });
+
+    it('should fallback to activeTenantId when tenantId is missing', async () => {
+      const firebaseUid = 'test-firebase-uid';
+      const tenantId = '507f1f77bcf86cd799439011';
+
+      mockRequest.user = { uid: firebaseUid };
+      mockRequest.tenantId = undefined;
+
+      const mockAuthUser = { _id: 'auth-user-id', firebaseUid };
+      const mockStudent = {
+        _id: 'student-id',
+        name: 'Test Student',
+        email: 'student@test.com',
+        phone: '123',
+        balance: 0,
+        activeTenantId: tenantId,
+        save: jest.fn(),
+      };
+
+      const { AuthUserModel } = require('../../infrastructure/database/models/AuthUserModel');
+      const { StudentModel } = require('../../infrastructure/database/models/StudentModel');
+      const { BookingModel } = require('../../infrastructure/database/models/BookingModel');
+      const { PaymentModel } = require('../../infrastructure/database/models/PaymentModel');
+      const { StudentTenantModel } = require('../../infrastructure/database/models/StudentTenantModel');
+
+      AuthUserModel.findOne.mockResolvedValue(mockAuthUser);
+      StudentModel.findOne.mockResolvedValue(mockStudent);
+
+      PaymentModel.aggregate.mockResolvedValue([{ total: 0 }]);
+      BookingModel.aggregate.mockResolvedValue([{ total: 120000 }]);
+      PaymentModel.countDocuments.mockResolvedValue(0);
+      BookingModel.countDocuments.mockResolvedValue(2);
+
+      StudentTenantModel.findOne.mockResolvedValue(null);
+      StudentTenantModel.create.mockResolvedValue({
+        balance: -120000,
+        save: jest.fn(),
+      });
+
+      await controller.getStudentInfo(mockRequest, mockResponse);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          balance: -120000,
+          totalPayments: 0,
+          totalClasses: 2,
+          totalSpent: 0,
+          totalReservationsValue: 120000,
+        }),
+      );
+      expect(StudentTenantModel.create).toHaveBeenCalled();
+      expect(mockStudent.save).not.toHaveBeenCalled();
     });
   });
 

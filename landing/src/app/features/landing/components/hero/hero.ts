@@ -11,11 +11,13 @@ import { UiButtonComponent } from '../../../../shared/components/ui-button/ui-bu
 })
 export class HeroComponent {
   images = [
+    'images/hero-app-mockup-6.png',
+    'images/hero-app-mockup-7.png',
+    'images/hero-app-mockup-5.png',
     'images/hero-app-mockup.png',
     'images/hero-app-mockup-2.png',
     'images/hero-app-mockup-3.png',
-    'images/hero-app-mockup-4.png',
-    'images/hero-app-mockup-5.png'
+    'images/hero-app-mockup-4.png'
   ];
   currentImageIndex = 0;
   private intervalId: any;

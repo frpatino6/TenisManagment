@@ -32,6 +32,7 @@ export class PricingComponent {
         'Reservas ilimitadas',
         'Pagos online',
         'App personalizada',
+        'Gestión de Torneos con Ranking ELO',
         'Dashboard avanzado',
         'Soporte prioritario'
       ],
@@ -44,6 +45,7 @@ export class PricingComponent {
         'Múltiples sedes',
         'API personalizada',
         'Gestión de torneos',
+        'Integración de Pasarelas de Pago Locales',
         'Integración con tornos',
         'SLA garantizado'
       ],

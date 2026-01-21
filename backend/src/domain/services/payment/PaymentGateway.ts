@@ -18,6 +18,8 @@ export interface PaymentResult {
     amount: number;
     currency: string;
     status: 'APPROVED' | 'DECLINED' | 'VOIDED' | 'ERROR';
+    customerEmail?: string;
+    paymentMethodType?: string;
     metadata?: any;
 }
 
@@ -39,4 +41,16 @@ export interface PaymentGateway {
      * key can be signature or event data
      */
     validateTransaction(data: any, tenant: TenantDocument): Promise<PaymentResult>;
+
+    /**
+     * Obtiene el estado de una transacción desde el proveedor de pagos.
+     *
+     * @param transactionId - ID de la transacción en el proveedor.
+     * @param tenant - Tenant dueño de la transacción.
+     * @returns Estado normalizado de la transacción.
+     */
+    getTransactionStatus(
+        transactionId: string,
+        tenant: TenantDocument,
+    ): Promise<PaymentResult>;
 }

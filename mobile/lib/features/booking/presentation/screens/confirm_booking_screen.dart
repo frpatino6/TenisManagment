@@ -11,6 +11,7 @@ import '../../../student/presentation/providers/student_provider.dart';
 import '../../../../core/logging/logger.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/providers/tenant_provider.dart';
+import '../../../../core/config/app_config.dart';
 
 /// Screen to confirm a booking before creating it
 ///
@@ -350,12 +351,20 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                                             'scheduleId': widget.schedule.id,
                                             'serviceType': 'individual_class',
                                             'price': _price,
-                                            'professorId': widget.professorId,
-                                            'tenantId': widget.tenantId,
                                           },
-                                          redirectUrl:
-                                              'https://tenis-uat.casacam.net/payment-complete',
+                                          redirectUrl: AppConfig.paymentRedirectUrl,
+                                          onPaymentStart: () {
+                                            if (!mounted) return;
+                                            setState(() {
+                                              _isSyncing = true;
+                                            });
+                                          },
                                           onPaymentComplete: () {
+                                            if (!mounted) return;
+                                            setState(() {
+                                              _shouldAutoConfirm = true;
+                                            });
+                                            _startPaymentPolling();
                                             // Refresh data after payment
                                             Future.delayed(
                                               const Duration(seconds: 2),
@@ -371,17 +380,44 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
                                               },
                                             );
                                           },
+                                          onPaymentFailed: () {
+                                            if (!mounted) return;
+                                            _pollingTimer?.cancel();
+                                            setState(() {
+                                              _shouldAutoConfirm = false;
+                                              _isSyncing = false;
+                                            });
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'El pago no fue aprobado. Intenta nuevamente.',
+                                                ),
+                                                backgroundColor: Colors.red,
+                                                duration: Timeouts.snackbarError,
+                                              ),
+                                            );
+                                          },
+                                          onPaymentPending: () {
+                                            if (!mounted) return;
+                                            _pollingTimer?.cancel();
+                                            setState(() {
+                                              _shouldAutoConfirm = false;
+                                              _isSyncing = false;
+                                            });
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Pago en verificación. Revisa tu saldo en breve.',
+                                                ),
+                                                backgroundColor: Colors.orange,
+                                                duration: Timeouts.snackbarInfo,
+                                              ),
+                                            );
+                                          },
                                         ),
-                                      ).then((_) {
-                                        if (mounted) {
-                                          setState(() {
-                                            _shouldAutoConfirm = true;
-                                            _isSyncing = true;
-                                          });
-                                          // Start polling to check payment completion
-                                          _startPaymentPolling();
-                                        }
-                                      }),
+                                      ),
                                   style: ElevatedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 16,

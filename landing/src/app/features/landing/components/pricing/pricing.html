@@ -26,6 +26,7 @@
 
                 <div class="p-8 flex-1">
                     <h3 class="text-xl font-semibold text-gray-900">{{ plan.name }}</h3>
+                    <p class="mt-2 text-sm text-gray-500">{{ plan.description }}</p>
                     <div class="mt-4 flex items-baseline text-gray-900">
                         <span class="text-4xl font-extrabold tracking-tight">{{ plan.price.startsWith('C') ? '' : '$'
                             }}{{ plan.price }}</span>
@@ -52,5 +53,8 @@
                 </div>
             </div>
         </div>
+        <p class="mt-10 text-center text-sm text-gray-500">
+            Todos nuestros planes incluyen el sistema White Label: Tu logo y tus colores en la app de tus socios.
+        </p>
     </div>
 </section>

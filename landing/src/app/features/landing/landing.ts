@@ -6,6 +6,7 @@ import { FeaturesComponent } from './components/features/features';
 import { LeadGenComponent } from './components/lead-gen/lead-gen';
 import { PricingComponent } from './components/pricing/pricing';
 import { FaqComponent } from './components/faq/faq';
+import { SavingsCalculatorComponent } from './components/savings-calculator/savings-calculator';
 import { WhiteLabelComponent } from './components/white-label/white-label';
 import { LoyaltyComponent } from './components/loyalty/loyalty';
 import { SeoService } from '../../core/services/seo.service';
@@ -21,6 +22,7 @@ import { SeoService } from '../../core/services/seo.service';
         FeaturesComponent,
         LoyaltyComponent,
         PricingComponent,
+        SavingsCalculatorComponent,
         FaqComponent,
         LeadGenComponent
     ],

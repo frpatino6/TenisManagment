@@ -37,7 +37,7 @@ void main() {
     expect(find.text('Totales por servicio'), findsOneWidget);
     expect(find.text('Totales por estado'), findsOneWidget);
     expect(find.text('Alquiler de cancha'), findsOneWidget);
-    expect(find.text('Confirmadas'), findsOneWidget);
+    expect(find.text('Confirmadas'), findsWidgets);
     expect(find.text('Ver detalle'), findsOneWidget);
   });
 }

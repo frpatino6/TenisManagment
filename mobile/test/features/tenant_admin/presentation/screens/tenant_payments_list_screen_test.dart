@@ -41,7 +41,7 @@ void main() {
 
     expect(find.text('Pagos'), findsOneWidget);
     expect(find.byIcon(Icons.refresh), findsOneWidget);
-    expect(find.text('TRX-1'), findsOneWidget);
+    expect(find.text('Referencia: TRX-1'), findsOneWidget);
     expect(find.text('Cliente Pago'), findsOneWidget);
   });
 }

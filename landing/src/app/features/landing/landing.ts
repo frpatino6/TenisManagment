@@ -34,7 +34,7 @@ import { SeoService } from '../../core/services/seo.service';
 export class LandingComponent {
     constructor(private seo: SeoService) {
         this.seo.updateMetaTags({
-            title: 'CourtFlow BI - Control financiero para clubes de raqueta',
+            title: 'CourtHub BI - Control financiero para clubes de raqueta',
             description: 'Tome decisiones basadas en datos con dashboard ejecutivo, ahorro por monedero y desglose por servicio.',
             image: 'assets/og-image.jpg'
         });

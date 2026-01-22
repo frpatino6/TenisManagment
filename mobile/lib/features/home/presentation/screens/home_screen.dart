@@ -17,51 +17,49 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-
-
     final authState = ref.watch(authNotifierProvider);
     final isLoading = ref.watch(authLoadingProvider);
 
     return UpdateCheckWrapper(
       child: Scaffold(
         body: authState.when(
-        data: (user) {
-          if (user == null) {
-            return const Center(child: Text('Usuario no encontrado'));
-          }
+          data: (user) {
+            if (user == null) {
+              return const Center(child: Text('Usuario no encontrado'));
+            }
 
-          return _buildHomeContent(context, user, isLoading, ref);
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              const Gap(16),
-              Text(
-                'Error al cargar el usuario',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const Gap(8),
-              Text(
-                error.toString(),
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-              const Gap(24),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(authNotifierProvider),
-                child: const Text('Reintentar'),
-              ),
-            ],
+            return _buildHomeContent(context, user, isLoading, ref);
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stackTrace) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                const Gap(16),
+                Text(
+                  'Error al cargar el usuario.',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const Gap(8),
+                Text(
+                  error.toString(),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const Gap(24),
+                ElevatedButton(
+                  onPressed: () => ref.invalidate(authNotifierProvider),
+                  child: const Text('Reintentar'),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -74,7 +72,6 @@ class HomeScreen extends ConsumerWidget {
   ) {
     return CustomScrollView(
       slivers: [
-
         SliverAppBar(
           expandedHeight: 120,
           floating: false,
@@ -122,14 +119,12 @@ class HomeScreen extends ConsumerWidget {
           ],
         ),
 
-
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 UserProfileCard(user: user)
                     .animate()
                     .fadeIn(duration: 300.ms, delay: 100.ms)
@@ -245,9 +240,7 @@ class HomeScreen extends ConsumerWidget {
               ),
               title: Text(
                 'Cerrar Sesión',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
               onTap: () {
                 Navigator.pop(context);
@@ -318,9 +311,9 @@ class HomeScreen extends ConsumerWidget {
             const Gap(8),
             Text(
               'Favoritos',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -344,9 +337,7 @@ class HomeScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [

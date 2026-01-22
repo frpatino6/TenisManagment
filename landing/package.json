@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "postbuild": "cp dist/tenis-management-landing/browser/index.csr.html dist/tenis-management-landing/browser/index.html",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:tenis-management-landing": "node dist/tenis-management-landing/server/server.mjs"

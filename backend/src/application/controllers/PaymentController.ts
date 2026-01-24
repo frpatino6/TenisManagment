@@ -85,6 +85,14 @@ export class PaymentController {
                 return res.status(400).json({ error: 'El usuario no tiene un perfil de estudiante válido para realizar pagos.' });
             }
 
+            // Verificar si los pagos online están habilitados para este tenant
+            if (!tenant.config?.payments?.enableOnlinePayments) {
+                return res.status(403).json({
+                    error: 'Los pagos online están deshabilitados para este centro.',
+                    code: 'ONLINE_PAYMENTS_DISABLED'
+                });
+            }
+
             // 1. Crear Intent en el Gateway (Wompi)
             const intent = await this.paymentGateway.createPaymentIntent(amount, currency, user, tenant, { redirectUrl });
 

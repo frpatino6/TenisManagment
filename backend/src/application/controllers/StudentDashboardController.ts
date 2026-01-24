@@ -1111,6 +1111,32 @@ export class StudentDashboardController {
         endTime: requestedEnd,
       });
 
+      // Deduct balance from StudentTenant (creates debt)
+      await StudentTenantModel.findOneAndUpdate(
+        {
+          studentId: new Types.ObjectId(student._id.toString()),
+          tenantId: new Types.ObjectId(tenantId.toString())
+        },
+        {
+          $inc: { balance: -price },
+        },
+        { new: true }
+      );
+
+      // Create pending payment record so user can confirm it later
+      await PaymentModel.create({
+        tenantId: new Types.ObjectId(tenantId.toString()),
+        studentId: new Types.ObjectId(student._id.toString()),
+        bookingId: booking._id,
+        amount: price,
+        date: new Date(),
+        status: 'pending',
+        method: 'cash',
+        concept: `Reserva de cancha - ${court.name}`,
+        description: `Pago pendiente por reserva de cancha: ${court.name} - ${requestedStart.toLocaleDateString()}`
+      });
+
+
 
       res.status(201).json({
         id: booking._id,

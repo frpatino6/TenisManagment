@@ -5,6 +5,7 @@ import { CourtModel } from '../../infrastructure/database/models/CourtModel';
 import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { ProfessorTenantModel } from '../../infrastructure/database/models/ProfessorTenantModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
+import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
 import { TenantService } from './TenantService';
 import { Logger } from '../../infrastructure/services/Logger';
 
@@ -190,20 +191,28 @@ export class BookingService {
 
             const booking = await BookingModel.create(bookingData);
 
+            // 6. ALWAYS deduct balance from StudentTenant (creates debt)
+            await StudentTenantModel.findOneAndUpdate(
+                {
+                    studentId: new Types.ObjectId(studentId.toString()),
+                    tenantId: new Types.ObjectId(tenantId.toString())
+                },
+                {
+                    $inc: { balance: -price },
+                    $setOnInsert: { isActive: true, joinedAt: new Date() }
+                },
+                { upsert: true, new: true }
+            );
+
             // Check if online payments are enabled
             const enableOnlinePayments = tenant?.config?.payments?.enableOnlinePayments === true;
 
             if (enableOnlinePayments) {
-                // 6. Deduct balance from student ONLY if online payments are enabled
-                await StudentModel.findByIdAndUpdate(studentId, {
-                    $inc: { balance: -price }
-                });
-
-                // 7. Create Payment record linked to booking (CRITICAL for professor dashboard to see 'paid')
+                // 7. Create Payment record (wallet payment)
                 await PaymentModel.create({
                     tenantId: new Types.ObjectId(tenantId.toString()),
                     studentId: new Types.ObjectId(studentId.toString()),
-                    professorId: professorId, // Can be undefined for court rental
+                    professorId: professorId,
                     bookingId: booking._id,
                     amount: price,
                     date: new Date(),
@@ -213,15 +222,16 @@ export class BookingService {
                     description: `Reserva confirmada con saldo en billetera.`
                 });
 
-                logger.info('Booking created and balance deducted (Online Payment)', {
+                logger.info('Booking created with wallet payment', {
                     bookingId: booking._id.toString(),
                     serviceType,
                     price
                 });
             } else {
-                logger.info('Booking created WITHOUT payment (Online Payment Disabled)', {
+                logger.info('Booking created - payment pending', {
                     bookingId: booking._id.toString(),
-                    serviceType
+                    serviceType,
+                    price
                 });
             }
 

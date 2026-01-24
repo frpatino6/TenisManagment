@@ -380,6 +380,13 @@ export class TenantAdminController {
       payment.description = `${payment.description || ''} - Confirmado por Admin en ${new Date().toLocaleDateString()}`.trim();
       await payment.save();
 
+      // INICIO CORRECCIÓN: Amortizar deuda en StudentTenantModel
+      await StudentTenantModel.findOneAndUpdate(
+        { studentId: payment.studentId, tenantId: payment.tenantId },
+        { $inc: { balance: payment.amount } }
+      );
+      // FIN CORRECCIÓN
+
       logger.info('Pago manual confirmado por admin', {
         paymentId: id,
         tenantId,
@@ -1137,7 +1144,13 @@ export class TenantAdminController {
         StudentTenantModel.countDocuments({ tenantId: tenantObjectId, isActive: true }),
         CourtModel.countDocuments({ tenantId: tenantObjectId, isActive: true }),
         PaymentModel.aggregate([
-          { $match: { tenantId: tenantObjectId } },
+          {
+            $match: {
+              tenantId: tenantObjectId,
+              status: 'paid', // FILTRO CRÍTICO: Solo contar lo cobrado real
+              method: { $ne: 'wallet' } // Excluir uso de saldo interno
+            }
+          },
           { $group: { _id: null, total: { $sum: '$amount' } } },
         ]),
       ]);
@@ -1979,7 +1992,30 @@ export class TenantAdminController {
         },
       ]);
 
+      // Corrección Dashboard Stats: Usar PaymentModel filtrado
+      const paymentFilter: any = {
+        tenantId: tenantObjectId,
+        status: 'paid',
+        method: { $ne: 'wallet' }
+      };
+      if (from || to) {
+        paymentFilter.date = {};
+        if (from) paymentFilter.date.$gte = new Date(from as string);
+        if (to) paymentFilter.date.$lte = new Date(to as string);
+      }
+      const paymentStats = await PaymentModel.aggregate([
+        { $match: paymentFilter },
+        { $group: { _id: null, totalRevenue: { $sum: '$amount' } } }
+      ]);
+
+      const realRevenue = paymentStats[0]?.totalRevenue || 0; // Ingresos Reales (Caja) - Se mantiene calculado por si se necesita futuro
+      const salesVolume = totalStats[0]?.totalRevenue || 0;   // Ventas Totales (Facturación)
+
       const stats = totalStats[0] || { total: 0, totalRevenue: 0, averagePrice: 0 };
+      // CAMBIO CLAVE: Para este reporte de "Facturación", el usuario quiere ver VENTAS.
+      // Asignamos el volumen de ventas al campo que el frontend consume (totalRevenue).
+      stats.totalRevenue = salesVolume;
+      // stats.totalSales = salesVolume; // Eliminado por reversión de frontend
 
       // Tendencia de ingresos (confirmadas + completadas)
       const revenueTrend = await BookingModel.aggregate([
@@ -2376,7 +2412,7 @@ export class TenantAdminController {
 
       res.json({
         summary: {
-          totalDebt: totalBalanceDebt + totalPendingAmount,
+          totalDebt: totalBalanceDebt, // CORRECCIÓN: La deuda real es el balance negativo. Los pagos pendientes son intentos de pago, no deuda adicional.
           debtByBalance: totalBalanceDebt,
           debtByPendingPayments: totalPendingAmount,
           debtorCount: debtMap.size,

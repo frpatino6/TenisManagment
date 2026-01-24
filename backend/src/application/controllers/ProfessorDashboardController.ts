@@ -6,6 +6,7 @@ import { ScheduleModel } from '../../infrastructure/database/models/ScheduleMode
 import { BookingModel } from '../../infrastructure/database/models/BookingModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
 import { ProfessorTenantModel } from '../../infrastructure/database/models/ProfessorTenantModel';
+import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
 import { TenantModel } from '../../infrastructure/database/models/TenantModel';
 import { UserPreferencesModel } from '../../infrastructure/database/models/UserPreferencesModel';
 import { TenantService } from '../services/TenantService';
@@ -1179,6 +1180,17 @@ export class ProfessorDashboardController {
             method: 'cash', // Default to cash for manual payments
             description: `Clase completada por profesor. Estado: ${finalStatus.toUpperCase()}. ${booking.serviceType} - ${schedule.startTime.toLocaleDateString()}`
           });
+
+          // Update student balance if payment is confirmed (paid)
+          if (finalStatus === 'paid') {
+            await StudentTenantModel.findOneAndUpdate(
+              {
+                studentId: new Types.ObjectId(schedule.studentId.toString()),
+                tenantId: new Types.ObjectId(booking.tenantId.toString())
+              },
+              { $inc: { balance: paymentAmount } }
+            );
+          }
         }
       }
 

@@ -1037,116 +1037,26 @@ export class StudentDashboardController {
       oneHourBefore.setUTCHours(oneHourBefore.getUTCHours() - 1);
 
       // Find all bookings for this specific court that might overlap
-      const potentialConflicts = await BookingModel.find({
-        tenantId: tenantId,
-        courtId: court._id,
-        status: { $in: ['confirmed', 'pending'] },
-        $or: [
-          // Court rentals: check bookingDate
-          {
-            serviceType: 'court_rental',
-            bookingDate: {
-              $gte: oneHourBefore,
-              $lte: requestedEnd,
-            },
-          },
-          // Lessons: we'll check schedule times after populating
-          {
-            scheduleId: { $exists: true },
-          },
-        ],
-      })
-        .populate('scheduleId')
-        .lean();
-
-      // Check for actual overlaps
-      const hasConflict = potentialConflicts.some((booking) => {
-        let existingStart: Date;
-        let existingEnd: Date;
-
-        if (booking.serviceType === 'court_rental' && booking.bookingDate) {
-          // Court rental: use bookingDate as start, assume 1-hour duration
-          existingStart = new Date(booking.bookingDate);
-          existingEnd = new Date(existingStart);
-          existingEnd.setUTCHours(existingEnd.getUTCHours() + 1);
-        } else if (booking.scheduleId && (booking.scheduleId as any).startTime) {
-          // Lesson: use schedule times
-          const schedule = booking.scheduleId as any;
-          existingStart = new Date(schedule.startTime);
-          existingEnd = new Date(schedule.endTime);
-        } else {
-          // Can't determine time, skip
-          return false;
-        }
-
-        // Two time ranges overlap if:
-        // - requestedStart is within existing range, OR
-        // - requestedEnd is within existing range, OR
-        // - requested range completely contains existing range
-        return (
-          (requestedStart >= existingStart && requestedStart < existingEnd) ||
-          (requestedEnd > existingStart && requestedEnd <= existingEnd) ||
-          (requestedStart <= existingStart && requestedEnd >= existingEnd)
-        );
-      });
-
-      if (hasConflict) {
-        return res.status(409).json({
-          error: 'El horario seleccionado ya está ocupado. Por favor, selecciona otro horario.',
-        });
-      }
-
-      // Create booking for court rental with courtId
-      const booking = await BookingModel.create({
-        tenantId: tenantId,
-        courtId: court._id,
-        // scheduleId is optional for court_rental - not included
-        studentId: student._id,
-        // professorId is optional for court_rental - not included
-        serviceType: 'court_rental',
-        price: price,
-        status: 'confirmed',
-        notes: `Reserva de cancha: ${court.name} - ${requestedStart.toISOString()} a ${requestedEnd.toISOString()}`,
-        bookingDate: requestedStart,
+      // Use central BookingService to handle conflict checks, booking creation, and balance deduction
+      const booking = await this.bookingService.createBooking({
+        tenantId: tenantId.toString(),
+        studentId: student._id.toString(),
+        courtId: courtId.toString(),
+        startTime: requestedStart,
         endTime: requestedEnd,
+        serviceType: 'court_rental',
+        price: price
       });
-
-      // Deduct balance from StudentTenant (creates debt)
-      await StudentTenantModel.findOneAndUpdate(
-        {
-          studentId: new Types.ObjectId(student._id.toString()),
-          tenantId: new Types.ObjectId(tenantId.toString())
-        },
-        {
-          $inc: { balance: -price },
-        },
-        { new: true }
-      );
-
-      // Create pending payment record so user can confirm it later
-      await PaymentModel.create({
-        tenantId: new Types.ObjectId(tenantId.toString()),
-        studentId: new Types.ObjectId(student._id.toString()),
-        bookingId: booking._id,
-        amount: price,
-        date: new Date(),
-        status: 'pending',
-        method: 'cash',
-        concept: `Reserva de cancha - ${court.name}`,
-        description: `Pago pendiente por reserva de cancha: ${court.name} - ${requestedStart.toLocaleDateString()}`
-      });
-
-
 
       res.status(201).json({
         id: booking._id,
         studentId: booking.studentId,
-        courtId: court._id,
+        courtId: booking.courtId?.toString(),
         serviceType: booking.serviceType,
         status: booking.status,
         price: booking.price,
-        startTime: new Date(startTime).toISOString(),
-        endTime: new Date(endTime).toISOString(),
+        startTime: requestedStart.toISOString(),
+        endTime: requestedEnd.toISOString(),
         createdAt: booking.createdAt
       });
     } catch (error) {

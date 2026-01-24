@@ -217,21 +217,7 @@ export class BookingService {
             const enableOnlinePayments = tenant?.config?.payments?.enableOnlinePayments === true;
 
             if (enableOnlinePayments) {
-                // 7. Create Payment record (wallet payment)
-                await PaymentModel.create({
-                    tenantId: new Types.ObjectId(tenantId.toString()),
-                    studentId: new Types.ObjectId(studentId.toString()),
-                    professorId: professorId,
-                    bookingId: booking._id,
-                    amount: price,
-                    date: new Date(),
-                    status: 'paid',
-                    method: 'wallet',
-                    concept: `Pago de reserva (Saldo) - ${serviceType}`,
-                    description: `Reserva confirmada con saldo en billetera.`
-                });
-
-                logger.info('Booking created with wallet payment', {
+                logger.info('Booking created and balance deducted', {
                     bookingId: booking._id.toString(),
                     serviceType,
                     price

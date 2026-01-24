@@ -34,9 +34,10 @@ import { SeoService } from '../../core/services/seo.service';
 export class LandingComponent {
     constructor(private seo: SeoService) {
         this.seo.updateMetaTags({
-            title: 'CourtHub BI - Control financiero para clubes de raqueta',
+            title: 'CourtHub | BI financiero para clubes de raqueta',
             description: 'Tome decisiones basadas en datos con dashboard ejecutivo, ahorro por monedero y desglose por servicio.',
-            image: 'assets/og-image.jpg'
+            image: 'https://courthub.co/images/og-image-1200x630.jpg',
+            url: 'https://courthub.co/'
         });
     }
 }

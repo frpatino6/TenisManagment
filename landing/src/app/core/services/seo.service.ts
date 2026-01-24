@@ -11,7 +11,7 @@ export class SeoService {
         this.title.setTitle(title);
     }
 
-    updateMetaTags(config: { title?: string, description?: string, image?: string }) {
+    updateMetaTags(config: { title?: string, description?: string, image?: string, url?: string }) {
         if (config.title) {
             this.updateTitle(config.title);
             this.meta.updateTag({ name: 'twitter:title', content: config.title });
@@ -27,6 +27,11 @@ export class SeoService {
         if (config.image) {
             this.meta.updateTag({ name: 'twitter:image', content: config.image });
             this.meta.updateTag({ property: 'og:image', content: config.image });
+            this.meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
+        }
+
+        if (config.url) {
+            this.meta.updateTag({ property: 'og:url', content: config.url });
         }
     }
 }

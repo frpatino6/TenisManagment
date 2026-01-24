@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/exceptions/exceptions.dart';
 import '../../../../core/logging/logger.dart';
+import '../../../../core/constants/error_messages.dart';
 import '../../../../core/constants/timeouts.dart';
 import '../models/professor_model.dart';
 import '../models/student_summary_model.dart';
@@ -650,6 +651,70 @@ class ProfessorService {
       }
     } catch (e) {
       rethrow;
+    }
+  }
+
+  /// Creates multiple schedules in batch
+  ///
+  /// Throws [NetworkException] if the API request fails
+  Future<Map<String, dynamic>> createSchedulesBatch({
+    required List<Map<String, dynamic>> schedules,
+    String? tenantId,
+  }) async {
+    _logger.info('Creando horarios en bloque', {
+      'count': schedules.length,
+      'tenantId': tenantId,
+    });
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw AuthException.notAuthenticated();
+      }
+
+      final idToken = await user.getIdToken(true);
+
+      final requestBody = <String, dynamic>{'schedules': schedules};
+
+      if (tenantId != null && tenantId.isNotEmpty) {
+        requestBody['tenantId'] = tenantId;
+      }
+
+      final response = await _httpClient
+          .post(
+            Uri.parse('$_baseUrl/professor-dashboard/schedules/batch'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $idToken',
+            },
+            body: json.encode(requestBody),
+          )
+          .timeout(Timeouts.httpRequestLong);
+
+      final responseData = json.decode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        _logger.error(
+          'Error al crear bloque de horarios',
+          context: {'statusCode': response.statusCode, 'body': responseData},
+        );
+
+        if (response.statusCode == 409) {
+          throw ScheduleException.conflict(
+            message: responseData['message'] ?? ErrorMessages.scheduleConflict,
+          );
+        }
+
+        throw NetworkException.serverError(
+          message: responseData['error'] ?? ErrorMessages.serverError,
+          statusCode: response.statusCode,
+        );
+      }
+
+      return responseData;
+    } catch (e) {
+      if (e is AppException) rethrow;
+      _logger.error('Error inesperado al crear bloque de horarios', error: e);
+      throw NetworkException(e.toString(), code: 'UNKNOWN_ERROR');
     }
   }
 

@@ -52,6 +52,9 @@ router.put('/schedule/:classId/cancel', professorDashboardController.cancelClass
 // Create a new schedule
 router.post('/schedules', professorDashboardController.createSchedule);
 
+// Create multiple schedules in batch
+router.post('/schedules/batch', professorDashboardController.createSchedulesBatch);
+
 // Get all schedules for the professor
 router.get('/schedules', professorDashboardController.getMySchedules);
 

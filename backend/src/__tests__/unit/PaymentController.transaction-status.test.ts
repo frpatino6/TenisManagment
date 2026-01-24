@@ -4,6 +4,7 @@ import { TransactionModel } from '../../infrastructure/database/models/Transacti
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
 import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { TenantModel } from '../../infrastructure/database/models/TenantModel';
+import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
 
 describe('PaymentController.getTransactionStatus', () => {
   const paymentGateway = {
@@ -87,7 +88,7 @@ describe('PaymentController.getTransactionStatus', () => {
       .mockResolvedValueOnce(null as any);
     jest.spyOn(PaymentModel, 'findOne').mockResolvedValueOnce(null as any);
     jest.spyOn(PaymentModel.prototype, 'save').mockResolvedValueOnce({} as any);
-    jest.spyOn(StudentModel, 'findByIdAndUpdate').mockResolvedValueOnce({} as any);
+    jest.spyOn(StudentTenantModel, 'findOneAndUpdate').mockResolvedValueOnce({} as any);
 
     await controller.getTransactionStatus(req, res);
 

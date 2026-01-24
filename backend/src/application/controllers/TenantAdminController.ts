@@ -254,8 +254,11 @@ export class TenantAdminController {
       const skip = (page - 1) * limit;
 
       // Filter for manual payments (from PaymentModel)
+      // EXCLUSIÓN CRÍTICA: No mostrar pagos que son 'online' para evitar duplicidad con TransactionModel
       const manualFilter: any = {
         tenantId: new Types.ObjectId(tenantId),
+        isOnline: { $ne: true },
+        method: { $ne: 'wallet' }
       };
 
       if (from || to) {
@@ -1278,7 +1281,8 @@ export class TenantAdminController {
 
     const periodPayments = payments.filter((p: any) => {
       const isInDateRange = p.date >= dateRange.start && p.date <= dateRange.end;
-      if (isInDateRange && p.status === 'paid') {
+      // FILTRO CRÍTICO: Solo contar pagos reales (no wallet) para evitar doble conteo (Recarga + Uso de Saldo)
+      if (isInDateRange && p.status === 'paid' && p.method !== 'wallet') {
         totalRevenue += p.amount;
         if (p.bookingId) paidBookingIds.add(p.bookingId.toString());
         return true;
@@ -1312,7 +1316,7 @@ export class TenantAdminController {
 
     const previousPayments = payments.filter((p: any) => {
       const isInDateRange = p.date >= previousDateRange.start && p.date <= previousDateRange.end;
-      if (isInDateRange && p.status === 'paid') {
+      if (isInDateRange && p.status === 'paid' && p.method !== 'wallet') {
         previousRevenue += p.amount;
         if (p.bookingId) prevPaidBookingIds.add(p.bookingId.toString());
         return true;

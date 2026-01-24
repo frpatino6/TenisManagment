@@ -12,6 +12,8 @@ export interface PaymentDocument {
   method: 'cash' | 'card' | 'transfer' | 'wallet';
   concept?: string; // Keep for backwards compatibility
   description?: string; // New field for payment description
+  externalReference?: string; // Reference from payment gateway (Wompi TRX ID)
+  isOnline: boolean; // True if it's an online payment
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,6 +35,8 @@ const PaymentSchema = new Schema<PaymentDocument>(
     method: { type: String, enum: ['cash', 'card', 'transfer', 'wallet'], required: true },
     concept: { type: String },
     description: { type: String },
+    externalReference: { type: String, index: true, sparse: true },
+    isOnline: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

@@ -27,10 +27,17 @@ class TenantAdminService {
 
   /// GET /api/tenant/reports/debts
   /// Get debt report for the tenant
-  Future<TenantDebtReportModel> getDebtReport() async {
+  Future<TenantDebtReportModel> getDebtReport({String? search}) async {
     try {
       final headers = await _getAuthHeaders();
-      final uri = Uri.parse('$_baseUrl/tenant/reports/debts');
+      final queryParams = <String, String>{};
+      if (search != null && search.isNotEmpty) {
+        queryParams['search'] = search;
+      }
+
+      final uri = Uri.parse(
+        '$_baseUrl/tenant/reports/debts',
+      ).replace(queryParameters: queryParams);
 
       final response = await _httpClient.get(
         uri,

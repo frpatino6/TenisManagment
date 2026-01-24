@@ -2293,17 +2293,40 @@ export class TenantAdminController {
         return;
       }
 
+      const { search } = req.query;
+      let studentFilter: any = {};
+
+      if (search && typeof search === 'string' && search.trim() !== '') {
+        const searchRegex = new RegExp(search.trim(), 'i');
+        // Primero buscamos los IDs de los estudiantes que coincidan con el nombre o email
+        const matchingStudents = await StudentModel.find({
+          $or: [
+            { name: searchRegex },
+            { email: searchRegex }
+          ]
+        }).select('_id');
+
+        const studentIds = matchingStudents.map(s => s._id);
+        studentFilter = { studentId: { $in: studentIds } };
+      }
+
       // 1. Estudiantes con balance negativo en StudentTenant
-      const debtors = await StudentTenantModel.find({
+      const debtorsQuery: any = {
         tenantId: new Types.ObjectId(tenantId),
         balance: { $lt: 0 },
-      }).populate('studentId', 'name email phone');
+        ...studentFilter
+      };
+
+      const debtors = await StudentTenantModel.find(debtorsQuery).populate('studentId', 'name email phone');
 
       // 2. Pagos manuales pendientes de confirmación
-      const pendingPayments = await PaymentModel.find({
+      const pendingPaymentsQuery: any = {
         tenantId: new Types.ObjectId(tenantId),
         status: 'pending',
-      }).populate('studentId', 'name email');
+        ...studentFilter
+      };
+
+      const pendingPayments = await PaymentModel.find(pendingPaymentsQuery).populate('studentId', 'name email');
 
       // Agrupar deudas por estudiante
       const debtMap = new Map<string, any>();

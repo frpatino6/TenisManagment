@@ -9,6 +9,7 @@ class ClassScheduleModel extends Equatable {
   final DateTime endTime;
   final String type;
   final String status;
+  final String? paymentStatus;
   final String? notes;
   final double price;
   final String? tenantId;
@@ -22,6 +23,7 @@ class ClassScheduleModel extends Equatable {
     required this.endTime,
     required this.type,
     required this.status,
+    this.paymentStatus,
     this.notes,
     required this.price,
     this.tenantId,
@@ -41,14 +43,14 @@ class ClassScheduleModel extends Equatable {
     // So we parse as UTC and display as UTC (no conversion needed)
     final startTimeStr = json['startTime'] as String? ?? '';
     final endTimeStr = json['endTime'] as String? ?? '';
-    
-    final startTime = startTimeStr.isNotEmpty 
+
+    final startTime = startTimeStr.isNotEmpty
         ? DateTime.parse(startTimeStr).toUtc()
         : DateTime.now().toUtc();
     final endTime = endTimeStr.isNotEmpty
         ? DateTime.parse(endTimeStr).toUtc()
         : DateTime.now().toUtc();
-    
+
     final id = json['_id'] ?? json['id'] ?? '';
     final studentName = json['studentName'] ?? '';
     final studentId = json['studentId'] ?? '';
@@ -57,7 +59,7 @@ class ClassScheduleModel extends Equatable {
       'price',
       defaultValue: 0.0,
     );
-    
+
     return ClassScheduleModel(
       id: id,
       studentName: studentName,
@@ -66,6 +68,7 @@ class ClassScheduleModel extends Equatable {
       endTime: endTime,
       type: json['serviceType'] ?? json['type'] ?? 'Clase individual',
       status: json['status'] ?? 'pending',
+      paymentStatus: json['paymentStatus'],
       notes: json['notes'],
       price: price,
       tenantId: json['tenantId'] as String?,
@@ -82,6 +85,7 @@ class ClassScheduleModel extends Equatable {
       'endTime': endTime.toIso8601String(),
       'type': type,
       'status': status,
+      'paymentStatus': paymentStatus,
       'notes': notes,
       'price': price,
       'tenantId': tenantId,
@@ -126,6 +130,7 @@ class ClassScheduleModel extends Equatable {
     endTime,
     type,
     status,
+    paymentStatus,
     notes,
     price,
     tenantId,

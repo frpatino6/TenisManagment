@@ -428,6 +428,16 @@ final professorBookingsProvider = FutureProvider.autoDispose
       return (result['bookings'] as List<TenantBookingModel>);
     });
 
+class DebtSearchNotifier extends Notifier<String> {
+  @override
+  String build() => "";
+  void set(String value) => state = value;
+}
+
+final debtSearchProvider = NotifierProvider<DebtSearchNotifier, String>(
+  DebtSearchNotifier.new,
+);
+
 /// Provider for fetching debt report
 final debtReportProvider = FutureProvider.autoDispose<TenantDebtReportModel>((
   ref,
@@ -437,6 +447,8 @@ final debtReportProvider = FutureProvider.autoDispose<TenantDebtReportModel>((
     throw Exception('Tenant ID requerido');
   }
 
+  final search = ref.watch(debtSearchProvider);
   final service = ref.read(tenantAdminServiceProvider);
-  return await service.getDebtReport();
+
+  return await service.getDebtReport(search: search.isEmpty ? null : search);
 });

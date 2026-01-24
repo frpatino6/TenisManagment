@@ -21,6 +21,7 @@ export interface CreateBookingData {
     courtId?: string | Types.ObjectId;
     startTime?: Date;
     endTime?: Date;
+    status?: 'pending' | 'confirmed' | 'cancelled' | 'completed';
 }
 
 export class BookingService {
@@ -163,7 +164,7 @@ export class BookingService {
 
                 // Update schedule status
                 schedule.isAvailable = false;
-                schedule.status = 'confirmed';
+                schedule.status = data.status || 'pending';
                 schedule.studentId = new Types.ObjectId(studentId.toString());
                 await schedule.save();
 
@@ -182,7 +183,7 @@ export class BookingService {
                 courtId: finalCourtId,
                 serviceType: serviceType,
                 price: price,
-                status: 'confirmed',
+                status: data.status || 'pending',
                 notes: `Reserva de ${serviceType}`,
                 bookingDate: bookingStartTime,
                 endTime: serviceType === 'court_rental' ? endTime : undefined

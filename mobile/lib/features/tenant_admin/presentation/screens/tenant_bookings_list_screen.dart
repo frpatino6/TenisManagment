@@ -331,11 +331,92 @@ class _TenantBookingsListScreenState
                   ),
                 ],
               ),
+              if (booking.status == 'pending') ...[
+                const Divider(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _confirmQuickBooking(context, booking),
+                    icon: const Icon(Icons.check_circle_outline, size: 18),
+                    label: const Text('Confirmar Pago'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.green,
+                      side: const BorderSide(color: Colors.green),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _confirmQuickBooking(
+    BuildContext context,
+    TenantBookingModel booking,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Pago'),
+        content: Text(
+          '¿Confirmar pago de ${CurrencyUtils.format(booking.price)} para ${booking.student.name}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        // Show loading
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Procesando pago...'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+
+        await ref
+            .read(tenantAdminServiceProvider)
+            .confirmBooking(booking.id, paymentStatus: 'paid');
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Pago confirmado exitosamente'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          ref.invalidate(tenantBookingsProvider);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildPaginationControls(

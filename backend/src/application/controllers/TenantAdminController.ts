@@ -1838,6 +1838,94 @@ export class TenantAdminController {
   };
 
   /**
+   * PATCH /api/tenant/bookings/:id/confirm
+   * Confirmar una reserva y registrar pago manual (especialmente para court_rental)
+   */
+  confirmBooking = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      const userId = req.user?.id;
+
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const { id } = req.params;
+      const { paymentStatus = 'paid' } = req.body;
+
+      const booking = await BookingModel.findOne({
+        _id: id,
+        tenantId: new Types.ObjectId(tenantId),
+      });
+
+      if (!booking) {
+        res.status(404).json({ error: 'Reserva no encontrada' });
+        return;
+      }
+
+      if (booking.status === 'confirmed' || booking.status === 'completed') {
+        res.status(400).json({ error: 'La reserva ya está confirmada o completada' });
+        return;
+      }
+
+      // 1. Actualizar estado de la reserva
+      booking.status = 'confirmed';
+      await booking.save();
+
+      // Actualizar estado del horario si existe
+      if (booking.scheduleId) {
+        await ScheduleModel.findByIdAndUpdate(booking.scheduleId, { status: 'confirmed' });
+      }
+
+      // 2. Si es una reserva de cancha sin pago registrado, crear el registro de pago
+      const existingPayment = await PaymentModel.findOne({ bookingId: booking._id });
+
+      let payment = null;
+      if (!existingPayment && booking.price > 0) {
+        payment = await PaymentModel.create({
+          studentId: booking.studentId,
+          tenantId: booking.tenantId,
+          bookingId: booking._id,
+          amount: booking.price,
+          date: new Date(),
+          status: paymentStatus,
+          method: 'cash',
+          description: `Pago manual confirmado por admin: ${booking.serviceType}`
+        });
+
+        // 3. Actualizar balance del estudiante si se marca como pagado
+        if (paymentStatus === 'paid') {
+          await StudentTenantModel.findOneAndUpdate(
+            {
+              studentId: booking.studentId,
+              tenantId: booking.tenantId
+            },
+            { $inc: { balance: booking.price } }
+          );
+        }
+      }
+
+      logger.info('Reserva confirmada por tenant admin', {
+        bookingId: id,
+        tenantId,
+        confirmedBy: userId,
+        paymentId: payment?._id
+      });
+
+      res.json({
+        id: booking._id.toString(),
+        status: booking.status,
+        paymentStatus: payment?.status,
+        message: 'Reserva confirmada exitosamente'
+      });
+    } catch (error) {
+      logger.error('Error confirmando reserva', { error: (error as Error).message });
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
    * PATCH /api/tenant/bookings/:id/cancel
    * Cancelar una reserva
    */

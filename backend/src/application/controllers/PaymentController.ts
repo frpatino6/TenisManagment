@@ -216,6 +216,7 @@ export class PaymentController {
                                 scheduleId: bInfo.scheduleId,
                                 serviceType: bInfo.serviceType,
                                 price: bInfo.price,
+                                status: 'confirmed',
                                 // Pass court rental fields if present in metadata
                                 courtId: bInfo.courtId,
                                 startTime: bInfo.startTime ? new Date(bInfo.startTime) : undefined,

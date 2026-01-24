@@ -408,7 +408,9 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
             width: 4,
             height: 60,
             decoration: BoxDecoration(
-              color: colorScheme.primary,
+              color: classData.status == 'pending'
+                  ? Colors.orange
+                  : Colors.green,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -435,15 +437,29 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.1),
+                        color:
+                            (classData.status == 'pending'
+                                    ? Colors.orange
+                                    : classData.status == 'completed'
+                                    ? Colors.blue
+                                    : Colors.green)
+                                .withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        'Confirmada',
+                        classData.status == 'pending'
+                            ? 'Pendiente'
+                            : classData.status == 'completed'
+                            ? 'Completada'
+                            : 'Confirmada',
                         style: GoogleFonts.inter(
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
-                          color: Colors.green,
+                          color: classData.status == 'pending'
+                              ? Colors.orange
+                              : classData.status == 'completed'
+                              ? Colors.blue
+                              : Colors.green,
                         ),
                       ),
                     ),

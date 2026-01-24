@@ -21,6 +21,7 @@ class TenantBookingDetailsScreen extends ConsumerStatefulWidget {
 class _TenantBookingDetailsScreenState
     extends ConsumerState<TenantBookingDetailsScreen> {
   bool _isCancelling = false;
+  bool _isConfirming = false;
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +75,25 @@ class _TenantBookingDetailsScreenState
                 ],
                 _buildPriceInfo(context, booking.price),
                 const Gap(24),
-                if (canCancel && !_isCancelling)
+                if (booking.status == 'pending' &&
+                    !_isConfirming &&
+                    !_isCancelling) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showConfirmDialog(context, booking),
+                      icon: const Icon(Icons.check_circle),
+                      label: const Text('Confirmar Pago y Reserva'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.all(16),
+                      ),
+                    ),
+                  ),
+                  const Gap(12),
+                ],
+                if (canCancel && !_isCancelling && !_isConfirming)
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -88,7 +107,7 @@ class _TenantBookingDetailsScreenState
                       ),
                     ),
                   ),
-                if (_isCancelling) const LoadingWidget(),
+                if (_isCancelling || _isConfirming) const LoadingWidget(),
               ],
             ),
           );
@@ -352,6 +371,84 @@ class _TenantBookingDetailsScreenState
 
     if (confirmed == true && mounted) {
       await _cancelBooking(reasonController.text.trim());
+    }
+  }
+
+  Future<void> _showConfirmDialog(
+    BuildContext context,
+    TenantBookingModel booking,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Reserva'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '¿Desea confirmar esta reserva y registrar el pago manual?',
+            ),
+            const Gap(16),
+            Text(
+              'Monto: ${CurrencyUtils.format(booking.price)}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const Text(
+              'El saldo del estudiante se actualizará automáticamente.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Confirmar Pago'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _confirmBooking();
+    }
+  }
+
+  Future<void> _confirmBooking() async {
+    setState(() => _isConfirming = true);
+
+    try {
+      await ref
+          .read(tenantAdminServiceProvider)
+          .confirmBooking(widget.bookingId, paymentStatus: 'paid');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Reserva y pago confirmados exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al confirmar: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isConfirming = false);
+      }
     }
   }
 

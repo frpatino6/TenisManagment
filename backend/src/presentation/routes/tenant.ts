@@ -59,6 +59,7 @@ router.get('/bookings/calendar', controller.getBookingCalendar);
 router.get('/bookings/stats', controller.getBookingStats);
 router.get('/bookings/:id', controller.getBookingDetails);
 router.patch('/bookings/:id/cancel', controller.cancelBooking);
+router.patch('/bookings/:id/confirm', controller.confirmBooking);
 
 // Gestión de estudiantes
 router.get('/students', controller.listStudents);

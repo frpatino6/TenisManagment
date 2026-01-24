@@ -1066,6 +1066,59 @@ class TenantAdminService {
     }
   }
 
+  /// PATCH /api/tenant/bookings/:id/confirm
+  /// Confirm a booking and register manual payment
+  Future<void> confirmBooking(String bookingId, {String? paymentStatus}) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final uri = Uri.parse('$_baseUrl/tenant/bookings/$bookingId/confirm');
+
+      final body = <String, dynamic>{};
+      if (paymentStatus != null) body['paymentStatus'] = paymentStatus;
+
+      final response = await _httpClient.patch(
+        uri,
+        headers: headers,
+        body: json.encode(body),
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        return; // Success
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw ValidationException(
+          'Reserva no encontrada',
+          code: 'BOOKING_NOT_FOUND',
+        );
+      } else if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        throw ValidationException(
+          errorData['error']?.toString() ?? 'No se puede confirmar la reserva',
+          code: 'CANNOT_CONFIRM',
+        );
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
   /// GET /api/tenant/bookings/stats
   /// Get booking statistics
   Future<BookingStatsModel> getBookingStats({

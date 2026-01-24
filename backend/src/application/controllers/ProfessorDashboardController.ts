@@ -206,7 +206,7 @@ export class ProfessorDashboardController {
       for (const schedule of allSchedules) {
         const bookingQuery: any = {
           scheduleId: schedule._id,
-          status: 'confirmed', // Only confirmed bookings
+          status: { $in: ['confirmed', 'pending'] },
         };
 
         // Filter by tenantId if provided (from middleware)
@@ -359,7 +359,7 @@ export class ProfessorDashboardController {
       for (const schedule of allTodaySchedules) {
         const bookingQuery: any = {
           scheduleId: schedule._id,
-          status: 'confirmed', // Only confirmed bookings
+          status: { $in: ['confirmed', 'pending'] },
         };
 
         // Filter by tenantId if provided (from middleware)
@@ -460,6 +460,7 @@ export class ProfessorDashboardController {
           $lt: weekEnd
         },
         studentId: { $exists: true, $ne: null }, // Solo horarios reservados
+        status: { $in: ['confirmed', 'pending'] }
       };
 
       // Filter by tenantId if provided (from middleware)

@@ -9,6 +9,7 @@ import { StudentModel } from '../../infrastructure/database/models/StudentModel'
 import { AuthUserModel, UserRole } from '../../infrastructure/database/models/AuthUserModel';
 import { TenantService } from '../services/TenantService';
 import { BookingService } from '../services/BookingService';
+import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
 import { Logger } from '../../infrastructure/services/Logger';
 
 interface AuthenticatedRequest extends Request {
@@ -172,7 +173,10 @@ export class PaymentController {
 
             if (result.status === 'APPROVED' && !isNaN(result.amount) && result.amount > 0) {
                 const existingPayment = await PaymentModel.findOne({
-                    description: { $regex: reference }
+                    $or: [
+                        { externalReference: reference },
+                        { description: { $regex: reference } }
+                    ]
                 });
 
                 if (!existingPayment) {
@@ -185,15 +189,20 @@ export class PaymentController {
                         status: 'paid',
                         method: 'card',
                         description: `Recarga Wompi Ref: ${reference}`,
-                        concept: 'Recarga de Saldo'
+                        concept: 'Recarga de Saldo',
+                        externalReference: reference,
+                        isOnline: true
                     });
                     await newPayment.save();
 
-                    await StudentModel.findByIdAndUpdate(transaction.studentId, {
-                        $inc: { balance: result.amount }
-                    });
+                    // CORRECCIÓN: Incrementar balance en StudentTenantModel, no en StudentModel
+                    await StudentTenantModel.findOneAndUpdate(
+                        { studentId: transaction.studentId, tenantId: tenant._id },
+                        { $inc: { balance: result.amount } },
+                        { upsert: true }
+                    );
 
-                    this.logger.info(`[PaymentController] Payment processed for ${reference}`);
+                    this.logger.info(`[PaymentController] Payment processed and balance credited to StudentTenant for ${reference}`);
 
                     // Check if there is a pending booking to be auto-confirmed
                     if (transaction.metadata?.bookingInfo) {
@@ -299,7 +308,10 @@ export class PaymentController {
 
                 if (result.status === 'APPROVED' && !isNaN(result.amount) && result.amount > 0) {
                     const existingPayment = await PaymentModel.findOne({
-                        description: { $regex: result.reference }
+                        $or: [
+                            { externalReference: result.reference },
+                            { description: { $regex: result.reference } }
+                        ]
                     });
 
                     if (!existingPayment) {
@@ -312,13 +324,18 @@ export class PaymentController {
                             status: 'paid',
                             method: 'card',
                             description: `Recarga Wompi Ref: ${result.reference}`,
-                            concept: 'Recarga de Saldo'
+                            concept: 'Recarga de Saldo',
+                            externalReference: result.reference,
+                            isOnline: true
                         });
                         await newPayment.save();
 
-                        await StudentModel.findByIdAndUpdate(transaction.studentId, {
-                            $inc: { balance: result.amount }
-                        });
+                        // CORRECCIÓN: Incrementar balance en StudentTenantModel, no en StudentModel
+                        await StudentTenantModel.findOneAndUpdate(
+                            { studentId: transaction.studentId, tenantId: transaction.tenantId },
+                            { $inc: { balance: result.amount } },
+                            { upsert: true }
+                        );
 
                         if (transaction.metadata?.bookingInfo) {
                             try {

@@ -101,15 +101,24 @@ export class BookingService {
         const tenant = await this.tenantService.getTenantById(tenantId.toString());
 
         try {
-            // 1. Get student and check balance
+            // 1. Get student and check balance in THIS tenant
             const student = await StudentModel.findById(studentId);
             if (!student) {
                 throw new Error('Estudiante no encontrado');
             }
-            if (tenant?.config?.payments?.enableOnlinePayments)
-                if (student.balance < price) {
-                    throw new Error('Saldo insuficiente para realizar esta reserva');
+
+            const studentTenant = await StudentTenantModel.findOne({
+                studentId: new Types.ObjectId(studentId.toString()),
+                tenantId: new Types.ObjectId(tenantId.toString())
+            });
+
+            const currentBalance = studentTenant?.balance || 0;
+
+            if (tenant?.config?.payments?.enableOnlinePayments) {
+                if (currentBalance < price) {
+                    throw new Error('Saldo insuficiente en este centro para realizar esta reserva');
                 }
+            }
 
             let finalCourtId: Types.ObjectId | undefined;
             let professorId: Types.ObjectId | undefined;

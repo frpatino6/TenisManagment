@@ -10,6 +10,8 @@ class TenantPaymentModel {
   final String? paymentMethodType;
   final String? customerEmail;
   final String? channel;
+  final String? type;
+  final String? description;
 
   TenantPaymentModel({
     required this.id,
@@ -23,6 +25,8 @@ class TenantPaymentModel {
     this.paymentMethodType,
     this.customerEmail,
     this.channel,
+    this.type,
+    this.description,
   });
 
   factory TenantPaymentModel.fromJson(Map<String, dynamic> json) {
@@ -40,6 +44,8 @@ class TenantPaymentModel {
       paymentMethodType: json['paymentMethodType'] as String?,
       customerEmail: json['customerEmail'] as String?,
       channel: json['channel'] as String?,
+      type: json['type'] as String?,
+      description: json['description'] as String?,
     );
   }
 }

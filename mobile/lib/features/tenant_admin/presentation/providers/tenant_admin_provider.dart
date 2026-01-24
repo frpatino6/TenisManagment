@@ -311,12 +311,41 @@ final tenantPaymentsProvider =
         limit: 20,
         from: dateRange?.start,
         to: dateRange?.end,
-        gateway: 'WOMPI',
         status: status,
         paymentMethodType: method,
         channel: channel,
       );
-});
+    });
+
+/// Notifier for administrative actions (e.g., confirming payments)
+class TenantAdminActionsNotifier extends Notifier<AsyncValue<void>> {
+  @override
+  AsyncValue<void> build() {
+    return const AsyncValue.data(null);
+  }
+
+  Future<void> confirmPayment(String paymentId) async {
+    state = const AsyncValue.loading();
+    try {
+      final service = ref.read(tenantAdminServiceProvider);
+      await service.confirmPayment(paymentId);
+
+      // Invalidate relevant providers to refresh UI
+      ref.invalidate(tenantPaymentsProvider);
+      ref.invalidate(tenantMetricsProvider);
+
+      state = const AsyncValue.data(null);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      rethrow;
+    }
+  }
+}
+
+final tenantAdminActionsProvider =
+    NotifierProvider<TenantAdminActionsNotifier, AsyncValue<void>>(
+      TenantAdminActionsNotifier.new,
+    );
 
 /// Provider for booking calendar
 final bookingCalendarProvider = FutureProvider.autoDispose

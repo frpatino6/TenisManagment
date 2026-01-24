@@ -24,6 +24,7 @@ export interface TenantConfig {
     daysOfWeek?: number[]; // 0-6 (deprecated, use schedule)
   };
   payments?: {
+    enableOnlinePayments?: boolean; // Flag to enable/disable online payments
     activeProvider: 'wompi' | 'stripe';
     wompi?: {
       pubKey: string;
@@ -75,6 +76,7 @@ const TenantConfigSchema = new Schema<TenantConfig>(
       daysOfWeek: { type: [Number] },
     },
     payments: {
+      enableOnlinePayments: { type: Boolean, default: false },
       activeProvider: { type: String, enum: ['wompi', 'stripe'] },
       wompi: {
         pubKey: { type: String },

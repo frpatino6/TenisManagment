@@ -881,7 +881,11 @@ class ProfessorService {
   /// Throws [ScheduleException.notFound] if the schedule does not exist
   /// Throws [ValidationException] if payment amount is invalid (e.g., negative)
   /// Throws [NetworkException] if the API request fails
-  Future<void> completeClass(String scheduleId, {double? paymentAmount}) async {
+  Future<void> completeClass(
+    String scheduleId, {
+    double? paymentAmount,
+    String? paymentStatus,
+  }) async {
     try {
       final user = _firebaseAuth.currentUser;
       if (user == null) {
@@ -899,7 +903,10 @@ class ProfessorService {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $idToken',
             },
-            body: json.encode({'paymentAmount': paymentAmount}),
+            body: json.encode({
+              'paymentAmount': paymentAmount,
+              'paymentStatus': paymentStatus,
+            }),
           )
           .timeout(
             Timeouts.httpRequest,

@@ -170,12 +170,20 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
-  Future<void> completeClass(String scheduleId, {double? paymentAmount}) async {
+  Future<void> completeClass(
+    String scheduleId, {
+    double? paymentAmount,
+    String? paymentStatus,
+  }) async {
     state = const AsyncValue.loading();
 
     try {
       final service = ref.read(professorServiceProvider);
-      await service.completeClass(scheduleId, paymentAmount: paymentAmount);
+      await service.completeClass(
+        scheduleId,
+        paymentAmount: paymentAmount,
+        paymentStatus: paymentStatus,
+      );
 
       ref.invalidate(professorSchedulesProvider);
       ref.invalidate(todayScheduleProvider);

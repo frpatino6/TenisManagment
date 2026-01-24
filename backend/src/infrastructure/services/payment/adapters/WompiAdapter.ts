@@ -33,7 +33,14 @@ export class WompiAdapter implements PaymentGateway {
     }
 
     private getWompiConfig(tenant: TenantDocument) {
-        const config = tenant.config?.payments?.wompi;
+        const paymentsConfig = tenant.config?.payments;
+
+        // Check if online payments are enabled
+        if (!paymentsConfig?.enableOnlinePayments) {
+            throw new Error('Online payments are disabled for this tenant.');
+        }
+
+        const config = paymentsConfig.wompi;
         if (!config || !config.pubKey || !config.integrityKey) {
             throw new Error('Wompi configuration is missing or incomplete for this tenant.');
         }

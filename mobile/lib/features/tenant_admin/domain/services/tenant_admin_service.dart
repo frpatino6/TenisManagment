@@ -1227,4 +1227,48 @@ class TenantAdminService {
       );
     }
   }
+
+  /// PATCH /api/tenant/payments/:id/confirm
+  /// Confirm a manual payment
+  Future<void> confirmPayment(String paymentId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final uri = Uri.parse('$_baseUrl/tenant/payments/$paymentId/confirm');
+
+      final response = await _httpClient.patch(
+        uri,
+        headers: headers,
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        return; // Success
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw DomainException.notFound(resource: 'Pago');
+      } else if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        throw ValidationException(
+          errorData['error']?.toString() ?? 'Error al confirmar pago',
+          code: 'PAYMENT_CONFIRM_ERROR',
+        );
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error al confirmar pago: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
 }

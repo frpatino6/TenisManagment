@@ -5,7 +5,7 @@
             <div class="flex-shrink-0 flex items-center cursor-pointer" routerLink="/">
                 <span
                     class="text-2xl font-bold bg-gradient-to-r from-tenis-dark to-tenis-green bg-clip-text text-transparent">
-                    CourtFlow
+                    CourtHub
                 </span>
             </div>
 
@@ -22,12 +22,12 @@
 
             <!-- Desktop Actions -->
             <div class="hidden md:flex items-center space-x-4">
-                <a href="https://app.tenismanagment.com/admin"
+                <a href="https://tennis-management-fcd54.web.app" target="_blank" rel="noopener noreferrer"
                     class="text-sm font-medium text-gray-500 hover:text-tenis-dark transition-colors">
                     Acceso Administrativo
                 </a>
                 <a href="#contact">
-                    <app-ui-button variant="primary" label="Solicitar Demo"></app-ui-button>
+                <app-ui-button variant="primary" label="Solicitar Demo"></app-ui-button>
                 </a>
             </div>
 
@@ -46,7 +46,7 @@
     </div>
 
     <!-- Mobile Menu -->
-        <div *ngIf="isMenuOpen" class="md:hidden bg-white border-t border-gray-100 absolute w-full shadow-lg">
+    <div *ngIf="isMenuOpen" class="md:hidden bg-white border-t border-gray-100 absolute w-full shadow-lg">
         <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 flex flex-col">
             <a href="#white-label" (click)="isMenuOpen = false"
                 class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-tenis-green hover:bg-gray-50">White Label</a>
@@ -57,12 +57,12 @@
             <a href="#prices" (click)="isMenuOpen = false"
                 class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-tenis-green hover:bg-gray-50">Precios</a>
             <div class="mt-4 px-3 flex flex-col space-y-3">
-                <a href="https://app.tenismanagment.com/admin"
+                <a href="https://tennis-management-fcd54.web.app" target="_blank" rel="noopener noreferrer"
                     class="text-base font-medium text-gray-500 hover:text-tenis-dark">
                     Acceso Administrativo
                 </a>
                 <a href="#contact">
-                    <app-ui-button variant="primary" label="Solicitar Demo" [fullWidth]="true"></app-ui-button>
+                <app-ui-button variant="primary" label="Solicitar Demo" [fullWidth]="true"></app-ui-button>
                 </a>
             </div>
         </div>

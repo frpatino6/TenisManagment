@@ -94,7 +94,6 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
             ),
             child: Column(
               children: [
-
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
@@ -220,7 +219,6 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
           ),
           child: Column(
             children: [
-
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
@@ -297,7 +295,6 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
                 ),
               ),
 
-
               ...(_showAll ? todayClasses : todayClasses.take(3).toList())
                   .asMap()
                   .entries
@@ -317,7 +314,6 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
                         )
                         .fadeIn(duration: 400.ms, delay: (index * 100).ms);
                   }),
-
 
               if (todayClasses.length > 3)
                 Container(
@@ -408,7 +404,6 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
       ),
       child: Row(
         children: [
-
           Container(
             width: 4,
             height: 60,
@@ -418,7 +413,6 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
             ),
           ),
           const Gap(16),
-
 
           Expanded(
             child: Column(
@@ -514,11 +508,9 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
             ),
           ),
 
-
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-
               IconButton(
                 onPressed: () => _showCompleteDialog(context, classData),
                 icon: const Icon(Icons.check_circle, color: Colors.green),
@@ -538,64 +530,90 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
   }
 
   Future<void> _showCompleteDialog(BuildContext context, classData) async {
-
     final paymentController = TextEditingController(
       text: classData.price > 0 ? classData.price.toStringAsFixed(0) : '',
     );
+    bool isPaid = true;
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Completar Clase',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Estudiante: ${classData.studentName}',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text(
+              'Completar Clase',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
             ),
-            if (classData.type != null) ...[
-              const Gap(4),
-              Text(
-                'Servicio: ${classData.type}',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Estudiante: ${classData.studentName}',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w500),
                 ),
+                if (classData.type != null) ...[
+                  const Gap(4),
+                  Text(
+                    'Servicio: ${classData.type}',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                const Gap(16),
+                TextField(
+                  controller: paymentController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'Monto de la clase',
+                    hintText: 'Ej: 50000',
+                    prefixText: '\$ ',
+                    border: const OutlineInputBorder(),
+                    labelStyle: GoogleFonts.inter(),
+                    hintStyle: GoogleFonts.inter(),
+                    helperText: 'Valor según el servicio reservado',
+                    helperStyle: GoogleFonts.inter(fontSize: 12),
+                  ),
+                ),
+                const Gap(16),
+                SwitchListTile(
+                  title: Text(
+                    '¿Pago recibido?',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Text(
+                    isPaid
+                        ? 'El pago se registrará como PAGADO'
+                        : 'El pago se registrará como PENDIENTE',
+                    style: GoogleFonts.inter(fontSize: 12),
+                  ),
+                  value: isPaid,
+                  onChanged: (value) {
+                    setState(() => isPaid = value);
+                  },
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: Colors.green,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('Cancelar', style: GoogleFonts.inter()),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: FilledButton.styleFrom(backgroundColor: Colors.green),
+                child: Text('Completar', style: GoogleFonts.inter()),
               ),
             ],
-            const Gap(16),
-            TextField(
-              controller: paymentController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Monto pagado',
-                hintText: 'Ej: 50000',
-                prefixText: '\$ ',
-                border: const OutlineInputBorder(),
-                labelStyle: GoogleFonts.inter(),
-                hintStyle: GoogleFonts.inter(),
-                helperText: 'Valor sugerido según el servicio reservado',
-                helperStyle: GoogleFonts.inter(fontSize: 12),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancelar', style: GoogleFonts.inter()),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.green),
-            child: Text('Completar', style: GoogleFonts.inter()),
-          ),
-        ],
+          );
+        },
       ),
     );
 
@@ -609,8 +627,8 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
         await notifier.completeClass(
           classData.id,
           paymentAmount: paymentAmount,
+          paymentStatus: isPaid ? 'paid' : 'pending',
         );
-
 
         ref.invalidate(scheduleByDateProvider(_selectedDate));
 
@@ -622,12 +640,12 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                paymentAmount != null
-                    ? 'Clase completada y pago de \$${paymentAmount.toStringAsFixed(0)} registrado'
-                    : 'Clase marcada como completada',
+                isPaid
+                    ? 'Clase completada y pago registrado'
+                    : 'Clase completada. El pago quedó como PENDIENTE para cobro.',
                 style: GoogleFonts.inter(),
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: isPaid ? Colors.green : Colors.orange,
             ),
           );
         }
@@ -720,7 +738,6 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
           reason: reasonController.text,
           penaltyAmount: penaltyAmount,
         );
-
 
         ref.invalidate(scheduleByDateProvider(_selectedDate));
 

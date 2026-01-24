@@ -46,6 +46,7 @@ router.delete('/courts/:id', controller.deleteCourt);
 
 // Gestión de pagos (transacciones)
 router.get('/payments', controller.listPayments);
+router.patch('/payments/:id/confirm', controller.confirmManualPayment);
 
 // Métricas del centro
 router.get('/metrics', controller.getMetrics);

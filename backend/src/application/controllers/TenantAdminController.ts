@@ -250,17 +250,48 @@ export class TenantAdminController {
       }
 
       const skip = (page - 1) * limit;
-      const [transactions, total] = await Promise.all([
+
+      // Filter for manual payments (from PaymentModel)
+      const manualFilter: any = {
+        tenantId: new Types.ObjectId(tenantId),
+      };
+
+      if (from || to) {
+        const dateFilter: any = {};
+        if (from) dateFilter.$gte = new Date(from);
+        if (to) {
+          const endDate = new Date(to);
+          endDate.setHours(23, 59, 59, 999);
+          dateFilter.$lte = endDate;
+        }
+        manualFilter.date = dateFilter;
+      }
+
+      if (status) {
+        // Map transaction status to payment status if needed
+        if (status === 'APPROVED') manualFilter.status = 'paid';
+        else if (status === 'PENDING') manualFilter.status = 'pending';
+        else if (status === 'VOIDED') manualFilter.status = 'cancelled';
+      }
+
+      const [transactions, manualPayments, totalTransactions, totalManual] = await Promise.all([
         TransactionModel.find(filter)
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit)
           .populate('studentId', 'name')
           .lean(),
+        PaymentModel.find(manualFilter)
+          .sort({ date: -1 })
+          .skip(skip)
+          .limit(limit)
+          .populate('studentId', 'name')
+          .lean(),
         TransactionModel.countDocuments(filter),
+        PaymentModel.countDocuments(manualFilter),
       ]);
 
-      const payments = transactions.map((transaction) => ({
+      const onlinePayments = transactions.map((transaction) => ({
         id: transaction._id.toString(),
         reference: transaction.reference,
         amount: transaction.amount,
@@ -268,25 +299,97 @@ export class TenantAdminController {
         status: transaction.status,
         gateway: transaction.gateway,
         date: transaction.createdAt,
-        studentName:
-          (transaction.studentId as { name?: string })?.name ?? 'Estudiante',
+        studentName: (transaction.studentId as any)?.name ?? 'Estudiante',
         paymentMethodType: transaction.paymentMethodType ?? null,
         customerEmail: transaction.customerEmail ?? null,
         channel: transaction.metadata?.bookingInfo ? 'direct' : 'wallet',
+        type: 'online',
       }));
 
+      const offlinePayments = manualPayments.map((payment: any) => ({
+        id: payment._id.toString(),
+        reference: `MAN-${payment._id.toString().substring(0, 8).toUpperCase()}`,
+        amount: payment.amount,
+        currency: 'COP',
+        status: payment.status === 'paid' ? 'APPROVED' :
+          payment.status === 'pending' ? 'PENDING' :
+            payment.status === 'cancelled' ? 'VOIDED' : payment.status.toUpperCase(),
+        gateway: 'MANUAL',
+        date: payment.date,
+        studentName: (payment.studentId as any)?.name ?? 'Estudiante',
+        paymentMethodType: payment.method === 'cash' ? 'EFECTIVO' : payment.method.toUpperCase(),
+        customerEmail: null,
+        channel: 'direct',
+        type: 'manual',
+        description: payment.description,
+      }));
+
+      // Combine and sort by date descending
+      const allPayments = [...onlinePayments, ...offlinePayments]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, limit);
+
       res.json({
-        payments,
+        payments: allPayments,
         pagination: {
+          total: totalTransactions + totalManual,
           page,
           limit,
-          total,
-          totalPages: Math.ceil(total / limit),
+          totalPages: Math.ceil((totalTransactions + totalManual) / limit),
         },
       });
     } catch (error) {
-      logger.error('Error listando pagos del tenant', {
+      logger.error('Error al listar pagos', {
         error: (error as Error).message,
+        tenantId: req.tenantId,
+      });
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * Confirm a manual payment
+   * PATCH /api/tenant/payments/:id/confirm
+   */
+  confirmManualPayment = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const tenantId = req.tenantId;
+
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const payment = await PaymentModel.findOne({
+        _id: new Types.ObjectId(id),
+        tenantId: new Types.ObjectId(tenantId),
+      });
+
+      if (!payment) {
+        res.status(404).json({ error: 'Pago no encontrado' });
+        return;
+      }
+
+      if (payment.status === 'paid') {
+        res.status(400).json({ error: 'El pago ya ha sido confirmado' });
+        return;
+      }
+
+      payment.status = 'paid';
+      payment.description = `${payment.description || ''} - Confirmado por Admin en ${new Date().toLocaleDateString()}`.trim();
+      await payment.save();
+
+      logger.info('Pago manual confirmado por admin', {
+        paymentId: id,
+        tenantId,
+      });
+
+      res.json({ message: 'Pago confirmado exitosamente', payment });
+    } catch (error) {
+      logger.error('Error al confirmar pago manual', {
+        error: (error as Error).message,
+        paymentId: req.params.id,
       });
       res.status(500).json({ error: 'Error interno del servidor' });
     }

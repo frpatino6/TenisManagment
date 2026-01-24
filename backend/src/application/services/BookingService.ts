@@ -96,6 +96,7 @@ export class BookingService {
      */
     async createBooking(data: CreateBookingData): Promise<BookingDocument> {
         const { tenantId, scheduleId, studentId, serviceType, price, courtId, startTime, endTime } = data;
+        const tenant = await this.tenantService.getTenantById(tenantId.toString());
 
         try {
             // 1. Get student and check balance
@@ -103,10 +104,10 @@ export class BookingService {
             if (!student) {
                 throw new Error('Estudiante no encontrado');
             }
-
-            if (student.balance < price) {
-                throw new Error('Saldo insuficiente para realizar esta reserva');
-            }
+            if (tenant?.config?.payments?.enableOnlinePayments)
+                if (student.balance < price) {
+                    throw new Error('Saldo insuficiente para realizar esta reserva');
+                }
 
             let finalCourtId: Types.ObjectId | undefined;
             let professorId: Types.ObjectId | undefined;

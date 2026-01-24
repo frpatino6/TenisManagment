@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/widgets/error_widget.dart';
 import '../../../../core/widgets/loading_widget.dart';
@@ -89,10 +90,7 @@ class _TenantPaymentsListScreenState
     );
   }
 
-  Widget _buildQuickRanges(
-    BuildContext context,
-    DateTimeRange? currentRange,
-  ) {
+  Widget _buildQuickRanges(BuildContext context, DateTimeRange? currentRange) {
     final now = DateTime.now();
     final ranges = [
       _QuickRange(
@@ -123,7 +121,8 @@ class _TenantPaymentsListScreenState
       child: Wrap(
         spacing: 8,
         children: ranges.map((range) {
-          final isSelected = currentRange != null &&
+          final isSelected =
+              currentRange != null &&
               _isSameDay(currentRange.start, range.range.start) &&
               _isSameDay(currentRange.end, range.range.end);
 
@@ -131,7 +130,9 @@ class _TenantPaymentsListScreenState
             label: Text(range.label),
             selected: isSelected,
             onSelected: (_) {
-              ref.read(paymentsDateRangeProvider.notifier).setRange(range.range);
+              ref
+                  .read(paymentsDateRangeProvider.notifier)
+                  .setRange(range.range);
               ref.read(paymentsPageProvider.notifier).setPage(1);
             },
           );
@@ -257,10 +258,7 @@ class _TenantPaymentsListScreenState
       tooltip: label,
       onSelected: onSelected,
       itemBuilder: (context) => [
-        const PopupMenuItem<String?>(
-          value: null,
-          child: Text('Todos'),
-        ),
+        const PopupMenuItem<String?>(value: null, child: Text('Todos')),
         ...options.entries.map(
           (entry) => PopupMenuItem<String?>(
             value: entry.key,
@@ -270,9 +268,7 @@ class _TenantPaymentsListScreenState
       ],
       child: Chip(
         label: Text(
-          value == null
-              ? label
-              : '${label}: ${options[value] ?? value}',
+          value == null ? label : '${label}: ${options[value] ?? value}',
         ),
         deleteIcon: value == null ? null : const Icon(Icons.close, size: 16),
         onDeleted: value == null ? null : () => onSelected(null),
@@ -283,11 +279,18 @@ class _TenantPaymentsListScreenState
   Widget _buildPaymentCard(BuildContext context, TenantPaymentModel payment) {
     final status = _statusLabel(payment.status);
     final statusColor = _statusColor(payment.status, context);
+    final isManual = payment.type == 'manual';
+    final canConfirm = isManual && payment.status == 'PENDING';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -296,11 +299,37 @@ class _TenantPaymentsListScreenState
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    CurrencyUtils.format(payment.amount),
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        CurrencyUtils.format(payment.amount),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isManual
+                              ? Colors.orange.withValues(alpha: 0.1)
+                              : Colors.blue.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          isManual ? 'PAGO MANUAL' : 'PAGO ONLINE',
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: isManual ? Colors.orange : Colors.blue,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Container(
@@ -322,55 +351,137 @@ class _TenantPaymentsListScreenState
                 ),
               ],
             ),
+            const Gap(12),
+            const Divider(height: 1),
+            const Gap(12),
+            Row(
+              children: [
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 14,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const Gap(8),
+                Text(
+                  _dateFormatter.format(payment.date),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+            const Gap(6),
+            Row(
+              children: [
+                Icon(
+                  Icons.person_outline,
+                  size: 14,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const Gap(8),
+                Text(
+                  payment.studentName,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
             const Gap(6),
             Text(
-              _dateFormatter.format(payment.date),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const Gap(4),
-            Text(
-              payment.studentName,
+              'Ref: ${payment.reference}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (payment.description != null &&
+                payment.description!.isNotEmpty) ...[
+              const Gap(8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  payment.description!,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+                ),
+              ),
+            ],
+            if (canConfirm) ...[
+              const Gap(16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => _showConfirmPaymentDialog(context, payment),
+                  icon: const Icon(Icons.check_circle_outline, size: 18),
+                  label: const Text('Confirmar Cobro'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-            ),
-            const Gap(2),
-            Text(
-              'Referencia: ${payment.reference}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            if (payment.customerEmail != null &&
-                payment.customerEmail!.isNotEmpty) ...[
-              const Gap(2),
-              Text(
-                payment.customerEmail!,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-            if (payment.paymentMethodType != null &&
-                payment.paymentMethodType!.isNotEmpty) ...[
-              const Gap(2),
-              Text(
-                'Método: ${_formatMethodType(payment.paymentMethodType!)}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-            const Gap(4),
-            Text(
-              'Gateway: ${payment.gateway}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            if (payment.channel != null) ...[
-              const Gap(2),
-              Text(
-                'Canal: ${_formatChannel(payment.channel!)}',
-                style: Theme.of(context).textTheme.bodySmall,
+                ),
               ),
             ],
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _showConfirmPaymentDialog(
+    BuildContext context,
+    TenantPaymentModel payment,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Cobro'),
+        content: Text(
+          '¿Confirmas que has recibido el pago de ${CurrencyUtils.format(payment.amount)} por parte de ${payment.studentName}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final notifier = ref.read(tenantAdminActionsProvider.notifier);
+        await notifier.confirmPayment(payment.id);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cobro confirmado exitosamente'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al confirmar cobro: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildPaginationControls(
@@ -443,32 +554,6 @@ class _TenantPaymentsListScreenState
         return 'Error';
       default:
         return status;
-    }
-  }
-
-  String _formatMethodType(String method) {
-    switch (method.toUpperCase()) {
-      case 'CARD':
-        return 'Tarjeta';
-      case 'PSE':
-        return 'PSE';
-      case 'NEQUI':
-        return 'Nequi';
-      case 'BANCOLOMBIA_TRANSFER':
-        return 'Transferencia';
-      default:
-        return method;
-    }
-  }
-
-  String _formatChannel(String channel) {
-    switch (channel) {
-      case 'direct':
-        return 'Pago directo';
-      case 'wallet':
-        return 'Monedero';
-      default:
-        return channel;
     }
   }
 

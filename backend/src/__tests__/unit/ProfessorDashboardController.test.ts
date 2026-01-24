@@ -50,6 +50,7 @@ jest.mock('../../infrastructure/database/models/BookingModel', () => ({
 
 jest.mock('../../infrastructure/database/models/PaymentModel', () => ({
   PaymentModel: {
+    findOne: jest.fn(),
     create: jest.fn(),
   },
 }));
@@ -140,6 +141,7 @@ describe('ProfessorDashboardController', () => {
       ProfessorModel.findOne.mockResolvedValue(mockProfessor);
       ScheduleModel.findById.mockResolvedValue(mockSchedule);
       BookingModel.findOne.mockResolvedValue(mockBooking);
+      PaymentModel.findOne.mockResolvedValue(null); // No existing payment
       PaymentModel.create.mockResolvedValue({ _id: 'payment-id' });
 
       // Execute

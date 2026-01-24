@@ -48,9 +48,10 @@ router.delete('/courts/:id', controller.deleteCourt);
 router.get('/payments', controller.listPayments);
 router.patch('/payments/:id/confirm', controller.confirmManualPayment);
 
-// Métricas del centro
+// Métricas y reportes del centro
 router.get('/metrics', controller.getMetrics);
 router.get('/analytics/overview', controller.getAnalyticsOverview);
+router.get('/reports/debts', controller.getDebtReport);
 
 // Gestión de reservas
 router.get('/bookings', controller.listBookings);

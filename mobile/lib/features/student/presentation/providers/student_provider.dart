@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/services/http_client.dart';
 import '../../domain/models/recent_activity_model.dart';
 import '../../domain/models/booking_model.dart';
+import '../../domain/models/student_payment_model.dart';
 import '../../domain/services/student_service.dart';
 
 final studentServiceProvider = Provider<StudentService>((ref) {
-  return StudentService();
+  final httpClient = ref.watch(appHttpClientProvider);
+  return StudentService(httpClient: httpClient);
 });
 
 final recentActivitiesProvider =
@@ -44,3 +47,16 @@ final studentBookingsProvider = FutureProvider.autoDispose<List<BookingModel>>((
   final service = ref.watch(studentServiceProvider);
   return service.getBookings();
 });
+
+final paymentHistoryProvider = FutureProvider.autoDispose
+    .family<
+      List<StudentPaymentModel>,
+      ({DateTime? from, DateTime? to, String? status})
+    >((ref, params) async {
+      final service = ref.watch(studentServiceProvider);
+      return service.getPaymentHistory(
+        from: params.from,
+        to: params.to,
+        status: params.status,
+      );
+    });

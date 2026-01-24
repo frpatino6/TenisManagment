@@ -242,6 +242,18 @@ export class ProfessorDashboardController {
 
           const booking = await BookingModel.findOne(bookingQuery);
 
+          // Check if there is a paid payment for this booking
+          let paymentStatus = 'pending';
+          if (booking) {
+            const payment = await PaymentModel.findOne({
+              bookingId: booking._id,
+              status: 'paid'
+            });
+            if (payment) {
+              paymentStatus = 'paid';
+            }
+          }
+
           // Get tenant info from populated schedule
           const tenant = schedule.tenantId as any;
 
@@ -255,6 +267,7 @@ export class ProfessorDashboardController {
             notes: schedule.notes,
             serviceType: booking?.serviceType,
             price: booking?.price,
+            paymentStatus: paymentStatus, // New field
             tenantId: tenant?._id?.toString() || schedule.tenantId?.toString() || null,
             tenantName: tenant?.name || null,
           };
@@ -384,6 +397,18 @@ export class ProfessorDashboardController {
 
           const booking = await BookingModel.findOne(bookingQuery);
 
+          // Check if there is a paid payment for this booking
+          let paymentStatus = 'pending';
+          if (booking) {
+            const payment = await PaymentModel.findOne({
+              bookingId: booking._id,
+              status: 'paid'
+            });
+            if (payment) {
+              paymentStatus = 'paid';
+            }
+          }
+
           return {
             id: schedule._id.toString(),
             studentName: schedule.studentInfo?.name || 'Estudiante',
@@ -394,6 +419,7 @@ export class ProfessorDashboardController {
             notes: schedule.notes,
             serviceType: booking?.serviceType,
             price: booking?.price,
+            paymentStatus: paymentStatus, // New field
           };
         })
       );

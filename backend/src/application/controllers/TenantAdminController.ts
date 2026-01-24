@@ -2280,5 +2280,90 @@ export class TenantAdminController {
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
+
+  /**
+   * GET /api/tenant/reports/debts
+   * Reporte de deudas (estudiantes con balance negativo o pagos pendientes)
+   */
+  getDebtReport = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      // 1. Estudiantes con balance negativo en StudentTenant
+      const debtors = await StudentTenantModel.find({
+        tenantId: new Types.ObjectId(tenantId),
+        balance: { $lt: 0 },
+      }).populate('studentId', 'name email phone');
+
+      // 2. Pagos manuales pendientes de confirmación
+      const pendingPayments = await PaymentModel.find({
+        tenantId: new Types.ObjectId(tenantId),
+        status: 'pending',
+      }).populate('studentId', 'name email');
+
+      // Agrupar deudas por estudiante
+      const debtMap = new Map<string, any>();
+
+      // Procesar balances negativos
+      debtors.forEach((d: any) => {
+        if (!d.studentId) return;
+        const sId = d.studentId._id.toString();
+        debtMap.set(sId, {
+          studentId: sId,
+          name: d.studentId.name,
+          email: d.studentId.email,
+          phone: d.studentId.phone,
+          balance: d.balance,
+          pendingPaymentsAmount: 0,
+          totalDebt: Math.abs(d.balance),
+        });
+      });
+
+      // Procesar pagos pendientes (estos suman a la deuda "real" hasta que se confirman)
+      // Nota: Si un profesor marca una clase como completada y NO pagada, se crea un Payment 'pending'.
+      // El balance del alumno disminuye por el precio de la reserva (vía webhook o lógica de reserva).
+      // Por lo tanto, el balance ya refleja la deuda. Los pagos pendientes son informativos.
+      pendingPayments.forEach((p: any) => {
+        if (!p.studentId) return;
+        const sId = p.studentId._id.toString();
+        if (debtMap.has(sId)) {
+          const entry = debtMap.get(sId);
+          entry.pendingPaymentsAmount += p.amount;
+        } else {
+          debtMap.set(sId, {
+            studentId: sId,
+            name: p.studentId.name,
+            email: p.studentId.email,
+            phone: p.studentId.phone || '',
+            balance: 0, // No tiene balance negativo pero tiene pagos pendientes
+            pendingPaymentsAmount: p.amount,
+            totalDebt: p.amount,
+          });
+        }
+      });
+
+      const reportItems = Array.from(debtMap.values()).sort((a, b) => b.totalDebt - a.totalDebt);
+
+      const totalBalanceDebt = Math.abs(debtors.reduce((sum, d) => sum + (d.balance < 0 ? d.balance : 0), 0));
+      const totalPendingAmount = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
+
+      res.json({
+        summary: {
+          totalDebt: totalBalanceDebt + totalPendingAmount,
+          debtByBalance: totalBalanceDebt,
+          debtByPendingPayments: totalPendingAmount,
+          debtorCount: debtMap.size,
+        },
+        debtors: reportItems,
+      });
+    } catch (error) {
+      logger.error('Error generando reporte de deudas', { error: (error as Error).message });
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
 }
 

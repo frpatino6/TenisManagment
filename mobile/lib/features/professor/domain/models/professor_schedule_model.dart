@@ -8,6 +8,7 @@ class ProfessorScheduleModel {
   final bool isBlocked;
   final String? blockReason;
   final String? status;
+  final String? paymentStatus;
   final double? price;
   final String? studentName;
   final String? studentEmail;
@@ -23,6 +24,7 @@ class ProfessorScheduleModel {
     required this.isBlocked,
     this.blockReason,
     this.status,
+    this.paymentStatus,
     this.price,
     this.studentName,
     this.studentEmail,
@@ -52,6 +54,7 @@ class ProfessorScheduleModel {
       isBlocked: json['isBlocked'] as bool? ?? false,
       blockReason: json['blockReason'] as String?,
       status: json['status'] as String?,
+      paymentStatus: json['paymentStatus'] as String?,
       price: (json['price'] as num?)?.toDouble(),
       studentName: json['studentName'] as String?,
       studentEmail: json['studentEmail'] as String?,

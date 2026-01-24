@@ -331,7 +331,8 @@ class _TenantBookingsListScreenState
                   ),
                 ],
               ),
-              if (booking.status == 'pending') ...[
+              if (booking.paymentStatus != 'paid' &&
+                  booking.status != 'cancelled') ...[
                 const Divider(height: 24),
                 SizedBox(
                   width: double.infinity,

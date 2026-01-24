@@ -1637,8 +1637,17 @@ export class TenantAdminController {
         };
       });
 
+      // Populate payment status for each booking
+      const bookingsWithPaymentStatus = await Promise.all(formattedBookings.map(async (booking) => {
+        const payment = await PaymentModel.findOne({ bookingId: new Types.ObjectId(booking.id), status: 'paid' });
+        return {
+          ...booking,
+          paymentStatus: payment ? 'paid' : 'pending'
+        };
+      }));
+
       res.json({
-        bookings: formattedBookings,
+        bookings: bookingsWithPaymentStatus,
         pagination: {
           page: pageNum,
           limit: limitNum,
@@ -1864,8 +1873,8 @@ export class TenantAdminController {
         return;
       }
 
-      if (booking.status === 'confirmed' || booking.status === 'completed') {
-        res.status(400).json({ error: 'La reserva ya está confirmada o completada' });
+      if (booking.status as string === 'cancelled') {
+        res.status(400).json({ error: 'No se puede cobrar una reserva cancelada' });
         return;
       }
 
@@ -1878,11 +1887,32 @@ export class TenantAdminController {
         await ScheduleModel.findByIdAndUpdate(booking.scheduleId, { status: 'confirmed' });
       }
 
-      // 2. Si es una reserva de cancha sin pago registrado, crear el registro de pago
+      // 2. Manejo de pago (Crear nuevo o actualizar el pendiente existente)
       const existingPayment = await PaymentModel.findOne({ bookingId: booking._id });
 
-      let payment = null;
-      if (!existingPayment && booking.price > 0) {
+      if (existingPayment && existingPayment.status === 'paid') {
+        res.status(400).json({ error: 'La reserva ya tiene un pago registrado' });
+        return;
+      }
+
+      let payment = existingPayment;
+
+      if (existingPayment) {
+        // Si el pago ya estba pendiente, lo marcamos como pagado
+        if (existingPayment.status !== 'paid' && paymentStatus === 'paid') {
+          existingPayment.status = 'paid';
+          existingPayment.date = new Date();
+          existingPayment.description = `Pago confirmado por admin (era pendiente): ${booking.serviceType}`;
+          await existingPayment.save();
+
+          // Actualizar balance del estudiante
+          await StudentTenantModel.findOneAndUpdate(
+            { studentId: booking.studentId, tenantId: booking.tenantId },
+            { $inc: { balance: booking.price } }
+          );
+        }
+      } else if (booking.price > 0) {
+        // Si no hay pago, crear uno nuevo
         payment = await PaymentModel.create({
           studentId: booking.studentId,
           tenantId: booking.tenantId,
@@ -1894,13 +1924,9 @@ export class TenantAdminController {
           description: `Pago manual confirmado por admin: ${booking.serviceType}`
         });
 
-        // 3. Actualizar balance del estudiante si se marca como pagado
         if (paymentStatus === 'paid') {
           await StudentTenantModel.findOneAndUpdate(
-            {
-              studentId: booking.studentId,
-              tenantId: booking.tenantId
-            },
+            { studentId: booking.studentId, tenantId: booking.tenantId },
             { $inc: { balance: booking.price } }
           );
         }

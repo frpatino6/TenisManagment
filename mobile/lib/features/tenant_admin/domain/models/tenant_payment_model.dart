@@ -79,8 +79,13 @@ class PaymentsPagination {
 class TenantPaymentsResponse {
   final List<TenantPaymentModel> payments;
   final PaymentsPagination pagination;
+  final double totalAmount;
 
-  TenantPaymentsResponse({required this.payments, required this.pagination});
+  TenantPaymentsResponse({
+    required this.payments,
+    required this.pagination,
+    required this.totalAmount,
+  });
 
   factory TenantPaymentsResponse.fromJson(Map<String, dynamic> json) {
     return TenantPaymentsResponse(
@@ -92,6 +97,7 @@ class TenantPaymentsResponse {
       pagination: PaymentsPagination.fromJson(
         json['pagination'] as Map<String, dynamic>,
       ),
+      totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

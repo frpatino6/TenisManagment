@@ -307,7 +307,14 @@ export class TenantAdminController {
         }
       }
 
-      const [transactions, manualPayments, totalTransactions, totalManual] = await Promise.all([
+      const [
+        transactions,
+        manualPayments,
+        totalTransactions,
+        totalManual,
+        onlineSumResult,
+        manualSumResult
+      ] = await Promise.all([
         TransactionModel.find(filter)
           .sort({ createdAt: -1 })
           .skip(skip)
@@ -322,7 +329,17 @@ export class TenantAdminController {
           .lean(),
         TransactionModel.countDocuments(filter),
         PaymentModel.countDocuments(manualFilter),
+        TransactionModel.aggregate([
+          { $match: filter },
+          { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]),
+        PaymentModel.aggregate([
+          { $match: manualFilter },
+          { $group: { _id: null, total: { $sum: '$amount' } } }
+        ])
       ]);
+
+      const totalAmount = (onlineSumResult[0]?.total || 0) + (manualSumResult[0]?.total || 0);
 
       const onlinePayments = transactions.map((transaction) => ({
         id: transaction._id.toString(),
@@ -364,6 +381,7 @@ export class TenantAdminController {
 
       res.json({
         payments: allPayments,
+        totalAmount,
         pagination: {
           total: totalTransactions + totalManual,
           page,

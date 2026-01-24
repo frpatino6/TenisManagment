@@ -29,6 +29,7 @@ void main() {
         total: 1,
         totalPages: 1,
       ),
+      totalAmount: 50000,
     );
 
     await tester.pumpWidget(

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/exceptions/exceptions.dart';
 import '../../../../core/constants/timeouts.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../providers/professor_provider.dart';
@@ -737,46 +736,52 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           throw Exception(AppStrings.couldNotGenerateSlots);
         }
 
-        final nowUtc = DateTime.utc(
-          now.year,
-          now.month,
-          now.day,
-          now.hour,
-          now.minute,
-        );
-
-        int createdCount = 0;
-        List<String> conflicts = [];
-
+        final batchSchedules = <Map<String, dynamic>>[];
         for (final slot in slots) {
           if (selectedDateOnly == today && slot['start']!.isBefore(nowUtc)) {
             continue;
           }
-
-          try {
-            await notifier.createSchedule(
-              date: startDateTime,
-              startTime: slot['start']!,
-              endTime: slot['end']!,
-              courtId: _selectedCourtId,
-            );
-            createdCount++;
-          } on ScheduleException catch (e) {
-            conflicts.add(e.message);
-          } catch (e) {
-            conflicts.add('Error al crear horario: ${e.toString()}');
-          }
+          batchSchedules.add({
+            'date': startDateTime.toIso8601String(),
+            'startTime': slot['start']!.toIso8601String(),
+            'endTime': slot['end']!.toIso8601String(),
+            if (_selectedCourtId != null) 'courtId': _selectedCourtId,
+          });
         }
+
+        if (batchSchedules.isEmpty) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'No hay horarios futuros válidos para crear en el rango seleccionado.',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          setState(() {
+            _isCreating = false;
+          });
+          return;
+        }
+
+        final result = await notifier.createSchedulesBatch(
+          schedules: batchSchedules,
+        );
+
+        final createdCount = result?['createdCount'] as int? ?? 0;
+        final errors = result?['errors'] as List<dynamic>? ?? [];
 
         if (!mounted) return;
 
-        if (conflicts.isNotEmpty && createdCount == 0) {
+        if (errors.isNotEmpty && createdCount == 0) {
           await showDialog(
             context: context,
             builder: (context) => AlertDialog(
               title: Row(
                 children: [
-                  Icon(Icons.error, color: Colors.red),
+                  const Icon(Icons.error, color: Colors.red),
                   const Gap(8),
                   Expanded(
                     child: Text(
@@ -790,11 +795,14 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: conflicts
+                  children: errors
                       .map(
-                        (c) => Padding(
+                        (e) => Padding(
                           padding: const EdgeInsets.only(bottom: 8),
-                          child: Text(c, style: GoogleFonts.inter()),
+                          child: Text(
+                            e['message']?.toString() ?? 'Error desconocido',
+                            style: GoogleFonts.inter(),
+                          ),
                         ),
                       )
                       .toList(),
@@ -811,11 +819,11 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
               ],
             ),
           );
-        } else if (conflicts.isNotEmpty) {
+        } else if (errors.isNotEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Se crearon $createdCount horarios. ${conflicts.length} no se pudieron crear por conflictos.',
+                'Se crearon $createdCount horarios. ${errors.length} no se pudieron crear por conflictos.',
                 style: GoogleFonts.inter(),
               ),
               backgroundColor: Colors.orange,
@@ -834,101 +842,30 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
           );
         }
       } else {
-        try {
-          final result = await notifier.createSchedule(
-            date: startDateTime,
-            startTime: startDateTime,
-            endTime: endDateTime,
-            courtId: _selectedCourtId,
-          );
+        final result = await notifier.createSchedulesBatch(
+          schedules: [
+            {
+              'date': startDateTime.toIso8601String(),
+              'startTime': startDateTime.toIso8601String(),
+              'endTime': endDateTime.toIso8601String(),
+              if (_selectedCourtId != null) 'courtId': _selectedCourtId,
+            },
+          ],
+        );
 
-          if (!mounted) return;
+        if (!mounted) return;
 
-          // Check for warnings in the response
-          final warnings = result?['warnings'] as List<dynamic>?;
+        final createdCount = result?['createdCount'] as int? ?? 0;
+        final errors = result?['errors'] as List<dynamic>? ?? [];
 
-          if (warnings != null && warnings.isNotEmpty) {
-            await showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Row(
-                  children: [
-                    Icon(Icons.warning_amber, color: Colors.orange),
-                    const Gap(8),
-                    Expanded(
-                      child: Text(
-                        'Advertencia de Horarios',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
-                content: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Horario creado exitosamente, pero:',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-                      ),
-                      const Gap(12),
-                      ...warnings.map(
-                        (warning) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                size: 16,
-                                color: Colors.orange,
-                              ),
-                              const Gap(8),
-                              Expanded(
-                                child: Text(
-                                  warning.toString(),
-                                  style: GoogleFonts.inter(),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(
-                      AppStrings.understood,
-                      style: GoogleFonts.inter(),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  '¡Horario creado exitosamente!',
-                  style: GoogleFonts.inter(),
-                ),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
-        } on ScheduleException catch (e) {
-          if (!mounted) return;
-
+        if (errors.isNotEmpty && createdCount == 0) {
+          final error = errors.first;
           await showDialog(
             context: context,
             builder: (context) => AlertDialog(
               title: Row(
                 children: [
-                  Icon(Icons.warning, color: Colors.orange),
+                  const Icon(Icons.warning, color: Colors.orange),
                   const Gap(8),
                   Expanded(
                     child: Text(
@@ -938,7 +875,10 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
                   ),
                 ],
               ),
-              content: Text(e.message, style: GoogleFonts.inter()),
+              content: Text(
+                error['message']?.toString() ?? 'Error al crear horario',
+                style: GoogleFonts.inter(),
+              ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -950,12 +890,20 @@ class _CreateScheduleScreenState extends ConsumerState<CreateScheduleScreen> {
               ],
             ),
           );
-
-          if (!mounted) return;
           setState(() {
             _isCreating = false;
           });
           return;
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '¡Horario creado exitosamente!',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
         }
       }
 

@@ -33,12 +33,14 @@ jest.mock('../../infrastructure/database/models/ScheduleModel', () => ({
     countDocuments: jest.fn(),
     findOne: jest.fn(),
     findById: jest.fn(),
+    create: jest.fn(),
   },
 }));
 
 jest.mock('../../infrastructure/database/models/ProfessorTenantModel', () => ({
   ProfessorTenantModel: {
     find: jest.fn(),
+    findOne: jest.fn(),
   },
 }));
 
@@ -53,6 +55,18 @@ jest.mock('../../infrastructure/database/models/PaymentModel', () => ({
     findOne: jest.fn(),
     create: jest.fn(),
   },
+}));
+
+jest.mock('../../application/services/BookingService', () => ({
+  BookingService: jest.fn().mockImplementation(() => ({
+    isCourtAvailable: jest.fn().mockResolvedValue(true),
+  })),
+}));
+
+jest.mock('../../application/services/TenantService', () => ({
+  TenantService: jest.fn().mockImplementation(() => ({
+    getTenantById: jest.fn(),
+  })),
 }));
 
 describe('ProfessorDashboardController', () => {
@@ -162,6 +176,93 @@ describe('ProfessorDashboardController', () => {
       }));
 
       expect(mockResponse.json).toHaveBeenCalled();
+    });
+  });
+
+  describe('createSchedulesBatch', () => {
+    it('should create multiple schedules successfully', async () => {
+      // Arrange
+      const { ProfessorModel } = require('../../infrastructure/database/models/ProfessorModel');
+      const { AuthUserModel } = require('../../infrastructure/database/models/AuthUserModel');
+      const { ProfessorTenantModel } = require('../../infrastructure/database/models/ProfessorTenantModel');
+      const { ScheduleModel } = require('../../infrastructure/database/models/ScheduleModel');
+
+      const mockProfessor = { _id: '651dc68c6a58b548b8e6634a' };
+      const mockAuthUser = { _id: '651dc68c6a58b548b8e6634b' };
+      const mockTenantId = '651dc68c6a58b548b8e6634c';
+
+      mockRequest.user = { uid: 'firebase-uid' };
+      mockRequest.body = {
+        tenantId: mockTenantId,
+        schedules: [
+          {
+            date: '2026-01-25T00:00:00.000Z',
+            startTime: '2026-01-25T08:00:00.000Z',
+            endTime: '2026-01-25T09:00:00.000Z'
+          },
+          {
+            date: '2026-01-25T00:00:00.000Z',
+            startTime: '2026-01-25T09:00:00.000Z',
+            endTime: '2026-01-25T10:00:00.000Z'
+          }
+        ]
+      };
+
+      AuthUserModel.findOne.mockResolvedValue(mockAuthUser);
+      ProfessorModel.findOne.mockResolvedValue(mockProfessor);
+      ProfessorTenantModel.findOne.mockResolvedValue({ isActive: true });
+      ScheduleModel.findOne.mockResolvedValue(null); // No conflicts
+      ScheduleModel.create.mockImplementation((data: any) => Promise.resolve({ _id: '651dc68c6a58b548b8e6634d', ...data }));
+
+      // Act
+      await controller.createSchedulesBatch(mockRequest, mockResponse);
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(201);
+      expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
+        createdCount: 2,
+        errorCount: 0
+      }));
+      expect(ScheduleModel.create).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle conflicts in batch and return them in errors array', async () => {
+      // Arrange
+      const { ProfessorModel } = require('../../infrastructure/database/models/ProfessorModel');
+      const { AuthUserModel } = require('../../infrastructure/database/models/AuthUserModel');
+      const { ProfessorTenantModel } = require('../../infrastructure/database/models/ProfessorTenantModel');
+      const { ScheduleModel } = require('../../infrastructure/database/models/ScheduleModel');
+
+      mockRequest.user = { uid: 'firebase-uid' };
+      mockRequest.body = {
+        tenantId: '651dc68c6a58b548b8e6634c',
+        schedules: [
+          {
+            date: '2026-01-25T00:00:00.000Z',
+            startTime: '2026-01-25T08:00:00.000Z',
+            endTime: '2026-01-25T09:00:00.000Z'
+          }
+        ]
+      };
+
+      AuthUserModel.findOne.mockResolvedValue({ _id: '651dc68c6a58b548b8e6634a' });
+      const mockProfessorId = '651dc68c6a58b548b8e6634b';
+      ProfessorModel.findOne.mockResolvedValue({ _id: mockProfessorId });
+      ProfessorTenantModel.findOne.mockResolvedValue({ isActive: true });
+      ScheduleModel.findOne.mockResolvedValue({ _id: '651dc68c6a58b548b8e6634c' }); // Conflict!
+
+      // Act
+      await controller.createSchedulesBatch(mockRequest, mockResponse);
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(201);
+      expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
+        createdCount: 0,
+        errorCount: 1,
+        errors: expect.arrayContaining([
+          expect.objectContaining({ error: 'CONFLICT_SAME_TIME' })
+        ])
+      }));
     });
   });
 });

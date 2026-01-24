@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Types } from 'mongoose';
 import { z } from 'zod';
 import { PaymentGateway } from '../../domain/services/payment/PaymentGateway';
 import { WompiAdapter } from '../../infrastructure/services/payment/adapters/WompiAdapter';
@@ -209,7 +210,7 @@ export class PaymentController {
                         try {
                             const bInfo = transaction.metadata.bookingInfo;
                             this.logger.info(`[PaymentController] Auto-booking for ref: ${reference}`);
-                            await this.bookingService.createBooking({
+                            const booking = await this.bookingService.createBooking({
                                 tenantId: transaction.tenantId.toString(),
                                 studentId: transaction.studentId.toString(),
                                 scheduleId: bInfo.scheduleId,
@@ -220,6 +221,17 @@ export class PaymentController {
                                 startTime: bInfo.startTime ? new Date(bInfo.startTime) : undefined,
                                 endTime: bInfo.endTime ? new Date(bInfo.endTime) : undefined
                             });
+
+                            // VINCULAR EL PAGO CON LA RESERVA
+                            // Esto permite que el profesor vea que la clase YA FUE PAGADA
+                            if (newPayment && booking) {
+                                newPayment.bookingId = booking._id;
+                                if (bInfo.professorId) {
+                                    newPayment.professorId = new Types.ObjectId(bInfo.professorId);
+                                }
+                                await newPayment.save();
+                            }
+
                             this.logger.info(`[PaymentController] Auto-booking SUCCESS for ref: ${reference}`);
                         } catch (bookingError: any) {
                             this.logger.error(`[PaymentController] Auto-booking FAILED for ref: ${reference}`, {

@@ -38,6 +38,7 @@ void main() {
         isActive: true,
         config: {
           'payments': {
+            'enableOnlinePayments': true,
             'wompi': {'pubKey': 'test-key'},
           },
         },
@@ -122,6 +123,7 @@ void main() {
         isActive: true,
         config: {
           'payments': {
+            'enableOnlinePayments': true,
             'wompi': {'pubKey': 'test-key'},
           },
         },
@@ -206,6 +208,7 @@ void main() {
         isActive: true,
         config: {
           'payments': {
+            'enableOnlinePayments': true,
             'wompi': {'pubKey': 'test-key'},
           },
         },
@@ -290,6 +293,7 @@ void main() {
         isActive: true,
         config: {
           'payments': {
+            'enableOnlinePayments': true,
             'wompi': {'pubKey': 'test-key'},
           },
         },

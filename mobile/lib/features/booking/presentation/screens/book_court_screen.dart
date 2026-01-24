@@ -64,15 +64,26 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     _logger.info('DEBUG: Tenant ${tenant?.name} config: $config');
     if (config == null) return false;
 
-    // Check for nested structure: config -> payments -> wompi -> pubKey
+    // Check for nested structure: config -> payments -> enableOnlinePayments
     if (config.containsKey('payments')) {
       final payments = config['payments'];
       if (payments is Map) {
+        // First check if online payments are enabled
+        final enableOnlinePayments =
+            payments['enableOnlinePayments'] as bool? ?? false;
+        if (!enableOnlinePayments) {
+          _logger.info('DEBUG: Online payments are disabled for this tenant');
+          return false;
+        }
+
+        // Then check for wompi config
         final wompi = payments['wompi'];
         if (wompi is Map) {
           final pubKey = wompi['pubKey'];
           if (pubKey != null && pubKey.toString().trim().isNotEmpty) {
-            _logger.info('DEBUG: Found Wompi key in nested config');
+            _logger.info(
+              'DEBUG: Found Wompi key in nested config and online payments enabled',
+            );
             return true;
           }
         }
@@ -80,6 +91,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     }
 
     // Fallback: Check for flat structure (backward compatibility)
+    // Note: flat structure doesn't have enableOnlinePayments flag, so we assume disabled
     bool isValid(String key) {
       if (!config.containsKey(key)) return false;
       final value = config[key];
@@ -87,8 +99,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     }
 
     final hasKey = isValid('wompi_public_key') || isValid('wompiPublicKey');
-    _logger.info('DEBUG: Has Wompi config? (flat check): $hasKey');
-    return hasKey;
+    _logger.info('DEBUG: Has Wompi config? (flat check - deprecated): $hasKey');
+    // Return false for flat structure as it doesn't support enableOnlinePayments flag
+    return false;
   }
 
   @override

@@ -212,6 +212,32 @@ export class StudentDashboardController {
 
         const tenantObjectId = new Types.ObjectId(tenantId);
 
+        // Get or create StudentTenant record
+        let studentTenant = await StudentTenantModel.findOne({
+          studentId: student._id,
+          tenantId: tenantObjectId,
+        });
+
+        if (!studentTenant) {
+          studentTenant = await StudentTenantModel.create({
+            studentId: student._id,
+            tenantId: tenantObjectId,
+            balance: 0,
+            isActive: true,
+          });
+        }
+
+        // Get statistics
+        const totalBookings = await BookingModel.countDocuments({
+          studentId: student._id,
+          tenantId: tenantObjectId,
+        });
+
+        const totalPayments = await PaymentModel.countDocuments({
+          studentId: student._id,
+          tenantId: tenantObjectId,
+        });
+
         const totalPaymentsSum = await PaymentModel.aggregate([
           {
             $match: {
@@ -234,35 +260,8 @@ export class StudentDashboardController {
           { $group: { _id: null, total: { $sum: '$price' } } },
         ]);
 
-        const recalculatedBalance =
-          (totalPaymentsSum[0]?.total || 0) -
-          (totalBookingsSum[0]?.total || 0);
-
-        let studentTenant = await StudentTenantModel.findOne({
-          studentId: student._id,
-          tenantId: tenantObjectId,
-        });
-
-        if (!studentTenant) {
-          studentTenant = await StudentTenantModel.create({
-            studentId: student._id,
-            tenantId: tenantObjectId,
-            balance: recalculatedBalance,
-            isActive: true,
-          });
-        } else if (studentTenant.balance !== recalculatedBalance) {
-          studentTenant.balance = recalculatedBalance;
-          await studentTenant.save();
-        }
-
-        const totalBookings = await BookingModel.countDocuments({
-          studentId: student._id,
-          tenantId: tenantObjectId,
-        });
-        const totalPayments = await PaymentModel.countDocuments({
-          studentId: student._id,
-          tenantId: tenantObjectId,
-        });
+        // Use balance from DB (source of truth)
+        const currentBalance = studentTenant.balance;
 
         res.json({
           id: student._id,
@@ -272,11 +271,11 @@ export class StudentDashboardController {
           level: 'Principiante',
           totalClasses: totalBookings,
           totalPayments: totalPayments,
-          totalSpent: totalPaymentsSum[0]?.total || 0, // Inversión total (pagos aprobados)
-          totalPaid: totalPaymentsSum[0]?.total || 0,   // Alias para claridad
-          balance: recalculatedBalance,
-          availableBalance: recalculatedBalance > 0 ? recalculatedBalance : 0,
-          currentDebt: recalculatedBalance < 0 ? Math.abs(recalculatedBalance) : 0,
+          totalSpent: totalPaymentsSum[0]?.total || 0,
+          totalPaid: totalPaymentsSum[0]?.total || 0,
+          balance: currentBalance,  // Direct from DB
+          availableBalance: currentBalance > 0 ? currentBalance : 0,
+          currentDebt: currentBalance < 0 ? Math.abs(currentBalance) : 0,
           totalReservationsValue: totalBookingsSum[0]?.total || 0,
         });
         return;
@@ -1111,6 +1110,32 @@ export class StudentDashboardController {
         bookingDate: requestedStart,
         endTime: requestedEnd,
       });
+
+      // Deduct balance from StudentTenant (creates debt)
+      await StudentTenantModel.findOneAndUpdate(
+        {
+          studentId: new Types.ObjectId(student._id.toString()),
+          tenantId: new Types.ObjectId(tenantId.toString())
+        },
+        {
+          $inc: { balance: -price },
+        },
+        { new: true }
+      );
+
+      // Create pending payment record so user can confirm it later
+      await PaymentModel.create({
+        tenantId: new Types.ObjectId(tenantId.toString()),
+        studentId: new Types.ObjectId(student._id.toString()),
+        bookingId: booking._id,
+        amount: price,
+        date: new Date(),
+        status: 'pending',
+        method: 'cash',
+        concept: `Reserva de cancha - ${court.name}`,
+        description: `Pago pendiente por reserva de cancha: ${court.name} - ${requestedStart.toLocaleDateString()}`
+      });
+
 
 
       res.status(201).json({

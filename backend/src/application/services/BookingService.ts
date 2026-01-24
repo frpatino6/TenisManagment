@@ -190,31 +190,40 @@ export class BookingService {
 
             const booking = await BookingModel.create(bookingData);
 
-            // 6. Deduct balance from student
-            await StudentModel.findByIdAndUpdate(studentId, {
-                $inc: { balance: -price }
-            });
+            // Check if online payments are enabled
+            const enableOnlinePayments = tenant?.config?.payments?.enableOnlinePayments === true;
 
-            // 7. Create Payment record linked to booking (CRITICAL for professor dashboard to see 'paid')
-            await PaymentModel.create({
-                tenantId: new Types.ObjectId(tenantId.toString()),
-                studentId: new Types.ObjectId(studentId.toString()),
-                professorId: professorId, // Can be undefined for court rental
-                bookingId: booking._id,
-                amount: price,
-                date: new Date(),
-                status: 'paid',
-                method: 'wallet',
-                concept: `Pago de reserva (Saldo) - ${serviceType}`,
-                description: `Reserva confirmada con saldo en billetera.`
-            });
+            if (enableOnlinePayments) {
+                // 6. Deduct balance from student ONLY if online payments are enabled
+                await StudentModel.findByIdAndUpdate(studentId, {
+                    $inc: { balance: -price }
+                });
 
-            logger.info('Booking created and balance deducted successfully', {
-                bookingId: booking._id.toString(),
-                serviceType,
-                studentId: studentId.toString(),
-                price: price
-            });
+                // 7. Create Payment record linked to booking (CRITICAL for professor dashboard to see 'paid')
+                await PaymentModel.create({
+                    tenantId: new Types.ObjectId(tenantId.toString()),
+                    studentId: new Types.ObjectId(studentId.toString()),
+                    professorId: professorId, // Can be undefined for court rental
+                    bookingId: booking._id,
+                    amount: price,
+                    date: new Date(),
+                    status: 'paid',
+                    method: 'wallet',
+                    concept: `Pago de reserva (Saldo) - ${serviceType}`,
+                    description: `Reserva confirmada con saldo en billetera.`
+                });
+
+                logger.info('Booking created and balance deducted (Online Payment)', {
+                    bookingId: booking._id.toString(),
+                    serviceType,
+                    price
+                });
+            } else {
+                logger.info('Booking created WITHOUT payment (Online Payment Disabled)', {
+                    bookingId: booking._id.toString(),
+                    serviceType
+                });
+            }
 
             return booking;
         } catch (error) {

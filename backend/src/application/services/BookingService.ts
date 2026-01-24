@@ -4,6 +4,7 @@ import { ScheduleModel } from '../../infrastructure/database/models/ScheduleMode
 import { CourtModel } from '../../infrastructure/database/models/CourtModel';
 import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { ProfessorTenantModel } from '../../infrastructure/database/models/ProfessorTenantModel';
+import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
 import { TenantService } from './TenantService';
 import { Logger } from '../../infrastructure/services/Logger';
 
@@ -192,6 +193,20 @@ export class BookingService {
             // 6. Deduct balance from student
             await StudentModel.findByIdAndUpdate(studentId, {
                 $inc: { balance: -price }
+            });
+
+            // 7. Create Payment record linked to booking (CRITICAL for professor dashboard to see 'paid')
+            await PaymentModel.create({
+                tenantId: new Types.ObjectId(tenantId.toString()),
+                studentId: new Types.ObjectId(studentId.toString()),
+                professorId: professorId, // Can be undefined for court rental
+                bookingId: booking._id,
+                amount: price,
+                date: new Date(),
+                status: 'paid',
+                method: 'wallet',
+                concept: `Pago de reserva (Saldo) - ${serviceType}`,
+                description: `Reserva confirmada con saldo en billetera.`
             });
 
             logger.info('Booking created and balance deducted successfully', {

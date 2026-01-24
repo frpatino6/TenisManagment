@@ -9,7 +9,7 @@ export interface PaymentDocument {
   amount: number;
   date: Date;
   status: 'pending' | 'paid' | 'cancelled';
-  method: 'cash' | 'card' | 'transfer';
+  method: 'cash' | 'card' | 'transfer' | 'wallet';
   concept?: string; // Keep for backwards compatibility
   description?: string; // New field for payment description
   createdAt: Date;
@@ -30,7 +30,7 @@ const PaymentSchema = new Schema<PaymentDocument>(
     amount: { type: Number, required: true },
     date: { type: Date, required: true, index: true },
     status: { type: String, enum: ['pending', 'paid', 'cancelled'], default: 'paid' },
-    method: { type: String, enum: ['cash', 'card', 'transfer'], required: true },
+    method: { type: String, enum: ['cash', 'card', 'transfer', 'wallet'], required: true },
     concept: { type: String },
     description: { type: String },
   },

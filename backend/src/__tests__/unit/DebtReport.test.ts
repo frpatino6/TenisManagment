@@ -93,7 +93,7 @@ describe('Debt and Payment Reports', () => {
                 date: new Date(),
             });
 
-            const req = { tenantId } as any;
+            const req = { tenantId, query: {} } as any;
 
             await adminController.getDebtReport(req as Request, mockResponse as Response);
 

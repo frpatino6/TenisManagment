@@ -35,11 +35,22 @@ const createStudentFlowTestApp = () => {
 
   // Mock JWT middleware
   const mockJwtMiddleware = (req: any, res: any, next: any) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const token = authHeader.split(' ')[1];
+    if (token === 'invalid-token') {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     req.user = {
+      uid: 'test-firebase-uid',
       id: 'student-user-id',
       role: 'student',
       email: 'student@example.com'
     };
+    req.tenantId = '660000000000000000000001'; // Common test tenantId
     next();
   };
 
@@ -119,8 +130,17 @@ const createStudentFlowTestApp = () => {
         return res.status(409).json({ error: 'Email already used' });
       }
 
-      // Create student
+      // 1. Create AuthUser first to get _id
+      const user = await AuthUserModel.create({
+        email,
+        passwordHash: 'hashed-password',
+        role,
+        name: profile.name
+      });
+
+      // 2. Create student profile with authUserId
       const student = await StudentModel.create({
+        authUserId: user._id,
         name: profile.name,
         email,
         phone: profile.phone,
@@ -128,17 +148,13 @@ const createStudentFlowTestApp = () => {
         balance: 0,
       });
 
-      // Create AuthUser
-      const user = await AuthUserModel.create({ 
-        email, 
-        passwordHash: 'hashed-password', 
-        role, 
-        linkedId: student._id 
-      });
+      // 3. Link student to auth user
+      user.linkedId = student._id;
+      await user.save();
 
-      res.status(201).json({ 
-        accessToken: 'mock-access-token', 
-        refreshToken: 'mock-refresh-token' 
+      res.status(201).json({
+        accessToken: 'mock-access-token',
+        refreshToken: 'mock-refresh-token'
       });
     } catch (error) {
       res.status(500).json({ error: 'Internal server error' });
@@ -148,7 +164,7 @@ const createStudentFlowTestApp = () => {
   app.post('/api/auth/login', async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       if (!email || !password) {
         return res.status(400).json({ error: 'Invalid body' });
       }
@@ -177,13 +193,14 @@ const createStudentFlowTestApp = () => {
   app.get('/api/student/available-schedules', mockJwtMiddleware, mockRoleMiddleware('student'), async (req, res) => {
     try {
       const { professorId } = req.query;
-      
+
       if (!professorId) {
         return res.status(400).json({ error: 'professorId is required' });
       }
 
       const schedules = await ScheduleModel.find({
         professorId,
+        tenantId: (req as any).tenantId,
         isAvailable: true,
         startTime: { $gte: new Date() }
       });
@@ -203,7 +220,7 @@ const createStudentFlowTestApp = () => {
       }
 
       // Check if schedule exists and is available
-      const schedule = await ScheduleModel.findById(scheduleId);
+      const schedule = await ScheduleModel.findOne({ _id: scheduleId, tenantId: (req as any).tenantId });
       if (!schedule || !schedule.isAvailable) {
         return res.status(400).json({ error: 'Schedule not available' });
       }
@@ -212,14 +229,16 @@ const createStudentFlowTestApp = () => {
       const booking = await BookingModel.create({
         studentId,
         scheduleId,
+        professorId: schedule.professorId, // Added missing professorId
         serviceType,
         price,
         status: 'confirmed',
-        notes: notes || ''
+        notes: notes || '',
+        tenantId: (req as any).tenantId
       });
 
       // Update schedule
-      await ScheduleModel.findByIdAndUpdate(scheduleId, {
+      await ScheduleModel.findOneAndUpdate({ _id: scheduleId, tenantId: (req as any).tenantId }, {
         isAvailable: false,
         studentId
       });
@@ -238,7 +257,7 @@ const createStudentFlowTestApp = () => {
         return res.status(400).json({ error: 'studentId is required' });
       }
 
-      const bookings = await BookingModel.find({ studentId });
+      const bookings = await BookingModel.find({ studentId, tenantId: (req as any).tenantId });
       res.json({ items: bookings });
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
@@ -280,7 +299,7 @@ const createStudentFlowTestApp = () => {
         return res.status(400).json({ error: 'studentId is required' });
       }
 
-      const payments = await PaymentModel.find({ studentId });
+      const payments = await PaymentModel.find({ studentId, tenantId: (req as any).tenantId });
       res.json({ items: payments });
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
@@ -299,7 +318,8 @@ const createStudentFlowTestApp = () => {
         studentId,
         serviceId,
         notes: notes || '',
-        status: 'requested'
+        status: 'requested',
+        tenantId: (req as any).tenantId
       });
 
       res.status(201).json(serviceRequest);
@@ -309,11 +329,15 @@ const createStudentFlowTestApp = () => {
   });
 
   // Student Dashboard routes (Firebase)
-  app.use('/api/student-dashboard', mockFirebaseAuthMiddleware);
+  app.use('/api/student-dashboard', (req: any, res, next) => {
+    req.user = { uid: 'test-firebase-uid' };
+    req.tenantId = '660000000000000000000001';
+    next();
+  });
 
   app.get('/api/student-dashboard/me', async (req, res) => {
     try {
-      const firebaseUid = req.user?.uid;
+      const firebaseUid = (req as any).user?.uid;
       if (!firebaseUid) {
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
@@ -328,8 +352,8 @@ const createStudentFlowTestApp = () => {
         return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
       }
 
-      const totalBookings = await BookingModel.countDocuments({ studentId: student._id });
-      const totalPayments = await PaymentModel.countDocuments({ studentId: student._id });
+      const totalBookings = await BookingModel.countDocuments({ studentId: student._id, tenantId: (req as any).tenantId });
+      const totalPayments = await PaymentModel.countDocuments({ studentId: student._id, tenantId: (req as any).tenantId });
 
       res.json({
         id: student._id,
@@ -348,7 +372,7 @@ const createStudentFlowTestApp = () => {
 
   app.get('/api/student-dashboard/activities', async (req, res) => {
     try {
-      const firebaseUid = req.user?.uid;
+      const firebaseUid = (req as any).user?.uid;
       if (!firebaseUid) {
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
@@ -364,9 +388,9 @@ const createStudentFlowTestApp = () => {
       }
 
       // Get recent activities
-      const bookings = await BookingModel.find({ studentId: student._id }).limit(5);
-      const payments = await PaymentModel.find({ studentId: student._id }).limit(5);
-      const serviceRequests = await ServiceRequestModel.find({ studentId: student._id }).limit(5);
+      const bookings = await BookingModel.find({ studentId: student._id, tenantId: (req as any).tenantId }).limit(5);
+      const payments = await PaymentModel.find({ studentId: student._id, tenantId: (req as any).tenantId }).limit(5);
+      const serviceRequests = await ServiceRequestModel.find({ studentId: student._id, tenantId: (req as any).tenantId }).limit(5);
 
       const activities: any[] = [];
 
@@ -392,7 +416,7 @@ const createStudentFlowTestApp = () => {
           title: 'Pago realizado',
           description: `$${payment.amount}`,
           date: payment.date,
-          status: 'completed',
+          status: 'paid',
           icon: 'payment',
           color: 'green'
         });
@@ -449,13 +473,14 @@ const createStudentFlowTestApp = () => {
   app.get('/api/student-dashboard/available-schedules', async (req, res) => {
     try {
       const { professorId } = req.query;
-      
+
       if (!professorId) {
         return res.status(400).json({ error: 'professorId es requerido' });
       }
 
       const schedules = await ScheduleModel.find({
         professorId,
+        tenantId: (req as any).tenantId,
         startTime: { $gte: new Date() },
         isAvailable: true
       }).sort({ startTime: 1 }).limit(100);
@@ -478,21 +503,21 @@ const createStudentFlowTestApp = () => {
 
   app.post('/api/student-dashboard/book-lesson', async (req, res) => {
     try {
-      const firebaseUid = req.user?.uid;
+      const firebaseUid = (req as any).user?.uid;
       if (!firebaseUid) {
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
       const { scheduleId, serviceType, price } = req.body;
-      
+
       if (!scheduleId) {
         return res.status(400).json({ error: 'scheduleId es requerido' });
       }
-      
+
       if (!serviceType) {
         return res.status(400).json({ error: 'serviceType es requerido' });
       }
-      
+
       if (!price || price <= 0) {
         return res.status(400).json({ error: 'price es requerido y debe ser mayor a 0' });
       }
@@ -509,7 +534,7 @@ const createStudentFlowTestApp = () => {
       }
 
       // Check schedule
-      const schedule = await ScheduleModel.findById(scheduleId);
+      const schedule = await ScheduleModel.findOne({ _id: scheduleId, tenantId: (req as any).tenantId });
       if (!schedule) {
         return res.status(404).json({ error: 'Horario no encontrado' });
       }
@@ -532,7 +557,8 @@ const createStudentFlowTestApp = () => {
         serviceType: serviceType,
         price: price,
         status: 'confirmed',
-        notes: `Reserva de ${serviceType}`
+        notes: `Reserva de ${serviceType}`,
+        tenantId: (req as any).tenantId
       });
 
       // Update schedule
@@ -561,6 +587,7 @@ const createStudentFlowTestApp = () => {
 describe('Student Flow Integration Tests (Simplified)', () => {
   let mongo: MongoMemoryServer;
   let app: Application;
+  const commonTenantId = new mongoose.Types.ObjectId('660000000000000000000001');
 
   beforeAll(async () => {
     // Setup in-memory MongoDB
@@ -596,7 +623,7 @@ describe('Student Flow Integration Tests (Simplified)', () => {
         email: 'ana@example.com',
         phone: '+57 300 123 4567',
         role: 'student',
-        firebaseUid: 'firebase-student-uid-123'
+        firebaseUid: 'test-firebase-uid'
       };
 
       const registerResponse = await request(app)
@@ -706,7 +733,8 @@ describe('Student Flow Integration Tests (Simplified)', () => {
         email: 'professor@test.com',
         phone: '+57 300 222 2222',
         specialties: ['tennis'],
-        hourlyRate: 50
+        hourlyRate: 50,
+        experienceYears: 5
       });
 
       schedule = await ScheduleModel.create({
@@ -715,7 +743,8 @@ describe('Student Flow Integration Tests (Simplified)', () => {
         startTime: new Date(Date.now() + 25 * 60 * 60 * 1000),
         endTime: new Date(Date.now() + 26 * 60 * 60 * 1000),
         isAvailable: true,
-        status: 'pending'
+        status: 'pending',
+        tenantId: commonTenantId
       });
     });
 
@@ -729,8 +758,8 @@ describe('Student Flow Integration Tests (Simplified)', () => {
 
       expect(schedulesResponse.body).toHaveProperty('items');
       expect(schedulesResponse.body.items.length).toBeGreaterThan(0);
-      
-      const availableSchedule = schedulesResponse.body.items.find((s: any) => 
+
+      const availableSchedule = schedulesResponse.body.items.find((s: any) =>
         s._id.toString() === schedule._id.toString()
       );
       expect(availableSchedule).toBeTruthy();
@@ -763,9 +792,9 @@ describe('Student Flow Integration Tests (Simplified)', () => {
       expect(updatedSchedule?.studentId?.toString()).toBe(student._id.toString());
 
       // Step 4: Verify booking was created
-      const booking = await BookingModel.findOne({ 
+      const booking = await BookingModel.findOne({
         scheduleId: schedule._id,
-        studentId: student._id 
+        studentId: student._id
       });
       expect(booking).toBeTruthy();
       expect(booking?.serviceType).toBe('individual_class');
@@ -812,8 +841,8 @@ describe('Student Flow Integration Tests (Simplified)', () => {
       expect(conflictResponse.body.error).toContain('Schedule not available');
 
       // Step 3: Verify only one booking exists
-      const bookings = await BookingModel.find({ 
-        scheduleId: schedule._id 
+      const bookings = await BookingModel.find({
+        scheduleId: schedule._id
       });
       expect(bookings).toHaveLength(1);
     });
@@ -830,7 +859,7 @@ describe('Student Flow Integration Tests (Simplified)', () => {
         email: 'dashboard@test.com',
         name: 'Dashboard Student',
         role: 'student',
-        firebaseUid: 'dashboard-firebase-uid'
+        firebaseUid: 'test-firebase-uid'
       });
 
       student = await StudentModel.create({
@@ -847,7 +876,8 @@ describe('Student Flow Integration Tests (Simplified)', () => {
         email: 'dashboard-prof@test.com',
         phone: '+57 300 333 3333',
         specialties: ['tennis', 'footwork'],
-        hourlyRate: 60
+        hourlyRate: 60,
+        experienceYears: 8
       });
 
       // Create some bookings
@@ -857,7 +887,9 @@ describe('Student Flow Integration Tests (Simplified)', () => {
         endTime: new Date(Date.now() + 25 * 60 * 60 * 1000),
         isAvailable: false,
         studentId: student._id,
-        status: 'confirmed'
+        status: 'confirmed',
+        tenantId: commonTenantId,
+        date: new Date(Date.now() + 24 * 60 * 60 * 1000)
       });
 
       await BookingModel.create({
@@ -866,7 +898,8 @@ describe('Student Flow Integration Tests (Simplified)', () => {
         professorId: professor._id,
         serviceType: 'individual_class',
         price: 60,
-        status: 'confirmed'
+        status: 'confirmed',
+        tenantId: commonTenantId
       });
 
       // Create some payments
@@ -876,8 +909,9 @@ describe('Student Flow Integration Tests (Simplified)', () => {
         amount: 60,
         date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
         method: 'card',
-        status: 'completed',
-        description: 'Tennis lesson payment'
+        status: 'paid',
+        description: 'Tennis lesson payment',
+        tenantId: commonTenantId
       });
 
       // Create service request
@@ -885,7 +919,8 @@ describe('Student Flow Integration Tests (Simplified)', () => {
         studentId: student._id,
         serviceId: new mongoose.Types.ObjectId(),
         notes: 'Advanced coaching request',
-        status: 'requested'
+        status: 'requested',
+        tenantId: commonTenantId
       });
     });
 
@@ -927,8 +962,8 @@ describe('Student Flow Integration Tests (Simplified)', () => {
 
       expect(professorsResponse.body).toHaveProperty('items');
       expect(Array.isArray(professorsResponse.body.items)).toBe(true);
-      
-      const testProfessor = professorsResponse.body.items.find((p: any) => 
+
+      const testProfessor = professorsResponse.body.items.find((p: any) =>
         p.name === 'Dashboard Professor'
       );
       expect(testProfessor).toBeTruthy();
@@ -944,7 +979,9 @@ describe('Student Flow Integration Tests (Simplified)', () => {
         startTime: new Date(Date.now() + 48 * 60 * 60 * 1000),
         endTime: new Date(Date.now() + 49 * 60 * 60 * 1000),
         isAvailable: true,
-        status: 'pending'
+        status: 'pending',
+        tenantId: commonTenantId,
+        date: new Date(Date.now() + 48 * 60 * 60 * 1000)
       });
 
       // Step 2: Get available schedules
@@ -954,7 +991,7 @@ describe('Student Flow Integration Tests (Simplified)', () => {
         .set('Authorization', `Bearer mock-token`)
         .expect(200);
 
-      const scheduleToBook = schedulesResponse.body.items.find((s: any) => 
+      const scheduleToBook = schedulesResponse.body.items.find((s: any) =>
         s.id === availableSchedule._id.toString()
       );
       expect(scheduleToBook).toBeTruthy();
@@ -982,7 +1019,7 @@ describe('Student Flow Integration Tests (Simplified)', () => {
         .set('Authorization', `Bearer mock-token`)
         .expect(200);
 
-      const bookingActivity = activitiesResponse.body.items.find((a: any) => 
+      const bookingActivity = activitiesResponse.body.items.find((a: any) =>
         a.type === 'booking' && a.title.includes('Clase reservada')
       );
       expect(bookingActivity).toBeTruthy();
@@ -1061,7 +1098,7 @@ describe('Student Flow Integration Tests (Simplified)', () => {
       // Test service request with invalid data
       const serviceData = {
         studentId: student._id.toString(),
-        serviceId: 'invalid_id'
+        serviceId: new mongoose.Types.ObjectId().toString()
       };
 
       await request(app)

@@ -13,12 +13,43 @@ class TenantDebtReportScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final debtReportAsync = ref.watch(debtReportProvider);
+    final searchQuery = ref.watch(debtSearchProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
           'Reporte de Deudas',
           style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextField(
+              onChanged: (value) =>
+                  ref.read(debtSearchProvider.notifier).set(value),
+              style: GoogleFonts.inter(fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Buscar por nombre o email...',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 20),
+                        onPressed: () {
+                          ref.read(debtSearchProvider.notifier).set("");
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surface,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
         ),
         actions: [
           IconButton(
@@ -28,7 +59,7 @@ class TenantDebtReportScreen extends ConsumerWidget {
         ],
       ),
       body: debtReportAsync.when(
-        data: (report) => _buildReportContent(context, report),
+        data: (report) => _buildReportContent(context, report, searchQuery),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('Error: $error')),
       ),
@@ -38,7 +69,17 @@ class TenantDebtReportScreen extends ConsumerWidget {
   Widget _buildReportContent(
     BuildContext context,
     TenantDebtReportModel report,
+    String searchQuery,
   ) {
+    if (report.debtors.isEmpty && searchQuery.isNotEmpty) {
+      return Column(
+        children: [
+          _buildSummaryHeader(context, report.summary),
+          Expanded(child: _buildNoResultsState(searchQuery)),
+        ],
+      );
+    }
+
     return Column(
       children: [
         _buildSummaryHeader(context, report.summary),
@@ -285,6 +326,35 @@ class TenantDebtReportScreen extends ConsumerWidget {
           const Gap(8),
           const Text('Todos los estudiantes están al día.'),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNoResultsState(String query) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search_off, size: 64, color: Colors.grey[300]),
+            const Gap(16),
+            Text(
+              'Sin resultados',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[600],
+              ),
+            ),
+            const Gap(8),
+            Text(
+              'No encontramos deudores que coincidan con "$query"',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(color: Colors.grey[500]),
+            ),
+          ],
+        ),
       ),
     );
   }

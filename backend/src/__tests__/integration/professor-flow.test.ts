@@ -22,6 +22,7 @@ import { ProfessorDashboardController } from '../../application/controllers/Prof
 
 describe('Professor Flow Integration Tests', () => {
   let mongo: MongoMemoryServer;
+  const commonTenantId = new mongoose.Types.ObjectId('660000000000000000000001');
   let professorRepository: MongoProfessorRepository;
   let studentRepository: MongoStudentRepository;
   let scheduleRepository: MongoScheduleRepository;
@@ -192,7 +193,8 @@ describe('Professor Flow Integration Tests', () => {
         startTime: new Date('2025-01-15T10:00:00Z'),
         endTime: new Date('2025-01-15T11:00:00Z'),
         isAvailable: true,
-        status: 'pending'
+        status: 'pending',
+        tenantId: commonTenantId
       });
 
       expect(schedule).toBeTruthy();
@@ -214,7 +216,7 @@ describe('Professor Flow Integration Tests', () => {
 
     it('should handle multiple schedules for same professor', async () => {
       const baseDate = new Date('2025-01-15');
-      
+
       // Create multiple schedules
       const schedules = await Promise.all([
         ScheduleModel.create({
@@ -275,7 +277,8 @@ describe('Professor Flow Integration Tests', () => {
         startTime: new Date('2025-01-15T10:00:00Z'),
         endTime: new Date('2025-01-15T11:00:00Z'),
         isAvailable: true,
-        status: 'pending'
+        status: 'pending',
+        tenantId: commonTenantId
       });
 
       expect(schedule).toBeTruthy();
@@ -337,7 +340,8 @@ describe('Professor Flow Integration Tests', () => {
         startTime: new Date('2025-01-15T10:00:00Z'),
         endTime: new Date('2025-01-15T11:00:00Z'),
         isAvailable: true,
-        status: 'pending'
+        status: 'pending',
+        tenantId: commonTenantId
       });
     });
 
@@ -350,12 +354,13 @@ describe('Professor Flow Integration Tests', () => {
         serviceType: 'individual_class',
         status: 'confirmed',
         price: 50,
-        notes: 'First tennis lesson'
+        notes: 'First tennis lesson',
+        tenantId: commonTenantId
       });
 
       expect(booking).toBeTruthy();
       expect(booking.studentId.toString()).toBe(student._id.toString());
-      expect(booking.scheduleId.toString()).toBe(schedule._id.toString());
+      expect(booking.scheduleId!.toString()).toBe(schedule._id.toString());
       expect(booking.serviceType).toBe('individual_class');
       expect(booking.status).toBe('confirmed');
       expect(booking.price).toBe(50);
@@ -363,8 +368,8 @@ describe('Professor Flow Integration Tests', () => {
       // Update schedule to reflect booking
       const updatedSchedule = await ScheduleModel.findByIdAndUpdate(
         schedule._id,
-        { 
-          isAvailable: false, 
+        {
+          isAvailable: false,
           studentId: student._id,
           status: 'confirmed'
         },
@@ -386,7 +391,8 @@ describe('Professor Flow Integration Tests', () => {
         serviceType: 'individual_class',
         status: 'confirmed',
         price: 50,
-        notes: 'Tennis lesson payment'
+        notes: 'Tennis lesson payment',
+        tenantId: commonTenantId
       });
 
       // Create payment record
@@ -398,12 +404,13 @@ describe('Professor Flow Integration Tests', () => {
         date: new Date(),
         status: 'paid',
         method: 'cash',
-        description: 'Payment for tennis lesson'
+        description: 'Payment for tennis lesson',
+        tenantId: commonTenantId
       });
 
       expect(payment).toBeTruthy();
       expect(payment.studentId.toString()).toBe(student._id.toString());
-      expect(payment.professorId.toString()).toBe(professor._id.toString());
+      expect(payment.professorId!.toString()).toBe(professor._id.toString());
       expect(payment.amount).toBe(50);
       expect(payment.status).toBe('paid');
 
@@ -433,8 +440,8 @@ describe('Professor Flow Integration Tests', () => {
       // Update schedule with student
       await ScheduleModel.findByIdAndUpdate(
         schedule._id,
-        { 
-          isAvailable: false, 
+        {
+          isAvailable: false,
           studentId: student._id,
           status: 'confirmed'
         }
@@ -514,7 +521,7 @@ describe('Professor Flow Integration Tests', () => {
       // Update service
       const updatedService = await ServiceModel.findByIdAndUpdate(
         service._id,
-        { 
+        {
           price: 250,
           description: 'Updated package of 5 tennis lessons with premium features'
         },
@@ -634,7 +641,8 @@ describe('Professor Flow Integration Tests', () => {
         startTime: new Date('2025-01-15T10:00:00Z'),
         endTime: new Date('2025-01-15T11:00:00Z'),
         isAvailable: true,
-        status: 'pending'
+        status: 'pending',
+        tenantId: commonTenantId
       });
     });
 
@@ -853,7 +861,8 @@ describe('Professor Flow Integration Tests', () => {
         startTime: new Date('2025-01-15T10:00:00Z'),
         endTime: new Date('2025-01-15T11:00:00Z'),
         isAvailable: true,
-        status: 'pending'
+        status: 'pending',
+        tenantId: commonTenantId
       });
 
       expect(schedule.isAvailable).toBe(true);
@@ -873,8 +882,8 @@ describe('Professor Flow Integration Tests', () => {
       // Update schedule to reflect booking
       const bookedSchedule = await ScheduleModel.findByIdAndUpdate(
         schedule._id,
-        { 
-          isAvailable: false, 
+        {
+          isAvailable: false,
           studentId: student._id,
           status: 'confirmed'
         },
@@ -1127,7 +1136,8 @@ describe('Professor Flow Integration Tests', () => {
         startTime: new Date('2025-01-15T10:00:00Z'),
         endTime: new Date('2025-01-15T11:00:00Z'),
         isAvailable: true,
-        status: 'pending'
+        status: 'pending',
+        tenantId: commonTenantId
       });
 
       const service = await ServiceModel.create({

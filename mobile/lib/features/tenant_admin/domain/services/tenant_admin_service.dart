@@ -12,6 +12,7 @@ import '../models/tenant_booking_model.dart';
 import '../models/booking_stats_model.dart';
 import '../models/tenant_student_model.dart';
 import '../models/tenant_payment_model.dart';
+import '../models/tenant_debt_report_model.dart';
 
 /// Service responsible for tenant admin operations
 /// Handles API communication for tenant admin endpoints
@@ -23,6 +24,39 @@ class TenantAdminService {
   TenantAdminService({required AppHttpClient httpClient, FirebaseAuth? auth})
     : _httpClient = httpClient,
       _auth = auth ?? FirebaseAuth.instance;
+
+  /// GET /api/tenant/reports/debts
+  /// Get debt report for the tenant
+  Future<TenantDebtReportModel> getDebtReport() async {
+    try {
+      final headers = await _getAuthHeaders();
+      final uri = Uri.parse('$_baseUrl/tenant/reports/debts');
+
+      final response = await _httpClient.get(
+        uri,
+        headers: headers,
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return TenantDebtReportModel.fromJson(data);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error al obtener reporte de deudas',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      throw NetworkException.serverError(
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
 
   /// Get authorization headers
   Future<Map<String, String>> _getAuthHeaders() async {

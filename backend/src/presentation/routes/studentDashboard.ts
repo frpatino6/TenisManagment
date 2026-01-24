@@ -26,6 +26,7 @@ router.get('/courts/:courtId/available-slots', controller.getCourtAvailableSlots
 router.get('/bookings', controller.getBookings);
 router.post('/book-lesson', controller.bookLesson);
 router.post('/book-court', controller.bookCourt);
+router.get('/payments/history', controller.getPaymentHistory);
 
 // Preferences endpoints (TEN-95)
 router.get('/preferences', controller.getPreferences);

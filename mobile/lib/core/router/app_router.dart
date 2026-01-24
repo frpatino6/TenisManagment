@@ -21,6 +21,7 @@ import '../../features/student/presentation/screens/my_bookings_screen.dart';
 import '../../features/student/presentation/screens/my_balance_screen.dart';
 import '../../features/student/presentation/screens/recent_activity_screen.dart';
 import '../../features/student/presentation/screens/request_service_screen.dart';
+import '../../features/student/presentation/screens/student_payment_history_screen.dart';
 import '../../features/settings/presentation/screens/theme_settings_screen.dart';
 import '../../features/tenant/presentation/screens/select_tenant_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_admin_home_screen.dart';
@@ -38,6 +39,7 @@ import '../../features/tenant_admin/presentation/screens/tenant_students_list_sc
 import '../../features/tenant_admin/presentation/screens/tenant_student_details_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_professor_details_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_payments_list_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_debt_report_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../providers/tenant_provider.dart';
 
@@ -258,6 +260,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          GoRoute(
+            path: 'reports/debts',
+            name: 'tenant-admin-debt-report',
+            builder: (context, state) => const TenantDebtReportScreen(),
+          ),
         ],
       ),
       GoRoute(
@@ -305,6 +312,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/my-bookings',
         name: 'my-bookings',
         builder: (context, state) => const MyBookingsScreen(),
+      ),
+      GoRoute(
+        path: '/student/payments/history',
+        name: 'student-payment-history',
+        builder: (context, state) => const StudentPaymentHistoryScreen(),
       ),
       GoRoute(
         path: '/recent-activity',

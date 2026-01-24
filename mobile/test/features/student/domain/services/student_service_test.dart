@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
+import 'package:tennis_management/core/services/http_client.dart';
 import 'package:tennis_management/features/student/domain/services/student_service.dart';
 import 'package:tennis_management/core/exceptions/exceptions.dart';
 import 'package:tennis_management/features/student/domain/models/recent_activity_model.dart';
@@ -14,7 +15,7 @@ class MockFirebaseAuth extends Mock implements FirebaseAuth {}
 
 class MockUser extends Mock implements User {}
 
-class MockHttpClient extends Mock implements http.Client {}
+class MockAppHttpClient extends Mock implements AppHttpClient {}
 
 void main() {
   setUpAll(() {
@@ -26,12 +27,12 @@ void main() {
   group('StudentService', () {
     late StudentService studentService;
     late MockFirebaseAuth mockFirebaseAuth;
-    late MockHttpClient mockHttpClient;
+    late MockAppHttpClient mockHttpClient;
     late MockUser mockUser;
 
     setUp(() {
       mockFirebaseAuth = MockFirebaseAuth();
-      mockHttpClient = MockHttpClient();
+      mockHttpClient = MockAppHttpClient();
       mockUser = MockUser();
 
       studentService = StudentService(
@@ -41,48 +42,55 @@ void main() {
     });
 
     group('getRecentActivities', () {
-      test('should return list of RecentActivityModel when request succeeds', () async {
-        const idToken = 'test-token';
-        final activitiesJson = {
-          'items': [
-            {
-              'id': 'activity-1',
-              'type': 'booking',
-              'title': 'Clase reservada',
-              'description': 'Clase con Prof. Test',
-              'date': '2024-01-01T10:00:00Z',
-              'status': 'confirmed',
-              'icon': 'calendar',
-              'color': 'blue',
-            },
-            {
-              'id': 'activity-2',
-              'type': 'class',
-              'title': 'Clase completada',
-              'description': 'Clase con Prof. Test',
-              'date': '2024-01-02T10:00:00Z',
-              'status': 'completed',
-              'icon': 'check',
-              'color': 'green',
-            },
-          ],
-        };
-        final response = http.Response(json.encode(activitiesJson), 200);
+      test(
+        'should return list of RecentActivityModel when request succeeds',
+        () async {
+          const idToken = 'test-token';
+          final activitiesJson = {
+            'items': [
+              {
+                'id': 'activity-1',
+                'type': 'booking',
+                'title': 'Clase reservada',
+                'description': 'Clase con Prof. Test',
+                'date': '2024-01-01T10:00:00Z',
+                'status': 'confirmed',
+                'icon': 'calendar',
+                'color': 'blue',
+              },
+              {
+                'id': 'activity-2',
+                'type': 'class',
+                'title': 'Clase completada',
+                'description': 'Clase con Prof. Test',
+                'date': '2024-01-02T10:00:00Z',
+                'status': 'completed',
+                'icon': 'check',
+                'color': 'green',
+              },
+            ],
+          };
+          final response = http.Response(json.encode(activitiesJson), 200);
 
-        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
-        when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
+          when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+          when(
+            () => mockUser.getIdToken(true),
+          ).thenAnswer((_) async => idToken);
+          when(
+            () => mockHttpClient.get(
               any(that: isA<Uri>()),
               headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+            ),
+          ).thenAnswer((_) async => response);
 
-        final result = await studentService.getRecentActivities();
+          final result = await studentService.getRecentActivities();
 
-        expect(result, isA<List<RecentActivityModel>>());
-        expect(result.length, equals(2));
-        expect(result[0].id, equals('activity-1'));
-        expect(result[0].type, equals('booking'));
-      });
+          expect(result, isA<List<RecentActivityModel>>());
+          expect(result.length, equals(2));
+          expect(result[0].id, equals('activity-1'));
+          expect(result[0].type, equals('booking'));
+        },
+      );
 
       test('should return empty list when items is null', () async {
         const idToken = 'test-token';
@@ -91,16 +99,16 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.get(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).thenAnswer((_) async => response);
 
-        // This will throw because items is null and we try to cast it
-        expect(
-          () => studentService.getRecentActivities(),
-          throwsA(isA<TypeError>()),
-        );
+        final result = await studentService.getRecentActivities();
+
+        expect(result, isEmpty);
       });
 
       test('should return empty list when items is empty', () async {
@@ -110,34 +118,42 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.get(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).thenAnswer((_) async => response);
 
         final result = await studentService.getRecentActivities();
 
         expect(result, isEmpty);
       });
 
-      test('should throw AuthException.notAuthenticated when no user', () async {
-        when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+      test(
+        'should throw AuthException.notAuthenticated when no user',
+        () async {
+          when(() => mockFirebaseAuth.currentUser).thenReturn(null);
 
-        expect(
-          () => studentService.getRecentActivities(),
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => studentService.getRecentActivities(),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
 
-      test('should throw AuthException.tokenExpired when token is null', () async {
-        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
-        when(() => mockUser.getIdToken(true)).thenAnswer((_) async => null);
+      test(
+        'should throw AuthException.tokenExpired when token is null',
+        () async {
+          when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+          when(() => mockUser.getIdToken(true)).thenAnswer((_) async => null);
 
-        expect(
-          () => studentService.getRecentActivities(),
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => studentService.getRecentActivities(),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
 
       test('should throw AuthException.tokenExpired on 401/403', () async {
         const idToken = 'test-token';
@@ -145,10 +161,12 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.get(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).thenAnswer((_) async => response);
 
         expect(
           () => studentService.getRecentActivities(),
@@ -171,10 +189,12 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.get(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).thenAnswer((_) async => response);
 
         final result = await studentService.getStudentInfo();
 
@@ -183,24 +203,30 @@ void main() {
         expect(result['name'], equals('Test Student'));
       });
 
-      test('should throw AuthException.notAuthenticated when no user', () async {
-        when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+      test(
+        'should throw AuthException.notAuthenticated when no user',
+        () async {
+          when(() => mockFirebaseAuth.currentUser).thenReturn(null);
 
-        expect(
-          () => studentService.getStudentInfo(),
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => studentService.getStudentInfo(),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
 
-      test('should throw AuthException.tokenExpired when token is null', () async {
-        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
-        when(() => mockUser.getIdToken(true)).thenAnswer((_) async => null);
+      test(
+        'should throw AuthException.tokenExpired when token is null',
+        () async {
+          when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+          when(() => mockUser.getIdToken(true)).thenAnswer((_) async => null);
 
-        expect(
-          () => studentService.getStudentInfo(),
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => studentService.getStudentInfo(),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
 
       test('should throw DomainException.notFound on 404', () async {
         const idToken = 'test-token';
@@ -208,10 +234,12 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.get(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).thenAnswer((_) async => response);
 
         expect(
           () => studentService.getStudentInfo(),
@@ -221,59 +249,72 @@ void main() {
     });
 
     group('getBookings', () {
-      test('should return list of BookingModel when request succeeds', () async {
-        const idToken = 'test-token';
-        final bookingsJson = {
-          'items': [
-            {
-              'id': 'booking-1',
-              'serviceType': 'individual_class',
-              'status': 'confirmed',
-              'price': 50.0,
-            },
-            {
-              'id': 'booking-2',
-              'serviceType': 'group_class',
-              'status': 'pending',
-              'price': 30.0,
-            },
-          ],
-        };
-        final response = http.Response(json.encode(bookingsJson), 200);
+      test(
+        'should return list of BookingModel when request succeeds',
+        () async {
+          const idToken = 'test-token';
+          final bookingsJson = {
+            'items': [
+              {
+                'id': 'booking-1',
+                'serviceType': 'individual_class',
+                'status': 'confirmed',
+                'price': 50.0,
+              },
+              {
+                'id': 'booking-2',
+                'serviceType': 'group_class',
+                'status': 'pending',
+                'price': 30.0,
+              },
+            ],
+          };
+          final response = http.Response(json.encode(bookingsJson), 200);
 
-        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
-        when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
+          when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+          when(
+            () => mockUser.getIdToken(true),
+          ).thenAnswer((_) async => idToken);
+          when(
+            () => mockHttpClient.get(
               any(that: isA<Uri>()),
               headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+            ),
+          ).thenAnswer((_) async => response);
 
-        final result = await studentService.getBookings();
+          final result = await studentService.getBookings();
 
-        expect(result, isA<List<BookingModel>>());
-        expect(result.length, equals(2));
-        expect(result[0].id, equals('booking-1'));
-        expect(result[0].serviceType.toString(), contains('individual'));
-      });
+          expect(result, isA<List<BookingModel>>());
+          expect(result.length, equals(2));
+          expect(result[0].id, equals('booking-1'));
+          expect(result[0].serviceType.toString(), contains('individual'));
+        },
+      );
 
-      test('should throw AuthException.notAuthenticated when no user', () async {
-        when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+      test(
+        'should throw AuthException.notAuthenticated when no user',
+        () async {
+          when(() => mockFirebaseAuth.currentUser).thenReturn(null);
 
-        expect(
-          () => studentService.getBookings(),
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => studentService.getBookings(),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
 
-      test('should throw AuthException.tokenExpired when token is null', () async {
-        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
-        when(() => mockUser.getIdToken(true)).thenAnswer((_) async => null);
+      test(
+        'should throw AuthException.tokenExpired when token is null',
+        () async {
+          when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+          when(() => mockUser.getIdToken(true)).thenAnswer((_) async => null);
 
-        expect(
-          () => studentService.getBookings(),
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => studentService.getBookings(),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
 
       test('should throw AuthException.tokenExpired on 401/403', () async {
         const idToken = 'test-token';
@@ -281,10 +322,12 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.get(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).thenAnswer((_) async => response);
 
         expect(
           () => studentService.getBookings(),
@@ -294,4 +337,3 @@ void main() {
     });
   });
 }
-

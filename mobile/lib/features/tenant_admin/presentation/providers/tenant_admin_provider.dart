@@ -4,6 +4,7 @@ import '../../domain/models/tenant_metrics_model.dart';
 import '../../domain/models/tenant_config_model.dart';
 import '../../domain/models/tenant_professor_model.dart';
 import '../../domain/models/tenant_court_model.dart';
+import '../../domain/models/tenant_debt_report_model.dart';
 import '../../domain/services/tenant_admin_service.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../domain/models/tenant_student_model.dart';
@@ -426,3 +427,16 @@ final professorBookingsProvider = FutureProvider.autoDispose
 
       return (result['bookings'] as List<TenantBookingModel>);
     });
+
+/// Provider for fetching debt report
+final debtReportProvider = FutureProvider.autoDispose<TenantDebtReportModel>((
+  ref,
+) async {
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null || tenantId.isEmpty) {
+    throw Exception('Tenant ID requerido');
+  }
+
+  final service = ref.read(tenantAdminServiceProvider);
+  return await service.getDebtReport();
+});

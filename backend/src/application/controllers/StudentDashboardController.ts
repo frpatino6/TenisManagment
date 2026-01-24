@@ -272,8 +272,11 @@ export class StudentDashboardController {
           level: 'Principiante',
           totalClasses: totalBookings,
           totalPayments: totalPayments,
-          totalSpent: totalPaymentsSum[0]?.total || 0,
+          totalSpent: totalPaymentsSum[0]?.total || 0, // Inversión total (pagos aprobados)
+          totalPaid: totalPaymentsSum[0]?.total || 0,   // Alias para claridad
           balance: recalculatedBalance,
+          availableBalance: recalculatedBalance > 0 ? recalculatedBalance : 0,
+          currentDebt: recalculatedBalance < 0 ? Math.abs(recalculatedBalance) : 0,
           totalReservationsValue: totalBookingsSum[0]?.total || 0,
         });
         return;
@@ -317,7 +320,10 @@ export class StudentDashboardController {
         totalClasses: totalBookings,
         totalPayments: totalPayments,
         totalSpent: totalPaymentsSum[0]?.total || 0,
-        balance: student.balance,
+        totalPaid: totalPaymentsSum[0]?.total || 0,
+        balance: recalculatedBalance,
+        availableBalance: recalculatedBalance > 0 ? recalculatedBalance : 0,
+        currentDebt: recalculatedBalance < 0 ? Math.abs(recalculatedBalance) : 0,
         totalReservationsValue: totalBookingsSum[0]?.total || 0,
       });
     } catch (error) {
@@ -1846,6 +1852,72 @@ export class StudentDashboardController {
       });
     } catch (error) {
       console.error('Error setting active tenant:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * GET /api/student-dashboard/payments/history
+   * Get student payment history with filters
+   */
+  public getPaymentHistory = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const firebaseUid = req.user?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+
+      const { from, to, status } = req.query;
+
+      const authUser = await AuthUserModel.findOne({ firebaseUid });
+      if (!authUser) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+
+      const student = await StudentModel.findOne({ authUserId: authUser._id });
+      if (!student) {
+        return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
+      }
+
+      const query: any = { studentId: student._id };
+
+      // Optional tenant filtering
+      if (req.tenantId) {
+        query.tenantId = new Types.ObjectId(req.tenantId);
+      }
+
+      // Date filtering
+      if (from || to) {
+        query.date = {};
+        if (from) query.date.$gte = new Date(from as string);
+        if (to) query.date.$lte = new Date(to as string);
+      }
+
+      // Status filtering
+      if (status) {
+        query.status = status;
+      }
+
+      const payments = await PaymentModel.find(query)
+        .populate('professorId', 'name')
+        .populate('tenantId', 'name')
+        .sort({ date: -1 })
+        .limit(100);
+
+      const items = payments.map(p => ({
+        id: p._id,
+        amount: p.amount,
+        date: p.date,
+        status: p.status,
+        method: p.method,
+        description: p.description,
+        professorName: (p.professorId as any)?.name || 'N/A',
+        tenantName: (p.tenantId as any)?.name || 'N/A',
+      }));
+
+      res.json({ items });
+    } catch (error) {
+      console.error('Error getting payment history:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

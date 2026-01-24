@@ -563,42 +563,85 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
                   ),
                 ],
                 const Gap(16),
-                TextField(
-                  controller: paymentController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: 'Monto de la clase',
-                    hintText: 'Ej: 50000',
-                    prefixText: '\$ ',
-                    border: const OutlineInputBorder(),
-                    labelStyle: GoogleFonts.inter(),
-                    hintStyle: GoogleFonts.inter(),
-                    helperText: 'Valor según el servicio reservado',
-                    helperStyle: GoogleFonts.inter(fontSize: 12),
-                  ),
-                ),
-                const Gap(16),
-                SwitchListTile(
-                  title: Text(
-                    '¿Pago recibido?',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                if (classData.paymentStatus == 'paid')
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.green.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.check_circle_outline,
+                          color: Colors.green,
+                        ),
+                        const Gap(12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Pago confirmado',
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.green,
+                                ),
+                              ),
+                              Text(
+                                'Esta clase ya fue pagada con anterioridad.',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: Colors.green.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else ...[
+                  TextField(
+                    controller: paymentController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Monto de la clase',
+                      hintText: 'Ej: 50000',
+                      prefixText: '\$ ',
+                      border: const OutlineInputBorder(),
+                      labelStyle: GoogleFonts.inter(),
+                      hintStyle: GoogleFonts.inter(),
+                      helperText: 'Valor según el servicio reservado',
+                      helperStyle: GoogleFonts.inter(fontSize: 12),
                     ),
                   ),
-                  subtitle: Text(
-                    isPaid
-                        ? 'El pago se registrará como PAGADO'
-                        : 'El pago se registrará como PENDIENTE',
-                    style: GoogleFonts.inter(fontSize: 12),
+                  const Gap(16),
+                  SwitchListTile(
+                    title: Text(
+                      '¿Pago recibido?',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: Text(
+                      isPaid
+                          ? 'El pago se registrará como PAGADO'
+                          : 'El pago se registrará como PENDIENTE',
+                      style: GoogleFonts.inter(fontSize: 12),
+                    ),
+                    value: isPaid,
+                    onChanged: (value) {
+                      setState(() => isPaid = value);
+                    },
+                    contentPadding: EdgeInsets.zero,
+                    activeColor: Colors.green,
                   ),
-                  value: isPaid,
-                  onChanged: (value) {
-                    setState(() => isPaid = value);
-                  },
-                  contentPadding: EdgeInsets.zero,
-                  activeColor: Colors.green,
-                ),
+                ],
               ],
             ),
             actions: [
@@ -620,14 +663,16 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
     if (confirmed == true && context.mounted) {
       try {
         final notifier = ref.read(professorNotifierProvider.notifier);
-        final paymentAmount = paymentController.text.isNotEmpty
+        final isAlreadyPaid = classData.paymentStatus == 'paid';
+        final paymentAmount =
+            (!isAlreadyPaid && paymentController.text.isNotEmpty)
             ? double.tryParse(paymentController.text)
             : null;
 
         await notifier.completeClass(
           classData.id,
           paymentAmount: paymentAmount,
-          paymentStatus: isPaid ? 'paid' : 'pending',
+          paymentStatus: isAlreadyPaid ? null : (isPaid ? 'paid' : 'pending'),
         );
 
         ref.invalidate(scheduleByDateProvider(_selectedDate));

@@ -1143,22 +1143,43 @@ export class ProfessorDashboardController {
         await booking.save();
       }
 
-      // Create payment record if amount provided
+      // Check for existing payment or create a new one
       let payment = null;
-      if (paymentAmount && paymentAmount > 0 && schedule.studentId && booking) {
-        const finalStatus = paymentStatus === 'pending' ? 'pending' : 'paid';
+      let paymentAlreadyExists = false;
 
-        payment = await PaymentModel.create({
-          studentId: schedule.studentId,
-          professorId: professor._id,
+      if (booking) {
+        // First, check if a payment already exists for this booking
+        const existingPayment = await PaymentModel.findOne({
           bookingId: booking._id,
-          tenantId: booking.tenantId,
-          amount: paymentAmount,
-          date: new Date(),
-          status: finalStatus,
-          method: 'cash', // Default to cash for manual payments
-          description: `Clase completada por profesor. Estado: ${finalStatus.toUpperCase()}. ${booking.serviceType} - ${schedule.startTime.toLocaleDateString()}`
+          status: 'paid'
         });
+
+        if (existingPayment) {
+          // Payment already exists (e.g., from Wompi), reuse it
+          payment = existingPayment;
+          paymentAlreadyExists = true;
+          logger.info('Payment already exists for booking', {
+            bookingId: booking._id.toString(),
+            paymentId: existingPayment._id.toString(),
+            amount: existingPayment.amount,
+            method: existingPayment.method
+          });
+        } else if (paymentAmount && paymentAmount > 0 && schedule.studentId) {
+          // No existing payment, create a new one
+          const finalStatus = paymentStatus === 'pending' ? 'pending' : 'paid';
+
+          payment = await PaymentModel.create({
+            studentId: schedule.studentId,
+            professorId: professor._id,
+            bookingId: booking._id,
+            tenantId: booking.tenantId,
+            amount: paymentAmount,
+            date: new Date(),
+            status: finalStatus,
+            method: 'cash', // Default to cash for manual payments
+            description: `Clase completada por profesor. Estado: ${finalStatus.toUpperCase()}. ${booking.serviceType} - ${schedule.startTime.toLocaleDateString()}`
+          });
+        }
       }
 
       res.json({
@@ -1166,7 +1187,8 @@ export class ProfessorDashboardController {
         scheduleId: schedule._id,
         bookingId: booking?._id,
         paymentId: payment?._id,
-        paymentStatus: payment?.status
+        paymentStatus: payment?.status,
+        paymentAlreadyExists
       });
     } catch (error) {
       logger.error('Error completing class', { error: (error as Error).message });

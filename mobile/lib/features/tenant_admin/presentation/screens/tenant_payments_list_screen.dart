@@ -31,6 +31,17 @@ class _TenantPaymentsListScreenState
       appBar: AppBar(
         title: const Text('Pagos'),
         actions: [
+          // Quick access to pending payments
+          IconButton(
+            onPressed: () {
+              ref
+                  .read(paymentStatusFilterProvider.notifier)
+                  .setStatus('pending');
+              ref.read(paymentsPageProvider.notifier).setPage(1);
+            },
+            icon: const Icon(Icons.pending_actions),
+            tooltip: 'Ver solo pendientes',
+          ),
           IconButton(
             onPressed: () => _pickDateRange(context, dateRange),
             icon: const Icon(Icons.calendar_month),
@@ -47,6 +58,7 @@ class _TenantPaymentsListScreenState
         children: [
           _buildDateRangeBanner(context, dateRange),
           _buildQuickRanges(context, dateRange),
+          _buildSearchBar(context),
           _buildFiltersRow(context),
           Expanded(
             child: paymentsAsync.when(
@@ -141,6 +153,27 @@ class _TenantPaymentsListScreenState
     );
   }
 
+  Widget _buildSearchBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: 'Buscar por nombre de estudiante...',
+          prefixIcon: const Icon(Icons.search),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+        ),
+        onChanged: (query) {
+          ref.read(paymentSearchQueryProvider.notifier).setQuery(query);
+          ref.read(paymentsPageProvider.notifier).setPage(1);
+        },
+      ),
+    );
+  }
+
   Widget _buildPaymentsList(
     BuildContext context,
     TenantPaymentsResponse data,
@@ -193,8 +226,10 @@ class _TenantPaymentsListScreenState
     final channel = ref.watch(paymentChannelFilterProvider);
 
     final statusOptions = const <String, String>{
-      'APPROVED': 'Aprobado',
-      'PENDING': 'Pendiente',
+      'pending': 'Pendientes',
+      'paid': 'Pagados',
+      'APPROVED': 'Aprobado (Online)',
+      'PENDING': 'Pendiente (Online)',
       'DECLINED': 'Rechazado',
       'VOIDED': 'Anulado',
       'ERROR': 'Error',

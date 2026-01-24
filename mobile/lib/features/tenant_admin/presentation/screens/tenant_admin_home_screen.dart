@@ -186,6 +186,15 @@ class TenantAdminHomeScreen extends ConsumerWidget {
           children: [
             _buildMetricCard(
               context,
+              'Pagos',
+              metrics.payments.total.toString(),
+              Icons.payment,
+              Colors.teal,
+              onTap: () => context.push('/tenant-admin-home/payments'),
+              hint: 'Ver detalle',
+            ),
+            _buildMetricCard(
+              context,
               'Reservas',
               metrics.bookings.total.toString(),
               Icons.calendar_today,
@@ -218,15 +227,6 @@ class TenantAdminHomeScreen extends ConsumerWidget {
               metrics.courts.total.toString(),
               Icons.sports_tennis,
               Colors.red,
-            ),
-            _buildMetricCard(
-              context,
-              'Pagos',
-              metrics.payments.total.toString(),
-              Icons.payment,
-              Colors.teal,
-              onTap: () => context.push('/tenant-admin-home/payments'),
-              hint: 'Ver detalle',
             ),
           ],
         ),

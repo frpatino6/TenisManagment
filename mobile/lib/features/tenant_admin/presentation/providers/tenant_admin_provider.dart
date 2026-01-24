@@ -294,6 +294,17 @@ final paymentChannelFilterProvider =
       PaymentChannelFilterNotifier.new,
     );
 
+class PaymentSearchQueryNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void setQuery(String? value) => state = value;
+}
+
+final paymentSearchQueryProvider =
+    NotifierProvider<PaymentSearchQueryNotifier, String?>(
+      PaymentSearchQueryNotifier.new,
+    );
+
 final tenantPaymentsProvider =
     FutureProvider.autoDispose<TenantPaymentsResponse>((ref) async {
       final tenantId = ref.watch(currentTenantIdProvider);
@@ -306,6 +317,7 @@ final tenantPaymentsProvider =
       final status = ref.watch(paymentStatusFilterProvider);
       final method = ref.watch(paymentMethodFilterProvider);
       final channel = ref.watch(paymentChannelFilterProvider);
+      final search = ref.watch(paymentSearchQueryProvider);
 
       return await service.getPayments(
         page: page,
@@ -315,6 +327,7 @@ final tenantPaymentsProvider =
         status: status,
         paymentMethodType: method,
         channel: channel,
+        search: search,
       );
     });
 

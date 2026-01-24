@@ -173,6 +173,7 @@ class TenantAdminService {
     String? gateway,
     String? paymentMethodType,
     String? channel,
+    String? search,
   }) async {
     try {
       final headers = await _getAuthHeaders();
@@ -197,6 +198,9 @@ class TenantAdminService {
       }
       if (channel != null) {
         queryParams['channel'] = channel;
+      }
+      if (search != null && search.isNotEmpty) {
+        queryParams['search'] = search;
       }
 
       final uri = Uri.parse(

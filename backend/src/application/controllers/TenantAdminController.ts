@@ -157,11 +157,12 @@ export class TenantAdminController {
         from: z.string().optional(),
         to: z.string().optional(),
         status: z
-          .enum(['PENDING', 'APPROVED', 'DECLINED', 'VOIDED', 'ERROR'])
+          .enum(['PENDING', 'APPROVED', 'DECLINED', 'VOIDED', 'ERROR', 'pending', 'paid'])
           .optional(),
         gateway: z.enum(['WOMPI', 'STRIPE']).optional(),
         paymentMethodType: z.string().optional(),
         channel: z.enum(['wallet', 'direct']).optional(),
+        search: z.string().optional(),
       });
 
       const {
@@ -173,6 +174,7 @@ export class TenantAdminController {
         gateway,
         paymentMethodType,
         channel,
+        search,
       } = schema.parse(
         req.query,
       );
@@ -272,6 +274,34 @@ export class TenantAdminController {
         if (status === 'APPROVED') manualFilter.status = 'paid';
         else if (status === 'PENDING') manualFilter.status = 'pending';
         else if (status === 'VOIDED') manualFilter.status = 'cancelled';
+        else if (status === 'pending') manualFilter.status = 'pending';
+        else if (status === 'paid') manualFilter.status = 'paid';
+      }
+
+      // Search by student name
+      if (search && search.trim()) {
+        const students = await StudentModel.find({
+          name: { $regex: search.trim(), $options: 'i' }
+        }).select('_id').lean();
+
+        const studentIds = students.map(s => s._id);
+
+        if (studentIds.length > 0) {
+          filter.studentId = { $in: studentIds };
+          manualFilter.studentId = { $in: studentIds };
+        } else {
+          // No students found, return empty results
+          res.status(200).json({
+            payments: [],
+            pagination: {
+              page,
+              limit,
+              total: 0,
+              totalPages: 0,
+            },
+          });
+          return;
+        }
       }
 
       const [transactions, manualPayments, totalTransactions, totalManual] = await Promise.all([

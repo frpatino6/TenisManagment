@@ -774,7 +774,7 @@ describe('StudentDashboardController', () => {
 
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          balance: -70000,
+          balance: 0, // Balance viene de StudentTenantModel, no se recalcula
           totalPayments: 1,
           totalClasses: 2,
           totalSpent: 50000,
@@ -782,7 +782,7 @@ describe('StudentDashboardController', () => {
         }),
       );
 
-      expect(mockStudentTenant.save).toHaveBeenCalled();
+      expect(mockStudentTenant.save).not.toHaveBeenCalled(); // Ya no se recalcula
       expect(mockStudent.save).not.toHaveBeenCalled();
     });
 

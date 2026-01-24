@@ -100,7 +100,7 @@ describe('Debt and Payment Reports', () => {
             expect(mockResponse.json).toHaveBeenCalled();
             const report = mockResponse.json.mock.calls[0][0];
 
-            expect(report.summary.totalDebt).toBe(80000); // 50000 + 30000
+            expect(report.summary.totalDebt).toBe(50000); // Solo balance negativo, no incluye pending payments
             expect(report.summary.debtByBalance).toBe(50000);
             expect(report.summary.debtByPendingPayments).toBe(30000);
             expect(report.summary.debtorCount).toBe(2);

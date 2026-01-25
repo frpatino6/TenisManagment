@@ -10,7 +10,11 @@ void main() {
         'name': 'Juan Pérez',
         'email': 'juan@example.com',
         'specialties': ['Tenis'],
-        'pricing': {'individualClass': 50.0},
+        'pricing': {
+          'individual_class': 50.0,
+          'group_class': 30.0,
+          'court_rental': 20.0,
+        },
       },
       'schedule': {
         'id': 'schedule-789',
@@ -61,7 +65,7 @@ void main() {
         'price': 50.0,
         'status': 'pending',
       };
-      
+
       final booking = BookingModel.fromJson(jsonWithoutCourt);
       expect(booking.court, isNull);
       expect(booking.status, equals('pending'));
@@ -87,7 +91,7 @@ void main() {
           'status': 'pending',
         },
       };
-      
+
       final booking = BookingModel.fromJson(jsonWithDefaults);
       expect(booking.serviceType, equals('individual_class'));
       expect(booking.status, equals('pending'));
@@ -96,7 +100,7 @@ void main() {
     test('should convert BookingModel to JSON', () {
       final booking = BookingModel.fromJson(validJson);
       final json = booking.toJson();
-      
+
       expect(json['id'], equals('booking-123'));
       expect(json['serviceType'], equals('individual_class'));
       expect(json['price'], equals(50.0));
@@ -128,42 +132,45 @@ void main() {
         'price': 50.0,
         'status': 'pending',
       };
-      
+
       expect(
         () => BookingModel.fromJson(invalidJson),
         throwsA(isA<AssertionError>()),
       );
     });
 
-    test('should throw AssertionError for invalid serviceType in debug mode', () {
-      final invalidJson = {
-        'id': 'booking-123',
-        'professor': {
-          'id': 'prof-456',
-          'name': 'Juan Pérez',
-          'email': 'juan@example.com',
-          'specialties': <String>[],
-          'pricing': <String, dynamic>{},
-        },
-        'schedule': {
-          'id': 'schedule-789',
-          'professorId': 'prof-456',
-          'startTime': '2024-01-15T10:00:00.000Z',
-          'endTime': '2024-01-15T11:00:00.000Z',
-          'type': 'individual_class',
+    test(
+      'should throw AssertionError for invalid serviceType in debug mode',
+      () {
+        final invalidJson = {
+          'id': 'booking-123',
+          'professor': {
+            'id': 'prof-456',
+            'name': 'Juan Pérez',
+            'email': 'juan@example.com',
+            'specialties': <String>[],
+            'pricing': <String, dynamic>{},
+          },
+          'schedule': {
+            'id': 'schedule-789',
+            'professorId': 'prof-456',
+            'startTime': '2024-01-15T10:00:00.000Z',
+            'endTime': '2024-01-15T11:00:00.000Z',
+            'type': 'individual_class',
+            'price': 50.0,
+            'status': 'pending',
+          },
+          'serviceType': 'invalid_type',
           'price': 50.0,
           'status': 'pending',
-        },
-        'serviceType': 'invalid_type',
-        'price': 50.0,
-        'status': 'pending',
-      };
-      
-      expect(
-        () => BookingModel.fromJson(invalidJson),
-        throwsA(isA<AssertionError>()),
-      );
-    });
+        };
+
+        expect(
+          () => BookingModel.fromJson(invalidJson),
+          throwsA(isA<AssertionError>()),
+        );
+      },
+    );
 
     test('should accept valid service types', () {
       final types = ['individual_class', 'group_class', 'court_rental'];
@@ -190,7 +197,7 @@ void main() {
           'price': 50.0,
           'status': 'pending',
         };
-        
+
         expect(() => BookingModel.fromJson(json), returnsNormally);
       }
     });
@@ -220,7 +227,7 @@ void main() {
           'price': 50.0,
           'status': status,
         };
-        
+
         expect(() => BookingModel.fromJson(json), returnsNormally);
       }
     });
@@ -249,7 +256,7 @@ void main() {
         'type': null,
         'price': null,
       };
-      
+
       final court = CourtBookingModel.fromJson(jsonWithDefaults);
       expect(court.id, equals(''));
       expect(court.name, equals('Cancha'));
@@ -266,7 +273,7 @@ void main() {
           'type': type,
           'price': 25.0,
         };
-        
+
         expect(() => CourtBookingModel.fromJson(json), returnsNormally);
       }
     });
@@ -279,8 +286,9 @@ void main() {
       'email': 'juan@example.com',
       'specialties': ['Tenis', 'Padel'],
       'pricing': {
-        'individualClass': 50.0,
-        'groupClass': 30.0,
+        'individual_class': 50.0,
+        'group_class': 30.0,
+        'court_rental': 20.0,
       },
     };
 
@@ -290,7 +298,8 @@ void main() {
       expect(professor.name, equals('Juan Pérez'));
       expect(professor.email, equals('juan@example.com'));
       expect(professor.specialties, equals(['Tenis', 'Padel']));
-      expect(professor.pricing, isA<Map<String, dynamic>>());
+      expect(professor.pricing, isA<PricingConfig>());
+      expect(professor.pricing.individualClass, equals(50.0));
     });
 
     test('should use default values when fields are missing', () {
@@ -301,14 +310,15 @@ void main() {
         'specialties': null,
         'pricing': null,
       };
-      
+
       final professor = ProfessorBookingModel.fromJson(jsonWithDefaults);
       expect(professor.id, equals(''));
       expect(professor.name, equals('Profesor no disponible'));
       expect(professor.email, equals(''));
       expect(professor.specialties, isEmpty);
-      expect(professor.pricing, isEmpty);
+      expect(professor.pricing.individualClass, equals(0.0));
+      expect(professor.pricing.groupClass, equals(0.0));
+      expect(professor.pricing.courtRental, equals(0.0));
     });
   });
 }
-

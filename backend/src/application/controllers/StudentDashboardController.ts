@@ -14,6 +14,7 @@ import { ProfessorTenantModel } from '../../infrastructure/database/models/Profe
 import { UserPreferencesModel } from '../../infrastructure/database/models/UserPreferencesModel';
 import { TenantService } from '../services/TenantService';
 import { BookingService } from '../services/BookingService';
+import { BalanceService } from '../services/BalanceService';
 import { Types } from 'mongoose';
 
 // Default base pricing
@@ -43,10 +44,12 @@ interface AuthenticatedRequest extends Request {
 export class StudentDashboardController {
   private tenantService: TenantService;
   private bookingService: BookingService;
+  private balanceService: BalanceService;
 
   constructor() {
     this.tenantService = new TenantService();
     this.bookingService = new BookingService();
+    this.balanceService = new BalanceService();
   }
 
   /**
@@ -260,8 +263,13 @@ export class StudentDashboardController {
           { $group: { _id: null, total: { $sum: '$price' } } },
         ]);
 
-        // Use balance from DB (source of truth)
-        const currentBalance = studentTenant.balance;
+        // Calculate balance from source of truth (Payments and Bookings)
+        // This ensures accuracy and consistency
+        const currentBalance = await this.balanceService.getBalance(
+          student._id,
+          tenantObjectId,
+          true // Sync cache when different
+        );
 
         res.json({
           id: student._id,
@@ -273,7 +281,7 @@ export class StudentDashboardController {
           totalPayments: totalPayments,
           totalSpent: totalPaymentsSum[0]?.total || 0,
           totalPaid: totalPaymentsSum[0]?.total || 0,
-          balance: currentBalance,  // Direct from DB
+          balance: currentBalance,  // Calculated from source of truth
           availableBalance: currentBalance > 0 ? currentBalance : 0,
           currentDebt: currentBalance < 0 ? Math.abs(currentBalance) : 0,
           totalReservationsValue: totalBookingsSum[0]?.total || 0,

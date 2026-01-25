@@ -667,7 +667,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+      color: Theme.of(
+        context,
+      ).colorScheme.primaryContainer.withValues(alpha: 0.3),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: tenantsAsync.when(
@@ -1371,7 +1373,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     }
 
     return Card(
-      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+      color: Theme.of(
+        context,
+      ).colorScheme.primaryContainer.withValues(alpha: 0.3),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

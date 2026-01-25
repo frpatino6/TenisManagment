@@ -260,7 +260,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           if (_isBooking || _isSyncing)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withOpacity(0.7),
+                color: Colors.black.withValues(alpha: 0.7),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -515,7 +515,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                           color: Theme.of(context)
                               .colorScheme
                               .surfaceContainerHighest
-                              .withOpacity(0.3),
+                              .withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: Theme.of(context).colorScheme.outlineVariant,
@@ -748,9 +748,8 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.primaryContainer.withOpacity(0.2)
+                          ? Theme.of(context).colorScheme.primaryContainer
+                                .withValues(alpha: 0.2)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -1170,7 +1169,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           return Card(
             color: Theme.of(
               context,
-            ).colorScheme.errorContainer.withOpacity(0.3),
+            ).colorScheme.errorContainer.withValues(alpha: 0.3),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -1298,7 +1297,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             errorMessage.contains('no tiene horarios');
 
         return Card(
-          color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
+          color: Theme.of(
+            context,
+          ).colorScheme.errorContainer.withValues(alpha: 0.3),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -1482,12 +1483,12 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             ref.watch(currentTenantProvider);
 
             if (isInsufficient && _hasWompiConfigured) {
-              final onPaymentStart = () {
+              void onPaymentStart() {
                 if (!mounted) return;
                 setState(() {
                   _isSyncing = true;
                 });
-              };
+              }
 
               return FilledButton.icon(
                 onPressed: () =>

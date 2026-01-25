@@ -287,7 +287,7 @@ class _MyBalanceScreenState extends ConsumerState<MyBalanceScreen> {
 
     return Card(
       elevation: 4,
-      shadowColor: hasDebt ? Colors.red.withOpacity(0.3) : Colors.black26,
+      shadowColor: hasDebt ? Colors.red.withValues(alpha: 0.3) : Colors.black26,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         width: double.infinity,

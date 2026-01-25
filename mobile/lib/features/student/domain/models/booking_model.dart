@@ -171,18 +171,22 @@ class ProfessorBookingModel {
   final String id;
   final String name;
   final String email;
+  final String phone;
   final List<String> specialties;
   final PricingConfig pricing;
 
   final double rating;
   final int experienceYears;
+  final double hourlyRate;
 
   ProfessorBookingModel({
     required this.id,
     required this.name,
     required this.email,
+    this.phone = '',
     this.rating = 0.0,
     this.experienceYears = 0,
+    this.hourlyRate = 0.0,
     required this.specialties,
     required this.pricing,
   });
@@ -192,8 +196,13 @@ class ProfessorBookingModel {
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? 'Profesor no disponible',
       email: json['email'] as String? ?? '',
+      phone: json['phone'] as String? ?? '',
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       experienceYears: json['experienceYears'] as int? ?? 0,
+      hourlyRate:
+          (json['hourlyRate'] as num?)?.toDouble() ??
+          (json['pricing']?['individual_class'] as num?)?.toDouble() ??
+          0.0,
       specialties: json['specialties'] != null
           ? List<String>.from(json['specialties'] as List)
           : [],
@@ -208,10 +217,12 @@ class ProfessorBookingModel {
       'id': id,
       'name': name,
       'email': email,
+      'phone': phone,
       'rating': rating,
       'experienceYears': experienceYears,
+      'hourlyRate': hourlyRate,
       'specialties': specialties,
-      'pricing': pricing,
+      'pricing': pricing.toJson(),
     };
   }
 }
@@ -228,12 +239,20 @@ class AvailableScheduleModel {
   AvailableScheduleModel({
     required this.id,
     required this.professorId,
-    required this.startTime,
-    required this.endTime,
-    required this.type,
-    required this.price,
-    required this.status,
-  });
+    required dynamic startTime,
+    required dynamic endTime,
+    this.type = 'individual_class',
+    this.price = 0.0,
+    this.status = 'available',
+  }) : startTime = startTime is DateTime
+           ? startTime.toIso8601String()
+           : startTime.toString(),
+       endTime = endTime is DateTime
+           ? endTime.toIso8601String()
+           : endTime.toString();
+
+  DateTime get startDateTime => DateTime.parse(startTime);
+  DateTime get endDateTime => DateTime.parse(endTime);
 
   String get formattedDate {
     try {
@@ -325,7 +344,7 @@ class AvailableScheduleModel {
       endTime: parseTime(json['endTime'] as String?),
       type: json['type'] as String? ?? 'individual_class',
       price: price,
-      status: json['status'] as String? ?? 'pending',
+      status: json['status'] as String? ?? 'available',
     );
   }
 

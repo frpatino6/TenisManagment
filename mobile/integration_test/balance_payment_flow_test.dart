@@ -38,8 +38,8 @@ void main() {
     required double amount,
     String? professorId,
   }) async {
-    // Use UAT backend URL
-    const backendUrl = 'https://tenis-uat.casacam.net';
+    // Use Local backend URL for dev
+    final backendUrl = AppConfig.backendUrl;
 
     try {
       // Intentar usar endpoint de test si existe
@@ -81,16 +81,16 @@ void main() {
     required String email,
     required String password,
   }) async {
-    // Initialize Firebase and set environment for UAT
+    // Initialize Firebase safely
+    // NOTE: For UAT, we need to set environment before initializing
     try {
-      // Set UAT environment before initializing
-      AppConfig.setEnvironment(Environment.uat);
-      await Firebase.initializeApp(options: FirebaseConfig.productionOptions);
+      AppConfig.setEnvironment(Environment.development);
+      await Firebase.initializeApp(options: FirebaseConfig.developmentOptions);
     } catch (_) {
       // Ignore duplicate app initialization
     }
 
-    // 1. Launch App (main_uat.dart already sets the environment)
+    // 1. Launch App
     await tester.pumpWidget(const ProviderScope(child: TennisManagementApp()));
     await tester.pumpAndSettle();
 
@@ -139,11 +139,8 @@ void main() {
   Future<String?> makeCourtBooking(WidgetTester tester) async {
     // 1. Navigate to Booking
     final bookingButton = find.text('Reservar Cancha');
-    await tester.scrollUntilVisible(
-      bookingButton,
-      500.0,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.ensureVisible(bookingButton);
+    await tester.pumpAndSettle();
 
     await tester.tap(bookingButton);
     await tester.pumpAndSettle();
@@ -183,18 +180,43 @@ void main() {
     await tester.pumpAndSettle();
 
     // 5. Confirm
-    final confirmBtn = find.text('Confirmar Reserva');
-    await tester.scrollUntilVisible(
-      confirmBtn,
-      100.0,
-      scrollable: find.byType(Scrollable).first,
-    );
+    // El texto puede ser 'Confirmar Reserva' o 'Recargar y Reservar' (si no hay saldo)
+    final confirmBtn = find.textContaining('Reservar');
 
-    await tester.tap(confirmBtn);
+    // Esperar a que el botón aparezca (puede estar cargando saldo)
+    bool found = false;
+    for (int i = 0; i < 5; i++) {
+      if (confirmBtn.evaluate().isNotEmpty) {
+        found = true;
+        break;
+      }
+      await tester.pump(const Duration(seconds: 1));
+    }
+
+    if (!found) {
+      print('DEBUG: Botón de reserva no encontrado después de esperar.');
+    }
+
+    await tester.ensureVisible(confirmBtn.last);
+    await tester.pumpAndSettle();
+    await tester.tap(confirmBtn.last);
     await tester.pumpAndSettle(const Duration(seconds: 2));
 
-    // 6. Verify Success and get booking ID from success message or navigate back
-    expect(find.textContaining('exitosamente'), findsOneWidget);
+    // 6. Verify Success or Payment Started
+    // Si tiene saldo, dirá 'Reserva realizada exitosamente'
+    // Si no tiene, dirá 'Pago en verificación' o similar
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            (widget is Text &&
+            (widget.data?.contains('exitosamente') == true ||
+                widget.data?.contains('verificación') == true)),
+      ),
+      findsOneWidget,
+      reason: 'Should show success or payment started message',
+    );
 
     // Retornar un ID temporal (en un test real, podrías extraerlo del mensaje o de la respuesta)
     return 'booking-court-${DateTime.now().millisecondsSinceEpoch}';
@@ -203,11 +225,8 @@ void main() {
   Future<String?> makeClassBooking(WidgetTester tester) async {
     // 1. Navigate to Class Booking
     final bookClassButton = find.text('Reservar Clase');
-    await tester.scrollUntilVisible(
-      bookClassButton,
-      500.0,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await tester.ensureVisible(bookClassButton);
+    await tester.pumpAndSettle();
 
     await tester.tap(bookClassButton);
     await tester.pumpAndSettle();
@@ -235,22 +254,28 @@ void main() {
     await tester.pumpAndSettle();
 
     // 3. Select Schedule
-    final bookButton = find.text('Reservar');
+    final bookButton = find.textContaining('Reservar');
     if (bookButton.evaluate().isEmpty) {
       return null; // No hay horarios disponibles
     }
 
-    await tester.scrollUntilVisible(
-      bookButton.first,
-      500.0,
-      scrollable: find.byType(Scrollable).first,
-    );
-
+    await tester.ensureVisible(bookButton.first);
+    await tester.pumpAndSettle();
     await tester.tap(bookButton.first);
     await tester.pumpAndSettle(const Duration(seconds: 2));
 
-    // 4. Verify Success
-    expect(find.textContaining('exitosamente'), findsOneWidget);
+    // 4. Verify Success or Payment Started
+    await tester.pumpAndSettle();
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            (widget is Text &&
+            (widget.data?.contains('exitosamente') == true ||
+                widget.data?.contains('verificación') == true)),
+      ),
+      findsOneWidget,
+      reason: 'Should show success or payment started message',
+    );
 
     return 'booking-class-${DateTime.now().millisecondsSinceEpoch}';
   }
@@ -263,11 +288,8 @@ void main() {
     // Buscar botón o card de "Mi Balance" en el home
     final balanceButton = find.textContaining('Balance');
     if (balanceButton.evaluate().isNotEmpty) {
-      await tester.scrollUntilVisible(
-        balanceButton.first,
-        500.0,
-        scrollable: find.byType(Scrollable).first,
-      );
+      await tester.ensureVisible(balanceButton.first);
+      await tester.pumpAndSettle();
       await tester.tap(balanceButton.first);
       await tester.pumpAndSettle();
     } else {
@@ -303,11 +325,8 @@ void main() {
     // 1. Navigate to Bookings
     final bookingsButton = find.textContaining('Reservas');
     if (bookingsButton.evaluate().isNotEmpty) {
-      await tester.scrollUntilVisible(
-        bookingsButton.first,
-        500.0,
-        scrollable: find.byType(Scrollable).first,
-      );
+      await tester.ensureVisible(bookingsButton.first);
+      await tester.pumpAndSettle();
       await tester.tap(bookingsButton.first);
       await tester.pumpAndSettle();
     }
@@ -375,8 +394,8 @@ void main() {
         if (courtBookingId != null) {
           await simulateWompiPayment(
             bookingId: courtBookingId,
-            studentId: 'student-id', // TODO: Obtener del contexto real
-            tenantId: 'tenant-id', // TODO: Obtener del contexto real
+            studentId: '696d45caad1199b2c909dea2',
+            tenantId: '69338a1f75213a463ce0429a',
             amount: 50000.0,
           );
         }
@@ -384,8 +403,8 @@ void main() {
         if (classBookingId != null) {
           await simulateWompiPayment(
             bookingId: classBookingId,
-            studentId: 'student-id', // TODO: Obtener del contexto real
-            tenantId: 'tenant-id', // TODO: Obtener del contexto real
+            studentId: '696d45caad1199b2c909dea2',
+            tenantId: '69338a1f75213a463ce0429a',
             amount: 50000.0,
           );
         }

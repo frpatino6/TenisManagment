@@ -9,6 +9,7 @@ import admin from './admin';
 import tenant from './tenant';
 import config from './config';
 import payment from './payment';
+import test from './test';
 
 const router = Router();
 
@@ -27,5 +28,6 @@ router.use('/admin', admin);
 router.use('/tenant', tenant);
 router.use('/config', config);
 router.use('/payments', payment);
+router.use('/test', test);
 
 export default router;

@@ -860,8 +860,8 @@ describe('Balance Calculation Flow Integration Tests', () => {
                 isAvailable: true,
             });
 
-            // 3. Simulate Wompi payment with bookingInfo (student has balance, but pays with card)
-            // This simulates the PaymentController.wompiWebhook flow
+            // 3. Simulate booking created from mobile app (creates wallet payment)
+            // This is what happens when user makes a reservation from mobile with sufficient balance
             const bookingPrice = 50000;
             const booking = await bookingService.createBooking({
                 studentId: student._id.toString(),
@@ -869,12 +869,33 @@ describe('Balance Calculation Flow Integration Tests', () => {
                 scheduleId: schedule._id.toString(),
                 serviceType: 'individual_class',
                 price: bookingPrice,
-                status: 'confirmed',
-                // IMPORTANT: paymentAlreadyProcessed = true simulates Wompi payment
-                paymentAlreadyProcessed: true
+                status: 'pending',
+                // NO paymentAlreadyProcessed - this simulates normal mobile booking
             });
 
-            // 4. Create the card payment (simulating what PaymentController does after createBooking)
+            // 4. Verify wallet payment was created
+            const walletPaymentBefore = await PaymentModel.findOne({
+                bookingId: booking._id,
+                method: 'wallet',
+            });
+            expect(walletPaymentBefore).toBeTruthy();
+            expect(walletPaymentBefore!.amount).toBe(bookingPrice);
+
+            // 5. Simulate Wompi webhook arriving (user paid with card)
+            // This simulates PaymentController.wompiWebhook finding existing booking
+            // and replacing wallet payment with card payment
+            const existingWalletPayment = await PaymentModel.findOne({
+                bookingId: booking._id,
+                method: 'wallet',
+                status: 'paid'
+            });
+            
+            if (existingWalletPayment) {
+                // Delete wallet payment (simulating what PaymentController does)
+                await PaymentModel.deleteOne({ _id: existingWalletPayment._id });
+            }
+            
+            // Create card payment (simulating what PaymentController does)
             await PaymentModel.create({
                 tenantId: tenant._id,
                 studentId: student._id,
@@ -890,7 +911,7 @@ describe('Balance Calculation Flow Integration Tests', () => {
                 isOnline: true
             });
 
-            // 5. Verify ONLY ONE payment exists for this booking (card payment, NOT wallet)
+            // 6. Verify ONLY ONE payment exists for this booking (card payment, NOT wallet)
             const payments = await PaymentModel.find({
                 bookingId: booking._id,
             });
@@ -899,14 +920,14 @@ describe('Balance Calculation Flow Integration Tests', () => {
             expect(payments[0]!.method).toBe('card'); // Should be card, not wallet
             expect(payments[0]!.amount).toBe(bookingPrice);
 
-            // 6. Verify NO wallet payment was created
+            // 7. Verify NO wallet payment exists (it was deleted)
             const walletPayments = await PaymentModel.find({
                 bookingId: booking._id,
                 method: 'wallet',
             });
             expect(walletPayments).toHaveLength(0); // No wallet payment should exist
 
-            // 7. Verify balance calculation
+            // 8. Verify balance calculation
             // Balance = 50k (recarga) - 0k (deuda, booking tiene Payment) - 0k (gastos wallet) = 50k
             const balance = await balanceService.calculateBalance(
                 student._id,

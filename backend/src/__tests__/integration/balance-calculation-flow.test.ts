@@ -825,4 +825,94 @@ describe('Balance Calculation Flow Integration Tests', () => {
             expect(studentTenantFinal!.balance).toBe(400000); // 500k - 50k - 50k
         });
     });
+
+    describe('Scenario 6: Wompi Payment with BookingInfo - No Duplicate Payments', () => {
+        it('should NOT create two payments when paying with Wompi (card payment only, no wallet payment)', async () => {
+            // 1. Recharge balance first (student has 50k)
+            const rechargeAmount = 50000;
+            await PaymentModel.create({
+                studentId: student._id,
+                tenantId: tenant._id,
+                amount: rechargeAmount,
+                date: new Date(),
+                status: 'paid',
+                method: 'transfer',
+                description: 'Recarga vía Wompi',
+                isOnline: true,
+            });
+
+            await StudentTenantModel.findOneAndUpdate(
+                { studentId: student._id, tenantId: tenant._id },
+                { $inc: { balance: rechargeAmount } },
+                { upsert: true, new: true }
+            );
+
+            // 2. Create a schedule for booking
+            const schedule = await ScheduleModel.create({
+                professorId: professor._id,
+                studentId: null,
+                startTime: new Date('2024-02-01T10:00:00Z'),
+                endTime: new Date('2024-02-01T11:00:00Z'),
+                status: 'pending',
+                date: new Date('2024-02-01'),
+                tenantId: tenant._id,
+                courtId: court._id,
+                isAvailable: true,
+            });
+
+            // 3. Simulate Wompi payment with bookingInfo (student has balance, but pays with card)
+            // This simulates the PaymentController.wompiWebhook flow
+            const bookingPrice = 50000;
+            const booking = await bookingService.createBooking({
+                studentId: student._id.toString(),
+                tenantId: tenant._id.toString(),
+                scheduleId: schedule._id.toString(),
+                serviceType: 'individual_class',
+                price: bookingPrice,
+                status: 'confirmed',
+                // IMPORTANT: paymentAlreadyProcessed = true simulates Wompi payment
+                paymentAlreadyProcessed: true
+            });
+
+            // 4. Create the card payment (simulating what PaymentController does after createBooking)
+            await PaymentModel.create({
+                tenantId: tenant._id,
+                studentId: student._id,
+                professorId: professor._id,
+                bookingId: booking._id,
+                amount: bookingPrice,
+                date: new Date(),
+                status: 'paid',
+                method: 'card',
+                description: `Pago Wompi para reserva: individual_class`,
+                concept: `Reserva individual_class`,
+                externalReference: 'TRX-TEST-123',
+                isOnline: true
+            });
+
+            // 5. Verify ONLY ONE payment exists for this booking (card payment, NOT wallet)
+            const payments = await PaymentModel.find({
+                bookingId: booking._id,
+            });
+
+            expect(payments).toHaveLength(1); // Should be only the card payment
+            expect(payments[0]!.method).toBe('card'); // Should be card, not wallet
+            expect(payments[0]!.amount).toBe(bookingPrice);
+
+            // 6. Verify NO wallet payment was created
+            const walletPayments = await PaymentModel.find({
+                bookingId: booking._id,
+                method: 'wallet',
+            });
+            expect(walletPayments).toHaveLength(0); // No wallet payment should exist
+
+            // 7. Verify balance calculation
+            // Balance = 50k (recarga) - 0k (deuda, booking tiene Payment) - 0k (gastos wallet) = 50k
+            const balance = await balanceService.calculateBalance(
+                student._id,
+                tenant._id
+            );
+            expect(balance).toBe(50000); // 50k recarga, booking pagado con card (no cuenta como gasto wallet)
+        });
+    });
 });

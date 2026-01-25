@@ -322,27 +322,83 @@ export class PaymentController {
                             }
                         }
                     } else {
-                        // This is a recharge (no bookingInfo)
-                        const newPayment = new PaymentModel({
-                            tenantId: tenant._id,
+                        // This appears to be a recharge (no bookingInfo in transaction)
+                        // BUT: Check if there's a recent booking without payment that matches this amount
+                        // This handles the case where user paid with Wompi but bookingInfo wasn't sent
+                        const recentBooking = await BookingModel.findOne({
+                            tenantId: transaction.tenantId,
                             studentId: transaction.studentId,
-                            professorId: null,
-                            amount: result.amount,
-                            date: new Date(),
-                            status: 'paid',
-                            method: 'card',
-                            description: `Recarga Wompi Ref: ${reference}`,
-                            concept: 'Recarga de Saldo',
-                            externalReference: reference,
-                            isOnline: true
-                            // NO bookingId - this is a recharge
-                        });
-                        await newPayment.save();
+                            price: result.amount,
+                            status: { $in: ['pending', 'confirmed'] },
+                            createdAt: { $gte: new Date(Date.now() - 10 * 60 * 1000) } // Last 10 minutes
+                        }).sort({ createdAt: -1 });
 
-                        // Sincronizar el balance después de crear el Payment
-                        await this.balanceService.syncBalance(transaction.studentId, tenant._id);
+                        if (recentBooking) {
+                            // Check if booking already has a wallet payment
+                            const existingWalletPayment = await PaymentModel.findOne({
+                                bookingId: recentBooking._id,
+                                method: 'wallet',
+                                status: 'paid'
+                            });
 
-                        this.logger.info(`[PaymentController] Payment processed and balance synced for ${reference}`);
+                            if (existingWalletPayment) {
+                                // Delete wallet payment and create card payment
+                                this.logger.info(`[PaymentController] Found recent booking with wallet payment, replacing with card payment for ref: ${reference}`);
+                                await PaymentModel.deleteOne({ _id: existingWalletPayment._id });
+                            }
+
+                            // Check if card payment already exists
+                            const existingCardPayment = await PaymentModel.findOne({
+                                bookingId: recentBooking._id,
+                                method: 'card',
+                                externalReference: reference
+                            });
+
+                            if (!existingCardPayment) {
+                                // Create card payment linked to the booking
+                                const newPayment = new PaymentModel({
+                                    tenantId: tenant._id,
+                                    studentId: transaction.studentId,
+                                    professorId: recentBooking.professorId || null,
+                                    bookingId: recentBooking._id,
+                                    amount: result.amount,
+                                    date: new Date(),
+                                    status: 'paid',
+                                    method: 'card',
+                                    description: `Pago Wompi para reserva: ${recentBooking.serviceType} Ref: ${reference}`,
+                                    concept: `Reserva ${recentBooking.serviceType}`,
+                                    externalReference: reference,
+                                    isOnline: true
+                                });
+                                await newPayment.save();
+                                await this.balanceService.syncBalance(transaction.studentId, tenant._id);
+                                this.logger.info(`[PaymentController] Payment linked to recent booking for ref: ${reference}`);
+                            } else {
+                                this.logger.info(`[PaymentController] Card payment already exists for booking, skipping ref: ${reference}`);
+                            }
+                        } else {
+                            // No recent booking found, treat as recharge
+                            const newPayment = new PaymentModel({
+                                tenantId: tenant._id,
+                                studentId: transaction.studentId,
+                                professorId: null,
+                                amount: result.amount,
+                                date: new Date(),
+                                status: 'paid',
+                                method: 'card',
+                                description: `Recarga Wompi Ref: ${reference}`,
+                                concept: 'Recarga de Saldo',
+                                externalReference: reference,
+                                isOnline: true
+                                // NO bookingId - this is a recharge
+                            });
+                            await newPayment.save();
+
+                            // Sincronizar el balance después de crear el Payment
+                            await this.balanceService.syncBalance(transaction.studentId, tenant._id);
+
+                            this.logger.info(`[PaymentController] Payment processed as recharge and balance synced for ${reference}`);
+                        }
                     }
                 }
             }
@@ -564,25 +620,82 @@ export class PaymentController {
                                 }
                             }
                         } else {
-                            // This is a recharge (no bookingInfo)
-                            const newPayment = new PaymentModel({
+                            // This appears to be a recharge (no bookingInfo in transaction)
+                            // BUT: Check if there's a recent booking without payment that matches this amount
+                            // This handles the case where user paid with Wompi but bookingInfo wasn't sent
+                            const recentBooking = await BookingModel.findOne({
                                 tenantId: transaction.tenantId,
                                 studentId: transaction.studentId,
-                                professorId: null,
-                                amount: result.amount,
-                                date: new Date(),
-                                status: 'paid',
-                                method: 'card',
-                                description: `Recarga Wompi Ref: ${result.reference}`,
-                                concept: 'Recarga de Saldo',
-                                externalReference: result.reference,
-                                isOnline: true
-                                // NO bookingId - this is a recharge
-                            });
-                            await newPayment.save();
+                                price: result.amount,
+                                status: { $in: ['pending', 'confirmed'] },
+                                createdAt: { $gte: new Date(Date.now() - 10 * 60 * 1000) } // Last 10 minutes
+                            }).sort({ createdAt: -1 });
 
-                            // Sincronizar el balance después de crear el Payment
-                            await this.balanceService.syncBalance(transaction.studentId, transaction.tenantId);
+                            if (recentBooking) {
+                                // Check if booking already has a wallet payment
+                                const existingWalletPayment = await PaymentModel.findOne({
+                                    bookingId: recentBooking._id,
+                                    method: 'wallet',
+                                    status: 'paid'
+                                });
+
+                                if (existingWalletPayment) {
+                                    // Delete wallet payment and create card payment
+                                    this.logger.info(`[PaymentController] Found recent booking with wallet payment in getTransactionStatus, replacing with card payment for ref: ${result.reference}`);
+                                    await PaymentModel.deleteOne({ _id: existingWalletPayment._id });
+                                }
+
+                                // Check if card payment already exists
+                                const existingCardPayment = await PaymentModel.findOne({
+                                    bookingId: recentBooking._id,
+                                    method: 'card',
+                                    externalReference: result.reference
+                                });
+
+                                if (!existingCardPayment) {
+                                    // Create card payment linked to the booking
+                                    const newPayment = new PaymentModel({
+                                        tenantId: transaction.tenantId,
+                                        studentId: transaction.studentId,
+                                        professorId: recentBooking.professorId || null,
+                                        bookingId: recentBooking._id,
+                                        amount: result.amount,
+                                        date: new Date(),
+                                        status: 'paid',
+                                        method: 'card',
+                                        description: `Pago Wompi para reserva: ${recentBooking.serviceType} Ref: ${result.reference}`,
+                                        concept: `Reserva ${recentBooking.serviceType}`,
+                                        externalReference: result.reference,
+                                        isOnline: true
+                                    });
+                                    await newPayment.save();
+                                    await this.balanceService.syncBalance(transaction.studentId, transaction.tenantId);
+                                    this.logger.info(`[PaymentController] Payment linked to recent booking in getTransactionStatus for ref: ${result.reference}`);
+                                } else {
+                                    this.logger.info(`[PaymentController] Card payment already exists for booking in getTransactionStatus, skipping ref: ${result.reference}`);
+                                }
+                            } else {
+                                // No recent booking found, treat as recharge
+                                const newPayment = new PaymentModel({
+                                    tenantId: transaction.tenantId,
+                                    studentId: transaction.studentId,
+                                    professorId: null,
+                                    amount: result.amount,
+                                    date: new Date(),
+                                    status: 'paid',
+                                    method: 'card',
+                                    description: `Recarga Wompi Ref: ${result.reference}`,
+                                    concept: 'Recarga de Saldo',
+                                    externalReference: result.reference,
+                                    isOnline: true
+                                    // NO bookingId - this is a recharge
+                                });
+                                await newPayment.save();
+
+                                // Sincronizar el balance después de crear el Payment
+                                await this.balanceService.syncBalance(transaction.studentId, transaction.tenantId);
+                                this.logger.info(`[PaymentController] Payment processed as recharge in getTransactionStatus and balance synced for ${result.reference}`);
+                            }
                         }
                     }
                 }

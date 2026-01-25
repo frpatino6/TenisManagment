@@ -181,40 +181,80 @@ void main() {
 
     // 5. Confirm
     // El texto puede ser 'Confirmar Reserva' o 'Recargar y Reservar' (si no hay saldo)
-    final confirmBtn = find.textContaining('Reservar');
+    final addCardIcon = find.byIcon(Icons.add_card);
+    final confirmText = find.text('Confirmar Reserva');
 
-    // Esperar a que el botón aparezca (puede estar cargando saldo)
-    bool found = false;
-    for (int i = 0; i < 5; i++) {
-      if (confirmBtn.evaluate().isNotEmpty) {
-        found = true;
+    Finder actionBtn;
+    bool isRecharge = false;
+
+    if (addCardIcon.evaluate().isNotEmpty) {
+      actionBtn = addCardIcon.last;
+      isRecharge = true;
+      print('DEBUG: Botón de recarga detectado.');
+    } else {
+      actionBtn = confirmText.last;
+      print('DEBUG: Botón de confirmación directa detectado.');
+    }
+
+    await tester.ensureVisible(actionBtn);
+    await tester.pumpAndSettle();
+    await tester.tap(actionBtn);
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+
+    if (isRecharge) {
+      // 5.1 Handle PaymentDialog
+      final paymentDialog = find.byType(AlertDialog);
+      expect(
+        paymentDialog,
+        findsOneWidget,
+        reason: 'PaymentDialog should appear for recharge',
+      );
+
+      final payButton = find.text('Pagar con Wompi');
+      await tester.tap(payButton);
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+
+      // At this point the WebView should be open.
+      // Call the simulation
+      print('DEBUG: Simulando pago en backend...');
+      await simulateWompiPayment(
+        bookingId: 'court-booking',
+        studentId: '696d45caad1199b2c909dea2',
+        tenantId: '69338a1f75213a463ce0429a',
+        amount: 50000.0,
+      );
+
+      // Simulate the redirect/close by popping the WebView
+      print('DEBUG: Cerrando WebView y Diálogo...');
+      // Pop WebView
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle(const Duration(seconds: 2));
+
+      // Pop Dialog (if still there)
+      if (find.byType(AlertDialog).evaluate().isNotEmpty) {
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+      }
+    }
+
+    // 6. Verify Success or Payment Started
+    bool messageFound = false;
+    for (int i = 0; i < 10; i++) {
+      final success = find.textContaining('exitosamente').evaluate().isNotEmpty;
+      final payment = find
+          .textContaining('en verificación')
+          .evaluate()
+          .isNotEmpty;
+      if (success || payment) {
+        messageFound = true;
         break;
       }
       await tester.pump(const Duration(seconds: 1));
     }
 
-    if (!found) {
-      print('DEBUG: Botón de reserva no encontrado después de esperar.');
-    }
-
-    await tester.ensureVisible(confirmBtn.last);
-    await tester.pumpAndSettle();
-    await tester.tap(confirmBtn.last);
-    await tester.pumpAndSettle(const Duration(seconds: 2));
-
-    // 6. Verify Success or Payment Started
-    // Si tiene saldo, dirá 'Reserva realizada exitosamente'
-    // Si no tiene, dirá 'Pago en verificación' o similar
-    await tester.pumpAndSettle();
-
     expect(
-      find.byWidgetPredicate(
-        (widget) =>
-            (widget is Text &&
-            (widget.data?.contains('exitosamente') == true ||
-                widget.data?.contains('verificación') == true)),
-      ),
-      findsOneWidget,
+      messageFound,
+      isTrue,
       reason: 'Should show success or payment started message',
     );
 
@@ -262,18 +302,36 @@ void main() {
     await tester.ensureVisible(bookButton.first);
     await tester.pumpAndSettle();
     await tester.tap(bookButton.first);
+    await tester.pumpAndSettle(const Duration(seconds: 1));
+
+    // Handle PaymentDialog if it appeared
+    final paymentDialog = find.byType(AlertDialog);
+    if (paymentDialog.evaluate().isNotEmpty) {
+      final payButton = find.text('Pagar con Wompi');
+      if (payButton.evaluate().isNotEmpty) {
+        await tester.tap(payButton);
+        await tester.pumpAndSettle(const Duration(seconds: 3));
+      }
+    }
     await tester.pumpAndSettle(const Duration(seconds: 2));
 
     // 4. Verify Success or Payment Started
-    await tester.pumpAndSettle();
+    bool messageFound = false;
+    for (int i = 0; i < 10; i++) {
+      final success = find.textContaining('exitosamente').evaluate().isNotEmpty;
+      final payment = find
+          .textContaining('en verificación')
+          .evaluate()
+          .isNotEmpty;
+      if (success || payment) {
+        messageFound = true;
+        break;
+      }
+      await tester.pump(const Duration(seconds: 1));
+    }
     expect(
-      find.byWidgetPredicate(
-        (widget) =>
-            (widget is Text &&
-            (widget.data?.contains('exitosamente') == true ||
-                widget.data?.contains('verificación') == true)),
-      ),
-      findsOneWidget,
+      messageFound,
+      isTrue,
       reason: 'Should show success or payment started message',
     );
 

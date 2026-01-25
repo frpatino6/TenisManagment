@@ -60,14 +60,23 @@ export class BookingService {
             return false;
         }
 
-        // 2. Check for Schedules that overlap
+        // 2. Check for Schedules that overlap AND are actually occupied
+        // A Schedule only blocks the court if:
+        // - It's blocked (isBlocked: true), OR
+        // - It's not available (isAvailable: false), OR
+        // - It has a student assigned (studentId exists)
         const scheduleQuery: any = {
             tenantId,
             courtId,
             status: { $in: ['confirmed', 'pending'] },
-            isBlocked: { $ne: true },
             $or: [
-                { startTime: { $lt: endTime }, endTime: { $gt: startTime } }
+                { isBlocked: true },
+                { isAvailable: false },
+                { studentId: { $exists: true, $ne: null } }
+            ],
+            $and: [
+                { startTime: { $lt: endTime } },
+                { endTime: { $gt: startTime } }
             ]
         };
 
@@ -78,7 +87,15 @@ export class BookingService {
         const conflictingSchedule = await ScheduleModel.findOne(scheduleQuery);
 
         if (conflictingSchedule) {
-            logger.info('Court conflict found in Schedules', { courtId, startTime, endTime, scheduleId: conflictingSchedule._id });
+            logger.info('Court conflict found in Schedules', { 
+                courtId, 
+                startTime, 
+                endTime, 
+                scheduleId: conflictingSchedule._id,
+                isAvailable: conflictingSchedule.isAvailable,
+                isBlocked: conflictingSchedule.isBlocked,
+                hasStudentId: !!conflictingSchedule.studentId
+            });
             return false;
         }
 

@@ -40,7 +40,7 @@ class BookingModel {
       'price',
       defaultValue: 0.0,
     );
-    
+
     return BookingModel(
       id: id,
       professor: json['professor'] != null
@@ -52,7 +52,11 @@ class BookingModel {
               name: 'Profesor no disponible',
               email: '',
               specialties: [],
-              pricing: {},
+              pricing: PricingConfig(
+                individualClass: 0,
+                groupClass: 0,
+                courtRental: 0,
+              ),
             ),
       schedule: json['schedule'] != null
           ? AvailableScheduleModel.fromJson(
@@ -68,9 +72,7 @@ class BookingModel {
               status: 'pending',
             ),
       court: json['court'] != null
-          ? CourtBookingModel.fromJson(
-              json['court'] as Map<String, dynamic>,
-            )
+          ? CourtBookingModel.fromJson(json['court'] as Map<String, dynamic>)
           : null,
       serviceType: json['serviceType'] as String? ?? 'individual_class',
       price: price,
@@ -120,7 +122,7 @@ class CourtBookingModel {
       'price',
       defaultValue: 0.0,
     );
-    
+
     return CourtBookingModel(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? 'Cancha',
@@ -130,11 +132,37 @@ class CourtBookingModel {
   }
 
   Map<String, dynamic> toJson() {
+    return {'id': id, 'name': name, 'type': type, 'price': price};
+  }
+}
+
+class PricingConfig {
+  final double individualClass;
+  final double groupClass;
+  final double courtRental;
+
+  PricingConfig({
+    required this.individualClass,
+    required this.groupClass,
+    required this.courtRental,
+  });
+
+  factory PricingConfig.fromJson(Map<String, dynamic> json) {
+    return PricingConfig(
+      individualClass:
+          (json['individual_class'] ?? json['individualClass'] ?? 0.0)
+              .toDouble(),
+      groupClass: (json['group_class'] ?? json['groupClass'] ?? 0.0).toDouble(),
+      courtRental: (json['court_rental'] ?? json['courtRental'] ?? 0.0)
+          .toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'name': name,
-      'type': type,
-      'price': price,
+      'individual_class': individualClass,
+      'group_class': groupClass,
+      'court_rental': courtRental,
     };
   }
 }
@@ -144,12 +172,17 @@ class ProfessorBookingModel {
   final String name;
   final String email;
   final List<String> specialties;
-  final Map<String, dynamic> pricing;
+  final PricingConfig pricing;
+
+  final double rating;
+  final int experienceYears;
 
   ProfessorBookingModel({
     required this.id,
     required this.name,
     required this.email,
+    this.rating = 0.0,
+    this.experienceYears = 0,
     required this.specialties,
     required this.pricing,
   });
@@ -159,10 +192,14 @@ class ProfessorBookingModel {
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? 'Profesor no disponible',
       email: json['email'] as String? ?? '',
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      experienceYears: json['experienceYears'] as int? ?? 0,
       specialties: json['specialties'] != null
           ? List<String>.from(json['specialties'] as List)
           : [],
-      pricing: json['pricing'] as Map<String, dynamic>? ?? {},
+      pricing: json['pricing'] != null
+          ? PricingConfig.fromJson(json['pricing'] as Map<String, dynamic>)
+          : PricingConfig(individualClass: 0, groupClass: 0, courtRental: 0),
     );
   }
 
@@ -171,6 +208,8 @@ class ProfessorBookingModel {
       'id': id,
       'name': name,
       'email': email,
+      'rating': rating,
+      'experienceYears': experienceYears,
       'specialties': specialties,
       'pricing': pricing,
     };
@@ -195,6 +234,67 @@ class AvailableScheduleModel {
     required this.price,
     required this.status,
   });
+
+  String get formattedDate {
+    try {
+      final date = DateTime.parse(startTime);
+      final months = [
+        'enero',
+        'febrero',
+        'marzo',
+        'abril',
+        'mayo',
+        'junio',
+        'julio',
+        'agosto',
+        'septiembre',
+        'octubre',
+        'noviembre',
+        'diciembre',
+      ];
+      final days = [
+        'lunes',
+        'martes',
+        'miércoles',
+        'jueves',
+        'viernes',
+        'sábado',
+        'domingo',
+      ];
+      return '${days[date.weekday - 1]}, ${date.day} de ${months[date.month - 1]}';
+    } catch (e) {
+      return startTime;
+    }
+  }
+
+  String get formattedTimeRange {
+    try {
+      final start = DateTime.parse(startTime);
+      final end = DateTime.parse(endTime);
+      String format(DateTime dt) {
+        final hour = dt.hour > 12
+            ? dt.hour - 12
+            : (dt.hour == 0 ? 12 : dt.hour);
+        final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+        final minute = dt.minute.toString().padLeft(2, '0');
+        return '$hour:$minute $ampm';
+      }
+
+      return '${format(start)} - ${format(end)}';
+    } catch (e) {
+      return '$startTime - $endTime';
+    }
+  }
+
+  int get durationInMinutes {
+    try {
+      final start = DateTime.parse(startTime);
+      final end = DateTime.parse(endTime);
+      return end.difference(start).inMinutes;
+    } catch (e) {
+      return 60; // Default to 60 minutes if parsing fails
+    }
+  }
 
   factory AvailableScheduleModel.fromJson(Map<String, dynamic> json) {
     // Safely parse startTime and endTime, handling empty strings

@@ -3,8 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/services/http_client.dart';
 import '../../../../core/exceptions/exceptions.dart';
-import '../models/professor_model.dart';
-import '../models/available_schedule_model.dart';
 import '../models/booking_model.dart';
 
 /// Service for managing booking operations for students

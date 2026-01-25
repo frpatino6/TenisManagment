@@ -139,7 +139,7 @@ class _ConfirmBookingScreenState extends ConsumerState<ConfirmBookingScreen> {
 
         // Check if webhook already created the booking
         final hasBooking = bookings.any(
-          (b) => b.scheduleId == widget.schedule.id && b.status == 'confirmed',
+          (b) => b.schedule.id == widget.schedule.id && b.status == 'confirmed',
         );
 
         if (hasBooking) {

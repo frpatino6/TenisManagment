@@ -70,6 +70,10 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
   // Empty and error states are now handled by reusable widgets
 
   Widget _buildBookingsList(BuildContext context, List<BookingModel> bookings) {
+    final pendingBookings = bookings
+        .where((b) => b.status == 'pending')
+        .toList();
+
     final upcomingBookings = bookings
         .where(
           (b) =>
@@ -95,6 +99,20 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (pendingBookings.isNotEmpty) ...[
+            _buildSectionHeader(
+              context,
+              'Reservas Pendientes',
+              pendingBookings.length,
+            ),
+            const Gap(12),
+            ...pendingBookings.map(
+              (booking) =>
+                  _buildBookingCard(context, booking, isUpcoming: true),
+            ),
+            const Gap(24),
+          ],
+
           if (upcomingBookings.isNotEmpty) ...[
             _buildSectionHeader(
               context,

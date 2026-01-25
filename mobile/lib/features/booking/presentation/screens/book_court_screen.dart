@@ -188,9 +188,12 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         final booking = next.value!
             .where(
               (b) =>
-                  b.courtId == _selectedCourt?.id &&
+                  b.court?.id == _selectedCourt?.id &&
                   b.status == 'confirmed' &&
-                  b.bookingDate?.isAtSameMomentAs(startDateTime) == true,
+                  DateTime.tryParse(
+                        b.schedule.startTime,
+                      )?.isAtSameMomentAs(startDateTime) ==
+                      true,
             )
             .firstOrNull;
 

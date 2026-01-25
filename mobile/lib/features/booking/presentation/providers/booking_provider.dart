@@ -1,22 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/models/professor_model.dart';
-import '../../domain/models/available_schedule_model.dart';
-import '../../domain/models/booking_model.dart';
+import '../../../student/domain/models/booking_model.dart';
 import '../../domain/models/court_model.dart';
 import '../../domain/services/booking_service.dart';
 import '../../domain/services/court_service.dart';
 import '../../../../core/services/http_client.dart';
 import '../../../../core/providers/tenant_provider.dart';
+import '../../../student/presentation/providers/student_provider.dart';
 
 final bookingServiceProvider = Provider<BookingService>((ref) {
   return BookingService(ref.watch(appHttpClientProvider));
 });
 
-final myBookingsProvider = FutureProvider.autoDispose<List<BookingModel>>((
-  ref,
-) async {
-  return ref.watch(bookingServiceProvider).getBookings();
-});
+final myBookingsProvider = studentBookingsProvider;
 
 final professorsProvider =
     FutureProvider.autoDispose<List<ProfessorBookingModel>>((ref) async {

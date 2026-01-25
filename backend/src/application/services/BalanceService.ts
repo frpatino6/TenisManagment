@@ -13,10 +13,15 @@ const logger = new Logger({ module: 'BalanceService' });
  * rather than relying on the accumulated balance field in StudentTenant.
  * 
  * The balance is calculated as:
- * Balance = Sum of Payments (status: 'paid') - Sum of Bookings (status: 'pending' | 'confirmed' | 'completed')
+ * Balance = Sum of Payments (status: 'paid') - Sum of Bookings WITHOUT paid payments
  * 
- * Note: 'pending' bookings represent debt (reservations created but not yet paid)
- *       'cancelled' bookings are excluded from the calculation
+ * Logic:
+ * - All Payments with status 'paid' are added (including recargas and booking payments)
+ * - Only Bookings that DON'T have a Payment with status 'paid' associated are subtracted
+ * - 'pending' bookings: Always count as debt (no payment yet)
+ * - 'confirmed' bookings: Only count if NO payment is associated
+ * - 'completed' bookings: Only count if NO payment is associated
+ * - 'cancelled' bookings: Excluded from calculation
  */
 export class BalanceService {
     /**
@@ -53,28 +58,39 @@ export class BalanceService {
 
         const totalPayments = paymentsResult[0]?.total || 0;
 
-        // Calculate total bookings (pending, confirmed, and completed bookings count as expenses)
+        // Calculate total bookings that are NOT yet paid
+        // Only count bookings that don't have a Payment with status 'paid' associated
         // - 'pending': Reservations created but not yet paid (debt)
-        // - 'confirmed': Reservations confirmed (paid or to be paid)
-        // - 'completed': Reservations completed
+        // - 'confirmed': Only count if NO payment is associated (unpaid confirmed bookings)
+        // - 'completed': Only count if NO payment is associated (unpaid completed bookings)
         // - 'cancelled': Should NOT count (cancelled reservations don't affect balance)
-        const bookingsResult = await BookingModel.aggregate([
-            {
-                $match: {
-                    studentId: studentObjectId,
-                    tenantId: tenantObjectId,
-                    status: { $in: ['pending', 'confirmed', 'completed'] },
-                },
-            },
-            {
-                $group: {
-                    _id: null,
-                    total: { $sum: '$price' },
-                },
-            },
-        ]);
+        
+        // First, get all bookings
+        const allBookings = await BookingModel.find({
+            studentId: studentObjectId,
+            tenantId: tenantObjectId,
+            status: { $in: ['pending', 'confirmed', 'completed'] },
+        }).lean();
 
-        const totalBookings = bookingsResult[0]?.total || 0;
+        // Get all paid payments linked to bookings
+        const paidPaymentsForBookings = await PaymentModel.find({
+            studentId: studentObjectId,
+            tenantId: tenantObjectId,
+            status: 'paid',
+            bookingId: { $exists: true, $ne: null },
+        }).lean();
+
+        // Create a set of booking IDs that have paid payments
+        const paidBookingIds = new Set(
+            paidPaymentsForBookings
+                .map(p => p.bookingId?.toString())
+                .filter(id => id !== null && id !== undefined)
+        );
+
+        // Calculate total for bookings that don't have paid payments
+        const totalBookings = allBookings
+            .filter(booking => !paidBookingIds.has(booking._id.toString()))
+            .reduce((sum, booking) => sum + booking.price, 0);
 
         const calculatedBalance = totalPayments - totalBookings;
 

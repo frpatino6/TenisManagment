@@ -71,6 +71,17 @@ describe('Debt and Payment Reports', () => {
                 isActive: true,
             });
 
+            // Create a booking to generate real debt for the calculated balance
+            const { BookingModel } = require('../../infrastructure/database/models/BookingModel');
+            await BookingModel.create({
+                studentId: new Types.ObjectId(studentId),
+                tenantId: new Types.ObjectId(tenantId),
+                price: 50000,
+                status: 'confirmed',
+                serviceType: 'court_rental',
+                bookingDate: new Date(),
+            });
+
             // 2. Create another student with pending payment
             const student2 = await StudentModel.create({
                 authUserId: new Types.ObjectId(),

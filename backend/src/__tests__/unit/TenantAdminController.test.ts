@@ -975,6 +975,16 @@ describe('TenantAdminController', () => {
         status: 'confirmed',
       });
 
+      // Add payment to justify balance: 200 (Expected) + 50 (Booking) = 250 (Payment)
+      await PaymentModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: student._id,
+        amount: 250,
+        status: 'paid',
+        method: 'transfer',
+        date: new Date(),
+      });
+
       mockRequest.params = { id: student._id.toString() };
 
       await controller.getStudentDetails(mockRequest as Request, mockResponse as Response);

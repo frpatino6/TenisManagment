@@ -1127,6 +1127,13 @@ export class StudentDashboardController {
             .limit(1)
             .lean();
 
+          // Calculate balance from source of truth (Payments and Bookings) per tenant
+          const calculatedBalance = await this.balanceService.getBalance(
+            student._id,
+            tenant._id,
+            false // Don't sync cache, just calculate
+          );
+
           return {
             id: tenant._id.toString(),
             name: tenant.name,
@@ -1135,7 +1142,7 @@ export class StudentDashboardController {
             config: tenant.config,
             isActive: st.isActive,
             joinedAt: st.joinedAt,
-            balance: st.balance,
+            balance: calculatedBalance, // Calculated from source of truth
             lastBooking: lastBooking ? {
               id: lastBooking._id.toString(),
               createdAt: lastBooking.createdAt,

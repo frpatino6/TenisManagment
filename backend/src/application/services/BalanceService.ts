@@ -13,15 +13,19 @@ const logger = new Logger({ module: 'BalanceService' });
  * rather than relying on the accumulated balance field in StudentTenant.
  * 
  * The balance is calculated as:
- * Balance = Sum of Payments (status: 'paid') - Sum of Bookings WITHOUT paid payments
+ * Balance = Sum of Recargas (Payments without bookingId) - Sum of Bookings WITHOUT paid payments
  * 
  * Logic:
- * - All Payments with status 'paid' are added (including recargas and booking payments)
+ * - Only Payments with status 'paid' that are NOT linked to bookings (recargas) are added
+ * - Payments linked to bookings are NOT counted here (they're handled in booking logic)
  * - Only Bookings that DON'T have a Payment with status 'paid' associated are subtracted
  * - 'pending' bookings: Always count as debt (no payment yet)
  * - 'confirmed' bookings: Only count if NO payment is associated
  * - 'completed' bookings: Only count if NO payment is associated
  * - 'cancelled' bookings: Excluded from calculation
+ * 
+ * Note: When a booking is created, balance is deducted. When payment is confirmed for that booking,
+ *       the payment should NOT add to balance again (it just cancels the debt).
  */
 export class BalanceService {
     /**
@@ -40,12 +44,18 @@ export class BalanceService {
         const tenantObjectId = new Types.ObjectId(tenantId.toString());
 
         // Calculate total payments (only paid payments count)
+        // IMPORTANT: Only count payments that are NOT linked to bookings (recargas de saldo)
+        // Payments linked to bookings are already accounted for in the booking logic
         const paymentsResult = await PaymentModel.aggregate([
             {
                 $match: {
                     studentId: studentObjectId,
                     tenantId: tenantObjectId,
                     status: 'paid',
+                    $or: [
+                        { bookingId: { $exists: false } },
+                        { bookingId: null }
+                    ]
                 },
             },
             {

@@ -23,11 +23,13 @@ import { StudentModel } from '../../infrastructure/database/models/StudentModel'
 import { Logger } from '../../infrastructure/services/Logger';
 import { Types } from 'mongoose';
 import { EmailService } from '../../infrastructure/services/EmailService';
+import { BalanceService } from '../services/BalanceService';
 
 const logger = new Logger({ module: 'TenantAdminController' });
 
 export class TenantAdminController {
   private emailService = new EmailService();
+  private balanceService = new BalanceService();
 
   constructor(private readonly tenantService: TenantService) { }
 
@@ -2385,13 +2387,20 @@ export class TenantAdminController {
 
       const student = relation.studentId as any;
 
+      // Calculate balance from source of truth (Payments and Bookings) per tenant
+      const calculatedBalance = await this.balanceService.getBalance(
+        new Types.ObjectId(id),
+        new Types.ObjectId(tenantId),
+        false // Don't sync cache, just calculate
+      );
+
       res.json({
         id: student._id,
         name: student.name,
         email: student.email,
         phone: student.phone,
         membershipType: student.membershipType,
-        balance: relation.balance,
+        balance: calculatedBalance, // Calculated from source of truth
         isActive: relation.isActive,
         joinedAt: relation.joinedAt,
         recentBookings: recentBookings.map((b: any) => ({
@@ -2512,14 +2521,14 @@ export class TenantAdminController {
         studentFilter = { studentId: { $in: studentIds } };
       }
 
-      // 1. Estudiantes con balance negativo en StudentTenant
-      const debtorsQuery: any = {
+      // 1. Get all StudentTenant records for this tenant
+      // We'll calculate the actual balance for each student
+      const studentTenantsQuery: any = {
         tenantId: new Types.ObjectId(tenantId),
-        balance: { $lt: 0 },
         ...studentFilter
       };
 
-      const debtors = await StudentTenantModel.find(debtorsQuery).populate('studentId', 'name email phone');
+      const studentTenants = await StudentTenantModel.find(studentTenantsQuery).populate('studentId', 'name email phone');
 
       // 2. Pagos manuales pendientes de confirmación
       const pendingPaymentsQuery: any = {
@@ -2533,20 +2542,29 @@ export class TenantAdminController {
       // Agrupar deudas por estudiante
       const debtMap = new Map<string, any>();
 
-      // Procesar balances negativos
-      debtors.forEach((d: any) => {
-        if (!d.studentId) return;
-        const sId = d.studentId._id.toString();
-        debtMap.set(sId, {
-          studentId: sId,
-          name: d.studentId.name,
-          email: d.studentId.email,
-          phone: d.studentId.phone,
-          balance: d.balance,
-          pendingPaymentsAmount: 0,
-          totalDebt: Math.abs(d.balance),
-        });
-      });
+      // Calculate actual balance for each student from source of truth
+      for (const st of studentTenants) {
+        if (!st.studentId) continue;
+        const sId = (st.studentId as any)._id.toString();
+        const calculatedBalance = await this.balanceService.getBalance(
+          sId,
+          new Types.ObjectId(tenantId),
+          false // Don't sync cache
+        );
+
+        // Only include students with negative balance (debt)
+        if (calculatedBalance < 0) {
+          debtMap.set(sId, {
+            studentId: sId,
+            name: (st.studentId as any).name,
+            email: (st.studentId as any).email,
+            phone: (st.studentId as any).phone,
+            balance: calculatedBalance, // Calculated from source of truth
+            pendingPaymentsAmount: 0,
+            totalDebt: Math.abs(calculatedBalance),
+          });
+        }
+      }
 
       // Procesar pagos pendientes (estos suman a la deuda "real" hasta que se confirman)
       // Nota: Si un profesor marca una clase como completada y NO pagada, se crea un Payment 'pending'.
@@ -2573,7 +2591,7 @@ export class TenantAdminController {
 
       const reportItems = Array.from(debtMap.values()).sort((a, b) => b.totalDebt - a.totalDebt);
 
-      const totalBalanceDebt = Math.abs(debtors.reduce((sum, d) => sum + (d.balance < 0 ? d.balance : 0), 0));
+      const totalBalanceDebt = Math.abs(reportItems.reduce((sum, d) => sum + (d.balance < 0 ? d.balance : 0), 0));
       const totalPendingAmount = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
 
       res.json({

@@ -11,6 +11,7 @@ import { TenantModel } from '../../infrastructure/database/models/TenantModel';
 import { UserPreferencesModel } from '../../infrastructure/database/models/UserPreferencesModel';
 import { TenantService } from '../services/TenantService';
 import { BookingService } from '../services/BookingService';
+import { BalanceService } from '../services/BalanceService';
 import { Logger } from '../../infrastructure/services/Logger';
 import { Types } from 'mongoose';
 const logger = new Logger({ controller: 'ProfessorDashboardController' });
@@ -18,6 +19,7 @@ const logger = new Logger({ controller: 'ProfessorDashboardController' });
 export class ProfessorDashboardController {
   private tenantService = new TenantService();
   private bookingService = new BookingService();
+  private balanceService = new BalanceService();
 
   // Obtener información del profesor
   getProfessorInfo = async (req: Request, res: Response) => {
@@ -1324,19 +1326,27 @@ export class ProfessorDashboardController {
             description: `Clase completada por profesor. Estado: ${finalStatus.toUpperCase()}. ${booking.serviceType} - ${schedule.startTime.toLocaleDateString()}`
           });
 
-          // Update student balance if payment is confirmed (paid)
-          // Only sum balance if payment is NOT with wallet (pago pendiente al profesor)
-          // If payment is with wallet, balance was already deducted when booking was created
-          if (finalStatus === 'paid' && payment.method !== 'wallet') {
-            await StudentTenantModel.findOneAndUpdate(
-              {
-                studentId: new Types.ObjectId(schedule.studentId.toString()),
-                tenantId: new Types.ObjectId(booking.tenantId.toString())
-              },
-              { $inc: { balance: paymentAmount } }
-            );
-          }
+          // IMPORTANTE: NO sumar balance aquí porque:
+          // 1. El BookingService SIEMPRE descuenta el balance al crear el booking (crea deuda)
+          // 2. El Payment 'cash' solo cancela la deuda en el cálculo del BalanceService
+          // 3. Si sumamos aquí, estaríamos dando crédito adicional cuando solo deberíamos cancelar la deuda
+          // El BalanceService calculará correctamente: Recargas - Deudas - Gastos wallet
+          // Donde el Payment 'cash' cancela la deuda del booking (lo remueve del cálculo de deudas)
+          
+          // Sincronizar el balance después de crear/actualizar el Payment
+          await this.balanceService.syncBalance(
+            new Types.ObjectId(schedule.studentId.toString()),
+            new Types.ObjectId(booking.tenantId.toString())
+          );
         }
+      }
+
+      // Sincronizar el balance después de cualquier cambio en el pago
+      if (booking && schedule.studentId) {
+        await this.balanceService.syncBalance(
+          new Types.ObjectId(schedule.studentId.toString()),
+          new Types.ObjectId(booking.tenantId.toString())
+        );
       }
 
       res.json({

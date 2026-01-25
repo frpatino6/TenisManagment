@@ -10,6 +10,7 @@ import { StudentModel } from '../../infrastructure/database/models/StudentModel'
 import { AuthUserModel, UserRole } from '../../infrastructure/database/models/AuthUserModel';
 import { TenantService } from '../services/TenantService';
 import { BookingService } from '../services/BookingService';
+import { BalanceService } from '../services/BalanceService';
 import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
 import { Logger } from '../../infrastructure/services/Logger';
 
@@ -28,6 +29,7 @@ export class PaymentController {
     private logger = new Logger();
     private tenantService = new TenantService();
     private bookingService = new BookingService();
+    private balanceService = new BalanceService();
 
     constructor(paymentGateway: PaymentGateway) {
         this.paymentGateway = paymentGateway;
@@ -197,13 +199,10 @@ export class PaymentController {
                     await newPayment.save();
 
                     // CORRECCIÓN: Incrementar balance en StudentTenantModel, no en StudentModel
-                    await StudentTenantModel.findOneAndUpdate(
-                        { studentId: transaction.studentId, tenantId: tenant._id },
-                        { $inc: { balance: result.amount } },
-                        { upsert: true }
-                    );
+                    // Sincronizar el balance después de crear el Payment
+                    await this.balanceService.syncBalance(transaction.studentId, tenant._id);
 
-                    this.logger.info(`[PaymentController] Payment processed and balance credited to StudentTenant for ${reference}`);
+                    this.logger.info(`[PaymentController] Payment processed and balance synced for ${reference}`);
 
                     // Check if there is a pending booking to be auto-confirmed
                     if (transaction.metadata?.bookingInfo) {
@@ -343,12 +342,8 @@ export class PaymentController {
                         });
                         await newPayment.save();
 
-                        // CORRECCIÓN: Incrementar balance en StudentTenantModel, no en StudentModel
-                        await StudentTenantModel.findOneAndUpdate(
-                            { studentId: transaction.studentId, tenantId: transaction.tenantId },
-                            { $inc: { balance: result.amount } },
-                            { upsert: true }
-                        );
+                        // Sincronizar el balance después de crear el Payment
+                        await this.balanceService.syncBalance(transaction.studentId, transaction.tenantId);
 
                         if (transaction.metadata?.bookingInfo) {
                             try {

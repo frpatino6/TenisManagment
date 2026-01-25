@@ -7,6 +7,7 @@ import { ProfessorTenantModel } from '../../infrastructure/database/models/Profe
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
 import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
 import { TenantService } from './TenantService';
+import { BalanceService } from './BalanceService';
 import { Logger } from '../../infrastructure/services/Logger';
 
 const logger = new Logger({ module: 'BookingService' });
@@ -26,6 +27,7 @@ export interface CreateBookingData {
 
 export class BookingService {
     private tenantService = new TenantService();
+    private balanceService = new BalanceService();
 
     /**
      * Checks if a court is available for a given time range.
@@ -262,6 +264,12 @@ export class BookingService {
                     balanceBefore: balanceBeforeDeduction
                 });
             }
+
+            // Sincronizar el balance después de crear el booking y cualquier payment
+            await this.balanceService.syncBalance(
+                new Types.ObjectId(studentId.toString()),
+                new Types.ObjectId(tenantId.toString())
+            );
 
             if (enableOnlinePayments) {
                 logger.info('Booking created and balance deducted', {

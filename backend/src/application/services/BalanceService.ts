@@ -21,8 +21,10 @@ const logger = new Logger({ module: 'BalanceService' });
  * - Gastos con wallet: Payments with bookingId and method='wallet' (already deducted from balance when booking was created)
  * 
  * Important:
- * - Payments with method 'wallet' represent expenses already deducted from balance
- * - Payments with other methods (cash, transfer) linked to bookings represent payments TO the student (add to balance)
+ * - Payments with method 'wallet' represent expenses already deducted from balance (must subtract)
+ * - Payments with other methods (cash, transfer) linked to bookings do NOT add credit
+ *   They only cancel the debt of the booking (remove booking from debt calculation)
+ *   This is because the booking already deducted the balance when created
  * - 'pending' bookings: Always count as debt (no payment yet)
  * - 'confirmed' bookings: Only count as debt if NO payment is associated
  * - 'completed' bookings: Only count as debt if NO payment is associated
@@ -93,14 +95,14 @@ export class BalanceService {
 
         // Separate payments by method:
         // - 'wallet': Expenses already deducted from balance (must subtract)
-        // - Other methods (cash, transfer): Payments TO student (add to balance, handled separately)
+        // - Other methods (cash, transfer): Payments that cancel debt, NOT credits
         const walletPayments = paidPaymentsForBookings.filter(p => p.method === 'wallet');
-        const otherPayments = paidPaymentsForBookings.filter(p => p.method !== 'wallet');
 
         // Calculate total wallet expenses (already deducted when booking was created)
         const totalWalletExpenses = walletPayments.reduce((sum, p) => sum + p.amount, 0);
 
         // Create a set of booking IDs that have paid payments (any method)
+        // These bookings are PAID, so they don't count as debt
         const paidBookingIds = new Set(
             paidPaymentsForBookings
                 .map(p => p.bookingId?.toString())
@@ -108,25 +110,35 @@ export class BalanceService {
         );
 
         // Calculate total for bookings that don't have paid payments (debt)
+        // These are unpaid bookings that create debt
         const totalBookings = allBookings
             .filter(booking => !paidBookingIds.has(booking._id.toString()))
             .reduce((sum, booking) => sum + booking.price, 0);
 
-        // Calculate total payments TO student (cash, transfer) linked to bookings
-        // These represent payments received from admin/professor, so they add to balance
-        const totalPaymentsToStudent = otherPayments.reduce((sum, p) => sum + p.amount, 0);
+        // IMPORTANT: Payments with method 'cash' or 'transfer' linked to bookings
+        // do NOT add credit. They only cancel the debt of the booking.
+        // The booking already deducted the balance when created, so the Payment
+        // just marks it as paid (removes it from debt calculation).
+        // We don't add these payments because:
+        // 1. The booking already deducted the balance (created debt)
+        // 2. The Payment only cancels that debt (removes booking from debt calculation)
+        // 3. Adding the Payment would be double-counting
 
         // Final balance calculation:
-        // Balance = Recargas - Deudas - Gastos con wallet + Pagos recibidos (cash/transfer)
-        const calculatedBalance = totalPayments + totalPaymentsToStudent - totalBookings - totalWalletExpenses;
+        // Balance = Recargas - Deudas - Gastos con wallet
+        // Where:
+        // - Recargas: Payments without bookingId (top-ups)
+        // - Deudas: Bookings without paid payments (unpaid bookings)
+        // - Gastos wallet: Payments with method='wallet' (already deducted)
+        // Note: Payments with method='cash'/'transfer' don't add credit, they just cancel debt
+        const calculatedBalance = totalPayments - totalBookings - totalWalletExpenses;
 
         logger.debug('Balance calculated', {
             studentId: studentObjectId.toString(),
             tenantId: tenantObjectId.toString(),
             totalPayments, // Recargas
-            totalBookings, // Deudas
-            totalWalletExpenses, // Gastos con wallet
-            totalPaymentsToStudent, // Pagos recibidos (cash/transfer)
+            totalBookings, // Deudas (bookings sin paid payments)
+            totalWalletExpenses, // Gastos con wallet (ya descontados)
             calculatedBalance,
         });
 

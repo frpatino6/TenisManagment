@@ -433,12 +433,9 @@ export class TenantAdminController {
       payment.description = `${payment.description || ''} - Confirmado por Admin en ${new Date().toLocaleDateString()}`.trim();
       await payment.save();
 
-      // INICIO CORRECCIÓN: Amortizar deuda en StudentTenantModel
-      await StudentTenantModel.findOneAndUpdate(
-        { studentId: payment.studentId, tenantId: payment.tenantId },
-        { $inc: { balance: payment.amount } }
-      );
-      // FIN CORRECCIÓN
+      // Sincronizar el balance después de confirmar el pago
+      // El BalanceService calculará correctamente el balance desde la fuente de verdad
+      await this.balanceService.syncBalance(payment.studentId, payment.tenantId);
 
       logger.info('Pago manual confirmado por admin', {
         paymentId: id,
@@ -1907,14 +1904,12 @@ export class TenantAdminController {
           existingPayment.description = `Pago confirmado por admin (era pendiente): ${booking.serviceType}`;
           await existingPayment.save();
 
-          // Solo sumar balance si el pago NO fue con wallet (pago pendiente al profesor)
-          // Si fue con wallet, el balance ya fue descontado al crear la reserva
-          if (existingPayment.method !== 'wallet') {
-            await StudentTenantModel.findOneAndUpdate(
-              { studentId: booking.studentId, tenantId: booking.tenantId },
-              { $inc: { balance: booking.price } }
-            );
-          }
+          // IMPORTANTE: NO sumar balance aquí porque:
+          // 1. El BookingService SIEMPRE descuenta el balance al crear el booking (crea deuda)
+          // 2. El Payment 'cash' solo cancela la deuda en el cálculo del BalanceService
+          // 3. Si sumamos aquí, estaríamos dando crédito adicional cuando solo deberíamos cancelar la deuda
+          // El BalanceService calculará correctamente: Recargas - Deudas - Gastos wallet + Pagos recibidos
+          // Donde el Payment 'cash' cuenta como "Pago recibido" y cancela la deuda del booking
         }
       } else if (booking.price > 0) {
         // Si no hay pago, verificar si ya existe uno con método 'wallet' (pagado con saldo)
@@ -1938,14 +1933,15 @@ export class TenantAdminController {
             description: `Pago manual confirmado por admin: ${booking.serviceType}`
           });
 
-          // Solo sumar balance si el pago es 'paid' (pago pendiente al profesor)
-          // Si la reserva ya fue pagada con saldo (wallet), el balance ya fue descontado
-          if (paymentStatus === 'paid') {
-            await StudentTenantModel.findOneAndUpdate(
-              { studentId: booking.studentId, tenantId: booking.tenantId },
-              { $inc: { balance: booking.price } }
-            );
-          }
+          // IMPORTANTE: NO sumar balance aquí porque:
+          // 1. El BookingService SIEMPRE descuenta el balance al crear el booking (crea deuda)
+          // 2. El Payment 'cash' solo cancela la deuda en el cálculo del BalanceService
+          // 3. Si sumamos aquí, estaríamos dando crédito adicional cuando solo deberíamos cancelar la deuda
+          // El BalanceService calculará correctamente: Recargas - Deudas - Gastos wallet
+          // Donde el Payment 'cash' cancela la deuda del booking (lo remueve del cálculo de deudas)
+          
+          // Sincronizar el balance después de crear el Payment
+          await this.balanceService.syncBalance(booking.studentId, booking.tenantId);
         } else {
           // Ya existe Payment con wallet, no hacer nada (ya está pagada con saldo)
           payment = walletPayment;
@@ -1955,6 +1951,9 @@ export class TenantAdminController {
           });
         }
       }
+
+      // Sincronizar el balance después de cualquier cambio en el pago
+      await this.balanceService.syncBalance(booking.studentId, booking.tenantId);
 
       logger.info('Reserva confirmada por tenant admin', {
         bookingId: id,

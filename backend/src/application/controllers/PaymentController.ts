@@ -272,25 +272,26 @@ export class PaymentController {
 
                                 this.logger.info(`[PaymentController] Auto-booking SUCCESS for ref: ${reference}`);
                             } catch (bookingError: any) {
-                            this.logger.error(`[PaymentController] Auto-booking FAILED for ref: ${reference}`, {
-                                error: bookingError.message
-                            });
-                            // If booking creation fails, create as recharge so user can retry
-                            const newPayment = new PaymentModel({
-                                tenantId: tenant._id,
-                                studentId: transaction.studentId,
-                                professorId: null,
-                                amount: result.amount,
-                                date: new Date(),
-                                status: 'paid',
-                                method: 'card',
-                                description: `Recarga Wompi Ref: ${reference}`,
-                                concept: 'Recarga de Saldo',
-                                externalReference: reference,
-                                isOnline: true
-                            });
-                            await newPayment.save();
-                            await this.balanceService.syncBalance(transaction.studentId, tenant._id);
+                                this.logger.error(`[PaymentController] Auto-booking FAILED for ref: ${reference}`, {
+                                    error: bookingError.message
+                                });
+                                // If booking creation fails, create as recharge so user can retry
+                                const newPayment = new PaymentModel({
+                                    tenantId: tenant._id,
+                                    studentId: transaction.studentId,
+                                    professorId: null,
+                                    amount: result.amount,
+                                    date: new Date(),
+                                    status: 'paid',
+                                    method: 'card',
+                                    description: `Recarga Wompi Ref: ${reference}`,
+                                    concept: 'Recarga de Saldo',
+                                    externalReference: reference,
+                                    isOnline: true
+                                });
+                                await newPayment.save();
+                                await this.balanceService.syncBalance(transaction.studentId, tenant._id);
+                            }
                         }
                     } else {
                         // This is a recharge (no bookingInfo)

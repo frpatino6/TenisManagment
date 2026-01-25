@@ -5,11 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tennis_management/main_common.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:tennis_management/core/config/firebase_config.dart';
+import 'package:tennis_management/core/config/app_config.dart';
+import 'package:tennis_management/core/config/environment.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 /// Test de integración E2E completo del flujo de balance y pagos
-/// 
+///
 /// Este test valida:
 /// 1. Reserva de cancha y clase como estudiante
 /// 2. Verificación de saldo negativo después de reservas
@@ -20,12 +22,12 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   /// Helper para simular pago Wompi
-  /// 
+  ///
   /// NOTA: Este método requiere que el backend tenga un endpoint de test
   /// que simule el webhook de Wompi. Alternativamente, se puede usar MongoDB
   /// directamente para insertar Transaction y Payment, pero eso requiere
   /// acceso a la base de datos desde el test.
-  /// 
+  ///
   /// Para este test, asumimos que existe un endpoint:
   /// POST /api/test/simulate-wompi-payment
   /// que acepta: { bookingId, studentId, tenantId, amount, professorId? }
@@ -36,32 +38,41 @@ void main() {
     required double amount,
     String? professorId,
   }) async {
-    const backendUrl = 'http://localhost:3000'; // Ajustar según tu entorno de desarrollo
-    
+    // Use UAT backend URL
+    const backendUrl = 'https://tenis-uat.casacam.net';
+
     try {
       // Intentar usar endpoint de test si existe
-      final response = await http.post(
-        Uri.parse('$backendUrl/api/test/simulate-wompi-payment'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'bookingId': bookingId,
-          'studentId': studentId,
-          'tenantId': tenantId,
-          'amount': amount.toInt(),
-          if (professorId != null) 'professorId': professorId,
-        }),
-      ).timeout(const Duration(seconds: 5));
+      final response = await http
+          .post(
+            Uri.parse('$backendUrl/api/test/simulate-wompi-payment'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'bookingId': bookingId,
+              'studentId': studentId,
+              'tenantId': tenantId,
+              'amount': amount.toInt(),
+              if (professorId != null) 'professorId': professorId,
+            }),
+          )
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode != 200) {
-        print('Warning: Endpoint de test no disponible o falló: ${response.statusCode}');
+        print(
+          'Warning: Endpoint de test no disponible o falló: ${response.statusCode}',
+        );
         print('El test continuará pero el pago Wompi no se simulará.');
       }
     } catch (e) {
       // Si el endpoint no existe o falla, el test puede continuar
       // pero el pago no se simulará. Esto es aceptable para un test de integración
       // que valida principalmente el flujo UI.
-      print('Info: No se pudo simular pago Wompi (endpoint de test no disponible): $e');
-      print('El test continuará validando el flujo UI, pero el saldo puede no reflejar el pago.');
+      print(
+        'Info: No se pudo simular pago Wompi (endpoint de test no disponible): $e',
+      );
+      print(
+        'El test continuará validando el flujo UI, pero el saldo puede no reflejar el pago.',
+      );
     }
   }
 
@@ -70,14 +81,16 @@ void main() {
     required String email,
     required String password,
   }) async {
-    // Initialize Firebase safely
+    // Initialize Firebase and set environment for UAT
     try {
-      await Firebase.initializeApp(options: FirebaseConfig.developmentOptions);
+      // Set UAT environment before initializing
+      AppConfig.setEnvironment(Environment.uat);
+      await Firebase.initializeApp(options: FirebaseConfig.productionOptions);
     } catch (_) {
       // Ignore duplicate app initialization
     }
 
-    // 1. Launch App
+    // 1. Launch App (main_uat.dart already sets the environment)
     await tester.pumpWidget(const ProviderScope(child: TennisManagementApp()));
     await tester.pumpAndSettle();
 
@@ -242,7 +255,10 @@ void main() {
     return 'booking-class-${DateTime.now().millisecondsSinceEpoch}';
   }
 
-  Future<void> verifyBalance(WidgetTester tester, {required bool shouldBeNegative}) async {
+  Future<void> verifyBalance(
+    WidgetTester tester, {
+    required bool shouldBeNegative,
+  }) async {
     // Navigate to Balance screen
     // Buscar botón o card de "Mi Balance" en el home
     final balanceButton = find.textContaining('Balance');
@@ -274,7 +290,7 @@ void main() {
     // Verificar el saldo mostrado
     // El saldo debería ser negativo si shouldBeNegative es true
     await tester.pumpAndSettle();
-    
+
     // Buscar el texto del saldo (puede estar en diferentes formatos)
     final balanceText = find.textContaining('\$');
     if (balanceText.evaluate().isNotEmpty) {
@@ -319,85 +335,94 @@ void main() {
   }
 
   group('Balance and Payment Flow E2E Test', () {
-    testWidgets('Complete flow: Bookings -> Wompi Payment -> Admin Confirmation -> Verify Balance', (
-      WidgetTester tester,
-    ) async {
-      String? courtBookingId;
-      String? classBookingId;
+    testWidgets(
+      'Complete flow: Bookings -> Wompi Payment -> Admin Confirmation -> Verify Balance',
+      (WidgetTester tester) async {
+        String? courtBookingId;
+        String? classBookingId;
 
-      // ========== PHASE 1: Login as Student ==========
-      await loginAsUser(
-        tester,
-        email: 'cliente1@gmail.com',
-        password: 's4ntiago',
-      );
-
-      // ========== PHASE 2: Make Court Booking ==========
-      courtBookingId = await makeCourtBooking(tester);
-      expect(courtBookingId, isNotNull, reason: 'Court booking should be created');
-
-      // ========== PHASE 3: Make Class Booking ==========
-      classBookingId = await makeClassBooking(tester);
-      expect(classBookingId, isNotNull, reason: 'Class booking should be created');
-
-      // ========== PHASE 4: Verify Negative Balance ==========
-      await verifyBalance(tester, shouldBeNegative: true);
-
-      // ========== PHASE 5: Simulate Wompi Payments ==========
-      // Nota: En un entorno real, esto se haría automáticamente por Wompi
-      // Aquí simulamos creando los registros directamente
-      // IMPORTANTE: Para que esto funcione, el backend debe tener un endpoint de test
-      // que simule el webhook de Wompi. Ver documentación en simulateWompiPayment()
-      if (courtBookingId != null) {
-        await simulateWompiPayment(
-          bookingId: courtBookingId,
-          studentId: 'student-id', // TODO: Obtener del contexto real
-          tenantId: 'tenant-id', // TODO: Obtener del contexto real
-          amount: 50000.0,
+        // ========== PHASE 1: Login as Student ==========
+        await loginAsUser(
+          tester,
+          email: 'cliente1@gmail.com',
+          password: 's4ntiago',
         );
-      }
 
-      if (classBookingId != null) {
-        await simulateWompiPayment(
-          bookingId: classBookingId,
-          studentId: 'student-id', // TODO: Obtener del contexto real
-          tenantId: 'tenant-id', // TODO: Obtener del contexto real
-          amount: 50000.0,
+        // ========== PHASE 2: Make Court Booking ==========
+        courtBookingId = await makeCourtBooking(tester);
+        expect(
+          courtBookingId,
+          isNotNull,
+          reason: 'Court booking should be created',
         );
-      }
 
-      // Esperar a que los pagos se procesen
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+        // ========== PHASE 3: Make Class Booking ==========
+        classBookingId = await makeClassBooking(tester);
+        expect(
+          classBookingId,
+          isNotNull,
+          reason: 'Class booking should be created',
+        );
 
-      // ========== PHASE 6: Logout ==========
-      await logout(tester);
+        // ========== PHASE 4: Verify Negative Balance ==========
+        await verifyBalance(tester, shouldBeNegative: true);
 
-      // ========== PHASE 7: Login as Admin ==========
-      await loginAsUser(
-        tester,
-        email: 'cliente2@gmail.com',
-        password: 'Password123!',
-      );
+        // ========== PHASE 5: Simulate Wompi Payments ==========
+        // Nota: En un entorno real, esto se haría automáticamente por Wompi
+        // Aquí simulamos creando los registros directamente
+        // IMPORTANTE: Para que esto funcione, el backend debe tener un endpoint de test
+        // que simule el webhook de Wompi. Ver documentación en simulateWompiPayment()
+        if (courtBookingId != null) {
+          await simulateWompiPayment(
+            bookingId: courtBookingId,
+            studentId: 'student-id', // TODO: Obtener del contexto real
+            tenantId: 'tenant-id', // TODO: Obtener del contexto real
+            amount: 50000.0,
+          );
+        }
 
-      // Verificar que estamos en el panel admin
-      expect(find.text('Panel de Administración'), findsOneWidget);
+        if (classBookingId != null) {
+          await simulateWompiPayment(
+            bookingId: classBookingId,
+            studentId: 'student-id', // TODO: Obtener del contexto real
+            tenantId: 'tenant-id', // TODO: Obtener del contexto real
+            amount: 50000.0,
+          );
+        }
 
-      // ========== PHASE 8: Review and Confirm Payments ==========
-      await confirmPaymentsAsAdmin(tester);
+        // Esperar a que los pagos se procesen
+        await tester.pumpAndSettle(const Duration(seconds: 2));
 
-      // ========== PHASE 9: Logout ==========
-      await logout(tester);
+        // ========== PHASE 6: Logout ==========
+        await logout(tester);
 
-      // ========== PHASE 10: Login as Student Again ==========
-      await loginAsUser(
-        tester,
-        email: 'cliente1@gmail.com',
-        password: 's4ntiago',
-      );
+        // ========== PHASE 7: Login as Admin ==========
+        await loginAsUser(
+          tester,
+          email: 'cliente2@gmail.com',
+          password: 'Password123!',
+        );
 
-      // ========== PHASE 11: Verify Final Balance ==========
-      // El saldo debería ser correcto después de los pagos
-      await verifyBalance(tester, shouldBeNegative: false);
-    });
+        // Verificar que estamos en el panel admin
+        expect(find.text('Panel de Administración'), findsOneWidget);
+
+        // ========== PHASE 8: Review and Confirm Payments ==========
+        await confirmPaymentsAsAdmin(tester);
+
+        // ========== PHASE 9: Logout ==========
+        await logout(tester);
+
+        // ========== PHASE 10: Login as Student Again ==========
+        await loginAsUser(
+          tester,
+          email: 'cliente1@gmail.com',
+          password: 's4ntiago',
+        );
+
+        // ========== PHASE 11: Verify Final Balance ==========
+        // El saldo debería ser correcto después de los pagos
+        await verifyBalance(tester, shouldBeNegative: false);
+      },
+    );
   });
 }

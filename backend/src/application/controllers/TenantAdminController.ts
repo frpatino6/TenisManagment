@@ -1900,37 +1900,59 @@ export class TenantAdminController {
       let payment = existingPayment;
 
       if (existingPayment) {
-        // Si el pago ya estba pendiente, lo marcamos como pagado
+        // Si el pago ya estaba pendiente, lo marcamos como pagado
         if (existingPayment.status !== 'paid' && paymentStatus === 'paid') {
           existingPayment.status = 'paid';
           existingPayment.date = new Date();
           existingPayment.description = `Pago confirmado por admin (era pendiente): ${booking.serviceType}`;
           await existingPayment.save();
 
-          // Actualizar balance del estudiante
-          await StudentTenantModel.findOneAndUpdate(
-            { studentId: booking.studentId, tenantId: booking.tenantId },
-            { $inc: { balance: booking.price } }
-          );
+          // Solo sumar balance si el pago NO fue con wallet (pago pendiente al profesor)
+          // Si fue con wallet, el balance ya fue descontado al crear la reserva
+          if (existingPayment.method !== 'wallet') {
+            await StudentTenantModel.findOneAndUpdate(
+              { studentId: booking.studentId, tenantId: booking.tenantId },
+              { $inc: { balance: booking.price } }
+            );
+          }
         }
       } else if (booking.price > 0) {
-        // Si no hay pago, crear uno nuevo
-        payment = await PaymentModel.create({
-          studentId: booking.studentId,
-          tenantId: booking.tenantId,
-          bookingId: booking._id,
-          amount: booking.price,
-          date: new Date(),
-          status: paymentStatus,
-          method: 'cash',
-          description: `Pago manual confirmado por admin: ${booking.serviceType}`
+        // Si no hay pago, verificar si ya existe uno con método 'wallet' (pagado con saldo)
+        // Si existe Payment con wallet, no crear otro ni sumar balance
+        const walletPayment = await PaymentModel.findOne({ 
+          bookingId: booking._id, 
+          method: 'wallet',
+          status: 'paid'
         });
 
-        if (paymentStatus === 'paid') {
-          await StudentTenantModel.findOneAndUpdate(
-            { studentId: booking.studentId, tenantId: booking.tenantId },
-            { $inc: { balance: booking.price } }
-          );
+        if (!walletPayment) {
+          // No existe Payment con wallet, crear uno nuevo (pago manual al profesor)
+          payment = await PaymentModel.create({
+            studentId: booking.studentId,
+            tenantId: booking.tenantId,
+            bookingId: booking._id,
+            amount: booking.price,
+            date: new Date(),
+            status: paymentStatus,
+            method: 'cash',
+            description: `Pago manual confirmado por admin: ${booking.serviceType}`
+          });
+
+          // Solo sumar balance si el pago es 'paid' (pago pendiente al profesor)
+          // Si la reserva ya fue pagada con saldo (wallet), el balance ya fue descontado
+          if (paymentStatus === 'paid') {
+            await StudentTenantModel.findOneAndUpdate(
+              { studentId: booking.studentId, tenantId: booking.tenantId },
+              { $inc: { balance: booking.price } }
+            );
+          }
+        } else {
+          // Ya existe Payment con wallet, no hacer nada (ya está pagada con saldo)
+          payment = walletPayment;
+          logger.info('Booking already has wallet payment, skipping manual payment creation', {
+            bookingId: id,
+            paymentId: walletPayment._id.toString()
+          });
         }
       }
 

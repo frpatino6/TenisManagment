@@ -219,7 +219,11 @@ export class BookingService {
             const booking = await BookingModel.create(bookingData);
 
             // 6. ALWAYS deduct balance from StudentTenant (creates debt)
-            await StudentTenantModel.findOneAndUpdate(
+            // Get balance BEFORE deduction to check if it was sufficient
+            const balanceBeforeDeduction = currentBalance;
+            const wasPaidWithBalance = balanceBeforeDeduction >= price;
+
+            const updatedStudentTenant = await StudentTenantModel.findOneAndUpdate(
                 {
                     studentId: new Types.ObjectId(studentId.toString()),
                     tenantId: new Types.ObjectId(tenantId.toString())
@@ -231,8 +235,33 @@ export class BookingService {
                 { upsert: true, new: true }
             );
 
-            // Check if online payments are enabled
+            // 7. If balance was sufficient AND online payments are enabled, create Payment automatically
+            // This tracks that booking was paid with balance and prevents double-counting when admin confirms
+            // Only create Payment if online payments are enabled (otherwise it's payment to professor)
             const enableOnlinePayments = tenant?.config?.payments?.enableOnlinePayments === true;
+            
+            if (wasPaidWithBalance && enableOnlinePayments) {
+                await PaymentModel.create({
+                    tenantId: new Types.ObjectId(tenantId.toString()),
+                    studentId: new Types.ObjectId(studentId.toString()),
+                    professorId: professorId || undefined,
+                    bookingId: booking._id,
+                    amount: price,
+                    date: new Date(),
+                    status: 'paid',
+                    method: 'wallet',
+                    description: `Pago con saldo: ${serviceType}`,
+                    concept: `Reserva ${serviceType}`,
+                    isOnline: false
+                });
+
+                logger.info('Payment created automatically for booking paid with balance', {
+                    bookingId: booking._id.toString(),
+                    amount: price,
+                    serviceType,
+                    balanceBefore: balanceBeforeDeduction
+                });
+            }
 
             if (enableOnlinePayments) {
                 logger.info('Booking created and balance deducted', {

@@ -1325,7 +1325,9 @@ export class ProfessorDashboardController {
           });
 
           // Update student balance if payment is confirmed (paid)
-          if (finalStatus === 'paid') {
+          // Only sum balance if payment is NOT with wallet (pago pendiente al profesor)
+          // If payment is with wallet, balance was already deducted when booking was created
+          if (finalStatus === 'paid' && payment.method !== 'wallet') {
             await StudentTenantModel.findOneAndUpdate(
               {
                 studentId: new Types.ObjectId(schedule.studentId.toString()),

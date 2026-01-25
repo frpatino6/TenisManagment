@@ -94,10 +94,25 @@ jest.mock('../../application/services/BookingService', () => ({
   })),
 }));
 
+jest.mock('../../application/services/BalanceService', () => {
+  const mockGetBalance = jest.fn().mockResolvedValue(0);
+  const mockCalculateBalance = jest.fn().mockResolvedValue(0);
+  const mockSyncBalance = jest.fn().mockResolvedValue(0);
+
+  return {
+    BalanceService: jest.fn().mockImplementation(() => ({
+      getBalance: mockGetBalance,
+      calculateBalance: mockCalculateBalance,
+      syncBalance: mockSyncBalance,
+    })),
+  };
+});
+
 describe('StudentDashboardController', () => {
   let controller: StudentDashboardController;
   let mockRequest: any;
   let mockResponse: any;
+  let mockBalanceService: any;
   let mockNext: any;
 
   beforeEach(() => {
@@ -105,6 +120,9 @@ describe('StudentDashboardController', () => {
     mockRequest = MockHelper.createMockRequest();
     mockResponse = MockHelper.createMockResponse();
     mockNext = MockHelper.createMockNextFunction();
+
+    // Capturar la instancia de BalanceService inyectada en el controlador
+    mockBalanceService = (controller as any).balanceService;
   });
 
   describe('getRecentActivities', () => {
@@ -770,6 +788,8 @@ describe('StudentDashboardController', () => {
 
       StudentTenantModel.findOne.mockResolvedValue(mockStudentTenant);
 
+      mockBalanceService.getBalance.mockResolvedValue(0);
+
       await controller.getStudentInfo(mockRequest, mockResponse);
 
       expect(mockResponse.json).toHaveBeenCalledWith(
@@ -813,6 +833,8 @@ describe('StudentDashboardController', () => {
       AuthUserModel.findOne.mockResolvedValue(mockAuthUser);
       StudentModel.findOne.mockResolvedValue(mockStudent);
 
+      mockBalanceService.getBalance.mockResolvedValue(-120000);
+
       PaymentModel.aggregate.mockResolvedValue([{ total: 0 }]);
       BookingModel.aggregate.mockResolvedValue([{ total: 120000 }]);
       PaymentModel.countDocuments.mockResolvedValue(0);
@@ -823,6 +845,8 @@ describe('StudentDashboardController', () => {
         balance: -120000,
         save: jest.fn(),
       });
+
+      mockBalanceService.getBalance.mockResolvedValue(-120000);
 
       await controller.getStudentInfo(mockRequest, mockResponse);
 

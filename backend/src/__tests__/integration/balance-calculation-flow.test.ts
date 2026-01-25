@@ -265,28 +265,28 @@ describe('Balance Calculation Flow Integration Tests', () => {
             expect(walletPayment!.amount).toBe(bookingPrice);
             expect(walletPayment!.bookingId?.toString()).toBe(booking._id.toString());
 
-            // 4. Verify balance was deducted in StudentTenant
-            const studentTenant = await StudentTenantModel.findOne({
-                studentId: student._id,
-                tenantId: tenant._id,
-            });
-
-            expect(studentTenant!.balance).toBe(rechargeAmount - bookingPrice);
-
-            // 5. Verify balance calculation
-            // The BalanceService calculates: Recargas - Deudas - Gastos con wallet + Pagos recibidos
+            // 4. Verify balance calculation
+            // The BalanceService calculates: Recargas - Deudas - Gastos con wallet
             // - Recharge payment (500k, no bookingId): +500k (recarga)
             // - Wallet payment (50k, with bookingId, method='wallet'): -50k (gasto ya descontado)
             // - Booking (50k, has paid payment): Not counted as debt (has paid payment)
-            // Balance = 500k - 0 - 50k + 0 = 450k
+            // Balance = 500k - 0 - 50k = 450k
             const calculatedBalance = await balanceService.calculateBalance(
                 student._id,
                 tenant._id
             );
             
+            // 5. Verify balance was synchronized automatically in StudentTenant
+            // El BookingService ahora llama a balanceService.syncBalance automáticamente
+            const studentTenant = await StudentTenantModel.findOne({
+                studentId: student._id,
+                tenantId: tenant._id,
+            });
+
             // The calculated balance should match the actual balance in StudentTenant
             expect(calculatedBalance).toBe(rechargeAmount - bookingPrice); // 450k
             expect(studentTenant!.balance).toBe(rechargeAmount - bookingPrice); // 450k
+            expect(studentTenant!.balance).toBe(calculatedBalance); // Debe estar sincronizado automáticamente
         });
 
         it('should NOT create Payment with wallet if online payments are disabled', async () => {
@@ -498,15 +498,15 @@ describe('Balance Calculation Flow Integration Tests', () => {
             );
             expect(balanceAfter).toBe(0); // 0k (no hay recargas, no hay deudas, no hay gastos wallet)
             
-            // El balance en StudentTenant debería sincronizarse con el cálculo
-            // Pero como NO sumamos en TenantAdminController, queda en -50k
-            // El BalanceService es la fuente de verdad, así que deberíamos sincronizar
+            // El balance en StudentTenant debería sincronizarse automáticamente después de confirmar
+            // El TenantAdminController ahora llama a balanceService.syncBalance automáticamente
             const studentTenant = await StudentTenantModel.findOne({
                 studentId: student._id,
                 tenantId: tenant._id,
             });
-            // El balance en StudentTenant puede estar desincronizado, pero el BalanceService es correcto
-            // En producción, deberíamos llamar a balanceService.syncBalance después de confirmar
+            // El balance en StudentTenant debe estar sincronizado con el BalanceService
+            expect(studentTenant!.balance).toBe(0); // Debe estar sincronizado automáticamente
+            expect(studentTenant!.balance).toBe(balanceAfter); // Debe coincidir con el cálculo
         });
     });
 
@@ -677,6 +677,16 @@ describe('Balance Calculation Flow Integration Tests', () => {
             expect(payments).toHaveLength(1);
             expect(payments[0]!.method).toBe('cash');
             expect(payments[0]!.status).toBe('paid');
+
+            // El balance en StudentTenant debería sincronizarse automáticamente después de completar la clase
+            // El ProfessorDashboardController ahora llama a balanceService.syncBalance automáticamente
+            const studentTenant = await StudentTenantModel.findOne({
+                studentId: student._id,
+                tenantId: tenant._id,
+            });
+            // El balance en StudentTenant debe estar sincronizado con el BalanceService
+            expect(studentTenant!.balance).toBe(0); // Debe estar sincronizado automáticamente
+            expect(studentTenant!.balance).toBe(balanceAfter); // Debe coincidir con el cálculo
         });
     });
 

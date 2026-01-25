@@ -6,6 +6,17 @@ import { StudentModel } from '../../infrastructure/database/models/StudentModel'
 import { TenantModel } from '../../infrastructure/database/models/TenantModel';
 import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
 
+// Mock BalanceService
+jest.mock('../../application/services/BalanceService', () => {
+  return {
+    BalanceService: jest.fn().mockImplementation(() => ({
+      syncBalance: jest.fn().mockResolvedValue(0),
+      getBalance: jest.fn().mockResolvedValue(0),
+      calculateBalance: jest.fn().mockResolvedValue(0),
+    })),
+  };
+});
+
 describe('PaymentController.getTransactionStatus', () => {
   const paymentGateway = {
     getTransactionStatus: jest.fn(),

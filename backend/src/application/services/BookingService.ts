@@ -23,6 +23,9 @@ export interface CreateBookingData {
     startTime?: Date;
     endTime?: Date;
     status?: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+    // Flag to indicate payment was already processed externally (e.g., Wompi)
+    // When true, BookingService will NOT create automatic wallet payment
+    paymentAlreadyProcessed?: boolean;
 }
 
 export class BookingService {
@@ -117,7 +120,7 @@ export class BookingService {
      * Centralized logic to be used by controllers and webhooks.
      */
     async createBooking(data: CreateBookingData): Promise<BookingDocument> {
-        const { tenantId, scheduleId, studentId, serviceType, price, courtId, startTime, endTime } = data;
+        const { tenantId, scheduleId, studentId, serviceType, price, courtId, startTime, endTime, paymentAlreadyProcessed } = data;
         const tenant = await this.tenantService.getTenantById(tenantId.toString());
 
         try {
@@ -240,9 +243,10 @@ export class BookingService {
             // 7. If balance was sufficient AND online payments are enabled, create Payment automatically
             // This tracks that booking was paid with balance and prevents double-counting when admin confirms
             // Only create Payment if online payments are enabled (otherwise it's payment to professor)
+            // IMPORTANT: Do NOT create wallet payment if payment was already processed externally (e.g., Wompi)
             const enableOnlinePayments = tenant?.config?.payments?.enableOnlinePayments === true;
             
-            if (wasPaidWithBalance && enableOnlinePayments) {
+            if (wasPaidWithBalance && enableOnlinePayments && !paymentAlreadyProcessed) {
                 await PaymentModel.create({
                     tenantId: new Types.ObjectId(tenantId.toString()),
                     studentId: new Types.ObjectId(studentId.toString()),

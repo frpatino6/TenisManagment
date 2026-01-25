@@ -183,29 +183,12 @@ export class PaymentController {
                 });
 
                 if (!existingPayment) {
-                    const newPayment = new PaymentModel({
-                        tenantId: tenant._id,
-                        studentId: transaction.studentId,
-                        professorId: null,
-                        amount: result.amount,
-                        date: new Date(),
-                        status: 'paid',
-                        method: 'card',
-                        description: `Recarga Wompi Ref: ${reference}`,
-                        concept: 'Recarga de Saldo',
-                        externalReference: reference,
-                        isOnline: true
-                    });
-                    await newPayment.save();
-
-                    // CORRECCIÓN: Incrementar balance en StudentTenantModel, no en StudentModel
-                    // Sincronizar el balance después de crear el Payment
-                    await this.balanceService.syncBalance(transaction.studentId, tenant._id);
-
-                    this.logger.info(`[PaymentController] Payment processed and balance synced for ${reference}`);
-
-                    // Check if there is a pending booking to be auto-confirmed
-                    if (transaction.metadata?.bookingInfo) {
+                    // Check if this is a payment for a booking or a recharge
+                    const hasBookingInfo = transaction.metadata?.bookingInfo;
+                    
+                    if (hasBookingInfo) {
+                        // This is a payment for a booking, not a recharge
+                        // Create booking first, then create payment linked to it
                         try {
                             const bInfo = transaction.metadata.bookingInfo;
                             this.logger.info(`[PaymentController] Auto-booking for ref: ${reference}`);
@@ -219,27 +202,75 @@ export class PaymentController {
                                 // Pass court rental fields if present in metadata
                                 courtId: bInfo.courtId,
                                 startTime: bInfo.startTime ? new Date(bInfo.startTime) : undefined,
-                                endTime: bInfo.endTime ? new Date(bInfo.endTime) : undefined
+                                endTime: bInfo.endTime ? new Date(bInfo.endTime) : undefined,
+                                // Payment already processed by Wompi, don't create wallet payment
+                                paymentAlreadyProcessed: true
                             });
 
-                            // VINCULAR EL PAGO CON LA RESERVA
-                            // Esto permite que el profesor vea que la clase YA FUE PAGADA
-                            if (newPayment && booking) {
-                                newPayment.bookingId = booking._id;
-                                if (bInfo.professorId) {
-                                    newPayment.professorId = new Types.ObjectId(bInfo.professorId);
-                                }
-                                await newPayment.save();
-                            }
+                            // Create payment linked to the booking
+                            const newPayment = new PaymentModel({
+                                tenantId: tenant._id,
+                                studentId: transaction.studentId,
+                                professorId: bInfo.professorId ? new Types.ObjectId(bInfo.professorId) : null,
+                                bookingId: booking._id,
+                                amount: result.amount,
+                                date: new Date(),
+                                status: 'paid',
+                                method: 'card',
+                                description: `Pago Wompi para reserva: ${bInfo.serviceType} Ref: ${reference}`,
+                                concept: `Reserva ${bInfo.serviceType}`,
+                                externalReference: reference,
+                                isOnline: true
+                            });
+                            await newPayment.save();
+
+                            // Sincronizar el balance después de crear el Payment y Booking
+                            await this.balanceService.syncBalance(transaction.studentId, tenant._id);
 
                             this.logger.info(`[PaymentController] Auto-booking SUCCESS for ref: ${reference}`);
                         } catch (bookingError: any) {
                             this.logger.error(`[PaymentController] Auto-booking FAILED for ref: ${reference}`, {
                                 error: bookingError.message
                             });
-                            // We don't fail the webhook because the payment IS already processed.
-                            // The user has the balance to manually retry if needed.
+                            // If booking creation fails, create as recharge so user can retry
+                            const newPayment = new PaymentModel({
+                                tenantId: tenant._id,
+                                studentId: transaction.studentId,
+                                professorId: null,
+                                amount: result.amount,
+                                date: new Date(),
+                                status: 'paid',
+                                method: 'card',
+                                description: `Recarga Wompi Ref: ${reference}`,
+                                concept: 'Recarga de Saldo',
+                                externalReference: reference,
+                                isOnline: true
+                            });
+                            await newPayment.save();
+                            await this.balanceService.syncBalance(transaction.studentId, tenant._id);
                         }
+                    } else {
+                        // This is a recharge (no bookingInfo)
+                        const newPayment = new PaymentModel({
+                            tenantId: tenant._id,
+                            studentId: transaction.studentId,
+                            professorId: null,
+                            amount: result.amount,
+                            date: new Date(),
+                            status: 'paid',
+                            method: 'card',
+                            description: `Recarga Wompi Ref: ${reference}`,
+                            concept: 'Recarga de Saldo',
+                            externalReference: reference,
+                            isOnline: true
+                            // NO bookingId - this is a recharge
+                        });
+                        await newPayment.save();
+
+                        // Sincronizar el balance después de crear el Payment
+                        await this.balanceService.syncBalance(transaction.studentId, tenant._id);
+
+                        this.logger.info(`[PaymentController] Payment processed and balance synced for ${reference}`);
                     }
                 }
             }
@@ -327,28 +358,14 @@ export class PaymentController {
                     });
 
                     if (!existingPayment) {
-                        const newPayment = new PaymentModel({
-                            tenantId: transaction.tenantId,
-                            studentId: transaction.studentId,
-                            professorId: null,
-                            amount: result.amount,
-                            date: new Date(),
-                            status: 'paid',
-                            method: 'card',
-                            description: `Recarga Wompi Ref: ${result.reference}`,
-                            concept: 'Recarga de Saldo',
-                            externalReference: result.reference,
-                            isOnline: true
-                        });
-                        await newPayment.save();
-
-                        // Sincronizar el balance después de crear el Payment
-                        await this.balanceService.syncBalance(transaction.studentId, transaction.tenantId);
-
-                        if (transaction.metadata?.bookingInfo) {
+                        // Check if this is a payment for a booking or a recharge
+                        const hasBookingInfo = transaction.metadata?.bookingInfo;
+                        
+                        if (hasBookingInfo) {
+                            // This is a payment for a booking, not a recharge
                             try {
                                 const bInfo = transaction.metadata.bookingInfo;
-                                await this.bookingService.createBooking({
+                                const booking = await this.bookingService.createBooking({
                                     tenantId: transaction.tenantId.toString(),
                                     studentId: transaction.studentId.toString(),
                                     scheduleId: bInfo.scheduleId,
@@ -357,12 +374,70 @@ export class PaymentController {
                                     courtId: bInfo.courtId,
                                     startTime: bInfo.startTime,
                                     endTime: bInfo.endTime,
+                                    // Payment already processed by Wompi, don't create wallet payment
+                                    paymentAlreadyProcessed: true
                                 });
+
+                                // Create payment linked to the booking
+                                const newPayment = new PaymentModel({
+                                    tenantId: transaction.tenantId,
+                                    studentId: transaction.studentId,
+                                    professorId: bInfo.professorId ? new Types.ObjectId(bInfo.professorId) : null,
+                                    bookingId: booking._id,
+                                    amount: result.amount,
+                                    date: new Date(),
+                                    status: 'paid',
+                                    method: 'card',
+                                    description: `Pago Wompi para reserva: ${bInfo.serviceType} Ref: ${result.reference}`,
+                                    concept: `Reserva ${bInfo.serviceType}`,
+                                    externalReference: result.reference,
+                                    isOnline: true
+                                });
+                                await newPayment.save();
+
+                                // Sincronizar el balance después de crear el Payment y Booking
+                                await this.balanceService.syncBalance(transaction.studentId, transaction.tenantId);
                             } catch (error) {
                                 this.logger.error('[PaymentController] Auto-booking failed', {
                                     error: error instanceof Error ? error.message : String(error),
                                 });
+                                // If booking creation fails, create as recharge so user can retry
+                                const newPayment = new PaymentModel({
+                                    tenantId: transaction.tenantId,
+                                    studentId: transaction.studentId,
+                                    professorId: null,
+                                    amount: result.amount,
+                                    date: new Date(),
+                                    status: 'paid',
+                                    method: 'card',
+                                    description: `Recarga Wompi Ref: ${result.reference}`,
+                                    concept: 'Recarga de Saldo',
+                                    externalReference: result.reference,
+                                    isOnline: true
+                                });
+                                await newPayment.save();
+                                await this.balanceService.syncBalance(transaction.studentId, transaction.tenantId);
                             }
+                        } else {
+                            // This is a recharge (no bookingInfo)
+                            const newPayment = new PaymentModel({
+                                tenantId: transaction.tenantId,
+                                studentId: transaction.studentId,
+                                professorId: null,
+                                amount: result.amount,
+                                date: new Date(),
+                                status: 'paid',
+                                method: 'card',
+                                description: `Recarga Wompi Ref: ${result.reference}`,
+                                concept: 'Recarga de Saldo',
+                                externalReference: result.reference,
+                                isOnline: true
+                                // NO bookingId - this is a recharge
+                            });
+                            await newPayment.save();
+
+                            // Sincronizar el balance después de crear el Payment
+                            await this.balanceService.syncBalance(transaction.studentId, transaction.tenantId);
                         }
                     }
                 }

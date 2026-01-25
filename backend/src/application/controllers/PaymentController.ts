@@ -6,6 +6,7 @@ import { WompiAdapter } from '../../infrastructure/services/payment/adapters/Wom
 import { TransactionModel } from '../../infrastructure/database/models/TransactionModel';
 import { TenantModel, TenantDocument } from '../../infrastructure/database/models/TenantModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
+import { BookingModel } from '../../infrastructure/database/models/BookingModel';
 import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { AuthUserModel, UserRole } from '../../infrastructure/database/models/AuthUserModel';
 import { TenantService } from '../services/TenantService';
@@ -188,31 +189,36 @@ export class PaymentController {
                     
                     if (hasBookingInfo) {
                         // This is a payment for a booking, not a recharge
-                        // Create booking first, then create payment linked to it
-                        try {
-                            const bInfo = transaction.metadata.bookingInfo;
-                            this.logger.info(`[PaymentController] Auto-booking for ref: ${reference}`);
-                            const booking = await this.bookingService.createBooking({
-                                tenantId: transaction.tenantId.toString(),
-                                studentId: transaction.studentId.toString(),
-                                scheduleId: bInfo.scheduleId,
-                                serviceType: bInfo.serviceType,
-                                price: bInfo.price,
-                                status: 'confirmed',
-                                // Pass court rental fields if present in metadata
-                                courtId: bInfo.courtId,
-                                startTime: bInfo.startTime ? new Date(bInfo.startTime) : undefined,
-                                endTime: bInfo.endTime ? new Date(bInfo.endTime) : undefined,
-                                // Payment already processed by Wompi, don't create wallet payment
-                                paymentAlreadyProcessed: true
+                        // Check if booking already exists (e.g., created from mobile with wallet payment)
+                        const bInfo = transaction.metadata.bookingInfo;
+                        
+                        // Try to find existing booking by scheduleId or courtId + time
+                        let existingBooking = null;
+                        if (bInfo.scheduleId) {
+                            existingBooking = await BookingModel.findOne({
+                                scheduleId: new Types.ObjectId(bInfo.scheduleId),
+                                studentId: transaction.studentId,
+                                tenantId: transaction.tenantId,
+                                status: { $in: ['pending', 'confirmed'] }
                             });
-
-                            // Create payment linked to the booking
+                        } else if (bInfo.courtId && bInfo.startTime) {
+                            existingBooking = await BookingModel.findOne({
+                                courtId: new Types.ObjectId(bInfo.courtId),
+                                studentId: transaction.studentId,
+                                tenantId: transaction.tenantId,
+                                bookingDate: new Date(bInfo.startTime),
+                                status: { $in: ['pending', 'confirmed'] }
+                            });
+                        }
+                        
+                        if (existingBooking) {
+                            // Booking already exists, just create the payment linked to it
+                            this.logger.info(`[PaymentController] Booking already exists, creating payment only for ref: ${reference}`);
                             const newPayment = new PaymentModel({
                                 tenantId: tenant._id,
                                 studentId: transaction.studentId,
                                 professorId: bInfo.professorId ? new Types.ObjectId(bInfo.professorId) : null,
-                                bookingId: booking._id,
+                                bookingId: existingBooking._id,
                                 amount: result.amount,
                                 date: new Date(),
                                 status: 'paid',
@@ -223,12 +229,49 @@ export class PaymentController {
                                 isOnline: true
                             });
                             await newPayment.save();
-
-                            // Sincronizar el balance después de crear el Payment y Booking
                             await this.balanceService.syncBalance(transaction.studentId, tenant._id);
+                            this.logger.info(`[PaymentController] Payment created for existing booking ref: ${reference}`);
+                        } else {
+                            // Booking doesn't exist, create it
+                            try {
+                                this.logger.info(`[PaymentController] Auto-booking for ref: ${reference}`);
+                                const booking = await this.bookingService.createBooking({
+                                    tenantId: transaction.tenantId.toString(),
+                                    studentId: transaction.studentId.toString(),
+                                    scheduleId: bInfo.scheduleId,
+                                    serviceType: bInfo.serviceType,
+                                    price: bInfo.price,
+                                    status: 'confirmed',
+                                    // Pass court rental fields if present in metadata
+                                    courtId: bInfo.courtId,
+                                    startTime: bInfo.startTime ? new Date(bInfo.startTime) : undefined,
+                                    endTime: bInfo.endTime ? new Date(bInfo.endTime) : undefined,
+                                    // Payment already processed by Wompi, don't create wallet payment
+                                    paymentAlreadyProcessed: true
+                                });
 
-                            this.logger.info(`[PaymentController] Auto-booking SUCCESS for ref: ${reference}`);
-                        } catch (bookingError: any) {
+                                // Create payment linked to the booking
+                                const newPayment = new PaymentModel({
+                                    tenantId: tenant._id,
+                                    studentId: transaction.studentId,
+                                    professorId: bInfo.professorId ? new Types.ObjectId(bInfo.professorId) : null,
+                                    bookingId: booking._id,
+                                    amount: result.amount,
+                                    date: new Date(),
+                                    status: 'paid',
+                                    method: 'card',
+                                    description: `Pago Wompi para reserva: ${bInfo.serviceType} Ref: ${reference}`,
+                                    concept: `Reserva ${bInfo.serviceType}`,
+                                    externalReference: reference,
+                                    isOnline: true
+                                });
+                                await newPayment.save();
+
+                                // Sincronizar el balance después de crear el Payment y Booking
+                                await this.balanceService.syncBalance(transaction.studentId, tenant._id);
+
+                                this.logger.info(`[PaymentController] Auto-booking SUCCESS for ref: ${reference}`);
+                            } catch (bookingError: any) {
                             this.logger.error(`[PaymentController] Auto-booking FAILED for ref: ${reference}`, {
                                 error: bookingError.message
                             });

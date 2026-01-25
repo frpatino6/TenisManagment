@@ -246,7 +246,14 @@ export class BookingService {
             // IMPORTANT: Do NOT create wallet payment if payment was already processed externally (e.g., Wompi)
             const enableOnlinePayments = tenant?.config?.payments?.enableOnlinePayments === true;
             
-            if (wasPaidWithBalance && enableOnlinePayments && !paymentAlreadyProcessed) {
+            // CRITICAL: Check if a payment already exists for this booking (e.g., from Wompi webhook)
+            // This prevents creating duplicate payments when booking is created after Wompi payment
+            const existingPayment = await PaymentModel.findOne({
+                bookingId: booking._id,
+                status: 'paid'
+            });
+            
+            if (wasPaidWithBalance && enableOnlinePayments && !paymentAlreadyProcessed && !existingPayment) {
                 await PaymentModel.create({
                     tenantId: new Types.ObjectId(tenantId.toString()),
                     studentId: new Types.ObjectId(studentId.toString()),
@@ -266,6 +273,12 @@ export class BookingService {
                     amount: price,
                     serviceType,
                     balanceBefore: balanceBeforeDeduction
+                });
+            } else if (existingPayment) {
+                logger.info('Skipping wallet payment creation - payment already exists for booking', {
+                    bookingId: booking._id.toString(),
+                    existingPaymentId: existingPayment._id.toString(),
+                    existingPaymentMethod: existingPayment.method
                 });
             }
 

@@ -274,27 +274,19 @@ describe('Balance Calculation Flow Integration Tests', () => {
             expect(studentTenant!.balance).toBe(rechargeAmount - bookingPrice);
 
             // 5. Verify balance calculation
-            // The BalanceService calculates: Payments without bookingId - Bookings without paid payments
-            // - Recharge payment (500k, no bookingId): +500k
-            // - Wallet payment (50k, with bookingId): Not counted (only recargas count)
+            // The BalanceService calculates: Recargas - Deudas - Gastos con wallet + Pagos recibidos
+            // - Recharge payment (500k, no bookingId): +500k (recarga)
+            // - Wallet payment (50k, with bookingId, method='wallet'): -50k (gasto ya descontado)
             // - Booking (50k, has paid payment): Not counted as debt (has paid payment)
-            // Balance = 500k - 0 = 500k
-            // However, the actual balance in StudentTenant is 450k because it was deducted
-            // The BalanceService should sync this, but for now we verify the calculation logic
-            
+            // Balance = 500k - 0 - 50k + 0 = 450k
             const calculatedBalance = await balanceService.calculateBalance(
                 student._id,
                 tenant._id
             );
             
-            // The calculated balance is 500k because the booking has a paid payment,
-            // so it doesn't count as debt. The actual balance in StudentTenant is 450k.
-            // We need to sync the balance or adjust the calculation logic.
-            // For now, we verify that the calculation follows the current logic:
-            expect(calculatedBalance).toBe(rechargeAmount); // 500k (booking doesn't count as it has paid payment)
-            
-            // But the actual balance in StudentTenant should be 450k
-            expect(studentTenant!.balance).toBe(rechargeAmount - bookingPrice);
+            // The calculated balance should match the actual balance in StudentTenant
+            expect(calculatedBalance).toBe(rechargeAmount - bookingPrice); // 450k
+            expect(studentTenant!.balance).toBe(rechargeAmount - bookingPrice); // 450k
         });
 
         it('should NOT create Payment with wallet if online payments are disabled', async () => {
@@ -400,14 +392,15 @@ describe('Balance Calculation Flow Integration Tests', () => {
             expect(walletPayment!.amount).toBe(bookingPrice);
 
             // Get balance before admin confirmation
-            // The BalanceService calculates: Payments without bookingId - Bookings without paid payments
-            // Since the booking has a paid payment (wallet), it doesn't count as debt
+            // The BalanceService calculates: Recargas - Deudas - Gastos con wallet + Pagos recibidos
+            // - Recarga: 500k
+            // - Gasto con wallet: 50k (ya descontado)
+            // Balance = 500k - 0 - 50k = 450k
             const balanceBefore = await balanceService.calculateBalance(
                 student._id,
                 tenant._id
             );
-            // The calculated balance is 500k because the booking has a paid payment
-            expect(balanceBefore).toBe(rechargeAmount);
+            expect(balanceBefore).toBe(rechargeAmount - bookingPrice); // 450k
 
             // 3. Admin tries to confirm payment
             const req = {
@@ -466,10 +459,12 @@ describe('Balance Calculation Flow Integration Tests', () => {
             expect(walletPayment).toBeNull();
 
             // Get balance before admin confirmation
+            // Balance = 0 (recargas) - 50k (deuda del booking) = -50k
             const balanceBefore = await balanceService.calculateBalance(
                 student._id,
                 tenant._id
             );
+            expect(balanceBefore).toBe(-bookingPrice); // -50k (deuda)
 
             // Admin confirms payment
             const req = {
@@ -493,12 +488,18 @@ describe('Balance Calculation Flow Integration Tests', () => {
             expect(payments[0]!.method).toBe('cash');
             expect(payments[0]!.status).toBe('paid');
 
-            // Verify balance was added (pago al profesor)
+            // Verify balance was added (pago recibido del admin/profesor)
+            // Balance = 0 (recargas) - 0 (deuda, booking tiene Payment) + 50k (pago recibido) = 50k
+            // El balance aumenta porque:
+            // 1. El booking deja de contar como deuda (se cancela la deuda de -50k)
+            // 2. El Payment con cash suma al balance (pago recibido de +50k)
+            // Neto: -50k (deuda cancelada) + 50k (pago recibido) = 0 cambio en deuda, pero +50k en crédito
+            // Total: -50k + 50k + 50k = 50k
             const balanceAfter = await balanceService.calculateBalance(
                 student._id,
                 tenant._id
             );
-            expect(balanceAfter).toBe(balanceBefore + bookingPrice);
+            expect(balanceAfter).toBe(bookingPrice); // 50k (pago recibido)
         });
     });
 
@@ -627,10 +628,12 @@ describe('Balance Calculation Flow Integration Tests', () => {
             });
 
             // Get balance before professor completes class
+            // Balance = 0 (recargas) - 50k (deuda del booking) = -50k
             const balanceBefore = await balanceService.calculateBalance(
                 student._id,
                 tenant._id
             );
+            expect(balanceBefore).toBe(-bookingPrice); // -50k (deuda)
 
             // Professor completes class with cash payment
             const req = {
@@ -650,12 +653,13 @@ describe('Balance Calculation Flow Integration Tests', () => {
 
             await professorDashboardController.completeClass(req, res);
 
-            // Verify balance was added (pago al profesor)
+            // Verify balance was added (pago recibido del profesor)
+            // Balance = 0 (recargas) - 0 (deuda, booking tiene Payment) + 50k (pago recibido) = 50k
             const balanceAfter = await balanceService.calculateBalance(
                 student._id,
                 tenant._id
             );
-            expect(balanceAfter).toBe(balanceBefore + bookingPrice);
+            expect(balanceAfter).toBe(bookingPrice); // 50k (pago recibido)
 
             // Verify payment was created
             const payments = await PaymentModel.find({
@@ -723,11 +727,10 @@ describe('Balance Calculation Flow Integration Tests', () => {
                 student._id,
                 tenant._id
             );
-            // The calculated balance is 500k because the booking has a paid payment (wallet)
-            // so it doesn't count as debt. The actual balance in StudentTenant is 450k.
-            expect(balance).toBe(rechargeAmount);
+            // Balance = 500k (recarga) - 0 (deudas) - 50k (gasto con wallet) = 450k
+            expect(balance).toBe(rechargeAmount - booking1Price);
             
-            // Verify actual balance in StudentTenant
+            // Verify actual balance in StudentTenant matches calculated balance
             const studentTenant1 = await StudentTenantModel.findOne({
                 studentId: student._id,
                 tenantId: tenant._id,
@@ -758,11 +761,10 @@ describe('Balance Calculation Flow Integration Tests', () => {
                 student._id,
                 tenant._id
             );
-            // The calculated balance is 500k because both bookings have paid payments (wallet)
-            // so they don't count as debt. The actual balance in StudentTenant is 400k.
-            expect(balance).toBe(rechargeAmount);
+            // Balance = 500k (recarga) - 0 (deudas) - 50k (gasto wallet 1) - 50k (gasto wallet 2) = 400k
+            expect(balance).toBe(rechargeAmount - booking1Price - booking1Price);
             
-            // Verify actual balance in StudentTenant
+            // Verify actual balance in StudentTenant matches calculated balance
             const studentTenant2 = await StudentTenantModel.findOne({
                 studentId: student._id,
                 tenantId: tenant._id,
@@ -786,16 +788,17 @@ describe('Balance Calculation Flow Integration Tests', () => {
             expect(walletPayments).toHaveLength(2);
 
             // 5. Verify final balance
-            // The BalanceService calculates: Payments without bookingId - Bookings without paid payments
-            // Since both bookings have paid payments (wallet), they don't count as debt
-            // So the calculated balance is 500k, but the actual balance in StudentTenant is 400k
+            // The BalanceService calculates: Recargas - Deudas - Gastos con wallet + Pagos recibidos
+            // - Recarga: 500k
+            // - Gastos con wallet: 50k + 50k = 100k
+            // Balance = 500k - 0 - 100k = 400k
             const finalBalance = await balanceService.calculateBalance(
                 student._id,
                 tenant._id
             );
-            expect(finalBalance).toBe(rechargeAmount); // 500k (bookings don't count as they have paid payments)
+            expect(finalBalance).toBe(400000); // 500k - 50k - 50k
             
-            // Verify actual balance in StudentTenant
+            // Verify actual balance in StudentTenant matches calculated balance
             const studentTenantFinal = await StudentTenantModel.findOne({
                 studentId: student._id,
                 tenantId: tenant._id,

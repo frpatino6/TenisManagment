@@ -13,19 +13,20 @@ const logger = new Logger({ module: 'BalanceService' });
  * rather than relying on the accumulated balance field in StudentTenant.
  * 
  * The balance is calculated as:
- * Balance = Sum of Recargas (Payments without bookingId) - Sum of Bookings WITHOUT paid payments
+ * Balance = Recargas (Payments without bookingId) - Deudas (Bookings WITHOUT paid payments) - Gastos con wallet (Payments with bookingId and method='wallet')
  * 
  * Logic:
- * - Only Payments with status 'paid' that are NOT linked to bookings (recargas) are added
- * - Payments linked to bookings are NOT counted here (they're handled in booking logic)
- * - Only Bookings that DON'T have a Payment with status 'paid' associated are subtracted
- * - 'pending' bookings: Always count as debt (no payment yet)
- * - 'confirmed' bookings: Only count if NO payment is associated
- * - 'completed' bookings: Only count if NO payment is associated
- * - 'cancelled' bookings: Excluded from calculation
+ * - Recargas: Payments with status 'paid' that are NOT linked to bookings (top-ups)
+ * - Deudas: Bookings that DON'T have a Payment with status 'paid' associated
+ * - Gastos con wallet: Payments with bookingId and method='wallet' (already deducted from balance when booking was created)
  * 
- * Note: When a booking is created, balance is deducted. When payment is confirmed for that booking,
- *       the payment should NOT add to balance again (it just cancels the debt).
+ * Important:
+ * - Payments with method 'wallet' represent expenses already deducted from balance
+ * - Payments with other methods (cash, transfer) linked to bookings represent payments TO the student (add to balance)
+ * - 'pending' bookings: Always count as debt (no payment yet)
+ * - 'confirmed' bookings: Only count as debt if NO payment is associated
+ * - 'completed' bookings: Only count as debt if NO payment is associated
+ * - 'cancelled' bookings: Excluded from calculation
  */
 export class BalanceService {
     /**
@@ -90,25 +91,42 @@ export class BalanceService {
             bookingId: { $exists: true, $ne: null },
         }).lean();
 
-        // Create a set of booking IDs that have paid payments
+        // Separate payments by method:
+        // - 'wallet': Expenses already deducted from balance (must subtract)
+        // - Other methods (cash, transfer): Payments TO student (add to balance, handled separately)
+        const walletPayments = paidPaymentsForBookings.filter(p => p.method === 'wallet');
+        const otherPayments = paidPaymentsForBookings.filter(p => p.method !== 'wallet');
+
+        // Calculate total wallet expenses (already deducted when booking was created)
+        const totalWalletExpenses = walletPayments.reduce((sum, p) => sum + p.amount, 0);
+
+        // Create a set of booking IDs that have paid payments (any method)
         const paidBookingIds = new Set(
             paidPaymentsForBookings
                 .map(p => p.bookingId?.toString())
                 .filter(id => id !== null && id !== undefined)
         );
 
-        // Calculate total for bookings that don't have paid payments
+        // Calculate total for bookings that don't have paid payments (debt)
         const totalBookings = allBookings
             .filter(booking => !paidBookingIds.has(booking._id.toString()))
             .reduce((sum, booking) => sum + booking.price, 0);
 
-        const calculatedBalance = totalPayments - totalBookings;
+        // Calculate total payments TO student (cash, transfer) linked to bookings
+        // These represent payments received from admin/professor, so they add to balance
+        const totalPaymentsToStudent = otherPayments.reduce((sum, p) => sum + p.amount, 0);
+
+        // Final balance calculation:
+        // Balance = Recargas - Deudas - Gastos con wallet + Pagos recibidos (cash/transfer)
+        const calculatedBalance = totalPayments + totalPaymentsToStudent - totalBookings - totalWalletExpenses;
 
         logger.debug('Balance calculated', {
             studentId: studentObjectId.toString(),
             tenantId: tenantObjectId.toString(),
-            totalPayments,
-            totalBookings,
+            totalPayments, // Recargas
+            totalBookings, // Deudas
+            totalWalletExpenses, // Gastos con wallet
+            totalPaymentsToStudent, // Pagos recibidos (cash/transfer)
             calculatedBalance,
         });
 

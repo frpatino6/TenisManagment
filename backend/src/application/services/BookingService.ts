@@ -263,7 +263,44 @@ export class BookingService {
                 status: 'paid'
             });
             
-            if (wasPaidWithBalance && enableOnlinePayments && !paymentAlreadyProcessed && !existingPayment && !existingCardPayment) {
+            // SOLUCIÓN ESCENARIO 4: Si no hay payment vinculado, buscar payment reciente sin bookingId
+            // que coincida con este booking (mismo estudiante, tenant, monto)
+            // Esto maneja el caso donde el usuario pagó con Wompi SIN bookingInfo,
+            // el webhook creó "Recarga de Saldo", y ahora se crea el booking
+            let paymentToLink = null;
+            if (!existingPayment && !existingCardPayment && wasPaidWithBalance && enableOnlinePayments && !paymentAlreadyProcessed) {
+                const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+                paymentToLink = await PaymentModel.findOne({
+                    studentId: new Types.ObjectId(studentId.toString()),
+                    tenantId: new Types.ObjectId(tenantId.toString()),
+                    amount: price,
+                    bookingId: null, // Payment sin booking (fue creado como "Recarga de Saldo")
+                    method: 'card',
+                    isOnline: true,
+                    status: 'paid',
+                    createdAt: { $gte: fiveMinutesAgo } // Últimos 5 minutos
+                }).sort({ createdAt: -1 }); // Más reciente primero
+                
+                if (paymentToLink) {
+                    // Vincular el payment al booking en lugar de crear uno nuevo
+                    paymentToLink.bookingId = booking._id;
+                    paymentToLink.description = `Pago Wompi para reserva: ${serviceType}`;
+                    paymentToLink.concept = `Reserva ${serviceType}`;
+                    if (professorId) {
+                        paymentToLink.professorId = new Types.ObjectId(professorId.toString());
+                    }
+                    await paymentToLink.save();
+                    
+                    logger.info('Payment reciente vinculado al booking en lugar de crear wallet payment', {
+                        bookingId: booking._id.toString(),
+                        paymentId: paymentToLink._id.toString(),
+                        amount: price,
+                        serviceType
+                    });
+                }
+            }
+            
+            if (wasPaidWithBalance && enableOnlinePayments && !paymentAlreadyProcessed && !existingPayment && !existingCardPayment && !paymentToLink) {
                 await PaymentModel.create({
                     tenantId: new Types.ObjectId(tenantId.toString()),
                     studentId: new Types.ObjectId(studentId.toString()),

@@ -349,7 +349,7 @@ class _TenantPaymentsListScreenState
       ],
       child: Chip(
         label: Text(
-          value == null ? label : '${label}: ${options[value] ?? value}',
+          value == null ? label : '$label: ${options[value] ?? value}',
         ),
         deleteIcon: value == null ? null : const Icon(Icons.close, size: 16),
         onDeleted: value == null ? null : () => onSelected(null),

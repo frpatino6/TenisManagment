@@ -66,10 +66,10 @@ Este documento analiza TODOS los escenarios posibles donde se pueden crear payme
 ### ESCENARIO 4: Pago Wompi ANTES del booking (SIN bookingInfo)
 **Flujo**:
 1. Usuario paga con Wompi → `initPayment` SIN `bookingInfo` → crea Transaction sin bookingInfo
-2. Webhook llega → NO tiene bookingInfo → busca booking reciente → NO encuentra (booking aún no existe) → crea payment como "Recarga de Saldo" ❌
-3. Usuario crea booking desde móvil → `BookingService.createBooking()` → crea payment 'wallet' ❌
+2. Webhook llega → NO tiene bookingInfo → busca booking reciente → NO encuentra (booking aún no existe) → crea payment como "Recarga de Saldo" (sin bookingId)
+3. Usuario crea booking desde móvil → `BookingService.createBooking()` → busca payment reciente sin bookingId → lo vincula al booking ✅
 
-**Estado**: **NO CORREGIDO** - Este es el problema encontrado en la BD
+**Estado**: **CORREGIDO** - BookingService ahora busca y vincula payments recientes sin bookingId
 
 ### ESCENARIO 5: Webhook llega DOS veces (duplicado)
 **Flujo**:

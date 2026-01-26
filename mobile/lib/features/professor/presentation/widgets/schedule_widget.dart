@@ -655,7 +655,7 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
                       setState(() => isPaid = value);
                     },
                     contentPadding: EdgeInsets.zero,
-                    activeColor: Colors.green,
+                    activeThumbColor: Colors.green,
                   ),
                 ],
               ],

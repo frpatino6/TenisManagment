@@ -2,9 +2,9 @@ import { describe, it, expect, jest } from '@jest/globals';
 import { PaymentController } from '../../application/controllers/PaymentController';
 import { TransactionModel } from '../../infrastructure/database/models/TransactionModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
-import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { TenantModel } from '../../infrastructure/database/models/TenantModel';
 import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
+import { BookingModel } from '../../infrastructure/database/models/BookingModel';
 
 // Mock BalanceService
 jest.mock('../../application/services/BalanceService', () => {
@@ -67,6 +67,7 @@ describe('PaymentController.getTransactionStatus', () => {
   });
 
   it('updates transaction on approved status', async () => {
+    console.log('TEST DEBUG: START');
     const req: any = {
       tenantId: 'tenant-1',
       query: { transactionId: 'trx-123' },
@@ -91,15 +92,19 @@ describe('PaymentController.getTransactionStatus', () => {
       studentId: 's',
       status: 'PENDING',
       metadata: {},
-      save: jest.fn(),
+      save: jest.fn().mockResolvedValue({} as any),
     } as any;
 
     jest.spyOn(TransactionModel, 'findOne')
       .mockResolvedValueOnce(transaction)
       .mockResolvedValueOnce(null as any);
     jest.spyOn(PaymentModel, 'findOne').mockResolvedValueOnce(null as any);
-    jest.spyOn(PaymentModel.prototype, 'save').mockResolvedValueOnce({} as any);
+    jest.spyOn(PaymentModel, 'distinct').mockResolvedValueOnce([] as any);
+    jest.spyOn(PaymentModel.prototype, 'save').mockResolvedValue({} as any);
     jest.spyOn(StudentTenantModel, 'findOneAndUpdate').mockResolvedValueOnce({} as any);
+    jest.spyOn(BookingModel, 'findOne').mockReturnValue({
+      sort: jest.fn().mockResolvedValue(null),
+    } as any);
 
     await controller.getTransactionStatus(req, res);
 

@@ -186,12 +186,12 @@ export class PaymentController {
                 if (!existingPayment) {
                     // Check if this is a payment for a booking or a recharge
                     const hasBookingInfo = transaction.metadata?.bookingInfo;
-                    
+
                     if (hasBookingInfo) {
                         // This is a payment for a booking, not a recharge
                         // Check if booking already exists (e.g., created from mobile with wallet payment)
                         const bInfo = transaction.metadata.bookingInfo;
-                        
+
                         // Try to find existing booking by scheduleId or courtId + time
                         let existingBooking = null;
                         if (bInfo.scheduleId) {
@@ -210,18 +210,18 @@ export class PaymentController {
                                 status: { $in: ['pending', 'confirmed'] }
                             });
                         }
-                        
+
                         if (existingBooking) {
                             // Booking already exists, check if it has a wallet payment that needs to be replaced
                             this.logger.info(`[PaymentController] Booking already exists, checking for existing payments for ref: ${reference}`);
-                            
+
                             // Find existing wallet payment (created when booking was made from mobile)
                             const existingWalletPayment = await PaymentModel.findOne({
                                 bookingId: existingBooking._id,
                                 method: 'wallet',
                                 status: 'paid'
                             });
-                            
+
                             if (existingWalletPayment) {
                                 // Delete the wallet payment since we're paying with card now
                                 this.logger.info(`[PaymentController] Removing wallet payment and creating card payment for ref: ${reference}`, {
@@ -229,14 +229,14 @@ export class PaymentController {
                                 });
                                 await PaymentModel.deleteOne({ _id: existingWalletPayment._id });
                             }
-                            
+
                             // Check if card payment already exists (prevent duplicates)
                             const existingCardPayment = await PaymentModel.findOne({
                                 bookingId: existingBooking._id,
                                 method: 'card',
                                 externalReference: reference
                             });
-                            
+
                             if (!existingCardPayment) {
                                 // Create the card payment
                                 const newPayment = new PaymentModel({
@@ -325,12 +325,21 @@ export class PaymentController {
                         // This appears to be a recharge (no bookingInfo in transaction)
                         // BUT: Check if there's a recent booking without payment that matches this amount
                         // This handles the case where user paid with Wompi but bookingInfo wasn't sent
+                        // IMPORTANT: Only match bookings that DON'T have a card payment (to avoid wrong matches)
+                        const bookingsWithCardPayments = await PaymentModel.distinct('bookingId', {
+                            method: 'card',
+                            isOnline: true,
+                            status: 'paid',
+                            externalReference: { $exists: true, $ne: null }
+                        });
+
                         const recentBooking = await BookingModel.findOne({
                             tenantId: transaction.tenantId,
                             studentId: transaction.studentId,
                             price: result.amount,
                             status: { $in: ['pending', 'confirmed'] },
-                            createdAt: { $gte: new Date(Date.now() - 10 * 60 * 1000) } // Last 10 minutes
+                            createdAt: { $gte: new Date(Date.now() - 5 * 60 * 1000) }, // Last 5 minutes (reduced from 10)
+                            _id: { $nin: bookingsWithCardPayments } // Exclude bookings that already have card payments
                         }).sort({ createdAt: -1 });
 
                         if (recentBooking) {
@@ -488,11 +497,11 @@ export class PaymentController {
                     if (!existingPayment) {
                         // Check if this is a payment for a booking or a recharge
                         const hasBookingInfo = transaction.metadata?.bookingInfo;
-                        
+
                         if (hasBookingInfo) {
                             // This is a payment for a booking, not a recharge
                             const bInfo = transaction.metadata.bookingInfo;
-                            
+
                             // Check if booking already exists (e.g., created from mobile with wallet payment)
                             let existingBooking = null;
                             if (bInfo.scheduleId) {
@@ -511,18 +520,18 @@ export class PaymentController {
                                     status: { $in: ['pending', 'confirmed'] }
                                 });
                             }
-                            
+
                             if (existingBooking) {
                                 // Booking already exists, check if it has a wallet payment that needs to be replaced
                                 this.logger.info(`[PaymentController] Booking already exists in getTransactionStatus, checking for existing payments for ref: ${result.reference}`);
-                                
+
                                 // Find existing wallet payment (created when booking was made from mobile)
                                 const existingWalletPayment = await PaymentModel.findOne({
                                     bookingId: existingBooking._id,
                                     method: 'wallet',
                                     status: 'paid'
                                 });
-                                
+
                                 if (existingWalletPayment) {
                                     // Delete the wallet payment since we're paying with card now
                                     this.logger.info(`[PaymentController] Removing wallet payment and creating card payment for ref: ${result.reference}`, {
@@ -530,14 +539,14 @@ export class PaymentController {
                                     });
                                     await PaymentModel.deleteOne({ _id: existingWalletPayment._id });
                                 }
-                                
+
                                 // Check if card payment already exists (prevent duplicates)
                                 const existingCardPayment = await PaymentModel.findOne({
                                     bookingId: existingBooking._id,
                                     method: 'card',
                                     externalReference: result.reference
                                 });
-                                
+
                                 if (!existingCardPayment) {
                                     // Create the card payment
                                     const newPayment = new PaymentModel({
@@ -623,12 +632,21 @@ export class PaymentController {
                             // This appears to be a recharge (no bookingInfo in transaction)
                             // BUT: Check if there's a recent booking without payment that matches this amount
                             // This handles the case where user paid with Wompi but bookingInfo wasn't sent
+                            // IMPORTANT: Only match bookings that DON'T have a card payment (to avoid wrong matches)
+                            const bookingsWithCardPayments = await PaymentModel.distinct('bookingId', {
+                                method: 'card',
+                                isOnline: true,
+                                status: 'paid',
+                                externalReference: { $exists: true, $ne: null }
+                            });
+
                             const recentBooking = await BookingModel.findOne({
                                 tenantId: transaction.tenantId,
                                 studentId: transaction.studentId,
                                 price: result.amount,
                                 status: { $in: ['pending', 'confirmed'] },
-                                createdAt: { $gte: new Date(Date.now() - 10 * 60 * 1000) } // Last 10 minutes
+                                createdAt: { $gte: new Date(Date.now() - 5 * 60 * 1000) }, // Last 5 minutes (reduced from 10)
+                                _id: { $nin: bookingsWithCardPayments } // Exclude bookings that already have card payments
                             }).sort({ createdAt: -1 });
 
                             if (recentBooking) {

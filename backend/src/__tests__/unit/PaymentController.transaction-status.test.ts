@@ -67,7 +67,6 @@ describe('PaymentController.getTransactionStatus', () => {
   });
 
   it('updates transaction on approved status', async () => {
-    console.log('TEST DEBUG: START');
     const req: any = {
       tenantId: 'tenant-1',
       query: { transactionId: 'trx-123' },
@@ -92,18 +91,18 @@ describe('PaymentController.getTransactionStatus', () => {
       studentId: 's',
       status: 'PENDING',
       metadata: {},
-      save: jest.fn().mockResolvedValue({} as any),
+      save: jest.fn(() => Promise.resolve({})),
     } as any;
 
     jest.spyOn(TransactionModel, 'findOne')
-      .mockResolvedValueOnce(transaction)
-      .mockResolvedValueOnce(null as any);
-    jest.spyOn(PaymentModel, 'findOne').mockResolvedValueOnce(null as any);
-    jest.spyOn(PaymentModel, 'distinct').mockResolvedValueOnce([] as any);
-    jest.spyOn(PaymentModel.prototype, 'save').mockResolvedValue({} as any);
-    jest.spyOn(StudentTenantModel, 'findOneAndUpdate').mockResolvedValueOnce({} as any);
+      .mockImplementationOnce(() => Promise.resolve(transaction))
+      .mockImplementationOnce(() => Promise.resolve(null as any));
+    jest.spyOn(PaymentModel, 'findOne').mockImplementation(() => Promise.resolve(null as any));
+    jest.spyOn(PaymentModel, 'distinct').mockImplementation(() => Promise.resolve([] as any));
+    jest.spyOn(PaymentModel.prototype, 'save').mockImplementation(() => Promise.resolve({} as any));
+    jest.spyOn(StudentTenantModel, 'findOneAndUpdate').mockImplementation(() => Promise.resolve({} as any));
     jest.spyOn(BookingModel, 'findOne').mockReturnValue({
-      sort: jest.fn().mockResolvedValue(null),
+      sort: jest.fn(() => Promise.resolve(null)),
     } as any);
 
     await controller.getTransactionStatus(req, res);

@@ -248,12 +248,22 @@ export class BookingService {
             
             // CRITICAL: Check if a payment already exists for this booking (e.g., from Wompi webhook)
             // This prevents creating duplicate payments when booking is created after Wompi payment
+            // Check for ANY paid payment (wallet, card, etc.)
             const existingPayment = await PaymentModel.findOne({
                 bookingId: booking._id,
                 status: 'paid'
             });
             
-            if (wasPaidWithBalance && enableOnlinePayments && !paymentAlreadyProcessed && !existingPayment) {
+            // Also check if there's a card payment (Wompi) that might be linked to this booking
+            // This handles the case where webhook created payment before booking was created
+            const existingCardPayment = await PaymentModel.findOne({
+                bookingId: booking._id,
+                method: 'card',
+                isOnline: true,
+                status: 'paid'
+            });
+            
+            if (wasPaidWithBalance && enableOnlinePayments && !paymentAlreadyProcessed && !existingPayment && !existingCardPayment) {
                 await PaymentModel.create({
                     tenantId: new Types.ObjectId(tenantId.toString()),
                     studentId: new Types.ObjectId(studentId.toString()),

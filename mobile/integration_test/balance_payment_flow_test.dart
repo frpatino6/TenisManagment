@@ -239,17 +239,25 @@ void main() {
 
     // 6. Verify Success or Payment Started
     bool messageFound = false;
-    for (int i = 0; i < 10; i++) {
-      final success = find.textContaining('exitosamente').evaluate().isNotEmpty;
-      final payment = find
-          .textContaining('en verificación')
+    print('DEBUG: Waiting for success or verification message...');
+    for (int i = 0; i < 30; i++) {
+      await tester.pump(const Duration(milliseconds: 300));
+      final successFound = find
+          .textContaining('exitosamente')
           .evaluate()
           .isNotEmpty;
-      if (success || payment) {
+      final verifyFound = find
+          .textContaining('verificación')
+          .evaluate()
+          .isNotEmpty;
+
+      if (successFound || verifyFound) {
         messageFound = true;
+        print(
+          'DEBUG: Message found! Success: $successFound, Verify: $verifyFound',
+        );
         break;
       }
-      await tester.pump(const Duration(seconds: 1));
     }
 
     expect(

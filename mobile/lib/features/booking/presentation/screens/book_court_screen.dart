@@ -7,7 +7,7 @@ import '../../../payment/presentation/widgets/payment_dialog.dart';
 import '../../../../core/constants/timeouts.dart';
 import '../../../../core/logging/logger.dart';
 import '../../domain/models/court_model.dart';
-import '../../domain/services/court_service.dart';
+import '../../application/use_cases/book_court_use_case.dart';
 import '../providers/booking_provider.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../../tenant/domain/services/tenant_service.dart' as tenant_domain;
@@ -1609,15 +1609,10 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     });
 
     try {
-      // Build start and end times using the selected local time
-      // Convert to UTC when sending to backend
       if (_selectedTime == null) {
         throw Exception('Error: No se pudo determinar la hora seleccionada');
       }
 
-      // The selected time is in the server's local timezone (matching operatingHours)
-      // operatingHours are configured in the server's local time, so we create UTC directly
-      // This ensures that 10:00 selected = 10:00 UTC stored (not 15:00 UTC)
       final startDateTime = DateTime.utc(
         _selectedDate!.year,
         _selectedDate!.month,
@@ -1626,50 +1621,61 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         _selectedTime!.minute,
       );
 
-      // Default to 1 hour duration for court rental
       final endDateTime = startDateTime.add(const Duration(hours: 1));
 
-      // Calculate price based on duration and price per hour
       final durationInHours = endDateTime.difference(startDateTime).inHours;
       final totalPrice = _selectedCourt!.pricePerHour * durationInHours;
 
-      // Get court service and make booking
-      final courtService = ref.read(courtServiceProvider);
+      final useCase = ref.read(bookCourtUseCaseProvider);
 
-      await courtService.bookCourt(
+      final request = BookCourtRequest(
         courtId: _selectedCourt!.id,
         startTime: startDateTime,
         endTime: endDateTime,
         price: totalPrice,
       );
 
-      // Invalidate providers to refresh data
-      ref.invalidate(courtsProvider);
-      ref.invalidate(studentBookingsProvider);
+      final result = await useCase.execute(request);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Reserva realizada exitosamente',
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.green,
-            duration: Timeouts.snackbarSuccess,
-          ),
-        );
+      if (result.success) {
+        ref.invalidate(courtsProvider);
+        ref.invalidate(studentBookingsProvider);
 
-        // Reset selection
-        setState(() {
-          _selectedCourt = null;
-          _selectedDate = null;
-          _selectedTime = null;
-        });
-
-        // Navigate back after a short delay
-        await Future.delayed(Timeouts.animationExtraLong);
         if (mounted) {
-          context.pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Reserva realizada exitosamente',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: Colors.green,
+              duration: Timeouts.snackbarSuccess,
+            ),
+          );
+
+          setState(() {
+            _selectedCourt = null;
+            _selectedDate = null;
+            _selectedTime = null;
+          });
+
+          await Future.delayed(Timeouts.animationExtraLong);
+          if (mounted) {
+            context.pop();
+          }
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                result.errorMessage ?? 'Error al realizar la reserva',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: Colors.red,
+              duration: Timeouts.snackbarError,
+            ),
+          );
         }
       }
     } catch (e) {

@@ -3,6 +3,7 @@ import '../../../student/domain/models/booking_model.dart';
 import '../../domain/models/court_model.dart';
 import '../../domain/services/booking_service.dart';
 import '../../domain/services/court_service.dart';
+import '../../application/use_cases/book_court_use_case.dart';
 import '../../../../core/services/http_client.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../../student/presentation/providers/student_provider.dart';
@@ -71,3 +72,10 @@ final courtAvailableSlotsProvider = FutureProvider.autoDispose
         date: params.date,
       );
     });
+
+/// Provider for BookCourtUseCase
+final bookCourtUseCaseProvider = Provider<BookCourtUseCase>((ref) {
+  return BookCourtUseCase(
+    courtService: ref.watch(courtServiceProvider),
+  );
+});

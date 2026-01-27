@@ -10,8 +10,8 @@ import '../../domain/models/court_model.dart';
 import '../providers/booking_provider.dart';
 import '../states/booking_screen_state.dart';
 import '../../../../core/providers/tenant_provider.dart';
-import '../../../tenant/domain/services/tenant_service.dart' as tenant_domain;
-import '../../../tenant/domain/models/tenant_model.dart';
+import '../../../../core/interfaces/interfaces.dart';
+import '../../../tenant/infrastructure/providers/tenant_provider_impl.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../../core/widgets/web_image.dart';
 import '../../../../core/config/app_config.dart';
@@ -22,11 +22,11 @@ import '../../application/commands/process_booking_command.dart';
 import '../../application/commands/refresh_data_command.dart';
 
 /// Provider for available tenants for dropdown selection
-final availableTenantsProvider = FutureProvider.autoDispose<List<TenantModel>>((
+final availableTenantsProvider = FutureProvider.autoDispose<List<ITenantInfo>>((
   ref,
 ) async {
-  final service = ref.watch(tenant_domain.tenantDomainServiceProvider);
-  return service.getAvailableTenants();
+  final provider = ref.watch(tenantProviderImplProvider);
+  return provider.getAvailableTenants();
 });
 
 typedef BookCourtPaymentDialogBuilder =
@@ -673,7 +673,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     );
   }
 
-  Widget _buildTenantDropdown(BuildContext context, TenantModel currentTenant) {
+  Widget _buildTenantDropdown(BuildContext context, ITenantInfo currentTenant) {
     final currentTenantId = ref.watch(currentTenantIdProvider);
     final tenantsAsync = ref.watch(availableTenantsProvider);
 

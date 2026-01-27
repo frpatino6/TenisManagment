@@ -1,8 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/tenant_service.dart';
-import '../../features/tenant/domain/services/tenant_service.dart'
-    as tenant_domain;
-import '../../features/tenant/domain/models/tenant_model.dart';
+import '../interfaces/interfaces.dart';
+import '../../features/tenant/infrastructure/providers/tenant_provider_impl.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 
 /// Provider for TenantService singleton
@@ -169,7 +168,8 @@ final tenantNotifierProvider =
 
 /// Provider to get the current tenant model (with name, etc.)
 /// This provider fetches the tenant details based on the current tenant ID
-final currentTenantProvider = FutureProvider.autoDispose<TenantModel?>((
+/// Returns ITenantInfo to decouple from tenant domain model
+final currentTenantProvider = FutureProvider.autoDispose<ITenantInfo?>((
   ref,
 ) async {
   final tenantId = ref.watch(currentTenantIdProvider);
@@ -178,8 +178,8 @@ final currentTenantProvider = FutureProvider.autoDispose<TenantModel?>((
   }
 
   try {
-    final service = ref.watch(tenant_domain.tenantDomainServiceProvider);
-    final tenants = await service.getAvailableTenants();
+    final provider = ref.watch(tenantProviderImplProvider);
+    final tenants = await provider.getAvailableTenants();
     return tenants.firstWhere(
       (tenant) => tenant.id == tenantId,
       orElse: () => throw Exception('Centro no encontrado'),
@@ -187,8 +187,8 @@ final currentTenantProvider = FutureProvider.autoDispose<TenantModel?>((
   } catch (e) {
     // If getAvailableTenants fails, try getMyTenants
     try {
-      final service = ref.watch(tenant_domain.tenantDomainServiceProvider);
-      final tenants = await service.getMyTenants();
+      final provider = ref.watch(tenantProviderImplProvider);
+      final tenants = await provider.getMyTenants();
       return tenants.firstWhere(
         (tenant) => tenant.id == tenantId,
         orElse: () => throw Exception('Centro no encontrado'),

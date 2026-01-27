@@ -1,5 +1,7 @@
+import '../../../../core/interfaces/tenant_info_interface.dart';
+
 /// Model for Tenant (Center) information
-class TenantModel {
+class TenantModel implements ITenantInfo {
   final String id;
   final String name;
   final String slug;

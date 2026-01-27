@@ -34,19 +34,31 @@ class TenantBookingModel {
 
   factory TenantBookingModel.fromJson(Map<String, dynamic> json) {
     // API returns courtId, professorId, studentId due to populate in backend
+    final serviceType = json['serviceType'] as String? ?? 'court_rental';
+    final bookingDate = json['bookingDate'] as String?;
+    final dateValue = json['date'] as String?;
+    
+    DateTime? parsedStartTime;
+    if (json['startTime'] != null) {
+      parsedStartTime = DateTime.parse(json['startTime'] as String);
+    } else if (serviceType == 'court_rental' && bookingDate != null) {
+      parsedStartTime = DateTime.parse(bookingDate);
+    }
+    
+    DateTime? parsedEndTime;
+    if (json['endTime'] != null) {
+      parsedEndTime = DateTime.parse(json['endTime'] as String);
+    }
+    
     return TenantBookingModel(
       id: json['id'] as String? ?? json['_id'] as String,
-      date: json['bookingDate'] != null
-          ? DateTime.parse(json['bookingDate'] as String)
-          : (json['date'] != null
-                ? DateTime.parse(json['date'] as String)
+      date: bookingDate != null
+          ? DateTime.parse(bookingDate)
+          : (dateValue != null
+                ? DateTime.parse(dateValue)
                 : null),
-      startTime: json['startTime'] != null
-          ? DateTime.parse(json['startTime'] as String)
-          : null,
-      endTime: json['endTime'] != null
-          ? DateTime.parse(json['endTime'] as String)
-          : null,
+      startTime: parsedStartTime,
+      endTime: parsedEndTime,
       court: (json['court'] != null)
           ? CourtInfo.fromJson(json['court'] as Map<String, dynamic>)
           : (json['courtId'] != null
@@ -64,7 +76,7 @@ class TenantBookingModel {
               (json['student'] ?? json['studentId']) as Map<String, dynamic>,
             )
           : StudentInfo(id: '', name: 'Estudiante no encontrado', email: '-'),
-      serviceType: json['serviceType'] as String? ?? 'court_rental',
+      serviceType: serviceType,
       status: json['status'] as String? ?? 'pending',
       paymentStatus: json['paymentStatus'] as String? ?? 'pending',
       price: (json['totalPrice'] ?? json['price'] ?? 0.0).toDouble(),

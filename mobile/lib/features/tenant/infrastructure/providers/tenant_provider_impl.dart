@@ -13,6 +13,12 @@ class TenantProviderImpl implements ITenantProviderInterface {
     final tenants = await _tenantService.getAvailableTenants();
     return tenants;
   }
+
+  @override
+  Future<List<ITenantInfo>> getMyTenants() async {
+    final tenants = await _tenantService.getMyTenants();
+    return tenants;
+  }
 }
 
 /// Provider for TenantProviderImpl

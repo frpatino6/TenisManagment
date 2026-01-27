@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/tenant_service.dart';
 import '../interfaces/interfaces.dart';
 import '../../features/tenant/infrastructure/providers/tenant_provider_impl.dart';
-import '../../features/tenant/domain/services/tenant_service.dart' as tenant_domain;
 import '../../features/auth/presentation/providers/auth_provider.dart';
 
 /// Provider for TenantService singleton
@@ -188,10 +187,8 @@ final currentTenantProvider = FutureProvider.autoDispose<ITenantInfo?>((
   } catch (e) {
     // If getAvailableTenants fails, try getMyTenants
     try {
-      // Fallback: use domain service directly for getMyTenants
-      // This is a temporary solution until we add getMyTenants to the interface
-      final service = ref.watch(tenant_domain.tenantDomainServiceProvider);
-      final tenants = await service.getMyTenants();
+      final provider = ref.watch(tenantProviderImplProvider);
+      final tenants = await provider.getMyTenants();
       return tenants.firstWhere(
         (tenant) => tenant.id == tenantId,
         orElse: () => throw Exception('Centro no encontrado'),

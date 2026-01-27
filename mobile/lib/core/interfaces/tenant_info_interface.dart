@@ -3,6 +3,7 @@
 abstract class ITenantInfo {
   String get id;
   String get name;
+  String get slug;
   String? get logo;
   Map<String, dynamic>? get config;
 }

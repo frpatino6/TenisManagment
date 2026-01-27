@@ -3,12 +3,26 @@ import '../../../student/domain/models/booking_model.dart';
 import '../../domain/models/court_model.dart';
 import '../../domain/services/booking_service.dart';
 import '../../domain/services/court_service.dart';
+import '../../domain/repositories/court_repository.dart';
+import '../../infrastructure/repositories/court_repository_impl.dart';
 import '../../../../core/services/http_client.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 
 final bookingServiceProvider = Provider<BookingService>((ref) {
   return BookingService(ref.watch(appHttpClientProvider));
+});
+
+/// Provider for CourtRepository
+/// Returns the infrastructure implementation
+final courtRepositoryProvider = Provider<CourtRepository>((ref) {
+  return CourtRepositoryImpl(ref.watch(appHttpClientProvider));
+});
+
+/// Provider for CourtService
+/// Injects the repository implementation into the domain service
+final courtServiceProvider = Provider<CourtService>((ref) {
+  return CourtService(ref.watch(courtRepositoryProvider));
 });
 
 final myBookingsProvider = studentBookingsProvider;

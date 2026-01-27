@@ -9,7 +9,7 @@ import '../providers/professor_provider.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../booking/domain/models/court_model.dart';
-import '../../../booking/domain/services/court_service.dart';
+import '../../../booking/presentation/providers/booking_provider.dart';
 
 enum ScheduleFilter { all, available, blocked, booked }
 

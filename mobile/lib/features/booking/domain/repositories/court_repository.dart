@@ -1,16 +1,10 @@
 import '../models/court_model.dart';
-import '../repositories/court_repository.dart';
 
-/// Domain service for managing court bookings
+/// Repository interface for court-related data operations
 /// 
-/// This service orchestrates business logic related to courts.
-/// It delegates data access to the [CourtRepository] and focuses on
-/// domain validation and business rules.
-class CourtService {
-  final CourtRepository _repository;
-
-  CourtService(this._repository);
-
+/// This is a domain contract that defines the operations needed by the business logic.
+/// Implementations should be in the infrastructure layer.
+abstract class CourtRepository {
   /// Retrieves the list of available courts for the active tenant
   ///
   /// Returns a list of [CourtModel] containing court information
@@ -23,9 +17,7 @@ class CourtService {
   /// - [NetworkException] if the API request fails
   ///
   /// Returns an empty list if no courts are available
-  Future<List<CourtModel>> getCourts() async {
-    return _repository.getCourts();
-  }
+  Future<List<CourtModel>> getCourts();
 
   /// Retrieves available time slots for a court on a specific date
   ///
@@ -42,12 +34,7 @@ class CourtService {
   Future<Map<String, dynamic>> getAvailableSlots({
     required String courtId,
     required DateTime date,
-  }) async {
-    return _repository.getAvailableSlots(
-      courtId: courtId,
-      date: date,
-    );
-  }
+  });
 
   /// Books a court for a specific time period
   ///
@@ -69,12 +56,5 @@ class CourtService {
     required DateTime startTime,
     required DateTime endTime,
     required double price,
-  }) async {
-    return _repository.bookCourt(
-      courtId: courtId,
-      startTime: startTime,
-      endTime: endTime,
-      price: price,
-    );
-  }
+  });
 }

@@ -717,7 +717,9 @@ describe('TenantAdminController', () => {
         authUserId: new Types.ObjectId(),
         name: 'Test Professor',
         email: 'professor@test.com',
-        tenantId: new Types.ObjectId(tenantId),
+        phone: '123456789',
+        hourlyRate: 100,
+        experienceYears: 5,
       });
 
       const scheduleStartTime = new Date('2026-01-26T14:00:00Z');

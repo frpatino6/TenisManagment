@@ -9,6 +9,7 @@ import '../../../../core/logging/logger.dart';
 import '../../domain/models/court_model.dart';
 import '../../domain/services/court_service.dart';
 import '../providers/booking_provider.dart';
+import '../states/booking_screen_state.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../../tenant/domain/services/tenant_service.dart' as tenant_domain;
 import '../../../tenant/domain/models/tenant_model.dart';
@@ -54,8 +55,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   CourtModel? _selectedCourt;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
-  bool _isBooking = false;
-  bool _isSyncing = false;
+  BookingScreenState _bookingState = const BookingInitial();
   final ScrollController _scrollController = ScrollController();
 
   bool get _hasWompiConfigured {
@@ -197,9 +197,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             )
             .firstOrNull;
 
-        if (booking != null && mounted && !_isBooking) {
+        if (booking != null && mounted && _bookingState is! BookingLoading) {
           setState(() {
-            _isSyncing = false;
+            _bookingState = const BookingInitial();
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -224,7 +224,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         // Re-calculate price
         final price = _selectedCourt!.pricePerHour; // 1 hour default
 
-        if (balance >= price && !_isBooking) {
+        if (balance >= price && _bookingState is! BookingLoading) {
           _logger.info(
             'Saldo suficiente (Cancha). Iniciando reserva automática...',
           );
@@ -257,42 +257,49 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               return _buildErrorState(context, error);
             },
           ),
-          if (_isBooking || _isSyncing)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.7),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                      const Gap(20),
-                      Text(
-                        'Procesando reserva...',
-                        style: GoogleFonts.outfit(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const Gap(8),
-                      Text(
-                        'Estamos sincronizando con el servidor',
-                        style: GoogleFonts.outfit(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+          _buildBookingOverlay(),
         ],
       ),
     );
+  }
+
+  Widget _buildBookingOverlay() {
+    return switch (_bookingState) {
+      BookingLoading(:final message) ||
+      BookingSyncing(:final message) => Positioned.fill(
+        child: Container(
+          color: Colors.black.withValues(alpha: 0.7),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+                const Gap(20),
+                Text(
+                  message ?? 'Procesando reserva...',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Gap(8),
+                Text(
+                  'Estamos sincronizando con el servidor',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      _ => const SizedBox.shrink(),
+    };
   }
 
   Widget _buildNoTenantScreen(BuildContext context) {
@@ -1490,7 +1497,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               void onPaymentStart() {
                 if (!mounted) return;
                 setState(() {
-                  _isSyncing = true;
+                  _bookingState = const BookingSyncing('Procesando reserva...');
                 });
               }
 
@@ -1510,7 +1517,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                             onPaymentFailed: () {
                               if (!mounted) return;
                               setState(() {
-                                _isSyncing = false;
+                                _bookingState = const BookingInitial();
                               });
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -1525,7 +1532,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                             onPaymentPending: () {
                               if (!mounted) return;
                               setState(() {
-                                _isSyncing = false;
+                                _bookingState = const BookingInitial();
                               });
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -1559,15 +1566,16 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               );
             }
 
+            final isLoading = _bookingState is BookingLoading;
             return FilledButton(
-              onPressed: _isBooking ? null : _handleBooking,
+              onPressed: isLoading ? null : _handleBooking,
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: _isBooking
+              child: isLoading
                   ? const SizedBox(
                       height: 20,
                       width: 20,
@@ -1604,8 +1612,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     }
 
     setState(() {
-      _isBooking = true;
-      _isSyncing = true;
+      _bookingState = const BookingLoading('Procesando reserva...');
     });
 
     try {
@@ -1648,6 +1655,13 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       ref.invalidate(studentBookingsProvider);
 
       if (mounted) {
+        setState(() {
+          _bookingState = BookingSuccess(
+            'Reserva realizada exitosamente',
+            courtName: _selectedCourt!.name,
+            date: _selectedDate,
+          );
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -1658,15 +1672,12 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             duration: Timeouts.snackbarSuccess,
           ),
         );
-
-        // Reset selection
         setState(() {
           _selectedCourt = null;
           _selectedDate = null;
           _selectedTime = null;
+          _bookingState = const BookingInitial();
         });
-
-        // Navigate back after a short delay
         await Future.delayed(Timeouts.animationExtraLong);
         if (mounted) {
           context.pop();
@@ -1674,6 +1685,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _bookingState = BookingError('Error al realizar la reserva: $e');
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -1684,12 +1698,14 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             duration: Timeouts.snackbarError,
           ),
         );
+        setState(() {
+          _bookingState = const BookingInitial();
+        });
       }
     } finally {
-      if (mounted) {
+      if (mounted && _bookingState is BookingLoading) {
         setState(() {
-          _isBooking = false;
-          _isSyncing = false;
+          _bookingState = const BookingInitial();
         });
       }
     }

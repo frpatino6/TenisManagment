@@ -1597,11 +1597,16 @@ export class TenantAdminController {
         const student = booking.studentId as any;
         const schedule = booking.scheduleId as any;
 
+        // Para court_rental sin schedule, usar bookingDate y endTime del booking
+        // Para clases con schedule, usar startTime y endTime del schedule
+        const startTime = schedule?.startTime || booking.bookingDate;
+        const endTime = schedule?.endTime || booking.endTime;
+
         return {
           id: booking._id.toString(),
           date: schedule?.date || booking.bookingDate,
-          startTime: schedule?.startTime,
-          endTime: schedule?.endTime,
+          startTime: startTime,
+          endTime: endTime,
           court: court
             ? {
               id: court._id.toString(),
@@ -1718,10 +1723,15 @@ export class TenantAdminController {
         const professor = booking.professorId as any;
         const student = booking.studentId as any;
 
+        // Para court_rental sin schedule, usar bookingDate y endTime del booking
+        // Para clases con schedule, usar startTime y endTime del schedule
+        const startTime = schedule?.startTime || booking.bookingDate;
+        const endTime = schedule?.endTime || booking.endTime;
+
         calendarData[dateKey].push({
           id: booking._id.toString(),
-          startTime: schedule?.startTime,
-          endTime: schedule?.endTime,
+          startTime: startTime,
+          endTime: endTime,
           courtName: court?.name,
           courtType: court?.type,
           professorName: professor?.name,
@@ -1786,11 +1796,16 @@ export class TenantAdminController {
       const student = booking.studentId as any;
       const schedule = booking.scheduleId as any;
 
+      // Para court_rental sin schedule, usar bookingDate y endTime del booking
+      // Para clases con schedule, usar startTime y endTime del schedule
+      const startTime = schedule?.startTime || booking.bookingDate;
+      const endTime = schedule?.endTime || booking.endTime;
+
       res.json({
         id: booking._id.toString(),
         date: schedule?.date || booking.bookingDate,
-        startTime: schedule?.startTime,
-        endTime: schedule?.endTime,
+        startTime: startTime,
+        endTime: endTime,
         court: court
           ? {
             id: court._id.toString(),

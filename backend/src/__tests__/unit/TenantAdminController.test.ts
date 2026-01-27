@@ -670,6 +670,93 @@ describe('TenantAdminController', () => {
       );
     });
 
+    it('should return startTime and endTime for court_rental bookings without schedule', async () => {
+      const student = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Test Student',
+        email: 'student@test.com',
+        membershipType: 'basic',
+      });
+
+      const bookingDate = new Date('2026-01-26T10:00:00Z');
+      const endTime = new Date('2026-01-26T11:00:00Z');
+
+      await BookingModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: student._id,
+        serviceType: 'court_rental',
+        price: 50,
+        status: 'confirmed',
+        bookingDate: bookingDate,
+        endTime: endTime,
+      });
+
+      await controller.listBookings(mockRequest as Request, mockResponse as Response);
+
+      const responseData = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
+      const booking = responseData.bookings[0];
+      
+      expect(booking.startTime).toBeDefined();
+      expect(booking.endTime).toBeDefined();
+      expect(new Date(booking.startTime).getTime()).toBe(bookingDate.getTime());
+      expect(new Date(booking.endTime).getTime()).toBe(endTime.getTime());
+    });
+
+    it('should return startTime and endTime from schedule for bookings with schedule', async () => {
+      const ScheduleModel = require('../../infrastructure/database/models/ScheduleModel').ScheduleModel;
+      const ProfessorModel = require('../../infrastructure/database/models/ProfessorModel').ProfessorModel;
+      
+      const student = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Test Student',
+        email: 'student@test.com',
+        membershipType: 'basic',
+      });
+
+      const professor = await ProfessorModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Test Professor',
+        email: 'professor@test.com',
+        tenantId: new Types.ObjectId(tenantId),
+      });
+
+      const scheduleStartTime = new Date('2026-01-26T14:00:00Z');
+      const scheduleEndTime = new Date('2026-01-26T15:00:00Z');
+
+      const schedule = await ScheduleModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        professorId: professor._id,
+        studentId: student._id,
+        date: scheduleStartTime,
+        startTime: scheduleStartTime,
+        endTime: scheduleEndTime,
+        isAvailable: false,
+        status: 'confirmed',
+      });
+
+      await BookingModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: student._id,
+        professorId: professor._id,
+        scheduleId: schedule._id,
+        serviceType: 'individual_class',
+        price: 100,
+        status: 'confirmed',
+        bookingDate: new Date('2026-01-26T10:00:00Z'),
+        endTime: new Date('2026-01-26T11:00:00Z'),
+      });
+
+      await controller.listBookings(mockRequest as Request, mockResponse as Response);
+
+      const responseData = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
+      const booking = responseData.bookings[0];
+      
+      expect(booking.startTime).toBeDefined();
+      expect(booking.endTime).toBeDefined();
+      expect(new Date(booking.startTime).getTime()).toBe(scheduleStartTime.getTime());
+      expect(new Date(booking.endTime).getTime()).toBe(scheduleEndTime.getTime());
+    });
+
     it('should filter bookings by student name search', async () => {
       const student1 = await StudentModel.create({
         authUserId: new Types.ObjectId(),
@@ -740,6 +827,39 @@ describe('TenantAdminController', () => {
           }),
         }),
       );
+    });
+
+    it('should return startTime and endTime for court_rental bookings without schedule', async () => {
+      const student = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Test Student',
+        email: 'student@test.com',
+        membershipType: 'basic',
+      });
+
+      const bookingDate = new Date('2026-01-26T10:00:00Z');
+      const endTime = new Date('2026-01-26T11:00:00Z');
+
+      const booking = await BookingModel.create({
+        tenantId: new Types.ObjectId(tenantId),
+        studentId: student._id,
+        serviceType: 'court_rental',
+        price: 50,
+        status: 'confirmed',
+        bookingDate: bookingDate,
+        endTime: endTime,
+      });
+
+      mockRequest.params = { id: booking._id.toString() };
+
+      await controller.getBookingDetails(mockRequest as Request, mockResponse as Response);
+
+      const responseData = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
+      
+      expect(responseData.startTime).toBeDefined();
+      expect(responseData.endTime).toBeDefined();
+      expect(new Date(responseData.startTime).getTime()).toBe(bookingDate.getTime());
+      expect(new Date(responseData.endTime).getTime()).toBe(endTime.getTime());
     });
 
     it('should return 404 if booking does not exist', async () => {

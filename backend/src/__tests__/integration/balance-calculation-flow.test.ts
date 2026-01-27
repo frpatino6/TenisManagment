@@ -936,4 +936,116 @@ describe('Balance Calculation Flow Integration Tests', () => {
             expect(balance).toBe(50000); // 50k recarga, booking pagado con card (no cuenta como gasto wallet)
         });
     });
+
+    describe('Scenario 7: Wompi Payment WITHOUT BookingInfo - Payment Linking', () => {
+        it('should link recent payment without bookingId when booking is created after Wompi payment', async () => {
+            // ESCENARIO 4: Usuario paga con Wompi SIN bookingInfo, luego crea booking
+            // El webhook crea "Recarga de Saldo", y BookingService debe vincularlo al booking
+            
+            // 1. Usuario tiene balance insuficiente (20k, necesita 50k)
+            const initialBalance = 20000;
+            await StudentTenantModel.findOneAndUpdate(
+                { studentId: student._id, tenantId: tenant._id },
+                { $set: { balance: initialBalance } },
+                { upsert: true, new: true }
+            );
+
+            // 2. Usuario paga 50k con Wompi SIN bookingInfo (simula PaymentController.wompiWebhook)
+            // El webhook no tiene bookingInfo, crea payment como "Recarga de Saldo"
+            const paymentAmount = 50000;
+            const rechargePayment = await PaymentModel.create({
+                tenantId: tenant._id,
+                studentId: student._id,
+                amount: paymentAmount,
+                date: new Date(),
+                status: 'paid',
+                method: 'card',
+                description: `Recarga Wompi Ref: TEST-REF-123`,
+                concept: 'Recarga de Saldo',
+                externalReference: 'TEST-REF-123',
+                isOnline: true,
+                // NO bookingId - esto es una recarga
+            });
+
+            // Actualizar balance (simula lo que hace el webhook)
+            await StudentTenantModel.findOneAndUpdate(
+                { studentId: student._id, tenantId: tenant._id },
+                { $inc: { balance: paymentAmount } },
+                { upsert: true, new: true }
+            );
+
+            // 3. Verificar que el payment existe sin bookingId
+            const paymentBefore = await PaymentModel.findById(rechargePayment._id);
+            expect(paymentBefore).toBeTruthy();
+            expect(paymentBefore!.bookingId).toBeUndefined(); // bookingId no existe (undefined)
+            expect(paymentBefore!.concept).toBe('Recarga de Saldo');
+
+            // 4. Crear schedule para booking
+            const schedule = await ScheduleModel.create({
+                professorId: professor._id,
+                studentId: null,
+                startTime: new Date('2024-02-01T10:00:00Z'),
+                endTime: new Date('2024-02-01T11:00:00Z'),
+                status: 'pending',
+                date: new Date('2024-02-01'),
+                tenantId: tenant._id,
+                courtId: court._id,
+                isAvailable: true,
+            });
+
+            // 5. Usuario crea booking desde móvil (ahora tiene balance suficiente: 20k + 50k = 70k)
+            // BookingService debe buscar payment reciente sin bookingId y vincularlo
+            const bookingPrice = 50000;
+            const booking = await bookingService.createBooking({
+                studentId: student._id.toString(),
+                tenantId: tenant._id.toString(),
+                scheduleId: schedule._id.toString(),
+                serviceType: 'individual_class',
+                price: bookingPrice,
+                status: 'confirmed',
+            });
+
+            // 6. Verificar que el payment fue VINCULADO al booking (no se creó uno nuevo)
+            const paymentAfter = await PaymentModel.findById(rechargePayment._id);
+            expect(paymentAfter).toBeTruthy();
+            expect(paymentAfter!.bookingId?.toString()).toBe(booking._id.toString()); // Debe estar vinculado
+            expect(paymentAfter!.concept).toBe('Reserva individual_class'); // Concepto actualizado
+            expect(paymentAfter!.description).toContain('Pago Wompi para reserva'); // Descripción actualizada
+
+            // 7. Verificar que NO se creó un payment 'wallet' adicional
+            const walletPayments = await PaymentModel.find({
+                bookingId: booking._id,
+                method: 'wallet',
+            });
+            expect(walletPayments).toHaveLength(0); // No debe haber payment wallet
+
+            // 8. Verificar que solo hay UN payment para este booking
+            const allPayments = await PaymentModel.find({
+                bookingId: booking._id,
+            });
+            expect(allPayments).toHaveLength(1); // Solo el payment vinculado
+            expect(allPayments[0]!.method).toBe('card'); // Debe ser el payment de Wompi
+
+            // 9. Verificar balance
+            // Cuando se crea el booking, se descuenta del balance: 20k + 50k - 50k = 20k
+            // PERO cuando se vincula el payment, el balanceService.syncBalance() recalcula
+            // y como el payment ahora tiene bookingId, no cuenta como recarga
+            // Entonces: recargas (0) - deudas (0, booking tiene payment) - gastos wallet (0) = 0
+            const finalBalance = await balanceService.calculateBalance(
+                student._id,
+                tenant._id
+            );
+            // El balance calculado será 0 porque el payment vinculado no cuenta como recarga
+            expect(finalBalance).toBe(0);
+            
+            // Verificar balance en StudentTenant (debería estar sincronizado con calculateBalance)
+            const studentTenant = await StudentTenantModel.findOne({
+                studentId: student._id,
+                tenantId: tenant._id,
+            });
+            // Después de syncBalance, el balance debería ser 0 (no 20k)
+            // porque el payment vinculado ya no cuenta como recarga
+            expect(studentTenant!.balance).toBe(0);
+        });
+    });
 });

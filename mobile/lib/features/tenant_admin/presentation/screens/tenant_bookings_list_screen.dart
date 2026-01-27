@@ -293,11 +293,13 @@ class _TenantBookingsListScreenState
                     color: Colors.grey,
                   ),
                   const Gap(4),
-                  Text(
-                    booking.date != null
-                        ? '${booking.date!.day}/${booking.date!.month}/${booking.date!.year}'
-                        : 'Sin fecha',
-                    style: theme.textTheme.bodySmall,
+                  Expanded(
+                    child: Text(
+                      _getFormattedDate(booking),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
                   const Gap(16),
                   const Icon(Icons.access_time, size: 16, color: Colors.grey),
@@ -306,7 +308,9 @@ class _TenantBookingsListScreenState
                     booking.startTime != null && booking.endTime != null
                         ? '${DateFormat('HH:mm').format(booking.startTime!)} - ${DateFormat('HH:mm').format(booking.endTime!)}'
                         : 'Sin horario',
-                    style: theme.textTheme.bodySmall,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
@@ -464,5 +468,21 @@ class _TenantBookingsListScreenState
       default:
         return Colors.grey;
     }
+  }
+
+  String _getFormattedDate(TenantBookingModel booking) {
+    DateTime? dateToFormat = booking.date;
+
+    // Si no hay fecha directa, intentar obtenerla del startTime
+    if (dateToFormat == null && booking.startTime != null) {
+      dateToFormat = booking.startTime;
+    }
+
+    if (dateToFormat == null) {
+      return 'Sin fecha';
+    }
+
+    // Formato: "15/01/2024"
+    return DateFormat('dd/MM/yyyy').format(dateToFormat);
   }
 }

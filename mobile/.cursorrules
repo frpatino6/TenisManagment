@@ -37,8 +37,9 @@ Apply these patterns specifically when encountering the following "Code Smells" 
 - **Target Areas:** `BookCourtScreen`, `PaymentDialog`, `TenantConfigScreen`.
 
 ### 3. COMMAND PATTERN
-- **Trigger:** When a button handler (e.g., `onPressed`) has >20 lines mixing validation, calculation, and service calls.
-- **Action:** Encapsulate the logic into a `Command` class (e.g., `BookCourtCommand`, `ProcessPaymentCommand`). Support `execute()` and `undo()`.
+- **Trigger:** When creating or refactoring ANY screen that displays a list of items (Bookings, Payments, Users).
+- **Mandatory Action:** The screen MUST inherit from `PaginatedListScreen<T>`.
+- **Constraint:** DO NOT write `Scaffold`, `AppBar`, or `SearchBar` manually in these screens. Only implement `watchData()` and `buildListItem()`
 
 ### 4. TEMPLATE METHOD
 - **Trigger:** When Widgets share structural boilerplate (e.g., Loading/Error screens, Paginated Lists) but differ in specific content.

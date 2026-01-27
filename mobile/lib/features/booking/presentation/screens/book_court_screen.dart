@@ -7,7 +7,6 @@ import '../../../payment/presentation/widgets/payment_dialog.dart';
 import '../../../../core/constants/timeouts.dart';
 import '../../../../core/logging/logger.dart';
 import '../../domain/models/court_model.dart';
-import '../../domain/services/court_service.dart';
 import '../providers/booking_provider.dart';
 import '../states/booking_screen_state.dart';
 import '../../../../core/providers/tenant_provider.dart';

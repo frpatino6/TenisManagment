@@ -8,6 +8,7 @@ import '../../../../core/widgets/error_widget.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../../domain/models/tenant_booking_model.dart';
 import '../providers/tenant_admin_provider.dart';
+import '../../../shared/domain/strategies/status_color_strategy_factory.dart';
 
 class TenantBookingsListScreen extends ConsumerStatefulWidget {
   const TenantBookingsListScreen({super.key});
@@ -20,6 +21,7 @@ class TenantBookingsListScreen extends ConsumerStatefulWidget {
 class _TenantBookingsListScreenState
     extends ConsumerState<TenantBookingsListScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final _statusStrategy = StatusColorStrategyFactory.getStrategy(StatusType.booking);
 
   @override
   void dispose() {
@@ -206,7 +208,7 @@ class _TenantBookingsListScreenState
 
   Widget _buildBookingCard(BuildContext context, TenantBookingModel booking) {
     final theme = Theme.of(context);
-    final statusColor = _getStatusColor(booking.status);
+    final statusColor = _statusStrategy.getColor(booking.status);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -453,21 +455,6 @@ class _TenantBookingsListScreenState
         ],
       ),
     );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'confirmed':
-        return Colors.green;
-      case 'pending':
-        return Colors.orange;
-      case 'cancelled':
-        return Colors.red;
-      case 'completed':
-        return Colors.blue;
-      default:
-        return Colors.grey;
-    }
   }
 
   String _getFormattedDate(TenantBookingModel booking) {

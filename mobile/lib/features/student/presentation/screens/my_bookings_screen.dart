@@ -10,6 +10,7 @@ import '../../../../core/widgets/empty_state_widget.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../domain/models/booking_model.dart';
 import '../providers/student_provider.dart';
+import '../../../shared/domain/strategies/status_color_strategy_factory.dart';
 
 class MyBookingsScreen extends ConsumerStatefulWidget {
   const MyBookingsScreen({super.key});
@@ -19,6 +20,8 @@ class MyBookingsScreen extends ConsumerStatefulWidget {
 }
 
 class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
+  final _statusStrategy = StatusColorStrategyFactory.getStrategy(StatusType.booking);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -207,7 +210,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
                   width: 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: _getStatusColor(booking.status),
+                    color: _statusStrategy.getColor(booking.status),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -339,19 +342,6 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'confirmed':
-        return Colors.green;
-      case 'cancelled':
-        return Colors.red;
-      case 'pending':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
-  }
-
   String _getServiceTypeText(String serviceType) {
     switch (serviceType) {
       case 'individual_class':
@@ -436,7 +426,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
               '${_formatTime(DateTime.parse(booking.schedule.startTime))} - ${_formatTime(DateTime.parse(booking.schedule.endTime))}',
             ),
             _buildDetailRow('Precio', CurrencyUtils.format(booking.price)),
-            _buildDetailRow('Estado', _getStatusText(booking.status)),
+            _buildDetailRow('Estado', _statusStrategy.getLabel(booking.status)),
           ],
         ),
         actions: [
@@ -466,19 +456,6 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
         ],
       ),
     );
-  }
-
-  String _getStatusText(String status) {
-    switch (status) {
-      case 'confirmed':
-        return 'Confirmada';
-      case 'cancelled':
-        return 'Cancelada';
-      case 'pending':
-        return 'Pendiente';
-      default:
-        return status;
-    }
   }
 
   void _cancelBooking(BookingModel booking) {

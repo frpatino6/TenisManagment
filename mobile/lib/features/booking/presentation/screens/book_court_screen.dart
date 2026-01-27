@@ -16,6 +16,11 @@ import '../../../tenant/domain/models/tenant_model.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../../core/widgets/web_image.dart';
 import '../../../../core/config/app_config.dart';
+import '../../application/commands/booking_command_invoker.dart';
+import '../../application/commands/validate_booking_command.dart';
+import '../../application/commands/calculate_price_command.dart';
+import '../../application/commands/process_booking_command.dart';
+import '../../application/commands/refresh_data_command.dart';
 
 /// Provider for available tenants for dropdown selection
 final availableTenantsProvider = FutureProvider.autoDispose<List<TenantModel>>((
@@ -52,6 +57,7 @@ class BookCourtScreen extends ConsumerStatefulWidget {
 
 class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   final _logger = AppLogger.tag('BookCourtScreen');
+  final _commandInvoker = BookingCommandInvoker();
   CourtModel? _selectedCourt;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
@@ -1605,23 +1611,21 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   }
 
   Future<void> _handleBooking() async {
-    if (_selectedCourt == null ||
-        _selectedDate == null ||
-        _selectedTime == null) {
-      return;
-    }
-
     setState(() {
       _bookingState = const BookingLoading('Procesando reserva...');
     });
 
     try {
-      // Build start and end times using the selected local time
-      // Convert to UTC when sending to backend
-      if (_selectedTime == null) {
-        throw Exception('Error: No se pudo determinar la hora seleccionada');
-      }
+      // 1. Validate booking data
+      await _commandInvoker.executeCommand(
+        ValidateBookingCommand(
+          courtId: _selectedCourt?.id,
+          date: _selectedDate,
+          time: _selectedTime,
+        ),
+      );
 
+      // Build start and end times using the selected local time
       // The selected time is in the server's local timezone (matching operatingHours)
       // operatingHours are configured in the server's local time, so we create UTC directly
       // This ensures that 10:00 selected = 10:00 UTC stored (not 15:00 UTC)
@@ -1636,24 +1640,31 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       // Default to 1 hour duration for court rental
       final endDateTime = startDateTime.add(const Duration(hours: 1));
 
-      // Calculate price based on duration and price per hour
-      final durationInHours = endDateTime.difference(startDateTime).inHours;
-      final totalPrice = _selectedCourt!.pricePerHour * durationInHours;
-
-      // Get court service and make booking
-      final courtService = ref.read(courtServiceProvider);
-
-      await courtService.bookCourt(
-        courtId: _selectedCourt!.id,
+      // 2. Calculate price
+      final priceCommand = CalculatePriceCommand(
+        court: _selectedCourt!,
         startTime: startDateTime,
         endTime: endDateTime,
-        price: totalPrice,
+      );
+      await _commandInvoker.executeCommand(priceCommand);
+
+      // 3. Process booking
+      await _commandInvoker.executeCommand(
+        ProcessBookingCommand(
+          courtService: ref.read(courtServiceProvider),
+          courtId: _selectedCourt!.id,
+          startTime: startDateTime,
+          endTime: endDateTime,
+          price: priceCommand.calculatedPrice,
+        ),
       );
 
-      // Invalidate providers to refresh data
-      ref.invalidate(courtsProvider);
-      ref.invalidate(studentBookingsProvider);
+      // 4. Refresh data
+      await _commandInvoker.executeCommand(
+        RefreshDataCommand(ref),
+      );
 
+      // 5. Show success and navigate
       if (mounted) {
         setState(() {
           _bookingState = BookingSuccess(
@@ -1684,6 +1695,11 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         }
       }
     } catch (e) {
+      // Undo executed commands on error
+      while (_commandInvoker.canUndo()) {
+        await _commandInvoker.undo();
+      }
+
       if (mounted) {
         setState(() {
           _bookingState = BookingError('Error al realizar la reserva: $e');

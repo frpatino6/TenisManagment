@@ -23,11 +23,13 @@ import { StudentModel } from '../../infrastructure/database/models/StudentModel'
 import { Logger } from '../../infrastructure/services/Logger';
 import { Types } from 'mongoose';
 import { EmailService } from '../../infrastructure/services/EmailService';
+import { BalanceService } from '../services/BalanceService';
 
 const logger = new Logger({ module: 'TenantAdminController' });
 
 export class TenantAdminController {
   private emailService = new EmailService();
+  private balanceService = new BalanceService();
 
   constructor(private readonly tenantService: TenantService) { }
 
@@ -157,11 +159,12 @@ export class TenantAdminController {
         from: z.string().optional(),
         to: z.string().optional(),
         status: z
-          .enum(['PENDING', 'APPROVED', 'DECLINED', 'VOIDED', 'ERROR'])
+          .enum(['PENDING', 'APPROVED', 'DECLINED', 'VOIDED', 'ERROR', 'pending', 'paid'])
           .optional(),
         gateway: z.enum(['WOMPI', 'STRIPE']).optional(),
         paymentMethodType: z.string().optional(),
         channel: z.enum(['wallet', 'direct']).optional(),
+        search: z.string().optional(),
       });
 
       const {
@@ -173,6 +176,7 @@ export class TenantAdminController {
         gateway,
         paymentMethodType,
         channel,
+        search,
       } = schema.parse(
         req.query,
       );
@@ -180,6 +184,7 @@ export class TenantAdminController {
       const filter: Record<string, unknown> = {
         tenantId: new Types.ObjectId(tenantId),
       };
+      const andClauses: Record<string, unknown>[] = [];
       if (status) {
         filter.status = status;
       }
@@ -187,13 +192,40 @@ export class TenantAdminController {
         filter.gateway = gateway;
       }
       if (paymentMethodType) {
-        filter.paymentMethodType = paymentMethodType;
+        const normalizedMethod = paymentMethodType.toUpperCase();
+        andClauses.push({
+          $or: [
+            { paymentMethodType: paymentMethodType },
+            { paymentMethodType: normalizedMethod },
+            {
+              'metadata.webhookEvent.data.transaction.payment_method_type':
+                paymentMethodType,
+            },
+            {
+              'metadata.webhookEvent.data.transaction.payment_method_type':
+                normalizedMethod,
+            },
+            {
+              'metadata.webhookEvent.data.transaction.payment_method.type':
+                paymentMethodType,
+            },
+            {
+              'metadata.webhookEvent.data.transaction.payment_method.type':
+                normalizedMethod,
+            },
+          ],
+        });
       }
       if (channel === 'direct') {
-        filter['metadata.bookingInfo'] = { $exists: true };
+        andClauses.push({ 'metadata.bookingInfo': { $exists: true } });
       }
       if (channel === 'wallet') {
-        filter['metadata.bookingInfo'] = { $exists: false };
+        andClauses.push({
+          $or: [
+            { 'metadata.bookingInfo': { $exists: false } },
+            { 'metadata.bookingInfo': null },
+          ],
+        });
       }
 
       if (from || to) {
@@ -217,19 +249,101 @@ export class TenantAdminController {
         }
         filter.createdAt = createdAtFilter;
       }
+      if (andClauses.length > 0) {
+        filter.$and = andClauses;
+      }
 
       const skip = (page - 1) * limit;
-      const [transactions, total] = await Promise.all([
+
+      // Filter for manual payments (from PaymentModel)
+      // EXCLUSIÓN CRÍTICA: No mostrar pagos que son 'online' para evitar duplicidad con TransactionModel
+      const manualFilter: any = {
+        tenantId: new Types.ObjectId(tenantId),
+        isOnline: { $ne: true },
+        method: { $ne: 'wallet' }
+      };
+
+      if (from || to) {
+        const dateFilter: any = {};
+        if (from) dateFilter.$gte = new Date(from);
+        if (to) {
+          const endDate = new Date(to);
+          endDate.setHours(23, 59, 59, 999);
+          dateFilter.$lte = endDate;
+        }
+        manualFilter.date = dateFilter;
+      }
+
+      if (status) {
+        // Map transaction status to payment status if needed
+        if (status === 'APPROVED') manualFilter.status = 'paid';
+        else if (status === 'PENDING') manualFilter.status = 'pending';
+        else if (status === 'VOIDED') manualFilter.status = 'cancelled';
+        else if (status === 'pending') manualFilter.status = 'pending';
+        else if (status === 'paid') manualFilter.status = 'paid';
+      }
+
+      // Search by student name
+      if (search && search.trim()) {
+        const students = await StudentModel.find({
+          name: { $regex: search.trim(), $options: 'i' }
+        }).select('_id').lean();
+
+        const studentIds = students.map(s => s._id);
+
+        if (studentIds.length > 0) {
+          filter.studentId = { $in: studentIds };
+          manualFilter.studentId = { $in: studentIds };
+        } else {
+          // No students found, return empty results
+          res.status(200).json({
+            payments: [],
+            pagination: {
+              page,
+              limit,
+              total: 0,
+              totalPages: 0,
+            },
+          });
+          return;
+        }
+      }
+
+      const [
+        transactions,
+        manualPayments,
+        totalTransactions,
+        totalManual,
+        onlineSumResult,
+        manualSumResult
+      ] = await Promise.all([
         TransactionModel.find(filter)
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit)
           .populate('studentId', 'name')
           .lean(),
+        PaymentModel.find(manualFilter)
+          .sort({ date: -1 })
+          .skip(skip)
+          .limit(limit)
+          .populate('studentId', 'name')
+          .lean(),
         TransactionModel.countDocuments(filter),
+        PaymentModel.countDocuments(manualFilter),
+        TransactionModel.aggregate([
+          { $match: filter },
+          { $group: { _id: null, total: { $sum: '$amount' } } }
+        ]),
+        PaymentModel.aggregate([
+          { $match: manualFilter },
+          { $group: { _id: null, total: { $sum: '$amount' } } }
+        ])
       ]);
 
-      const payments = transactions.map((transaction) => ({
+      const totalAmount = (onlineSumResult[0]?.total || 0) + (manualSumResult[0]?.total || 0);
+
+      const onlinePayments = transactions.map((transaction) => ({
         id: transaction._id.toString(),
         reference: transaction.reference,
         amount: transaction.amount,
@@ -237,25 +351,102 @@ export class TenantAdminController {
         status: transaction.status,
         gateway: transaction.gateway,
         date: transaction.createdAt,
-        studentName:
-          (transaction.studentId as { name?: string })?.name ?? 'Estudiante',
+        studentName: (transaction.studentId as any)?.name ?? 'Estudiante',
         paymentMethodType: transaction.paymentMethodType ?? null,
         customerEmail: transaction.customerEmail ?? null,
         channel: transaction.metadata?.bookingInfo ? 'direct' : 'wallet',
+        type: 'online',
       }));
 
+      const offlinePayments = manualPayments.map((payment: any) => ({
+        id: payment._id.toString(),
+        reference: `MAN-${payment._id.toString().substring(0, 8).toUpperCase()}`,
+        amount: payment.amount,
+        currency: 'COP',
+        status: payment.status === 'paid' ? 'APPROVED' :
+          payment.status === 'pending' ? 'PENDING' :
+            payment.status === 'cancelled' ? 'VOIDED' : payment.status.toUpperCase(),
+        gateway: 'MANUAL',
+        date: payment.date,
+        studentName: (payment.studentId as any)?.name ?? 'Estudiante',
+        paymentMethodType: payment.method === 'cash' ? 'EFECTIVO' : payment.method.toUpperCase(),
+        customerEmail: null,
+        channel: 'direct',
+        type: 'manual',
+        description: payment.description,
+      }));
+
+      // Combine and sort by date descending
+      const allPayments = [...onlinePayments, ...offlinePayments]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, limit);
+
       res.json({
-        payments,
+        payments: allPayments,
+        totalAmount,
         pagination: {
+          total: totalTransactions + totalManual,
           page,
           limit,
-          total,
-          totalPages: Math.ceil(total / limit),
+          totalPages: Math.ceil((totalTransactions + totalManual) / limit),
         },
       });
     } catch (error) {
-      logger.error('Error listando pagos del tenant', {
+      logger.error('Error al listar pagos', {
         error: (error as Error).message,
+        tenantId: req.tenantId,
+      });
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * Confirm a manual payment
+   * PATCH /api/tenant/payments/:id/confirm
+   */
+  confirmManualPayment = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const tenantId = req.tenantId;
+
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const payment = await PaymentModel.findOne({
+        _id: new Types.ObjectId(id),
+        tenantId: new Types.ObjectId(tenantId),
+      });
+
+      if (!payment) {
+        res.status(404).json({ error: 'Pago no encontrado' });
+        return;
+      }
+
+      if (payment.status === 'paid') {
+        res.status(400).json({ error: 'El pago ya ha sido confirmado' });
+        return;
+      }
+
+      payment.status = 'paid';
+      payment.description = `${payment.description || ''} - Confirmado por Admin en ${new Date().toLocaleDateString()}`.trim();
+      await payment.save();
+
+      // Sincronizar el balance después de confirmar el pago
+      // El BalanceService calculará correctamente el balance desde la fuente de verdad
+      await this.balanceService.syncBalance(payment.studentId, payment.tenantId);
+
+      logger.info('Pago manual confirmado por admin', {
+        paymentId: id,
+        tenantId,
+      });
+
+      res.json({ message: 'Pago confirmado exitosamente', payment });
+    } catch (error) {
+      logger.error('Error al confirmar pago manual', {
+        error: (error as Error).message,
+        paymentId: req.params.id,
       });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
@@ -1003,7 +1194,13 @@ export class TenantAdminController {
         StudentTenantModel.countDocuments({ tenantId: tenantObjectId, isActive: true }),
         CourtModel.countDocuments({ tenantId: tenantObjectId, isActive: true }),
         PaymentModel.aggregate([
-          { $match: { tenantId: tenantObjectId } },
+          {
+            $match: {
+              tenantId: tenantObjectId,
+              status: 'paid', // FILTRO CRÍTICO: Solo contar lo cobrado real
+              method: { $ne: 'wallet' } // Excluir uso de saldo interno
+            }
+          },
           { $group: { _id: null, total: { $sum: '$amount' } } },
         ]),
       ]);
@@ -1101,7 +1298,8 @@ export class TenantAdminController {
 
     const periodPayments = payments.filter((p: any) => {
       const isInDateRange = p.date >= dateRange.start && p.date <= dateRange.end;
-      if (isInDateRange && p.status === 'paid') {
+      // FILTRO CRÍTICO: Solo contar pagos reales (no wallet) para evitar doble conteo (Recarga + Uso de Saldo)
+      if (isInDateRange && p.status === 'paid' && p.method !== 'wallet') {
         totalRevenue += p.amount;
         if (p.bookingId) paidBookingIds.add(p.bookingId.toString());
         return true;
@@ -1135,7 +1333,7 @@ export class TenantAdminController {
 
     const previousPayments = payments.filter((p: any) => {
       const isInDateRange = p.date >= previousDateRange.start && p.date <= previousDateRange.end;
-      if (isInDateRange && p.status === 'paid') {
+      if (isInDateRange && p.status === 'paid' && p.method !== 'wallet') {
         previousRevenue += p.amount;
         if (p.bookingId) prevPaidBookingIds.add(p.bookingId.toString());
         return true;
@@ -1399,11 +1597,16 @@ export class TenantAdminController {
         const student = booking.studentId as any;
         const schedule = booking.scheduleId as any;
 
+        // Para court_rental sin schedule, usar bookingDate y endTime del booking
+        // Para clases con schedule, usar startTime y endTime del schedule
+        const startTime = schedule?.startTime || booking.bookingDate;
+        const endTime = schedule?.endTime || booking.endTime;
+
         return {
           id: booking._id.toString(),
           date: schedule?.date || booking.bookingDate,
-          startTime: schedule?.startTime,
-          endTime: schedule?.endTime,
+          startTime: startTime,
+          endTime: endTime,
           court: court
             ? {
               id: court._id.toString(),
@@ -1438,8 +1641,17 @@ export class TenantAdminController {
         };
       });
 
+      // Populate payment status for each booking
+      const bookingsWithPaymentStatus = await Promise.all(formattedBookings.map(async (booking) => {
+        const payment = await PaymentModel.findOne({ bookingId: new Types.ObjectId(booking.id), status: 'paid' });
+        return {
+          ...booking,
+          paymentStatus: payment ? 'paid' : 'pending'
+        };
+      }));
+
       res.json({
-        bookings: formattedBookings,
+        bookings: bookingsWithPaymentStatus,
         pagination: {
           page: pageNum,
           limit: limitNum,
@@ -1511,10 +1723,15 @@ export class TenantAdminController {
         const professor = booking.professorId as any;
         const student = booking.studentId as any;
 
+        // Para court_rental sin schedule, usar bookingDate y endTime del booking
+        // Para clases con schedule, usar startTime y endTime del schedule
+        const startTime = schedule?.startTime || booking.bookingDate;
+        const endTime = schedule?.endTime || booking.endTime;
+
         calendarData[dateKey].push({
           id: booking._id.toString(),
-          startTime: schedule?.startTime,
-          endTime: schedule?.endTime,
+          startTime: startTime,
+          endTime: endTime,
           courtName: court?.name,
           courtType: court?.type,
           professorName: professor?.name,
@@ -1579,11 +1796,16 @@ export class TenantAdminController {
       const student = booking.studentId as any;
       const schedule = booking.scheduleId as any;
 
+      // Para court_rental sin schedule, usar bookingDate y endTime del booking
+      // Para clases con schedule, usar startTime y endTime del schedule
+      const startTime = schedule?.startTime || booking.bookingDate;
+      const endTime = schedule?.endTime || booking.endTime;
+
       res.json({
         id: booking._id.toString(),
         date: schedule?.date || booking.bookingDate,
-        startTime: schedule?.startTime,
-        endTime: schedule?.endTime,
+        startTime: startTime,
+        endTime: endTime,
         court: court
           ? {
             id: court._id.toString(),
@@ -1634,6 +1856,135 @@ export class TenantAdminController {
       logger.error('Error obteniendo detalles de reserva', {
         error: (error as Error).message,
       });
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * PATCH /api/tenant/bookings/:id/confirm
+   * Confirmar una reserva y registrar pago manual (especialmente para court_rental)
+   */
+  confirmBooking = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      const userId = req.user?.id;
+
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const { id } = req.params;
+      const { paymentStatus = 'paid' } = req.body;
+
+      const booking = await BookingModel.findOne({
+        _id: id,
+        tenantId: new Types.ObjectId(tenantId),
+      });
+
+      if (!booking) {
+        res.status(404).json({ error: 'Reserva no encontrada' });
+        return;
+      }
+
+      if (booking.status as string === 'cancelled') {
+        res.status(400).json({ error: 'No se puede cobrar una reserva cancelada' });
+        return;
+      }
+
+      // 1. Actualizar estado de la reserva
+      booking.status = 'confirmed';
+      await booking.save();
+
+      // Actualizar estado del horario si existe
+      if (booking.scheduleId) {
+        await ScheduleModel.findByIdAndUpdate(booking.scheduleId, { status: 'confirmed' });
+      }
+
+      // 2. Manejo de pago (Crear nuevo o actualizar el pendiente existente)
+      const existingPayment = await PaymentModel.findOne({ bookingId: booking._id });
+
+      if (existingPayment && existingPayment.status === 'paid') {
+        res.status(400).json({ error: 'La reserva ya tiene un pago registrado' });
+        return;
+      }
+
+      let payment = existingPayment;
+
+      if (existingPayment) {
+        // Si el pago ya estaba pendiente, lo marcamos como pagado
+        if (existingPayment.status !== 'paid' && paymentStatus === 'paid') {
+          existingPayment.status = 'paid';
+          existingPayment.date = new Date();
+          existingPayment.description = `Pago confirmado por admin (era pendiente): ${booking.serviceType}`;
+          await existingPayment.save();
+
+          // IMPORTANTE: NO sumar balance aquí porque:
+          // 1. El BookingService SIEMPRE descuenta el balance al crear el booking (crea deuda)
+          // 2. El Payment 'cash' solo cancela la deuda en el cálculo del BalanceService
+          // 3. Si sumamos aquí, estaríamos dando crédito adicional cuando solo deberíamos cancelar la deuda
+          // El BalanceService calculará correctamente: Recargas - Deudas - Gastos wallet + Pagos recibidos
+          // Donde el Payment 'cash' cuenta como "Pago recibido" y cancela la deuda del booking
+        }
+      } else if (booking.price > 0) {
+        // Si no hay pago, verificar si ya existe uno con método 'wallet' (pagado con saldo)
+        // Si existe Payment con wallet, no crear otro ni sumar balance
+        const walletPayment = await PaymentModel.findOne({ 
+          bookingId: booking._id, 
+          method: 'wallet',
+          status: 'paid'
+        });
+
+        if (!walletPayment) {
+          // No existe Payment con wallet, crear uno nuevo (pago manual al profesor)
+          payment = await PaymentModel.create({
+            studentId: booking.studentId,
+            tenantId: booking.tenantId,
+            bookingId: booking._id,
+            amount: booking.price,
+            date: new Date(),
+            status: paymentStatus,
+            method: 'cash',
+            description: `Pago manual confirmado por admin: ${booking.serviceType}`
+          });
+
+          // IMPORTANTE: NO sumar balance aquí porque:
+          // 1. El BookingService SIEMPRE descuenta el balance al crear el booking (crea deuda)
+          // 2. El Payment 'cash' solo cancela la deuda en el cálculo del BalanceService
+          // 3. Si sumamos aquí, estaríamos dando crédito adicional cuando solo deberíamos cancelar la deuda
+          // El BalanceService calculará correctamente: Recargas - Deudas - Gastos wallet
+          // Donde el Payment 'cash' cancela la deuda del booking (lo remueve del cálculo de deudas)
+          
+          // Sincronizar el balance después de crear el Payment
+          await this.balanceService.syncBalance(booking.studentId, booking.tenantId);
+        } else {
+          // Ya existe Payment con wallet, no hacer nada (ya está pagada con saldo)
+          payment = walletPayment;
+          logger.info('Booking already has wallet payment, skipping manual payment creation', {
+            bookingId: id,
+            paymentId: walletPayment._id.toString()
+          });
+        }
+      }
+
+      // Sincronizar el balance después de cualquier cambio en el pago
+      await this.balanceService.syncBalance(booking.studentId, booking.tenantId);
+
+      logger.info('Reserva confirmada por tenant admin', {
+        bookingId: id,
+        tenantId,
+        confirmedBy: userId,
+        paymentId: payment?._id
+      });
+
+      res.json({
+        id: booking._id.toString(),
+        status: booking.status,
+        paymentStatus: payment?.status,
+        message: 'Reserva confirmada exitosamente'
+      });
+    } catch (error) {
+      logger.error('Error confirmando reserva', { error: (error as Error).message });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -1845,7 +2196,30 @@ export class TenantAdminController {
         },
       ]);
 
+      // Corrección Dashboard Stats: Usar PaymentModel filtrado
+      const paymentFilter: any = {
+        tenantId: tenantObjectId,
+        status: 'paid',
+        method: { $ne: 'wallet' }
+      };
+      if (from || to) {
+        paymentFilter.date = {};
+        if (from) paymentFilter.date.$gte = new Date(from as string);
+        if (to) paymentFilter.date.$lte = new Date(to as string);
+      }
+      const paymentStats = await PaymentModel.aggregate([
+        { $match: paymentFilter },
+        { $group: { _id: null, totalRevenue: { $sum: '$amount' } } }
+      ]);
+
+      const realRevenue = paymentStats[0]?.totalRevenue || 0; // Ingresos Reales (Caja) - Se mantiene calculado por si se necesita futuro
+      const salesVolume = totalStats[0]?.totalRevenue || 0;   // Ventas Totales (Facturación)
+
       const stats = totalStats[0] || { total: 0, totalRevenue: 0, averagePrice: 0 };
+      // CAMBIO CLAVE: Para este reporte de "Facturación", el usuario quiere ver VENTAS.
+      // Asignamos el volumen de ventas al campo que el frontend consume (totalRevenue).
+      stats.totalRevenue = salesVolume;
+      // stats.totalSales = salesVolume; // Eliminado por reversión de frontend
 
       // Tendencia de ingresos (confirmadas + completadas)
       const revenueTrend = await BookingModel.aggregate([
@@ -2049,13 +2423,20 @@ export class TenantAdminController {
 
       const student = relation.studentId as any;
 
+      // Calculate balance from source of truth (Payments and Bookings) per tenant
+      const calculatedBalance = await this.balanceService.getBalance(
+        new Types.ObjectId(id),
+        new Types.ObjectId(tenantId),
+        false // Don't sync cache, just calculate
+      );
+
       res.json({
         id: student._id,
         name: student.name,
         email: student.email,
         phone: student.phone,
         membershipType: student.membershipType,
-        balance: relation.balance,
+        balance: calculatedBalance, // Calculated from source of truth
         isActive: relation.isActive,
         joinedAt: relation.joinedAt,
         recentBookings: recentBookings.map((b: any) => ({
@@ -2143,6 +2524,123 @@ export class TenantAdminController {
       });
     } catch (error) {
       logger.error('Error actualizando balance', { error: (error as Error).message });
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * GET /api/tenant/reports/debts
+   * Reporte de deudas (estudiantes con balance negativo o pagos pendientes)
+   */
+  getDebtReport = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const { search } = req.query;
+      let studentFilter: any = {};
+
+      if (search && typeof search === 'string' && search.trim() !== '') {
+        const searchRegex = new RegExp(search.trim(), 'i');
+        // Primero buscamos los IDs de los estudiantes que coincidan con el nombre o email
+        const matchingStudents = await StudentModel.find({
+          $or: [
+            { name: searchRegex },
+            { email: searchRegex }
+          ]
+        }).select('_id');
+
+        const studentIds = matchingStudents.map(s => s._id);
+        studentFilter = { studentId: { $in: studentIds } };
+      }
+
+      // 1. Get all StudentTenant records for this tenant
+      // We'll calculate the actual balance for each student
+      const studentTenantsQuery: any = {
+        tenantId: new Types.ObjectId(tenantId),
+        ...studentFilter
+      };
+
+      const studentTenants = await StudentTenantModel.find(studentTenantsQuery).populate('studentId', 'name email phone');
+
+      // 2. Pagos manuales pendientes de confirmación
+      const pendingPaymentsQuery: any = {
+        tenantId: new Types.ObjectId(tenantId),
+        status: 'pending',
+        ...studentFilter
+      };
+
+      const pendingPayments = await PaymentModel.find(pendingPaymentsQuery).populate('studentId', 'name email');
+
+      // Agrupar deudas por estudiante
+      const debtMap = new Map<string, any>();
+
+      // Calculate actual balance for each student from source of truth
+      for (const st of studentTenants) {
+        if (!st.studentId) continue;
+        const sId = (st.studentId as any)._id.toString();
+        const calculatedBalance = await this.balanceService.getBalance(
+          sId,
+          new Types.ObjectId(tenantId),
+          false // Don't sync cache
+        );
+
+        // Only include students with negative balance (debt)
+        if (calculatedBalance < 0) {
+          debtMap.set(sId, {
+            studentId: sId,
+            name: (st.studentId as any).name,
+            email: (st.studentId as any).email,
+            phone: (st.studentId as any).phone,
+            balance: calculatedBalance, // Calculated from source of truth
+            pendingPaymentsAmount: 0,
+            totalDebt: Math.abs(calculatedBalance),
+          });
+        }
+      }
+
+      // Procesar pagos pendientes (estos suman a la deuda "real" hasta que se confirman)
+      // Nota: Si un profesor marca una clase como completada y NO pagada, se crea un Payment 'pending'.
+      // El balance del alumno disminuye por el precio de la reserva (vía webhook o lógica de reserva).
+      // Por lo tanto, el balance ya refleja la deuda. Los pagos pendientes son informativos.
+      pendingPayments.forEach((p: any) => {
+        if (!p.studentId) return;
+        const sId = p.studentId._id.toString();
+        if (debtMap.has(sId)) {
+          const entry = debtMap.get(sId);
+          entry.pendingPaymentsAmount += p.amount;
+        } else {
+          debtMap.set(sId, {
+            studentId: sId,
+            name: p.studentId.name,
+            email: p.studentId.email,
+            phone: p.studentId.phone || '',
+            balance: 0, // No tiene balance negativo pero tiene pagos pendientes
+            pendingPaymentsAmount: p.amount,
+            totalDebt: p.amount,
+          });
+        }
+      });
+
+      const reportItems = Array.from(debtMap.values()).sort((a, b) => b.totalDebt - a.totalDebt);
+
+      const totalBalanceDebt = Math.abs(reportItems.reduce((sum, d) => sum + (d.balance < 0 ? d.balance : 0), 0));
+      const totalPendingAmount = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
+
+      res.json({
+        summary: {
+          totalDebt: totalBalanceDebt, // CORRECCIÓN: La deuda real es el balance negativo. Los pagos pendientes son intentos de pago, no deuda adicional.
+          debtByBalance: totalBalanceDebt,
+          debtByPendingPayments: totalPendingAmount,
+          debtorCount: debtMap.size,
+        },
+        debtors: reportItems,
+      });
+    } catch (error) {
+      logger.error('Error generando reporte de deudas', { error: (error as Error).message });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

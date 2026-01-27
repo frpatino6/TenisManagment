@@ -94,6 +94,7 @@ class TenantConfigData extends Equatable {
   final String? address;
   final BasePricingModel? basePricing;
   final OperatingHoursModel? operatingHours;
+  final PaymentsConfigModel? payments;
 
   const TenantConfigData({
     this.logo,
@@ -101,6 +102,7 @@ class TenantConfigData extends Equatable {
     this.address,
     this.basePricing,
     this.operatingHours,
+    this.payments,
   });
 
   factory TenantConfigData.fromJson(Map<String, dynamic> json) {
@@ -118,6 +120,11 @@ class TenantConfigData extends Equatable {
               json['operatingHours'] as Map<String, dynamic>,
             )
           : null,
+      payments: json['payments'] != null
+          ? PaymentsConfigModel.fromJson(
+              json['payments'] as Map<String, dynamic>,
+            )
+          : null,
     );
   }
 
@@ -128,6 +135,7 @@ class TenantConfigData extends Equatable {
       'address': address,
       'basePricing': basePricing?.toJson(),
       'operatingHours': operatingHours?.toJson(),
+      'payments': payments?.toJson(),
     };
   }
 
@@ -137,6 +145,7 @@ class TenantConfigData extends Equatable {
     String? address,
     BasePricingModel? basePricing,
     OperatingHoursModel? operatingHours,
+    PaymentsConfigModel? payments,
   }) {
     return TenantConfigData(
       logo: logo ?? this.logo,
@@ -144,6 +153,7 @@ class TenantConfigData extends Equatable {
       address: address ?? this.address,
       basePricing: basePricing ?? this.basePricing,
       operatingHours: operatingHours ?? this.operatingHours,
+      payments: payments ?? this.payments,
     );
   }
 
@@ -154,7 +164,47 @@ class TenantConfigData extends Equatable {
     address,
     basePricing,
     operatingHours,
+    payments,
   ];
+}
+
+/// Configuration for payment gateway settings
+class PaymentsConfigModel extends Equatable {
+  /// Flag to enable/disable online payments for this tenant
+  final bool enableOnlinePayments;
+  final String? activeProvider;
+
+  const PaymentsConfigModel({
+    this.enableOnlinePayments = false,
+    this.activeProvider,
+  });
+
+  factory PaymentsConfigModel.fromJson(Map<String, dynamic> json) {
+    return PaymentsConfigModel(
+      enableOnlinePayments: json['enableOnlinePayments'] as bool? ?? false,
+      activeProvider: json['activeProvider']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'enableOnlinePayments': enableOnlinePayments,
+      'activeProvider': activeProvider,
+    };
+  }
+
+  PaymentsConfigModel copyWith({
+    bool? enableOnlinePayments,
+    String? activeProvider,
+  }) {
+    return PaymentsConfigModel(
+      enableOnlinePayments: enableOnlinePayments ?? this.enableOnlinePayments,
+      activeProvider: activeProvider ?? this.activeProvider,
+    );
+  }
+
+  @override
+  List<Object?> get props => [enableOnlinePayments, activeProvider];
 }
 
 class BasePricingModel extends Equatable {

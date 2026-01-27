@@ -6,8 +6,10 @@ import { FeaturesComponent } from './components/features/features';
 import { LeadGenComponent } from './components/lead-gen/lead-gen';
 import { PricingComponent } from './components/pricing/pricing';
 import { FaqComponent } from './components/faq/faq';
+import { SavingsCalculatorComponent } from './components/savings-calculator/savings-calculator';
 import { WhiteLabelComponent } from './components/white-label/white-label';
 import { LoyaltyComponent } from './components/loyalty/loyalty';
+import { ProofComponent } from './components/proof/proof';
 import { SeoService } from '../../core/services/seo.service';
 
 @Component({
@@ -17,10 +19,12 @@ import { SeoService } from '../../core/services/seo.service';
         HeaderComponent,
         FooterComponent,
         HeroComponent,
+        ProofComponent,
         WhiteLabelComponent,
         FeaturesComponent,
         LoyaltyComponent,
         PricingComponent,
+        SavingsCalculatorComponent,
         FaqComponent,
         LeadGenComponent
     ],
@@ -30,9 +34,10 @@ import { SeoService } from '../../core/services/seo.service';
 export class LandingComponent {
     constructor(private seo: SeoService) {
         this.seo.updateMetaTags({
-            title: 'CourtFlow BI - Control financiero para clubes de raqueta',
+            title: 'CourtHub | BI financiero para clubes de raqueta',
             description: 'Tome decisiones basadas en datos con dashboard ejecutivo, ahorro por monedero y desglose por servicio.',
-            image: 'assets/og-image.jpg'
+            image: 'https://courthub.co/images/og-image-1200x630.jpg',
+            url: 'https://courthub.co/'
         });
     }
 }

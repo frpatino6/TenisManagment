@@ -8,6 +8,7 @@ import '../../../../core/widgets/error_widget.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../../domain/models/tenant_booking_model.dart';
 import '../providers/tenant_admin_provider.dart';
+import '../../../shared/domain/strategies/status_color_strategy_factory.dart';
 
 class TenantBookingsListScreen extends ConsumerStatefulWidget {
   const TenantBookingsListScreen({super.key});
@@ -20,6 +21,7 @@ class TenantBookingsListScreen extends ConsumerStatefulWidget {
 class _TenantBookingsListScreenState
     extends ConsumerState<TenantBookingsListScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final _statusStrategy = StatusColorStrategyFactory.getStrategy(StatusType.booking);
 
   @override
   void dispose() {
@@ -206,7 +208,7 @@ class _TenantBookingsListScreenState
 
   Widget _buildBookingCard(BuildContext context, TenantBookingModel booking) {
     final theme = Theme.of(context);
-    final statusColor = _getStatusColor(booking.status);
+    final statusColor = _statusStrategy.getColor(booking.status);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -293,11 +295,13 @@ class _TenantBookingsListScreenState
                     color: Colors.grey,
                   ),
                   const Gap(4),
-                  Text(
-                    booking.date != null
-                        ? '${booking.date!.day}/${booking.date!.month}/${booking.date!.year}'
-                        : 'Sin fecha',
-                    style: theme.textTheme.bodySmall,
+                  Expanded(
+                    child: Text(
+                      _getFormattedDate(booking),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
                   const Gap(16),
                   const Icon(Icons.access_time, size: 16, color: Colors.grey),
@@ -306,7 +310,9 @@ class _TenantBookingsListScreenState
                     booking.startTime != null && booking.endTime != null
                         ? '${DateFormat('HH:mm').format(booking.startTime!)} - ${DateFormat('HH:mm').format(booking.endTime!)}'
                         : 'Sin horario',
-                    style: theme.textTheme.bodySmall,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
@@ -331,11 +337,93 @@ class _TenantBookingsListScreenState
                   ),
                 ],
               ),
+              if (booking.paymentStatus != 'paid' &&
+                  booking.status != 'cancelled') ...[
+                const Divider(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _confirmQuickBooking(context, booking),
+                    icon: const Icon(Icons.check_circle_outline, size: 18),
+                    label: const Text('Confirmar Pago'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.green,
+                      side: const BorderSide(color: Colors.green),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _confirmQuickBooking(
+    BuildContext context,
+    TenantBookingModel booking,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Pago'),
+        content: Text(
+          '¿Confirmar pago de ${CurrencyUtils.format(booking.price)} para ${booking.student.name}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        // Show loading
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Procesando pago...'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+
+        await ref
+            .read(tenantAdminServiceProvider)
+            .confirmBooking(booking.id, paymentStatus: 'paid');
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Pago confirmado exitosamente'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          ref.invalidate(tenantBookingsProvider);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildPaginationControls(
@@ -369,18 +457,19 @@ class _TenantBookingsListScreenState
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'confirmed':
-        return Colors.green;
-      case 'pending':
-        return Colors.orange;
-      case 'cancelled':
-        return Colors.red;
-      case 'completed':
-        return Colors.blue;
-      default:
-        return Colors.grey;
+  String _getFormattedDate(TenantBookingModel booking) {
+    DateTime? dateToFormat = booking.date;
+
+    // Si no hay fecha directa, intentar obtenerla del startTime
+    if (dateToFormat == null && booking.startTime != null) {
+      dateToFormat = booking.startTime;
     }
+
+    if (dateToFormat == null) {
+      return 'Sin fecha';
+    }
+
+    // Formato: "15/01/2024"
+    return DateFormat('dd/MM/yyyy').format(dateToFormat);
   }
 }

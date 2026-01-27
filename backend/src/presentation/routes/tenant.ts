@@ -46,10 +46,12 @@ router.delete('/courts/:id', controller.deleteCourt);
 
 // Gestión de pagos (transacciones)
 router.get('/payments', controller.listPayments);
+router.patch('/payments/:id/confirm', controller.confirmManualPayment);
 
-// Métricas del centro
+// Métricas y reportes del centro
 router.get('/metrics', controller.getMetrics);
 router.get('/analytics/overview', controller.getAnalyticsOverview);
+router.get('/reports/debts', controller.getDebtReport);
 
 // Gestión de reservas
 router.get('/bookings', controller.listBookings);
@@ -57,6 +59,7 @@ router.get('/bookings/calendar', controller.getBookingCalendar);
 router.get('/bookings/stats', controller.getBookingStats);
 router.get('/bookings/:id', controller.getBookingDetails);
 router.patch('/bookings/:id/cancel', controller.cancelBooking);
+router.patch('/bookings/:id/confirm', controller.confirmBooking);
 
 // Gestión de estudiantes
 router.get('/students', controller.listStudents);

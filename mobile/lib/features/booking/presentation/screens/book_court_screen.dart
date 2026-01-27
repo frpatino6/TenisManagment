@@ -64,15 +64,26 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     _logger.info('DEBUG: Tenant ${tenant?.name} config: $config');
     if (config == null) return false;
 
-    // Check for nested structure: config -> payments -> wompi -> pubKey
+    // Check for nested structure: config -> payments -> enableOnlinePayments
     if (config.containsKey('payments')) {
       final payments = config['payments'];
       if (payments is Map) {
+        // First check if online payments are enabled
+        final enableOnlinePayments =
+            payments['enableOnlinePayments'] as bool? ?? false;
+        if (!enableOnlinePayments) {
+          _logger.info('DEBUG: Online payments are disabled for this tenant');
+          return false;
+        }
+
+        // Then check for wompi config
         final wompi = payments['wompi'];
         if (wompi is Map) {
           final pubKey = wompi['pubKey'];
           if (pubKey != null && pubKey.toString().trim().isNotEmpty) {
-            _logger.info('DEBUG: Found Wompi key in nested config');
+            _logger.info(
+              'DEBUG: Found Wompi key in nested config and online payments enabled',
+            );
             return true;
           }
         }
@@ -80,6 +91,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     }
 
     // Fallback: Check for flat structure (backward compatibility)
+    // Note: flat structure doesn't have enableOnlinePayments flag, so we assume disabled
     bool isValid(String key) {
       if (!config.containsKey(key)) return false;
       final value = config[key];
@@ -87,8 +99,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     }
 
     final hasKey = isValid('wompi_public_key') || isValid('wompiPublicKey');
-    _logger.info('DEBUG: Has Wompi config? (flat check): $hasKey');
-    return hasKey;
+    _logger.info('DEBUG: Has Wompi config? (flat check - deprecated): $hasKey');
+    // Return false for flat structure as it doesn't support enableOnlinePayments flag
+    return false;
   }
 
   @override
@@ -175,9 +188,12 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         final booking = next.value!
             .where(
               (b) =>
-                  b.courtId == _selectedCourt?.id &&
+                  b.court?.id == _selectedCourt?.id &&
                   b.status == 'confirmed' &&
-                  b.bookingDate?.isAtSameMomentAs(startDateTime) == true,
+                  DateTime.tryParse(
+                        b.schedule.startTime,
+                      )?.isAtSameMomentAs(startDateTime) ==
+                      true,
             )
             .firstOrNull;
 
@@ -244,7 +260,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           if (_isBooking || _isSyncing)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withOpacity(0.7),
+                color: Colors.black.withValues(alpha: 0.7),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -499,7 +515,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                           color: Theme.of(context)
                               .colorScheme
                               .surfaceContainerHighest
-                              .withOpacity(0.3),
+                              .withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: Theme.of(context).colorScheme.outlineVariant,
@@ -651,7 +667,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+      color: Theme.of(
+        context,
+      ).colorScheme.primaryContainer.withValues(alpha: 0.3),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: tenantsAsync.when(
@@ -732,9 +750,8 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.primaryContainer.withOpacity(0.2)
+                          ? Theme.of(context).colorScheme.primaryContainer
+                                .withValues(alpha: 0.2)
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -1154,7 +1171,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
           return Card(
             color: Theme.of(
               context,
-            ).colorScheme.errorContainer.withOpacity(0.3),
+            ).colorScheme.errorContainer.withValues(alpha: 0.3),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -1282,7 +1299,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             errorMessage.contains('no tiene horarios');
 
         return Card(
-          color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
+          color: Theme.of(
+            context,
+          ).colorScheme.errorContainer.withValues(alpha: 0.3),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -1354,7 +1373,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     }
 
     return Card(
-      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+      color: Theme.of(
+        context,
+      ).colorScheme.primaryContainer.withValues(alpha: 0.3),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -1466,12 +1487,12 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             ref.watch(currentTenantProvider);
 
             if (isInsufficient && _hasWompiConfigured) {
-              final onPaymentStart = () {
+              void onPaymentStart() {
                 if (!mounted) return;
                 setState(() {
                   _isSyncing = true;
                 });
-              };
+              }
 
               return FilledButton.icon(
                 onPressed: () =>

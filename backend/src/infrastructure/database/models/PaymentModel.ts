@@ -9,9 +9,11 @@ export interface PaymentDocument {
   amount: number;
   date: Date;
   status: 'pending' | 'paid' | 'cancelled';
-  method: 'cash' | 'card' | 'transfer';
+  method: 'cash' | 'card' | 'transfer' | 'wallet';
   concept?: string; // Keep for backwards compatibility
   description?: string; // New field for payment description
+  externalReference?: string; // Reference from payment gateway (Wompi TRX ID)
+  isOnline: boolean; // True if it's an online payment
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,9 +32,11 @@ const PaymentSchema = new Schema<PaymentDocument>(
     amount: { type: Number, required: true },
     date: { type: Date, required: true, index: true },
     status: { type: String, enum: ['pending', 'paid', 'cancelled'], default: 'paid' },
-    method: { type: String, enum: ['cash', 'card', 'transfer'], required: true },
+    method: { type: String, enum: ['cash', 'card', 'transfer', 'wallet'], required: true },
     concept: { type: String },
     description: { type: String },
+    externalReference: { type: String, index: true, sparse: true },
+    isOnline: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

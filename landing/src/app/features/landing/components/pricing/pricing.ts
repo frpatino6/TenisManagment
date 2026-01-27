@@ -13,41 +13,46 @@ export class PricingComponent {
   plans = [
     {
       name: 'Club Pequeño',
+      description: 'Ideal para centros que inician su transformación digital.',
       price: '49',
       features: [
         'Hasta 4 pistas',
-        'Hasta 2 profesores',
-        'Reservas ilimitadas',
         'Pagos online',
-        'App para alumnos'
+        'App para alumnos',
+        'Reservas ilimitadas',
+        'Gestión básica de profesores',
+        'Recordatorios automáticos por email/WhatsApp',
+        'Reportes operativos básicos'
       ],
       recommended: false
     },
     {
       name: 'Club Profesional',
+      description: 'Nuestra solución completa para maximizar la rentabilidad.',
       price: '99',
       features: [
         'Pistas ilimitadas',
-        'Profesores ilimitados',
-        'Reservas ilimitadas',
-        'Pagos online',
-        'App personalizada',
-        'Gestión de Torneos con Ranking ELO',
-        'Dashboard avanzado',
-        'Soporte prioritario'
+        'Sistema de Monedero (Ahorro en comisiones)',
+        'Dashboard de Facturación Avanzado',
+        'Segmentación de socios por consumo',
+        'Reportes de rentabilidad por servicio',
+        'Automatización de cobros recurrentes',
+        'App personalizada con tu marca',
+        'Soporte técnico VIP'
       ],
       recommended: true
     },
     {
       name: 'Enterprise',
+      description: 'Para grandes complejos y gestión de múltiples sedes.',
       price: 'Consultar',
       features: [
-        'Múltiples sedes',
-        'API personalizada',
-        'Gestión de torneos',
-        'Integración de Pasarelas de Pago Locales',
-        'Integración con tornos',
-        'SLA garantizado'
+        'Gestión de Torneos Automatizada',
+        'Sistema de Ranking ELO profesional',
+        'Integración de pasarelas locales',
+        'Dashboard ejecutivo multi-sede',
+        'Migración y onboarding dedicado',
+        'SLA y soporte premium'
       ],
       recommended: false
     }

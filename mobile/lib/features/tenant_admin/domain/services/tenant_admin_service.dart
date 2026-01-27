@@ -12,6 +12,7 @@ import '../models/tenant_booking_model.dart';
 import '../models/booking_stats_model.dart';
 import '../models/tenant_student_model.dart';
 import '../models/tenant_payment_model.dart';
+import '../models/tenant_debt_report_model.dart';
 
 /// Service responsible for tenant admin operations
 /// Handles API communication for tenant admin endpoints
@@ -23,6 +24,46 @@ class TenantAdminService {
   TenantAdminService({required AppHttpClient httpClient, FirebaseAuth? auth})
     : _httpClient = httpClient,
       _auth = auth ?? FirebaseAuth.instance;
+
+  /// GET /api/tenant/reports/debts
+  /// Get debt report for the tenant
+  Future<TenantDebtReportModel> getDebtReport({String? search}) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final queryParams = <String, String>{};
+      if (search != null && search.isNotEmpty) {
+        queryParams['search'] = search;
+      }
+
+      final uri = Uri.parse(
+        '$_baseUrl/tenant/reports/debts',
+      ).replace(queryParameters: queryParams);
+
+      final response = await _httpClient.get(
+        uri,
+        headers: headers,
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return TenantDebtReportModel.fromJson(data);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error al obtener reporte de deudas',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      throw NetworkException.serverError(
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
 
   /// Get authorization headers
   Future<Map<String, String>> _getAuthHeaders() async {
@@ -132,6 +173,7 @@ class TenantAdminService {
     String? gateway,
     String? paymentMethodType,
     String? channel,
+    String? search,
   }) async {
     try {
       final headers = await _getAuthHeaders();
@@ -156,6 +198,9 @@ class TenantAdminService {
       }
       if (channel != null) {
         queryParams['channel'] = channel;
+      }
+      if (search != null && search.isNotEmpty) {
+        queryParams['search'] = search;
       }
 
       final uri = Uri.parse(
@@ -1021,6 +1066,59 @@ class TenantAdminService {
     }
   }
 
+  /// PATCH /api/tenant/bookings/:id/confirm
+  /// Confirm a booking and register manual payment
+  Future<void> confirmBooking(String bookingId, {String? paymentStatus}) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final uri = Uri.parse('$_baseUrl/tenant/bookings/$bookingId/confirm');
+
+      final body = <String, dynamic>{};
+      if (paymentStatus != null) body['paymentStatus'] = paymentStatus;
+
+      final response = await _httpClient.patch(
+        uri,
+        headers: headers,
+        body: json.encode(body),
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        return; // Success
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw ValidationException(
+          'Reserva no encontrada',
+          code: 'BOOKING_NOT_FOUND',
+        );
+      } else if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        throw ValidationException(
+          errorData['error']?.toString() ?? 'No se puede confirmar la reserva',
+          code: 'CANNOT_CONFIRM',
+        );
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
   /// GET /api/tenant/bookings/stats
   /// Get booking statistics
   Future<BookingStatsModel> getBookingStats({
@@ -1213,6 +1311,50 @@ class TenantAdminService {
         throw NetworkException.serverError(
           statusCode: response.statusCode,
           message: 'Error inesperado: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
+  /// PATCH /api/tenant/payments/:id/confirm
+  /// Confirm a manual payment
+  Future<void> confirmPayment(String paymentId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final uri = Uri.parse('$_baseUrl/tenant/payments/$paymentId/confirm');
+
+      final response = await _httpClient.patch(
+        uri,
+        headers: headers,
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        return; // Success
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw DomainException.notFound(resource: 'Pago');
+      } else if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        throw ValidationException(
+          errorData['error']?.toString() ?? 'Error al confirmar pago',
+          code: 'PAYMENT_CONFIRM_ERROR',
+        );
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error al confirmar pago: ${response.statusCode}',
         );
       }
     } on AppException {

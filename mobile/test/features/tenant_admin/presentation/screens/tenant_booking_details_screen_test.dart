@@ -33,6 +33,7 @@ void main() {
         id: 'b1',
         serviceType: 'court_rental',
         status: 'confirmed',
+        paymentStatus: 'paid',
         price: 50.0,
         date: DateTime(2024, 1, 1),
         startTime: DateTime(2024, 1, 1, 10),

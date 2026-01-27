@@ -4,7 +4,10 @@ import { ScheduleModel } from '../../infrastructure/database/models/ScheduleMode
 import { CourtModel } from '../../infrastructure/database/models/CourtModel';
 import { StudentModel } from '../../infrastructure/database/models/StudentModel';
 import { ProfessorTenantModel } from '../../infrastructure/database/models/ProfessorTenantModel';
+import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
+import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
 import { TenantService } from './TenantService';
+import { BalanceService } from './BalanceService';
 import { Logger } from '../../infrastructure/services/Logger';
 
 const logger = new Logger({ module: 'BookingService' });
@@ -19,10 +22,15 @@ export interface CreateBookingData {
     courtId?: string | Types.ObjectId;
     startTime?: Date;
     endTime?: Date;
+    status?: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+    // Flag to indicate payment was already processed externally (e.g., Wompi)
+    // When true, BookingService will NOT create automatic wallet payment
+    paymentAlreadyProcessed?: boolean;
 }
 
 export class BookingService {
     private tenantService = new TenantService();
+    private balanceService = new BalanceService();
 
     /**
      * Checks if a court is available for a given time range.
@@ -57,14 +65,23 @@ export class BookingService {
             return false;
         }
 
-        // 2. Check for Schedules that overlap
+        // 2. Check for Schedules that overlap AND are actually occupied
+        // A Schedule only blocks the court if:
+        // - It's blocked (isBlocked: true), OR
+        // - It's not available (isAvailable: false), OR
+        // - It has a student assigned (studentId exists)
         const scheduleQuery: any = {
             tenantId,
             courtId,
             status: { $in: ['confirmed', 'pending'] },
-            isBlocked: { $ne: true },
             $or: [
-                { startTime: { $lt: endTime }, endTime: { $gt: startTime } }
+                { isBlocked: true },
+                { isAvailable: false },
+                { studentId: { $exists: true, $ne: null } }
+            ],
+            $and: [
+                { startTime: { $lt: endTime } },
+                { endTime: { $gt: startTime } }
             ]
         };
 
@@ -75,7 +92,15 @@ export class BookingService {
         const conflictingSchedule = await ScheduleModel.findOne(scheduleQuery);
 
         if (conflictingSchedule) {
-            logger.info('Court conflict found in Schedules', { courtId, startTime, endTime, scheduleId: conflictingSchedule._id });
+            logger.info('Court conflict found in Schedules', { 
+                courtId, 
+                startTime, 
+                endTime, 
+                scheduleId: conflictingSchedule._id,
+                isAvailable: conflictingSchedule.isAvailable,
+                isBlocked: conflictingSchedule.isBlocked,
+                hasStudentId: !!conflictingSchedule.studentId
+            });
             return false;
         }
 
@@ -95,17 +120,27 @@ export class BookingService {
      * Centralized logic to be used by controllers and webhooks.
      */
     async createBooking(data: CreateBookingData): Promise<BookingDocument> {
-        const { tenantId, scheduleId, studentId, serviceType, price, courtId, startTime, endTime } = data;
+        const { tenantId, scheduleId, studentId, serviceType, price, courtId, startTime, endTime, paymentAlreadyProcessed } = data;
+        const tenant = await this.tenantService.getTenantById(tenantId.toString());
 
         try {
-            // 1. Get student and check balance
+            // 1. Get student and check balance in THIS tenant
             const student = await StudentModel.findById(studentId);
             if (!student) {
                 throw new Error('Estudiante no encontrado');
             }
 
-            if (student.balance < price) {
-                throw new Error('Saldo insuficiente para realizar esta reserva');
+            const studentTenant = await StudentTenantModel.findOne({
+                studentId: new Types.ObjectId(studentId.toString()),
+                tenantId: new Types.ObjectId(tenantId.toString())
+            });
+
+            const currentBalance = studentTenant?.balance || 0;
+
+            if (tenant?.config?.payments?.enableOnlinePayments) {
+                if (currentBalance < price) {
+                    throw new Error('Saldo insuficiente en este centro para realizar esta reserva');
+                }
             }
 
             let finalCourtId: Types.ObjectId | undefined;
@@ -151,7 +186,7 @@ export class BookingService {
 
                 // Update schedule status
                 schedule.isAvailable = false;
-                schedule.status = 'confirmed';
+                schedule.status = data.status || 'pending';
                 schedule.studentId = new Types.ObjectId(studentId.toString());
                 await schedule.save();
 
@@ -170,7 +205,7 @@ export class BookingService {
                 courtId: finalCourtId,
                 serviceType: serviceType,
                 price: price,
-                status: 'confirmed',
+                status: data.status || 'pending',
                 notes: `Reserva de ${serviceType}`,
                 bookingDate: bookingStartTime,
                 endTime: serviceType === 'court_rental' ? endTime : undefined
@@ -188,17 +223,131 @@ export class BookingService {
 
             const booking = await BookingModel.create(bookingData);
 
-            // 6. Deduct balance from student
-            await StudentModel.findByIdAndUpdate(studentId, {
-                $inc: { balance: -price }
-            });
+            // 6. ALWAYS deduct balance from StudentTenant (creates debt)
+            // Get balance BEFORE deduction to check if it was sufficient
+            const balanceBeforeDeduction = currentBalance;
+            const wasPaidWithBalance = balanceBeforeDeduction >= price;
 
-            logger.info('Booking created and balance deducted successfully', {
-                bookingId: booking._id.toString(),
-                serviceType,
-                studentId: studentId.toString(),
-                price: price
+            const updatedStudentTenant = await StudentTenantModel.findOneAndUpdate(
+                {
+                    studentId: new Types.ObjectId(studentId.toString()),
+                    tenantId: new Types.ObjectId(tenantId.toString())
+                },
+                {
+                    $inc: { balance: -price },
+                    $setOnInsert: { isActive: true, joinedAt: new Date() }
+                },
+                { upsert: true, new: true }
+            );
+
+            // 7. If balance was sufficient AND online payments are enabled, create Payment automatically
+            // This tracks that booking was paid with balance and prevents double-counting when admin confirms
+            // Only create Payment if online payments are enabled (otherwise it's payment to professor)
+            // IMPORTANT: Do NOT create wallet payment if payment was already processed externally (e.g., Wompi)
+            const enableOnlinePayments = tenant?.config?.payments?.enableOnlinePayments === true;
+            
+            // CRITICAL: Check if a payment already exists for this booking (e.g., from Wompi webhook)
+            // This prevents creating duplicate payments when booking is created after Wompi payment
+            // Check for ANY paid payment (wallet, card, etc.)
+            const existingPayment = await PaymentModel.findOne({
+                bookingId: booking._id,
+                status: 'paid'
             });
+            
+            // Also check if there's a card payment (Wompi) that might be linked to this booking
+            // This handles the case where webhook created payment before booking was created
+            const existingCardPayment = await PaymentModel.findOne({
+                bookingId: booking._id,
+                method: 'card',
+                isOnline: true,
+                status: 'paid'
+            });
+            
+            // SOLUCIÓN ESCENARIO 4: Si no hay payment vinculado, buscar payment reciente sin bookingId
+            // que coincida con este booking (mismo estudiante, tenant, monto)
+            // Esto maneja el caso donde el usuario pagó con Wompi SIN bookingInfo,
+            // el webhook creó "Recarga de Saldo", y ahora se crea el booking
+            let paymentToLink = null;
+            if (!existingPayment && !existingCardPayment && wasPaidWithBalance && enableOnlinePayments && !paymentAlreadyProcessed) {
+                const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+                paymentToLink = await PaymentModel.findOne({
+                    studentId: new Types.ObjectId(studentId.toString()),
+                    tenantId: new Types.ObjectId(tenantId.toString()),
+                    amount: price,
+                    bookingId: null, // Payment sin booking (fue creado como "Recarga de Saldo")
+                    method: 'card',
+                    isOnline: true,
+                    status: 'paid',
+                    createdAt: { $gte: fiveMinutesAgo } // Últimos 5 minutos
+                }).sort({ createdAt: -1 }); // Más reciente primero
+                
+                if (paymentToLink) {
+                    // Vincular el payment al booking en lugar de crear uno nuevo
+                    paymentToLink.bookingId = booking._id;
+                    paymentToLink.description = `Pago Wompi para reserva: ${serviceType}`;
+                    paymentToLink.concept = `Reserva ${serviceType}`;
+                    if (professorId) {
+                        paymentToLink.professorId = new Types.ObjectId(professorId.toString());
+                    }
+                    await paymentToLink.save();
+                    
+                    logger.info('Payment reciente vinculado al booking en lugar de crear wallet payment', {
+                        bookingId: booking._id.toString(),
+                        paymentId: paymentToLink._id.toString(),
+                        amount: price,
+                        serviceType
+                    });
+                }
+            }
+            
+            if (wasPaidWithBalance && enableOnlinePayments && !paymentAlreadyProcessed && !existingPayment && !existingCardPayment && !paymentToLink) {
+                await PaymentModel.create({
+                    tenantId: new Types.ObjectId(tenantId.toString()),
+                    studentId: new Types.ObjectId(studentId.toString()),
+                    professorId: professorId || undefined,
+                    bookingId: booking._id,
+                    amount: price,
+                    date: new Date(),
+                    status: 'paid',
+                    method: 'wallet',
+                    description: `Pago con saldo: ${serviceType}`,
+                    concept: `Reserva ${serviceType}`,
+                    isOnline: false
+                });
+
+                logger.info('Payment created automatically for booking paid with balance', {
+                    bookingId: booking._id.toString(),
+                    amount: price,
+                    serviceType,
+                    balanceBefore: balanceBeforeDeduction
+                });
+            } else if (existingPayment) {
+                logger.info('Skipping wallet payment creation - payment already exists for booking', {
+                    bookingId: booking._id.toString(),
+                    existingPaymentId: existingPayment._id.toString(),
+                    existingPaymentMethod: existingPayment.method
+                });
+            }
+
+            // Sincronizar el balance después de crear el booking y cualquier payment
+            await this.balanceService.syncBalance(
+                new Types.ObjectId(studentId.toString()),
+                new Types.ObjectId(tenantId.toString())
+            );
+
+            if (enableOnlinePayments) {
+                logger.info('Booking created and balance deducted', {
+                    bookingId: booking._id.toString(),
+                    serviceType,
+                    price
+                });
+            } else {
+                logger.info('Booking created - payment pending', {
+                    bookingId: booking._id.toString(),
+                    serviceType,
+                    price
+                });
+            }
 
             return booking;
         } catch (error) {

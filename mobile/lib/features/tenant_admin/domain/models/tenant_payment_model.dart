@@ -10,6 +10,8 @@ class TenantPaymentModel {
   final String? paymentMethodType;
   final String? customerEmail;
   final String? channel;
+  final String? type;
+  final String? description;
 
   TenantPaymentModel({
     required this.id,
@@ -23,6 +25,8 @@ class TenantPaymentModel {
     this.paymentMethodType,
     this.customerEmail,
     this.channel,
+    this.type,
+    this.description,
   });
 
   factory TenantPaymentModel.fromJson(Map<String, dynamic> json) {
@@ -40,6 +44,8 @@ class TenantPaymentModel {
       paymentMethodType: json['paymentMethodType'] as String?,
       customerEmail: json['customerEmail'] as String?,
       channel: json['channel'] as String?,
+      type: json['type'] as String?,
+      description: json['description'] as String?,
     );
   }
 }
@@ -73,8 +79,13 @@ class PaymentsPagination {
 class TenantPaymentsResponse {
   final List<TenantPaymentModel> payments;
   final PaymentsPagination pagination;
+  final double totalAmount;
 
-  TenantPaymentsResponse({required this.payments, required this.pagination});
+  TenantPaymentsResponse({
+    required this.payments,
+    required this.pagination,
+    required this.totalAmount,
+  });
 
   factory TenantPaymentsResponse.fromJson(Map<String, dynamic> json) {
     return TenantPaymentsResponse(
@@ -86,6 +97,7 @@ class TenantPaymentsResponse {
       pagination: PaymentsPagination.fromJson(
         json['pagination'] as Map<String, dynamic>,
       ),
+      totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

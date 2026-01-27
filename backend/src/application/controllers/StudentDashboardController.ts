@@ -14,6 +14,7 @@ import { ProfessorTenantModel } from '../../infrastructure/database/models/Profe
 import { UserPreferencesModel } from '../../infrastructure/database/models/UserPreferencesModel';
 import { TenantService } from '../services/TenantService';
 import { BookingService } from '../services/BookingService';
+import { BalanceService } from '../services/BalanceService';
 import { Types } from 'mongoose';
 
 // Default base pricing
@@ -43,10 +44,12 @@ interface AuthenticatedRequest extends Request {
 export class StudentDashboardController {
   private tenantService: TenantService;
   private bookingService: BookingService;
+  private balanceService: BalanceService;
 
   constructor() {
     this.tenantService = new TenantService();
     this.bookingService = new BookingService();
+    this.balanceService = new BalanceService();
   }
 
   /**
@@ -212,6 +215,32 @@ export class StudentDashboardController {
 
         const tenantObjectId = new Types.ObjectId(tenantId);
 
+        // Get or create StudentTenant record
+        let studentTenant = await StudentTenantModel.findOne({
+          studentId: student._id,
+          tenantId: tenantObjectId,
+        });
+
+        if (!studentTenant) {
+          studentTenant = await StudentTenantModel.create({
+            studentId: student._id,
+            tenantId: tenantObjectId,
+            balance: 0,
+            isActive: true,
+          });
+        }
+
+        // Get statistics
+        const totalBookings = await BookingModel.countDocuments({
+          studentId: student._id,
+          tenantId: tenantObjectId,
+        });
+
+        const totalPayments = await PaymentModel.countDocuments({
+          studentId: student._id,
+          tenantId: tenantObjectId,
+        });
+
         const totalPaymentsSum = await PaymentModel.aggregate([
           {
             $match: {
@@ -234,35 +263,13 @@ export class StudentDashboardController {
           { $group: { _id: null, total: { $sum: '$price' } } },
         ]);
 
-        const recalculatedBalance =
-          (totalPaymentsSum[0]?.total || 0) -
-          (totalBookingsSum[0]?.total || 0);
-
-        let studentTenant = await StudentTenantModel.findOne({
-          studentId: student._id,
-          tenantId: tenantObjectId,
-        });
-
-        if (!studentTenant) {
-          studentTenant = await StudentTenantModel.create({
-            studentId: student._id,
-            tenantId: tenantObjectId,
-            balance: recalculatedBalance,
-            isActive: true,
-          });
-        } else if (studentTenant.balance !== recalculatedBalance) {
-          studentTenant.balance = recalculatedBalance;
-          await studentTenant.save();
-        }
-
-        const totalBookings = await BookingModel.countDocuments({
-          studentId: student._id,
-          tenantId: tenantObjectId,
-        });
-        const totalPayments = await PaymentModel.countDocuments({
-          studentId: student._id,
-          tenantId: tenantObjectId,
-        });
+        // Calculate balance from source of truth (Payments and Bookings)
+        // This ensures accuracy and consistency
+        const currentBalance = await this.balanceService.getBalance(
+          student._id,
+          tenantObjectId,
+          true // Sync cache when different
+        );
 
         res.json({
           id: student._id,
@@ -273,7 +280,10 @@ export class StudentDashboardController {
           totalClasses: totalBookings,
           totalPayments: totalPayments,
           totalSpent: totalPaymentsSum[0]?.total || 0,
-          balance: recalculatedBalance,
+          totalPaid: totalPaymentsSum[0]?.total || 0,
+          balance: currentBalance,  // Calculated from source of truth
+          availableBalance: currentBalance > 0 ? currentBalance : 0,
+          currentDebt: currentBalance < 0 ? Math.abs(currentBalance) : 0,
           totalReservationsValue: totalBookingsSum[0]?.total || 0,
         });
         return;
@@ -317,7 +327,10 @@ export class StudentDashboardController {
         totalClasses: totalBookings,
         totalPayments: totalPayments,
         totalSpent: totalPaymentsSum[0]?.total || 0,
-        balance: student.balance,
+        totalPaid: totalPaymentsSum[0]?.total || 0,
+        balance: recalculatedBalance,
+        availableBalance: recalculatedBalance > 0 ? recalculatedBalance : 0,
+        currentDebt: recalculatedBalance < 0 ? Math.abs(recalculatedBalance) : 0,
         totalReservationsValue: totalBookingsSum[0]?.total || 0,
       });
     } catch (error) {
@@ -1032,90 +1045,26 @@ export class StudentDashboardController {
       oneHourBefore.setUTCHours(oneHourBefore.getUTCHours() - 1);
 
       // Find all bookings for this specific court that might overlap
-      const potentialConflicts = await BookingModel.find({
-        tenantId: tenantId,
-        courtId: court._id,
-        status: { $in: ['confirmed', 'pending'] },
-        $or: [
-          // Court rentals: check bookingDate
-          {
-            serviceType: 'court_rental',
-            bookingDate: {
-              $gte: oneHourBefore,
-              $lte: requestedEnd,
-            },
-          },
-          // Lessons: we'll check schedule times after populating
-          {
-            scheduleId: { $exists: true },
-          },
-        ],
-      })
-        .populate('scheduleId')
-        .lean();
-
-      // Check for actual overlaps
-      const hasConflict = potentialConflicts.some((booking) => {
-        let existingStart: Date;
-        let existingEnd: Date;
-
-        if (booking.serviceType === 'court_rental' && booking.bookingDate) {
-          // Court rental: use bookingDate as start, assume 1-hour duration
-          existingStart = new Date(booking.bookingDate);
-          existingEnd = new Date(existingStart);
-          existingEnd.setUTCHours(existingEnd.getUTCHours() + 1);
-        } else if (booking.scheduleId && (booking.scheduleId as any).startTime) {
-          // Lesson: use schedule times
-          const schedule = booking.scheduleId as any;
-          existingStart = new Date(schedule.startTime);
-          existingEnd = new Date(schedule.endTime);
-        } else {
-          // Can't determine time, skip
-          return false;
-        }
-
-        // Two time ranges overlap if:
-        // - requestedStart is within existing range, OR
-        // - requestedEnd is within existing range, OR
-        // - requested range completely contains existing range
-        return (
-          (requestedStart >= existingStart && requestedStart < existingEnd) ||
-          (requestedEnd > existingStart && requestedEnd <= existingEnd) ||
-          (requestedStart <= existingStart && requestedEnd >= existingEnd)
-        );
-      });
-
-      if (hasConflict) {
-        return res.status(409).json({
-          error: 'El horario seleccionado ya está ocupado. Por favor, selecciona otro horario.',
-        });
-      }
-
-      // Create booking for court rental with courtId
-      const booking = await BookingModel.create({
-        tenantId: tenantId,
-        courtId: court._id,
-        // scheduleId is optional for court_rental - not included
-        studentId: student._id,
-        // professorId is optional for court_rental - not included
-        serviceType: 'court_rental',
-        price: price,
-        status: 'confirmed',
-        notes: `Reserva de cancha: ${court.name} - ${requestedStart.toISOString()} a ${requestedEnd.toISOString()}`,
-        bookingDate: requestedStart,
+      // Use central BookingService to handle conflict checks, booking creation, and balance deduction
+      const booking = await this.bookingService.createBooking({
+        tenantId: tenantId.toString(),
+        studentId: student._id.toString(),
+        courtId: courtId.toString(),
+        startTime: requestedStart,
         endTime: requestedEnd,
+        serviceType: 'court_rental',
+        price: price
       });
-
 
       res.status(201).json({
         id: booking._id,
         studentId: booking.studentId,
-        courtId: court._id,
+        courtId: booking.courtId?.toString(),
         serviceType: booking.serviceType,
         status: booking.status,
         price: booking.price,
-        startTime: new Date(startTime).toISOString(),
-        endTime: new Date(endTime).toISOString(),
+        startTime: requestedStart.toISOString(),
+        endTime: requestedEnd.toISOString(),
         createdAt: booking.createdAt
       });
     } catch (error) {
@@ -1178,6 +1127,13 @@ export class StudentDashboardController {
             .limit(1)
             .lean();
 
+          // Calculate balance from source of truth (Payments and Bookings) per tenant
+          const calculatedBalance = await this.balanceService.getBalance(
+            student._id,
+            tenant._id,
+            false // Don't sync cache, just calculate
+          );
+
           return {
             id: tenant._id.toString(),
             name: tenant.name,
@@ -1186,7 +1142,7 @@ export class StudentDashboardController {
             config: tenant.config,
             isActive: st.isActive,
             joinedAt: st.joinedAt,
-            balance: st.balance,
+            balance: calculatedBalance, // Calculated from source of truth
             lastBooking: lastBooking ? {
               id: lastBooking._id.toString(),
               createdAt: lastBooking.createdAt,
@@ -1846,6 +1802,72 @@ export class StudentDashboardController {
       });
     } catch (error) {
       console.error('Error setting active tenant:', error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
+   * GET /api/student-dashboard/payments/history
+   * Get student payment history with filters
+   */
+  public getPaymentHistory = async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const firebaseUid = req.user?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+
+      const { from, to, status } = req.query;
+
+      const authUser = await AuthUserModel.findOne({ firebaseUid });
+      if (!authUser) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+
+      const student = await StudentModel.findOne({ authUserId: authUser._id });
+      if (!student) {
+        return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
+      }
+
+      const query: any = { studentId: student._id };
+
+      // Optional tenant filtering
+      if (req.tenantId) {
+        query.tenantId = new Types.ObjectId(req.tenantId);
+      }
+
+      // Date filtering
+      if (from || to) {
+        query.date = {};
+        if (from) query.date.$gte = new Date(from as string);
+        if (to) query.date.$lte = new Date(to as string);
+      }
+
+      // Status filtering
+      if (status) {
+        query.status = status;
+      }
+
+      const payments = await PaymentModel.find(query)
+        .populate('professorId', 'name')
+        .populate('tenantId', 'name')
+        .sort({ date: -1 })
+        .limit(100);
+
+      const items = payments.map(p => ({
+        id: p._id,
+        amount: p.amount,
+        date: p.date,
+        status: p.status,
+        method: p.method,
+        description: p.description,
+        professorName: (p.professorId as any)?.name || 'N/A',
+        tenantName: (p.tenantId as any)?.name || 'N/A',
+      }));
+
+      res.json({ items });
+    } catch (error) {
+      console.error('Error getting payment history:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

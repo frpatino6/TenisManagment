@@ -6,10 +6,12 @@ import { ScheduleModel } from '../../infrastructure/database/models/ScheduleMode
 import { BookingModel } from '../../infrastructure/database/models/BookingModel';
 import { PaymentModel } from '../../infrastructure/database/models/PaymentModel';
 import { ProfessorTenantModel } from '../../infrastructure/database/models/ProfessorTenantModel';
+import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
 import { TenantModel } from '../../infrastructure/database/models/TenantModel';
 import { UserPreferencesModel } from '../../infrastructure/database/models/UserPreferencesModel';
 import { TenantService } from '../services/TenantService';
 import { BookingService } from '../services/BookingService';
+import { BalanceService } from '../services/BalanceService';
 import { Logger } from '../../infrastructure/services/Logger';
 import { Types } from 'mongoose';
 const logger = new Logger({ controller: 'ProfessorDashboardController' });
@@ -17,6 +19,7 @@ const logger = new Logger({ controller: 'ProfessorDashboardController' });
 export class ProfessorDashboardController {
   private tenantService = new TenantService();
   private bookingService = new BookingService();
+  private balanceService = new BalanceService();
 
   // Obtener información del profesor
   getProfessorInfo = async (req: Request, res: Response) => {
@@ -205,7 +208,7 @@ export class ProfessorDashboardController {
       for (const schedule of allSchedules) {
         const bookingQuery: any = {
           scheduleId: schedule._id,
-          status: 'confirmed', // Only confirmed bookings
+          status: { $in: ['confirmed', 'pending'] },
         };
 
         // Filter by tenantId if provided (from middleware)
@@ -242,6 +245,18 @@ export class ProfessorDashboardController {
 
           const booking = await BookingModel.findOne(bookingQuery);
 
+          // Check if there is a paid payment for this booking
+          let paymentStatus = 'pending';
+          if (booking) {
+            const payment = await PaymentModel.findOne({
+              bookingId: booking._id,
+              status: 'paid'
+            });
+            if (payment) {
+              paymentStatus = 'paid';
+            }
+          }
+
           // Get tenant info from populated schedule
           const tenant = schedule.tenantId as any;
 
@@ -255,6 +270,7 @@ export class ProfessorDashboardController {
             notes: schedule.notes,
             serviceType: booking?.serviceType,
             price: booking?.price,
+            paymentStatus: paymentStatus, // New field
             tenantId: tenant?._id?.toString() || schedule.tenantId?.toString() || null,
             tenantName: tenant?.name || null,
           };
@@ -345,7 +361,7 @@ export class ProfessorDashboardController {
       for (const schedule of allTodaySchedules) {
         const bookingQuery: any = {
           scheduleId: schedule._id,
-          status: 'confirmed', // Only confirmed bookings
+          status: { $in: ['confirmed', 'pending'] },
         };
 
         // Filter by tenantId if provided (from middleware)
@@ -384,6 +400,18 @@ export class ProfessorDashboardController {
 
           const booking = await BookingModel.findOne(bookingQuery);
 
+          // Check if there is a paid payment for this booking
+          let paymentStatus = 'pending';
+          if (booking) {
+            const payment = await PaymentModel.findOne({
+              bookingId: booking._id,
+              status: 'paid'
+            });
+            if (payment) {
+              paymentStatus = 'paid';
+            }
+          }
+
           return {
             id: schedule._id.toString(),
             studentName: schedule.studentInfo?.name || 'Estudiante',
@@ -394,6 +422,7 @@ export class ProfessorDashboardController {
             notes: schedule.notes,
             serviceType: booking?.serviceType,
             price: booking?.price,
+            paymentStatus: paymentStatus, // New field
           };
         })
       );
@@ -433,6 +462,7 @@ export class ProfessorDashboardController {
           $lt: weekEnd
         },
         studentId: { $exists: true, $ne: null }, // Solo horarios reservados
+        status: { $in: ['confirmed', 'pending'] }
       };
 
       // Filter by tenantId if provided (from middleware)
@@ -856,6 +886,148 @@ export class ProfessorDashboardController {
   };
 
   /**
+   * Create multiple available schedules in batch
+   */
+  createSchedulesBatch = async (req: Request, res: Response) => {
+    logger.info('createSchedulesBatch called', { requestId: req.requestId });
+
+    try {
+      const firebaseUid = req.user?.uid;
+      if (!firebaseUid) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+
+      const { schedules, tenantId } = req.body;
+
+      if (!schedules || !Array.isArray(schedules) || schedules.length === 0) {
+        return res.status(400).json({ error: 'Se requiere un array de horarios (schedules)' });
+      }
+
+      // Get professor
+      const authUser = await AuthUserModel.findOne({ firebaseUid });
+      if (!authUser) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+
+      const professor = await ProfessorModel.findOne({ authUserId: authUser._id });
+      if (!professor) {
+        return res.status(404).json({ error: 'Perfil de profesor no encontrado' });
+      }
+
+      // Determine tenantId
+      let finalTenantId: Types.ObjectId | null = null;
+      if (tenantId) {
+        if (!Types.ObjectId.isValid(tenantId)) {
+          return res.status(400).json({ error: 'tenantId inválido' });
+        }
+        finalTenantId = new Types.ObjectId(tenantId);
+
+        const professorTenant = await ProfessorTenantModel.findOne({
+          professorId: professor._id,
+          tenantId: finalTenantId,
+          isActive: true
+        });
+
+        if (!professorTenant) {
+          return res.status(403).json({ error: 'El profesor no tiene acceso a este centro' });
+        }
+      } else if (req.tenantId) {
+        finalTenantId = new Types.ObjectId(req.tenantId);
+      } else {
+        const professorTenant = await ProfessorTenantModel.findOne({
+          professorId: professor._id,
+          isActive: true
+        }).sort({ joinedAt: -1 });
+
+        if (!professorTenant) {
+          return res.status(400).json({ error: 'El profesor no está asociado a ningún centro' });
+        }
+        finalTenantId = professorTenant.tenantId;
+      }
+
+      const results = [];
+      const errors = [];
+
+      for (const slot of schedules) {
+        const { date, startTime, endTime, courtId } = slot;
+
+        if (!date || !startTime || !endTime) {
+          errors.push({ slot, error: 'MISSING_FIELDS', message: 'Faltan campos requeridos' });
+          continue;
+        }
+
+        const parsedStartTime = new Date(startTime);
+        const parsedEndTime = new Date(endTime);
+        const parsedDate = new Date(date);
+
+        // Validation 1: Conflict with same professor
+        const conflict = await ScheduleModel.findOne({
+          professorId: professor._id,
+          startTime: parsedStartTime,
+          $expr: {
+            $and: [
+              { $eq: [{ $year: '$startTime' }, parsedStartTime.getUTCFullYear()] },
+              { $eq: [{ $month: '$startTime' }, parsedStartTime.getUTCMonth() + 1] },
+              { $eq: [{ $dayOfMonth: '$startTime' }, parsedStartTime.getUTCDate()] },
+            ]
+          }
+        });
+
+        if (conflict) {
+          errors.push({ slot, error: 'CONFLICT_SAME_TIME', message: 'Ya tienes un horario a esta hora' });
+          continue;
+        }
+
+        // Validation 2: Court availability
+        if (courtId && Types.ObjectId.isValid(courtId)) {
+          const isAvailable = await this.bookingService.isCourtAvailable(
+            finalTenantId,
+            new Types.ObjectId(courtId),
+            parsedStartTime,
+            parsedEndTime
+          );
+
+          if (!isAvailable) {
+            errors.push({ slot, error: 'COURT_OCCUPIED', message: 'La cancha ya está ocupada' });
+            continue;
+          }
+        }
+
+        // Create
+        const newSchedule = await ScheduleModel.create({
+          tenantId: finalTenantId,
+          professorId: professor._id,
+          courtId: courtId && Types.ObjectId.isValid(courtId) ? new Types.ObjectId(courtId) : undefined,
+          date: parsedDate,
+          startTime: parsedStartTime,
+          endTime: parsedEndTime,
+          isAvailable: true,
+          status: 'pending'
+        });
+
+        results.push({
+          id: newSchedule._id,
+          date: newSchedule.date,
+          startTime: newSchedule.startTime,
+          endTime: newSchedule.endTime
+        });
+      }
+
+      return res.status(201).json({
+        message: results.length > 0 ? `Se crearon ${results.length} horarios` : 'No se pudo crear ningún horario',
+        createdCount: results.length,
+        errorCount: errors.length,
+        errors: errors.length > 0 ? errors : undefined,
+        items: results
+      });
+
+    } catch (error) {
+      logger.error('createSchedulesBatch: unhandled error', { error: (error as Error).message });
+      return res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  };
+
+  /**
    * Get all schedules for the professor
    */
   getMySchedules = async (req: Request, res: Response) => {
@@ -1068,7 +1240,7 @@ export class ProfessorDashboardController {
       }
 
       const { scheduleId } = req.params;
-      const { paymentAmount } = req.body;
+      const { paymentAmount, paymentStatus } = req.body;
 
       if (!scheduleId) {
         return res.status(400).json({ error: 'scheduleId es requerido' });
@@ -1117,27 +1289,73 @@ export class ProfessorDashboardController {
         await booking.save();
       }
 
-      // Create payment record if amount provided
+      // Check for existing payment or create a new one
       let payment = null;
-      if (paymentAmount && paymentAmount > 0 && schedule.studentId && booking) {
-        payment = await PaymentModel.create({
-          studentId: schedule.studentId,
-          professorId: professor._id,
+      let paymentAlreadyExists = false;
+
+      if (booking) {
+        // First, check if a payment already exists for this booking
+        const existingPayment = await PaymentModel.findOne({
           bookingId: booking._id,
-          tenantId: booking.tenantId,
-          amount: paymentAmount,
-          date: new Date(),
-          status: 'paid',
-          method: 'cash', // Default to cash, can be updated later
-          description: `Pago por ${booking.serviceType} - ${schedule.startTime.toLocaleDateString()}`
+          status: 'paid'
         });
+
+        if (existingPayment) {
+          // Payment already exists (e.g., from Wompi), reuse it
+          payment = existingPayment;
+          paymentAlreadyExists = true;
+          logger.info('Payment already exists for booking', {
+            bookingId: booking._id.toString(),
+            paymentId: existingPayment._id.toString(),
+            amount: existingPayment.amount,
+            method: existingPayment.method
+          });
+        } else if (paymentAmount && paymentAmount > 0 && schedule.studentId) {
+          // No existing payment, create a new one
+          const finalStatus = paymentStatus === 'pending' ? 'pending' : 'paid';
+
+          payment = await PaymentModel.create({
+            studentId: schedule.studentId,
+            professorId: professor._id,
+            bookingId: booking._id,
+            tenantId: booking.tenantId,
+            amount: paymentAmount,
+            date: new Date(),
+            status: finalStatus,
+            method: 'cash', // Default to cash for manual payments
+            description: `Clase completada por profesor. Estado: ${finalStatus.toUpperCase()}. ${booking.serviceType} - ${schedule.startTime.toLocaleDateString()}`
+          });
+
+          // IMPORTANTE: NO sumar balance aquí porque:
+          // 1. El BookingService SIEMPRE descuenta el balance al crear el booking (crea deuda)
+          // 2. El Payment 'cash' solo cancela la deuda en el cálculo del BalanceService
+          // 3. Si sumamos aquí, estaríamos dando crédito adicional cuando solo deberíamos cancelar la deuda
+          // El BalanceService calculará correctamente: Recargas - Deudas - Gastos wallet
+          // Donde el Payment 'cash' cancela la deuda del booking (lo remueve del cálculo de deudas)
+          
+          // Sincronizar el balance después de crear/actualizar el Payment
+          await this.balanceService.syncBalance(
+            new Types.ObjectId(schedule.studentId.toString()),
+            new Types.ObjectId(booking.tenantId.toString())
+          );
+        }
+      }
+
+      // Sincronizar el balance después de cualquier cambio en el pago
+      if (booking && schedule.studentId) {
+        await this.balanceService.syncBalance(
+          new Types.ObjectId(schedule.studentId.toString()),
+          new Types.ObjectId(booking.tenantId.toString())
+        );
       }
 
       res.json({
-        message: 'Clase marcada como completada' + (payment ? ' y pago registrado' : ''),
+        message: 'Clase marcada como completada' + (payment ? ` con pago en estado ${payment.status}` : ''),
         scheduleId: schedule._id,
         bookingId: booking?._id,
-        paymentId: payment?._id
+        paymentId: payment?._id,
+        paymentStatus: payment?.status,
+        paymentAlreadyExists
       });
     } catch (error) {
       logger.error('Error completing class', { error: (error as Error).message });

@@ -29,6 +29,7 @@ void main() {
         total: 1,
         totalPages: 1,
       ),
+      totalAmount: 50000,
     );
 
     await tester.pumpWidget(
@@ -44,11 +45,9 @@ void main() {
 
     expect(find.text('Pagos'), findsOneWidget);
     expect(find.byIcon(Icons.refresh), findsOneWidget);
-    expect(find.text('Referencia: TRX-1'), findsOneWidget);
+    expect(find.text('Ref: TRX-1'), findsOneWidget);
     expect(find.text('Cliente Pago'), findsOneWidget);
-    expect(find.text('cliente2@gmail.com'), findsOneWidget);
-    expect(find.text('Método: Tarjeta'), findsOneWidget);
-    expect(find.text('Canal: Pago directo'), findsOneWidget);
+    expect(find.text('PAGO ONLINE'), findsOneWidget);
     expect(find.text('Estado'), findsOneWidget);
     expect(find.text('Método'), findsOneWidget);
     expect(find.text('Canal'), findsOneWidget);

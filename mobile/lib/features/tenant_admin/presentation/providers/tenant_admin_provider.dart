@@ -4,6 +4,7 @@ import '../../domain/models/tenant_metrics_model.dart';
 import '../../domain/models/tenant_config_model.dart';
 import '../../domain/models/tenant_professor_model.dart';
 import '../../domain/models/tenant_court_model.dart';
+import '../../domain/models/tenant_debt_report_model.dart';
 import '../../domain/services/tenant_admin_service.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../domain/models/tenant_student_model.dart';
@@ -293,6 +294,17 @@ final paymentChannelFilterProvider =
       PaymentChannelFilterNotifier.new,
     );
 
+class PaymentSearchQueryNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void setQuery(String? value) => state = value;
+}
+
+final paymentSearchQueryProvider =
+    NotifierProvider<PaymentSearchQueryNotifier, String?>(
+      PaymentSearchQueryNotifier.new,
+    );
+
 final tenantPaymentsProvider =
     FutureProvider.autoDispose<TenantPaymentsResponse>((ref) async {
       final tenantId = ref.watch(currentTenantIdProvider);
@@ -305,18 +317,49 @@ final tenantPaymentsProvider =
       final status = ref.watch(paymentStatusFilterProvider);
       final method = ref.watch(paymentMethodFilterProvider);
       final channel = ref.watch(paymentChannelFilterProvider);
+      final search = ref.watch(paymentSearchQueryProvider);
 
       return await service.getPayments(
         page: page,
         limit: 20,
         from: dateRange?.start,
         to: dateRange?.end,
-        gateway: 'WOMPI',
         status: status,
         paymentMethodType: method,
         channel: channel,
+        search: search,
       );
-});
+    });
+
+/// Notifier for administrative actions (e.g., confirming payments)
+class TenantAdminActionsNotifier extends Notifier<AsyncValue<void>> {
+  @override
+  AsyncValue<void> build() {
+    return const AsyncValue.data(null);
+  }
+
+  Future<void> confirmPayment(String paymentId) async {
+    state = const AsyncValue.loading();
+    try {
+      final service = ref.read(tenantAdminServiceProvider);
+      await service.confirmPayment(paymentId);
+
+      // Invalidate relevant providers to refresh UI
+      ref.invalidate(tenantPaymentsProvider);
+      ref.invalidate(tenantMetricsProvider);
+
+      state = const AsyncValue.data(null);
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      rethrow;
+    }
+  }
+}
+
+final tenantAdminActionsProvider =
+    NotifierProvider<TenantAdminActionsNotifier, AsyncValue<void>>(
+      TenantAdminActionsNotifier.new,
+    );
 
 /// Provider for booking calendar
 final bookingCalendarProvider = FutureProvider.autoDispose
@@ -397,3 +440,28 @@ final professorBookingsProvider = FutureProvider.autoDispose
 
       return (result['bookings'] as List<TenantBookingModel>);
     });
+
+class DebtSearchNotifier extends Notifier<String> {
+  @override
+  String build() => "";
+  void set(String value) => state = value;
+}
+
+final debtSearchProvider = NotifierProvider<DebtSearchNotifier, String>(
+  DebtSearchNotifier.new,
+);
+
+/// Provider for fetching debt report
+final debtReportProvider = FutureProvider.autoDispose<TenantDebtReportModel>((
+  ref,
+) async {
+  final tenantId = ref.watch(currentTenantIdProvider);
+  if (tenantId == null || tenantId.isEmpty) {
+    throw Exception('Tenant ID requerido');
+  }
+
+  final search = ref.watch(debtSearchProvider);
+  final service = ref.read(tenantAdminServiceProvider);
+
+  return await service.getDebtReport(search: search.isEmpty ? null : search);
+});

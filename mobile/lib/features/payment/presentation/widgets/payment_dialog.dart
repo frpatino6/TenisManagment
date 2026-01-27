@@ -86,12 +86,10 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         uri?.queryParameters['id'] ?? uri?.queryParameters['transaction_id'];
 
     bool? resolvedStatus = status;
-    if (resolvedStatus == null) {
-      resolvedStatus = await _resolveStatusFromBackend(
-        transactionId: transactionId,
-        reference: _paymentReference,
-      );
-    }
+    resolvedStatus ??= await _resolveStatusFromBackend(
+      transactionId: transactionId,
+      reference: _paymentReference,
+    );
 
     if (!mounted) return;
     await _handleStatusResult(resolvedStatus);

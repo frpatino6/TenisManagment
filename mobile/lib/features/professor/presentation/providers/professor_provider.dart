@@ -153,6 +153,32 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
+  Future<Map<String, dynamic>?> createSchedulesBatch({
+    required List<Map<String, dynamic>> schedules,
+  }) async {
+    state = const AsyncValue.loading();
+
+    try {
+      final service = ref.read(professorServiceProvider);
+      final tenantId = ref.read(currentTenantIdProvider);
+
+      final result = await service.createSchedulesBatch(
+        schedules: schedules,
+        tenantId: tenantId,
+      );
+
+      ref.invalidate(professorSchedulesProvider);
+      ref.invalidate(todayScheduleProvider);
+      ref.invalidate(weekScheduleProvider);
+
+      state = const AsyncValue.data(null);
+      return result;
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      rethrow;
+    }
+  }
+
   Future<void> deleteSchedule(String scheduleId) async {
     state = const AsyncValue.loading();
 
@@ -170,12 +196,20 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     }
   }
 
-  Future<void> completeClass(String scheduleId, {double? paymentAmount}) async {
+  Future<void> completeClass(
+    String scheduleId, {
+    double? paymentAmount,
+    String? paymentStatus,
+  }) async {
     state = const AsyncValue.loading();
 
     try {
       final service = ref.read(professorServiceProvider);
-      await service.completeClass(scheduleId, paymentAmount: paymentAmount);
+      await service.completeClass(
+        scheduleId,
+        paymentAmount: paymentAmount,
+        paymentStatus: paymentStatus,
+      );
 
       ref.invalidate(professorSchedulesProvider);
       ref.invalidate(todayScheduleProvider);

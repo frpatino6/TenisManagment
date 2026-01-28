@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/tenant_service.dart';
 import '../interfaces/interfaces.dart';
-import '../../features/tenant/infrastructure/providers/tenant_provider_impl.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 
 /// Provider for TenantService singleton
@@ -166,9 +165,26 @@ final tenantNotifierProvider =
       return TenantNotifier();
     });
 
+/// Provider for TenantDataProvider interface
+/// This provider is defined by tenant feature and exported via tenant_providers.dart
+/// Core declares it here as a placeholder that can be overridden
+/// Features should import tenant_providers.dart to get access to the actual implementation
+/// The actual provider is defined in tenant/infrastructure/providers/tenant_provider_impl.dart
+final tenantDataProviderProvider = Provider<TenantDataProvider>((ref) {
+  throw UnimplementedError(
+    'tenantDataProviderProvider must be provided by tenant feature. '
+    'Import tenant_providers.dart in your app\'s provider scope.',
+  );
+});
+
 /// Provider to get the current tenant model (with name, etc.)
 /// This provider fetches the tenant details based on the current tenant ID
 /// Returns ITenantInfo to decouple from tenant domain model
+/// Uses TenantDataProvider interface - implementation is provided by tenant feature
+/// Note: This provider depends on tenantDataProviderProvider which must be provided by tenant feature
+/// The tenant feature should export its tenantDataProviderProvider via tenant_providers.dart
+/// To use this provider, you must import tenant feature providers in your app's provider scope:
+/// import 'package:.../features/tenant/infrastructure/providers/tenant_providers.dart';
 final currentTenantProvider = FutureProvider.autoDispose<ITenantInfo?>((
   ref,
 ) async {
@@ -177,24 +193,19 @@ final currentTenantProvider = FutureProvider.autoDispose<ITenantInfo?>((
     return null;
   }
 
+  // Use TenantDataProvider interface - implementation is provided by tenant feature
+  // This avoids direct dependency on tenant/infrastructure
+  // The tenant feature must provide tenantDataProviderProvider via tenant_providers.dart
+  // We use a try-catch to handle the case where tenant feature is not available
   try {
-    final provider = ref.watch(tenantProviderImplProvider);
-    final tenants = await provider.getAvailableTenants();
-    return tenants.firstWhere(
-      (tenant) => tenant.id == tenantId,
-      orElse: () => throw Exception('Centro no encontrado'),
-    );
+    // This provider is defined in tenant feature and exported via tenant_providers.dart
+    // Core can use it without importing tenant implementation directly
+    // Features that use this should import tenant_providers.dart in their provider scope
+    final tenantDataProvider = ref.watch(tenantDataProviderProvider);
+    return tenantDataProvider.getCurrentTenant();
   } catch (e) {
-    // If getAvailableTenants fails, try getMyTenants
-    try {
-      final provider = ref.watch(tenantProviderImplProvider);
-      final tenants = await provider.getMyTenants();
-      return tenants.firstWhere(
-        (tenant) => tenant.id == tenantId,
-        orElse: () => throw Exception('Centro no encontrado'),
-      );
-    } catch (_) {
-      rethrow;
-    }
+    // If tenantDataProviderProvider is not provided, return null
+    // This allows core to work without tenant feature (for testing, etc.)
+    return null;
   }
 });

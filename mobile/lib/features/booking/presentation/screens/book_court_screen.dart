@@ -11,7 +11,6 @@ import '../providers/booking_provider.dart';
 import '../states/booking_screen_state.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../../../core/interfaces/interfaces.dart';
-import '../../../tenant/infrastructure/providers/tenant_provider_impl.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../../core/widgets/web_image.dart';
 import '../../../../core/config/app_config.dart';
@@ -22,11 +21,12 @@ import '../../application/commands/process_booking_command.dart';
 import '../../application/commands/refresh_data_command.dart';
 
 /// Provider for available tenants for dropdown selection
+/// Uses TenantDataProvider interface to avoid direct dependency on tenant feature
 final availableTenantsProvider = FutureProvider.autoDispose<List<ITenantInfo>>((
   ref,
 ) async {
-  final provider = ref.watch(tenantProviderImplProvider);
-  return provider.getAvailableTenants();
+  final tenantDataProvider = ref.watch(tenantDataProviderProvider);
+  return tenantDataProvider.getAvailableTenants();
 });
 
 typedef BookCourtPaymentDialogBuilder =

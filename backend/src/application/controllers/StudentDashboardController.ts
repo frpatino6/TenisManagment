@@ -77,15 +77,35 @@ export class StudentDashboardController {
       }
 
 
-      // Get recent activities (last 30 days)
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      // Parse filters from query params
+      const fromDate = req.query.fromDate ? new Date(req.query.fromDate as string) : null;
+      const toDate = req.query.toDate ? new Date(req.query.toDate as string) : null;
+      const activityType = req.query.type as string | undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+
+      // Default to last 30 days if no date filters provided
+      const defaultFromDate = new Date();
+      defaultFromDate.setDate(defaultFromDate.getDate() - 30);
+      const startDate = fromDate || defaultFromDate;
+
+      // Build date filter
+      const dateFilter: any = {};
+      if (startDate) {
+        dateFilter.$gte = startDate;
+      }
+      if (toDate) {
+        dateFilter.$lte = toDate;
+      }
 
       // Fetch bookings with schedule and professor info
-      const bookings = await BookingModel.find({
+      const bookingQuery: any = {
         studentId: student._id,
-        createdAt: { $gte: thirtyDaysAgo }
-      })
+      };
+      if (Object.keys(dateFilter).length > 0) {
+        bookingQuery.createdAt = dateFilter;
+      }
+
+      const bookings = await BookingModel.find(bookingQuery)
         .populate({
           path: 'scheduleId',
           populate: {
@@ -94,24 +114,32 @@ export class StudentDashboardController {
           }
         })
         .sort({ createdAt: -1 })
-        .limit(10);
+        .limit(limit);
 
       // Fetch payments with professor info
-      const payments = await PaymentModel.find({
+      const paymentQuery: any = {
         studentId: student._id,
-        date: { $gte: thirtyDaysAgo }
-      })
+      };
+      if (Object.keys(dateFilter).length > 0) {
+        paymentQuery.date = dateFilter;
+      }
+
+      const payments = await PaymentModel.find(paymentQuery)
         .populate('professorId', 'name')
         .sort({ date: -1 })
-        .limit(10);
+        .limit(limit);
 
       // Fetch service requests
-      const serviceRequests = await ServiceRequestModel.find({
+      const serviceRequestQuery: any = {
         studentId: student._id,
-        createdAt: { $gte: thirtyDaysAgo }
-      })
+      };
+      if (Object.keys(dateFilter).length > 0) {
+        serviceRequestQuery.createdAt = dateFilter;
+      }
+
+      const serviceRequests = await ServiceRequestModel.find(serviceRequestQuery)
         .sort({ createdAt: -1 })
-        .limit(10);
+        .limit(limit);
 
       // Transform data into unified activity format
       const activities: any[] = [];
@@ -165,19 +193,22 @@ export class StudentDashboardController {
         });
       }
 
+      // Filter by type if specified
+      let filteredActivities = activities;
+      if (activityType && activityType !== 'all') {
+        filteredActivities = activities.filter(a => a.type === activityType);
+      }
+
       // Sort all activities by date (most recent first)
-      activities.sort((a, b) => {
+      filteredActivities.sort((a, b) => {
         const dateA = new Date(a.date);
         const dateB = new Date(b.date);
         return dateB.getTime() - dateA.getTime();
       });
 
-      // Return top 10 most recent activities
-      const recentActivities = activities.slice(0, 10);
-
 
       res.json({
-        items: recentActivities
+        items: filteredActivities
       });
     } catch (error) {
       console.error('Error getting recent activities:', error);

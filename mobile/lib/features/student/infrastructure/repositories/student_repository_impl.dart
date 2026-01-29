@@ -81,13 +81,29 @@ class StudentRepositoryImpl implements StudentRepository {
   }
 
   @override
-  Future<List<RecentActivityModel>> getRecentActivities() async {
+  Future<List<RecentActivityModel>> getRecentActivities({
+    DateTime? fromDate,
+    DateTime? toDate,
+    String? type,
+  }) async {
     try {
       final headers = await _getAuthHeaders();
-      final response = await _httpClient.get(
-        Uri.parse('$_baseUrl/student-dashboard/activities'),
-        headers: headers,
-      );
+      final queryParams = <String, String>{};
+      
+      if (fromDate != null) {
+        queryParams['fromDate'] = fromDate.toIso8601String();
+      }
+      if (toDate != null) {
+        queryParams['toDate'] = toDate.toIso8601String();
+      }
+      if (type != null && type.isNotEmpty) {
+        queryParams['type'] = type;
+      }
+
+      final uri = Uri.parse('$_baseUrl/student-dashboard/activities')
+          .replace(queryParameters: queryParams);
+      
+      final response = await _httpClient.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;

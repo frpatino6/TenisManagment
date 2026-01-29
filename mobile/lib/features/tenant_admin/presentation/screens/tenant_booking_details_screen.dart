@@ -32,88 +32,153 @@ class _TenantBookingDetailsScreenState
 
     return Scaffold(
       appBar: AppBar(title: const Text('Detalles de Reserva')),
-      body: FutureBuilder<TenantBookingModel>(
-        future: ref
-            .read(tenantAdminServiceProvider)
-            .getBookingDetails(widget.bookingId),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const LoadingWidget();
-          }
+      body: Stack(
+        children: [
+          FutureBuilder<TenantBookingModel>(
+            future: ref
+                .read(tenantAdminServiceProvider)
+                .getBookingDetails(widget.bookingId),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const LoadingWidget();
+              }
 
-          if (snapshot.hasError) {
-            return AppErrorWidget.fromError(
-              snapshot.error!,
-              onRetry: () => setState(() {}),
-            );
-          }
+              if (snapshot.hasError) {
+                return AppErrorWidget.fromError(
+                  snapshot.error!,
+                  onRetry: () => setState(() {}),
+                );
+              }
 
-          if (!snapshot.hasData) {
-            return const Center(child: Text('No se encontró la reserva'));
-          }
+              if (!snapshot.hasData) {
+                return const Center(child: Text('No se encontró la reserva'));
+              }
 
-          final booking = snapshot.data!;
-          final canCancel =
-              booking.status == 'pending' || booking.status == 'confirmed';
+              final booking = snapshot.data!;
+              final canCancel =
+                  booking.status == 'pending' || booking.status == 'confirmed';
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildStatusCard(context, booking),
-                const Gap(16),
-                _buildStudentInfo(context, booking.student),
-                const Gap(16),
-                _buildBookingInfo(context, booking),
-                const Gap(16),
-                if (booking.court != null) ...[
-                  _buildCourtInfo(context, booking.court!),
-                  const Gap(16),
-                ],
-                if (booking.professor != null) ...[
-                  _buildProfessorInfo(context, booking.professor!),
-                  const Gap(16),
-                ],
-                _buildPriceInfo(context, booking.price),
-                const Gap(24),
-                if (booking.status == 'pending' &&
-                    !_isConfirming &&
-                    !_isCancelling) ...[
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _showConfirmDialog(context, booking),
-                      icon: const Icon(Icons.check_circle),
-                      label: const Text('Confirmar Pago y Reserva'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.all(16),
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildStatusCard(context, booking),
+                    const Gap(16),
+                    _buildStudentInfo(context, booking.student),
+                    const Gap(16),
+                    _buildBookingInfo(context, booking),
+                    const Gap(16),
+                    if (booking.court != null) ...[
+                      _buildCourtInfo(context, booking.court!),
+                      const Gap(16),
+                    ],
+                    if (booking.professor != null) ...[
+                      _buildProfessorInfo(context, booking.professor!),
+                      const Gap(16),
+                    ],
+                    _buildPriceInfo(context, booking.price),
+                    const Gap(24),
+                    if (booking.status == 'pending' &&
+                        !_isConfirming &&
+                        !_isCancelling) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _showConfirmDialog(context, booking),
+                          icon: const Icon(Icons.check_circle),
+                          label: const Text('Confirmar Pago y Reserva'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.all(16),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  const Gap(12),
-                ],
-                if (canCancel && !_isCancelling && !_isConfirming)
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _showCancelDialog(context),
-                      icon: const Icon(Icons.cancel),
-                      label: const Text('Cancelar Reserva'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colorScheme.error,
-                        foregroundColor: colorScheme.onError,
-                        padding: const EdgeInsets.all(16),
+                      const Gap(12),
+                    ],
+                    if (canCancel && !_isCancelling && !_isConfirming)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _showCancelDialog(context),
+                          icon: const Icon(Icons.cancel),
+                          label: const Text('Cancelar Reserva'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colorScheme.error,
+                            foregroundColor: colorScheme.onError,
+                            padding: const EdgeInsets.all(16),
+                          ),
+                        ),
                       ),
-                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          if (_isConfirming)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.7),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Confirmando reserva...',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Procesando pago y actualizando estado',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
                   ),
-                if (_isCancelling || _isConfirming) const LoadingWidget(),
-              ],
+                ),
+              ),
             ),
-          );
-        },
+          if (_isCancelling)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.7),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Cancelando reserva...',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Procesando cancelación',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -33,24 +33,56 @@ Future<void> confirmBookingQuickPayment(
     ),
   );
   if (ok != true || !context.mounted) return;
-  try {
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Procesando pago...'),
-        duration: Duration(seconds: 1),
+
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (loadingContext) => PopScope(
+      canPop: false,
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Confirmando reserva...',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Procesando pago y actualizando estado',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white70,
+                    ),
+              ),
+            ],
+          ),
+        ),
       ),
-    );
+    ),
+  );
+
+  try {
     await ref
         .read(tenantAdminServiceProvider)
         .confirmBooking(booking.id, paymentStatus: 'paid');
+
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Pago confirmado exitosamente'),
-        backgroundColor: Colors.green,
-      ),
-    );
+    Navigator.of(context).pop();
 
     final observer = ref.read(dataChangeObserverProvider);
     observer.notifyChange(
@@ -67,8 +99,17 @@ Future<void> confirmBookingQuickPayment(
         entityId: booking.id,
       ),
     );
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Pago confirmado exitosamente'),
+        backgroundColor: Colors.green,
+      ),
+    );
   } catch (e) {
     if (context.mounted) {
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );

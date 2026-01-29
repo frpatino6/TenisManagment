@@ -1,22 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/services/students_service.dart';
+import '../../domain/repositories/students_repository.dart';
+import '../../infrastructure/repositories/students_repository_impl.dart';
 import '../../domain/models/student_model.dart';
 
-final studentsServiceProvider = Provider<StudentsService>((ref) {
-  return StudentsService();
+final studentsRepositoryProvider = Provider<StudentsRepository>((ref) {
+  return StudentsRepositoryImpl();
 });
 
 final studentsListProvider = FutureProvider.autoDispose<List<StudentModel>>((
   ref,
 ) async {
-  final service = ref.read(studentsServiceProvider);
-  return service.getStudentsList();
+  final repository = ref.read(studentsRepositoryProvider);
+  return repository.getStudentsList();
 });
 
 final studentProfileProvider = FutureProvider.autoDispose
     .family<StudentModel?, String>((ref, studentId) async {
-  final service = ref.read(studentsServiceProvider);
-  return service.getStudentProfile(studentId);
+  final repository = ref.read(studentsRepositoryProvider);
+  return repository.getStudentProfile(studentId);
 });
 
 final filteredStudentsProvider = Provider.autoDispose.family<List<StudentModel>, String>((

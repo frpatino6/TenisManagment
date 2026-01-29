@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
 import '../../../../core/constants/timeouts.dart';
-import '../../data/providers/students_provider.dart';
+import '../providers/students_provider.dart';
 import '../widgets/student_card.dart';
 
 class StudentsListScreen extends ConsumerStatefulWidget {

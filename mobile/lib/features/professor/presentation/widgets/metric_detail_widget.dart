@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import '../../domain/models/analytics_metric.dart';
 import '../../domain/models/analytics_error.dart';
-import '../../domain/services/analytics_service.dart';
+import '../../domain/repositories/analytics_repository.dart';
+import '../../infrastructure/repositories/analytics_repository_impl.dart';
 import 'analytics_error_widget.dart';
 import 'interactive_chart_widget.dart';
 
@@ -16,7 +17,7 @@ class MetricDetailWidget extends StatefulWidget {
 }
 
 class _MetricDetailWidgetState extends State<MetricDetailWidget> {
-  final AnalyticsService _analyticsService = AnalyticsService();
+  final AnalyticsRepository _analyticsRepository = AnalyticsRepositoryImpl();
   bool _isLoading = true;
   Map<String, dynamic>? _detailData;
   AnalyticsError? _error;
@@ -85,9 +86,9 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
 
   Future<Map<String, dynamic>> _loadRevenueDetails() async {
     try {
-      final revenueData = await _analyticsService.getRevenueData();
-      final breakdownData = await _analyticsService.getRevenueBreakdown();
-      final trendData = await _analyticsService.getRevenueTrend();
+      final revenueData = await _analyticsRepository.getRevenueData();
+      final breakdownData = await _analyticsRepository.getRevenueBreakdown();
+      final trendData = await _analyticsRepository.getRevenueTrend();
 
 
       final breakdown = breakdownData['breakdown'] is List
@@ -119,9 +120,9 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
 
   Future<Map<String, dynamic>> _loadBookingsDetails() async {
     try {
-      final bookingsData = await _analyticsService.getBookingsData();
-      final breakdownData = await _analyticsService.getBookingsBreakdown();
-      final trendData = await _analyticsService.getBookingsTrend();
+      final bookingsData = await _analyticsRepository.getBookingsData();
+      final breakdownData = await _analyticsRepository.getBookingsBreakdown();
+      final trendData = await _analyticsRepository.getBookingsTrend();
 
 
       final breakdown = breakdownData['breakdown'] is List
@@ -153,9 +154,9 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
 
   Future<Map<String, dynamic>> _loadStudentsDetails() async {
     try {
-      final studentsData = await _analyticsService.getStudentsData();
-      final breakdownData = await _analyticsService.getStudentsBreakdown();
-      final trendData = await _analyticsService.getStudentsTrend();
+      final studentsData = await _analyticsRepository.getStudentsData();
+      final breakdownData = await _analyticsRepository.getStudentsBreakdown();
+      final trendData = await _analyticsRepository.getStudentsTrend();
 
 
       final breakdown = breakdownData['breakdown'] is List
@@ -193,7 +194,7 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
 
   Future<Map<String, dynamic>> _loadOccupancyDetails() async {
     try {
-      final occupancyData = await _analyticsService.getOccupancyDetails();
+      final occupancyData = await _analyticsRepository.getOccupancyDetails();
 
 
       final breakdown = occupancyData['breakdown'] is List

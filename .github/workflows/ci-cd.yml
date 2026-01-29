@@ -83,23 +83,6 @@ jobs:
       working-directory: ./mobile
       run: flutter build web --release
 
-  # Deploy Backend to Render
-  deploy-backend:
-    needs: [test-backend, test-frontend]
-    runs-on: ubuntu-latest
-    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/uat') && github.event_name == 'push'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Deploy to Render
-      uses: johnbeynon/render-deploy-action@v0.0.8
-      with:
-        service-id: ${{ secrets.RENDER_SERVICE_ID }}
-        api-key: ${{ secrets.RENDER_API_KEY }}
-        wait-for-success: true
-
   # Deploy Frontend to Firebase
   deploy-frontend:
     needs: [test-backend, test-frontend]

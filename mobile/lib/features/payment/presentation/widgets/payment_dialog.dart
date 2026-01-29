@@ -3,17 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../providers/payment_providers.dart';
 import '../../../../core/exceptions/exceptions.dart';
-import '../screens/wompi_webview_screen.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../booking/presentation/providers/booking_provider.dart';
 import '../../../../core/constants/timeouts.dart';
 import '../../../../core/config/app_config.dart';
-import '../../../../core/providers/tenant_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/utils/web_utils_stub.dart'
-    if (dart.library.js_interop) '../../../../core/utils/web_utils_web.dart';
-import '../utils/wompi_redirect_utils.dart';
+import '../../domain/strategies/payment_platform_strategy.dart';
+import '../../application/commands/initiate_payment_command.dart';
 
 class PaymentDialog extends ConsumerStatefulWidget {
   final double? initialAmount;
@@ -42,13 +39,9 @@ class PaymentDialog extends ConsumerStatefulWidget {
 class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   late final TextEditingController _amountController;
   final _formKey = GlobalKey<FormState>();
-  String? _checkoutUrl; // Store URL for two-step launch on web
+  String? _checkoutUrl;
   String? _paymentReference;
   bool _isWaitingForWebResult = false;
-  void Function()? _removeMessageListener;
-  void Function()? _removeStorageListener;
-  void Function()? _removeFocusListener;
-  static const String _webPaymentStorageKey = 'wompi_payment_redirect';
 
   @override
   void initState() {
@@ -66,76 +59,14 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
   @override
   void dispose() {
-    _removeMessageListener?.call();
-    _removeStorageListener?.call();
-    _removeFocusListener?.call();
     _amountController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleWebMessage(String message) async {
-    final redirectUrl = widget.redirectUrl ?? AppConfig.paymentRedirectUrl;
-    final messageUrl = extractRedirectUrlFromMessage(message);
-    if (messageUrl == null || !messageUrl.contains(redirectUrl)) {
-      return;
-    }
-
-    final status = parseWompiPaymentStatus(redirectUrl, messageUrl);
-    final uri = Uri.tryParse(messageUrl);
-    final transactionId =
-        uri?.queryParameters['id'] ?? uri?.queryParameters['transaction_id'];
-
-    bool? resolvedStatus = status;
-    resolvedStatus ??= await _resolveStatusFromBackend(
-      transactionId: transactionId,
-      reference: _paymentReference,
-    );
-
-    if (!mounted) return;
-    await _handleStatusResult(resolvedStatus);
-  }
-
-  Future<bool?> _resolveStatusFromBackend({
-    String? transactionId,
-    String? reference,
-  }) async {
-    final tenantId = ref.read(currentTenantIdProvider);
-    if (tenantId == null) return null;
-
-    try {
-      final service = ref.read(paymentServiceProvider);
-      final result = await service.getTransactionStatus(
-        transactionId: transactionId,
-        reference: reference,
-        tenantId: tenantId,
-      );
-      final backendStatus = result['status'] as String?;
-      if (backendStatus == 'APPROVED') {
-        return true;
-      }
-      if (backendStatus == 'DECLINED' ||
-          backendStatus == 'VOIDED' ||
-          backendStatus == 'ERROR') {
-        return false;
-      }
-      return null;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> _handleFocusReturn() async {
-    if (!_isWaitingForWebResult) return;
-    final resolvedStatus = await _resolveStatusFromBackend(
-      reference: _paymentReference,
-    );
-    if (!mounted || !_isWaitingForWebResult) return;
-    await _handleStatusResult(resolvedStatus);
-  }
-
   Future<void> _handleStatusResult(bool? resolvedStatus) async {
-    final messenger = ScaffoldMessenger.of(context);
+    if (!mounted) return;
 
+    final messenger = ScaffoldMessenger.of(context);
     ref.invalidate(studentInfoProvider);
     ref.invalidate(myBookingsProvider);
 
@@ -154,18 +85,78 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       widget.onPaymentPending?.call();
     }
 
-    _removeMessageListener?.call();
-    _removeMessageListener = null;
-    _removeStorageListener?.call();
-    _removeStorageListener = null;
-    _removeFocusListener?.call();
-    _removeFocusListener = null;
-    WebUtils.removeLocalStorageItem(_webPaymentStorageKey);
     _isWaitingForWebResult = false;
+    Navigator.pop(context, resolvedStatus);
+  }
 
-    if (mounted) {
-      Navigator.pop(context, resolvedStatus);
+  Future<void> _initiatePayment(double amount) async {
+    final command = InitiatePaymentCommand(
+      ref: ref,
+      amount: amount,
+      bookingData: widget.bookingData,
+      redirectUrl: widget.redirectUrl,
+    );
+
+    final result = await command.execute();
+
+    if (!mounted) return;
+
+    if (result != null && result['checkoutUrl'] != null) {
+      final checkoutUrl = result['checkoutUrl'] as String;
+      final reference = result['reference']?.toString();
+      if (reference != null && reference.isNotEmpty) {
+        _paymentReference = reference;
+      }
+
+      final redirectUrl =
+          widget.redirectUrl ?? AppConfig.paymentRedirectUrl;
+
+      if (kIsWeb) {
+        setState(() {
+          _checkoutUrl = checkoutUrl;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('URL de pago lista. Haz clic para continuar.'),
+            duration: Duration(seconds: 4),
+          ),
+        );
+      } else {
+        final strategy = PaymentPlatformStrategyFactory.getStrategy(kIsWeb);
+        await strategy.processPayment(
+          checkoutUrl: checkoutUrl,
+          redirectUrl: redirectUrl,
+          paymentReference: _paymentReference,
+          context: context,
+          ref: ref,
+          onPaymentStart: widget.onPaymentStart ?? () {},
+          onPaymentComplete: _handleStatusResult,
+        );
+      }
     }
+  }
+
+  Future<void> _processWebPayment() async {
+    if (_checkoutUrl == null) return;
+
+    final redirectUrl =
+        widget.redirectUrl ?? AppConfig.paymentRedirectUrl;
+
+    setState(() {
+      _isWaitingForWebResult = true;
+    });
+
+    final strategy = PaymentPlatformStrategyFactory.getStrategy(kIsWeb);
+    await strategy.processPayment(
+      checkoutUrl: _checkoutUrl!,
+      redirectUrl: redirectUrl,
+      paymentReference: _paymentReference,
+      context: context,
+      ref: ref,
+      onPaymentStart: widget.onPaymentStart ?? () {},
+      onPaymentComplete: _handleStatusResult,
+    );
   }
 
   @override
@@ -216,33 +207,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
             if (kIsWeb && _checkoutUrl != null) {
               return FilledButton.icon(
-                onPressed: _isWaitingForWebResult
-                    ? null
-                    : () {
-                        _removeMessageListener?.call();
-                        _removeStorageListener?.call();
-                        _removeFocusListener?.call();
-                        _removeMessageListener =
-                            WebUtils.addWindowMessageListener(
-                              _handleWebMessage,
-                            );
-                        _removeStorageListener =
-                            WebUtils.addWindowStorageListener((key, value) {
-                              if (key == _webPaymentStorageKey &&
-                                  value != null) {
-                                _handleWebMessage(value);
-                              }
-                            });
-                        _removeFocusListener =
-                            WebUtils.addWindowFocusListenerWithDispose(
-                              _handleFocusReturn,
-                            );
-                        setState(() {
-                          _isWaitingForWebResult = true;
-                        });
-                        widget.onPaymentStart?.call();
-                        WebUtils.openUrl(_checkoutUrl!, newTab: true);
-                      },
+                onPressed: _isWaitingForWebResult ? null : _processWebPayment,
                 icon: const Icon(Icons.open_in_new),
                 label: Text(
                   _isWaitingForWebResult
@@ -261,143 +226,22 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                   ? null
                   : () async {
                       if (_formKey.currentState!.validate()) {
-                        // Remove formatting before sending to backend
-                        final cleanAmount = _amountController.text.replaceAll(
-                          '.',
-                          '',
-                        );
+                        final cleanAmount =
+                            _amountController.text.replaceAll('.', '');
                         final amount = double.parse(cleanAmount);
-                        // Using read instead of watch for actions
-                        final result = await ref
-                            .read(paymentControllerProvider.notifier)
-                            .initPayment(
-                              amount,
-                              bookingData: widget.bookingData,
-                              redirectUrl: widget.redirectUrl,
-                            );
+                        await _initiatePayment(amount);
 
-                        if (context.mounted) {
-                          if (result != null && result['checkoutUrl'] != null) {
-                            final checkoutUrl = result['checkoutUrl'];
-                            final reference = result['reference']?.toString();
-                            if (reference != null && reference.isNotEmpty) {
-                              _paymentReference = reference;
-                            }
+                        if (context.mounted && paymentState.hasError) {
+                          final error = paymentState.error;
+                          final message = error is AppException
+                              ? error.userMessage
+                              : error?.toString() ?? "Desconocido";
 
-                            if (kIsWeb) {
-                              // On web: update state to show the "Proceed" button
-                              // This ensures the next click is a direct user interaction
-                              setState(() {
-                                _checkoutUrl = checkoutUrl;
-                              });
-
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'URL de pago lista. Haz clic para continuar.',
-                                  ),
-                                  duration: Duration(seconds: 4),
-                                ),
-                              );
-                            } else {
-                              // On mobile: keep automatic redirection with WebView
-                              // Don't pop yet, wait for webview result
-
-                              widget.onPaymentStart?.call();
-                              final dynamic paymentResult =
-                                  await Navigator.push<dynamic>(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => WompiWebViewScreen(
-                                        checkoutUrl: checkoutUrl,
-                                        redirectUrl:
-                                            widget.redirectUrl ??
-                                            AppConfig.paymentRedirectUrl,
-                                      ),
-                                    ),
-                                  );
-
-                              if (context.mounted) {
-                                final messenger = ScaffoldMessenger.of(context);
-                                bool? status;
-                                String? transactionId;
-                                if (paymentResult is Map) {
-                                  status = paymentResult['status'] as bool?;
-                                  transactionId =
-                                      paymentResult['transactionId'] as String?;
-                                } else if (paymentResult is bool) {
-                                  status = paymentResult;
-                                }
-
-                                bool? resolvedStatus = status;
-                                if (resolvedStatus == null &&
-                                    transactionId != null) {
-                                  final tenantId = ref.read(
-                                    currentTenantIdProvider,
-                                  );
-                                  if (tenantId != null) {
-                                    try {
-                                      final service = ref.read(
-                                        paymentServiceProvider,
-                                      );
-                                      final result = await service
-                                          .getTransactionStatus(
-                                            transactionId: transactionId,
-                                            tenantId: tenantId,
-                                          );
-                                      final backendStatus =
-                                          result['status'] as String?;
-                                      if (backendStatus == 'APPROVED') {
-                                        resolvedStatus = true;
-                                      } else if (backendStatus == 'DECLINED' ||
-                                          backendStatus == 'VOIDED' ||
-                                          backendStatus == 'ERROR') {
-                                        resolvedStatus = false;
-                                      }
-                                    } catch (_) {
-                                      resolvedStatus = null;
-                                    }
-                                  }
-                                }
-
-                                Navigator.pop(context, resolvedStatus);
-
-                                ref.invalidate(studentInfoProvider);
-                                ref.invalidate(myBookingsProvider);
-
-                                if (resolvedStatus == true) {
-                                  widget.onPaymentComplete?.call();
-                                  messenger.showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Pago procesado. Actualizando saldo...',
-                                      ),
-                                      backgroundColor: Colors.green,
-                                      duration: Timeouts.snackbarSuccess,
-                                    ),
-                                  );
-                                } else if (resolvedStatus == false) {
-                                  widget.onPaymentFailed?.call();
-                                } else {
-                                  widget.onPaymentPending?.call();
-                                }
-                              }
-                            }
-                          } else {
-                            // Error handling remains same
-                            final error = paymentState.error;
-                            final message = error is AppException
-                                ? error.userMessage
-                                : error?.toString() ?? "Desconocido";
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Error al iniciar pago: $message',
-                                ),
-                              ),
-                            );
-                          }
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error al iniciar pago: $message'),
+                            ),
+                          );
                         }
                       }
                     },

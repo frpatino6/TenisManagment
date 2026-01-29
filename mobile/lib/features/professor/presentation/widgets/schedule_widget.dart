@@ -677,6 +677,30 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
     );
 
     if (confirmed == true && context.mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.black.withValues(alpha: 0.5),
+        builder: (loadingContext) => PopScope(
+          canPop: false,
+          child: const Center(
+            child: Card(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Procesando...'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
       try {
         final notifier = ref.read(professorNotifierProvider.notifier);
         final isAlreadyPaid = classData.paymentStatus == 'paid';
@@ -698,6 +722,7 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
         }
 
         if (context.mounted) {
+          Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -712,6 +737,7 @@ class _ScheduleWidgetState extends ConsumerState<ScheduleWidget> {
         }
       } catch (e) {
         if (context.mounted) {
+          Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(e.toString(), style: GoogleFonts.inter()),

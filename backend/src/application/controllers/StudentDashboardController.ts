@@ -934,9 +934,18 @@ export class StudentDashboardController {
         bookingQuery.tenantId = new Types.ObjectId(req.tenantId);
       }
 
+      // Filter by serviceType if provided
+      if (req.query.serviceType) {
+        bookingQuery.serviceType = req.query.serviceType;
+      }
+
+      // Parse date filters from query params
+      const fromDate = req.query.fromDate ? new Date(req.query.fromDate as string) : null;
+      const toDate = req.query.toDate ? new Date(req.query.toDate as string) : null;
+
       // Fetch all bookings for the student with populated schedule, professor, and court
       // Only populate scheduleId if it exists (not for court_rental)
-      const bookings = await BookingModel.find(bookingQuery)
+      let bookings = await BookingModel.find(bookingQuery)
         .populate({
           path: 'scheduleId',
           populate: {
@@ -956,6 +965,30 @@ export class StudentDashboardController {
           strictPopulate: false // Allow null courtId
         })
         .sort({ createdAt: -1 });
+
+      // Filter by date if provided (after populate to access schedule.startTime)
+      if (fromDate || toDate) {
+        bookings = bookings.filter((booking) => {
+          const schedule = booking.scheduleId as any;
+          let bookingDateTime: Date;
+
+          if (booking.serviceType === 'court_rental') {
+            bookingDateTime = booking.bookingDate || booking.createdAt || new Date();
+          } else if (schedule?.startTime) {
+            bookingDateTime = new Date(schedule.startTime);
+          } else {
+            bookingDateTime = booking.bookingDate || booking.createdAt || new Date();
+          }
+
+          if (fromDate && bookingDateTime < fromDate) {
+            return false;
+          }
+          if (toDate && bookingDateTime > toDate) {
+            return false;
+          }
+          return true;
+        });
+      }
 
 
       // Format bookings according to frontend BookingModel structure

@@ -49,6 +49,30 @@ final studentBookingsProvider = FutureProvider.autoDispose<List<BookingModel>>((
   return repository.getBookings();
 });
 
+final upcomingBookingsProvider = FutureProvider.autoDispose
+    .family<List<BookingModel>, String?>((ref, serviceTypeFilter) async {
+  final repository = ref.watch(studentRepositoryProvider);
+  final now = DateTime.now();
+  final startOfToday = DateTime(now.year, now.month, now.day);
+  
+  return repository.getBookings(
+    fromDate: startOfToday,
+    serviceType: serviceTypeFilter,
+  );
+});
+
+final bookingHistoryProvider = FutureProvider.autoDispose
+    .family<List<BookingModel>, String?>((ref, serviceTypeFilter) async {
+  final repository = ref.watch(studentRepositoryProvider);
+  final now = DateTime.now();
+  final startOfToday = DateTime(now.year, now.month, now.day);
+  
+  return repository.getBookings(
+    toDate: startOfToday.subtract(const Duration(seconds: 1)),
+    serviceType: serviceTypeFilter,
+  );
+});
+
 final paymentHistoryProvider = FutureProvider.autoDispose
     .family<
       List<StudentPaymentModel>,

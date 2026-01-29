@@ -20,6 +20,14 @@ abstract class StudentRepository {
   /// Retrieves the student's profile information
   Future<Map<String, dynamic>> getStudentInfo();
 
-  /// Retrieves all bookings for the authenticated student
-  Future<List<BookingModel>> getBookings();
+  /// Retrieves bookings for the authenticated student with optional filters
+  /// 
+  /// [fromDate] - Only return bookings from this date onwards (inclusive)
+  /// [toDate] - Only return bookings up to this date (inclusive)
+  /// [serviceType] - Filter by service type: 'individual_class', 'group_class', 'court_rental', or null for all
+  Future<List<BookingModel>> getBookings({
+    DateTime? fromDate,
+    DateTime? toDate,
+    String? serviceType,
+  });
 }

@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../commands/booking_command.dart';
-import '../../../student/presentation/providers/student_provider.dart';
-import '../../presentation/providers/booking_provider.dart';
+import '../../../../core/events/data_change_event.dart';
+import '../../../../core/observers/data_change_observer.dart';
 
-/// Command to refresh data by invalidating relevant providers.
+/// Command to refresh data by emitting data change events
+/// Uses the Observer Pattern to automatically invalidate related providers
 class RefreshDataCommand implements BookingCommand {
   final WidgetRef ref;
 
@@ -11,8 +12,21 @@ class RefreshDataCommand implements BookingCommand {
 
   @override
   Future<void> execute() async {
-    ref.invalidate(courtsProvider);
-    ref.invalidate(studentBookingsProvider);
+    final observer = ref.read(dataChangeObserverProvider);
+
+    observer.notifyChange(
+      const DataChangeEvent(
+        changeType: DataChangeType.updated,
+        entityType: 'court',
+      ),
+    );
+
+    observer.notifyChange(
+      const DataChangeEvent(
+        changeType: DataChangeType.updated,
+        entityType: 'booking',
+      ),
+    );
   }
 
   @override

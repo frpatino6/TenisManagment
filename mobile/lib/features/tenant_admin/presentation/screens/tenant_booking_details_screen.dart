@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../../../../core/widgets/error_widget.dart';
 import '../../../../core/utils/currency_utils.dart';
+import '../../../../core/events/data_change_event.dart';
+import '../../../../core/observers/data_change_observer.dart';
 import '../../domain/models/tenant_booking_model.dart';
 import '../providers/tenant_admin_provider.dart';
 
@@ -426,6 +428,22 @@ class _TenantBookingDetailsScreenState
       await ref
           .read(tenantAdminServiceProvider)
           .confirmBooking(widget.bookingId, paymentStatus: 'paid');
+
+      final observer = ref.read(dataChangeObserverProvider);
+      observer.notifyChange(
+        DataChangeEvent(
+          changeType: DataChangeType.updated,
+          entityType: 'booking',
+          entityId: widget.bookingId,
+        ),
+      );
+      observer.notifyChange(
+        DataChangeEvent(
+          changeType: DataChangeType.updated,
+          entityType: 'payment',
+          entityId: widget.bookingId,
+        ),
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

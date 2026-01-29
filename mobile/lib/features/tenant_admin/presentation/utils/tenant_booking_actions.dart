@@ -60,6 +60,13 @@ Future<void> confirmBookingQuickPayment(
         entityId: booking.id,
       ),
     );
+    observer.notifyChange(
+      DataChangeEvent(
+        changeType: DataChangeType.updated,
+        entityType: 'payment',
+        entityId: booking.id,
+      ),
+    );
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

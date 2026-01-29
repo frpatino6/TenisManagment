@@ -6,6 +6,7 @@
 import { describe, it, beforeEach, expect, jest } from '@jest/globals';
 import { StudentDashboardController } from '../../application/controllers/StudentDashboardController';
 import { MockHelper, TestDataFactory } from '../utils/test-helpers';
+import { Types } from 'mongoose';
 
 // Mock de dependencias
 jest.mock('../../infrastructure/database/models/AuthUserModel', () => ({
@@ -104,6 +105,20 @@ jest.mock('../../application/services/BalanceService', () => {
       getBalance: mockGetBalance,
       calculateBalance: mockCalculateBalance,
       syncBalance: mockSyncBalance,
+    })),
+  };
+});
+
+jest.mock('../../application/services/ScheduleValidationService', () => {
+  const mockFilterSchedulesWithoutConflicts = jest.fn().mockImplementation((schedules) => {
+    // Por defecto, retornar los schedules sin filtrar
+    return Promise.resolve(schedules);
+  });
+
+  return {
+    ScheduleValidationService: jest.fn().mockImplementation(() => ({
+      filterSchedulesWithoutConflicts: mockFilterSchedulesWithoutConflicts,
+      hasCourtRentalConflict: jest.fn().mockResolvedValue(false),
     })),
   };
 });
@@ -1117,11 +1132,30 @@ describe('StudentDashboardController', () => {
       // Arrange
       const { ScheduleModel } = require('../../infrastructure/database/models/ScheduleModel');
       const { ProfessorTenantModel } = require('../../infrastructure/database/models/ProfessorTenantModel');
+      const { ScheduleValidationService } = require('../../application/services/ScheduleValidationService');
+
+      // Use valid ObjectIds
+      const tenantId1 = new Types.ObjectId();
+      const tenantId2 = new Types.ObjectId();
+      const profId1 = new Types.ObjectId();
+      const profId2 = new Types.ObjectId();
+      const scheduleId1 = new Types.ObjectId();
+      const scheduleId2 = new Types.ObjectId();
+      const scheduleId3 = new Types.ObjectId();
 
       const mockActiveLinks = [
-        { professorId: 'prof-1', tenantId: 'tenant-1' },
-        { professorId: 'prof-2', tenantId: 'tenant-1' },
-        { professorId: 'prof-1', tenantId: 'tenant-2' },
+        { 
+          professorId: profId1, 
+          tenantId: tenantId1 
+        },
+        { 
+          professorId: profId2, 
+          tenantId: tenantId1 
+        },
+        { 
+          professorId: profId1, 
+          tenantId: tenantId2 
+        },
       ];
 
       const mockSelect = jest.fn().mockResolvedValue(mockActiveLinks as any);
@@ -1131,9 +1165,9 @@ describe('StudentDashboardController', () => {
 
       const mockSchedules = [
         {
-          _id: 'schedule-1',
-          tenantId: { _id: 'tenant-1', name: 'Centro A', slug: 'centro-a', config: {} },
-          professorId: { _id: 'prof-1', name: 'Prof. A', email: 'prof-a@test.com', specialties: [] },
+          _id: scheduleId1,
+          tenantId: { _id: tenantId1, name: 'Centro A', slug: 'centro-a', config: {} },
+          professorId: { _id: profId1, name: 'Prof. A', email: 'prof-a@test.com', specialties: [] },
           date: new Date(),
           startTime: new Date('2025-12-10T10:00:00Z'),
           endTime: new Date('2025-12-10T11:00:00Z'),
@@ -1141,9 +1175,9 @@ describe('StudentDashboardController', () => {
           status: 'pending',
         },
         {
-          _id: 'schedule-2',
-          tenantId: { _id: 'tenant-1', name: 'Centro A', slug: 'centro-a', config: {} },
-          professorId: { _id: 'prof-2', name: 'Prof. B', email: 'prof-b@test.com', specialties: [] },
+          _id: scheduleId2,
+          tenantId: { _id: tenantId1, name: 'Centro A', slug: 'centro-a', config: {} },
+          professorId: { _id: profId2, name: 'Prof. B', email: 'prof-b@test.com', specialties: [] },
           date: new Date(),
           startTime: new Date('2025-12-10T14:00:00Z'),
           endTime: new Date('2025-12-10T15:00:00Z'),
@@ -1151,9 +1185,9 @@ describe('StudentDashboardController', () => {
           status: 'pending',
         },
         {
-          _id: 'schedule-3',
-          tenantId: { _id: 'tenant-2', name: 'Centro B', slug: 'centro-b', config: {} },
-          professorId: { _id: 'prof-1', name: 'Prof. A', email: 'prof-a@test.com', specialties: [] },
+          _id: scheduleId3,
+          tenantId: { _id: tenantId2, name: 'Centro B', slug: 'centro-b', config: {} },
+          professorId: { _id: profId1, name: 'Prof. A', email: 'prof-a@test.com', specialties: [] },
           date: new Date(),
           startTime: new Date('2025-12-11T10:00:00Z'),
           endTime: new Date('2025-12-11T11:00:00Z'),
@@ -1184,6 +1218,15 @@ describe('StudentDashboardController', () => {
       });
 
       ScheduleModel.find = mockFind;
+
+      // Mock ScheduleValidationService to return schedules without filtering
+      const mockFilterSchedules = jest.fn().mockImplementation((schedules) => {
+        return Promise.resolve(schedules);
+      });
+      const mockScheduleValidationServiceInstance = {
+        filterSchedulesWithoutConflicts: mockFilterSchedules,
+      };
+      (ScheduleValidationService as jest.Mock).mockImplementation(() => mockScheduleValidationServiceInstance);
 
       // Act
       await controller.getAllAvailableSchedules(mockRequest, mockResponse);

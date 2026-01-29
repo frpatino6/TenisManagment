@@ -33,7 +33,9 @@ jest.mock('../../infrastructure/database/models/ScheduleModel', () => ({
     countDocuments: jest.fn(),
     findOne: jest.fn(),
     findById: jest.fn(),
+    find: jest.fn(),
     create: jest.fn(),
+    insertMany: jest.fn(),
   },
 }));
 
@@ -60,6 +62,7 @@ jest.mock('../../infrastructure/database/models/PaymentModel', () => ({
 jest.mock('../../application/services/BookingService', () => ({
   BookingService: jest.fn().mockImplementation(() => ({
     isCourtAvailable: jest.fn().mockResolvedValue(true),
+    areCourtsAvailableBatch: jest.fn().mockResolvedValue(new Map()),
   })),
 }));
 
@@ -211,8 +214,15 @@ describe('ProfessorDashboardController', () => {
       AuthUserModel.findOne.mockResolvedValue(mockAuthUser);
       ProfessorModel.findOne.mockResolvedValue(mockProfessor);
       ProfessorTenantModel.findOne.mockResolvedValue({ isActive: true });
-      ScheduleModel.findOne.mockResolvedValue(null); // No conflicts
-      ScheduleModel.create.mockImplementation((data: any) => Promise.resolve({ _id: '651dc68c6a58b548b8e6634d', ...data }));
+      ScheduleModel.find.mockResolvedValue([]); // No conflicts
+      ScheduleModel.insertMany.mockImplementation((data: any[]) => 
+        Promise.resolve(data.map((item, index) => ({ _id: `schedule-${index}`, ...item })))
+      );
+
+      // Mock BookingService
+      const { BookingService } = require('../../application/services/BookingService');
+      const bookingServiceInstance = (controller as any).bookingService;
+      bookingServiceInstance.areCourtsAvailableBatch = jest.fn().mockResolvedValue(new Map());
 
       // Act
       await controller.createSchedulesBatch(mockRequest, mockResponse);
@@ -223,7 +233,7 @@ describe('ProfessorDashboardController', () => {
         createdCount: 2,
         errorCount: 0
       }));
-      expect(ScheduleModel.create).toHaveBeenCalledTimes(2);
+      expect(ScheduleModel.insertMany).toHaveBeenCalledTimes(1);
     });
 
     it('should handle conflicts in batch and return them in errors array', async () => {
@@ -249,7 +259,17 @@ describe('ProfessorDashboardController', () => {
       const mockProfessorId = '651dc68c6a58b548b8e6634b';
       ProfessorModel.findOne.mockResolvedValue({ _id: mockProfessorId });
       ProfessorTenantModel.findOne.mockResolvedValue({ isActive: true });
-      ScheduleModel.findOne.mockResolvedValue({ _id: '651dc68c6a58b548b8e6634c' }); // Conflict!
+      // Mock conflict: return a schedule with the same startTime
+      const conflictStartTime = new Date('2026-01-25T08:00:00.000Z');
+      ScheduleModel.find.mockResolvedValue([{ 
+        _id: '651dc68c6a58b548b8e6634c',
+        startTime: conflictStartTime 
+      }]); // Conflict!
+
+      // Mock BookingService
+      const { BookingService } = require('../../application/services/BookingService');
+      const bookingServiceInstance = (controller as any).bookingService;
+      bookingServiceInstance.areCourtsAvailableBatch = jest.fn().mockResolvedValue(new Map());
 
       // Act
       await controller.createSchedulesBatch(mockRequest, mockResponse);

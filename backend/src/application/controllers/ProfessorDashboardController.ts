@@ -947,8 +947,12 @@ export class ProfessorDashboardController {
 
       const results = [];
       const errors = [];
+      const schedulesToCreate = [];
+      const parsedSlots: Array<{ originalIndex: number; date: Date; startTime: Date; endTime: Date; courtId?: Types.ObjectId }> = [];
 
-      for (const slot of schedules) {
+      // First pass: Parse and validate basic fields
+      for (let i = 0; i < schedules.length; i++) {
+        const slot = schedules[i];
         const { date, startTime, endTime, courtId } = slot;
 
         if (!date || !startTime || !endTime) {
@@ -960,57 +964,103 @@ export class ProfessorDashboardController {
         const parsedEndTime = new Date(endTime);
         const parsedDate = new Date(date);
 
-        // Validation 1: Conflict with same professor
-        const conflict = await ScheduleModel.findOne({
-          professorId: professor._id,
-          startTime: parsedStartTime,
-          $expr: {
-            $and: [
-              { $eq: [{ $year: '$startTime' }, parsedStartTime.getUTCFullYear()] },
-              { $eq: [{ $month: '$startTime' }, parsedStartTime.getUTCMonth() + 1] },
-              { $eq: [{ $dayOfMonth: '$startTime' }, parsedStartTime.getUTCDate()] },
-            ]
-          }
-        });
-
-        if (conflict) {
-          errors.push({ slot, error: 'CONFLICT_SAME_TIME', message: 'Ya tienes un horario a esta hora' });
-          continue;
-        }
-
-        // Validation 2: Court availability
-        if (courtId && Types.ObjectId.isValid(courtId)) {
-          const isAvailable = await this.bookingService.isCourtAvailable(
-            finalTenantId,
-            new Types.ObjectId(courtId),
-            parsedStartTime,
-            parsedEndTime
-          );
-
-          if (!isAvailable) {
-            errors.push({ slot, error: 'COURT_OCCUPIED', message: 'La cancha ya está ocupada' });
-            continue;
-          }
-        }
-
-        // Create
-        const newSchedule = await ScheduleModel.create({
-          tenantId: finalTenantId,
-          professorId: professor._id,
-          courtId: courtId && Types.ObjectId.isValid(courtId) ? new Types.ObjectId(courtId) : undefined,
+        parsedSlots.push({
+          originalIndex: i,
           date: parsedDate,
           startTime: parsedStartTime,
           endTime: parsedEndTime,
-          isAvailable: true,
-          status: 'pending'
+          courtId: courtId && Types.ObjectId.isValid(courtId) ? new Types.ObjectId(courtId) : undefined
+        });
+      }
+
+      // Second pass: Batch validation for professor conflicts
+      if (parsedSlots.length > 0) {
+        // Find all existing schedules for this professor that might conflict
+        // We check for exact startTime matches (same date and time)
+        const startTimes = parsedSlots.map(s => s.startTime);
+        const professorConflicts = await ScheduleModel.find({
+          professorId: professor._id,
+          startTime: { $in: startTimes }
         });
 
-        results.push({
-          id: newSchedule._id,
-          date: newSchedule.date,
-          startTime: newSchedule.startTime,
-          endTime: newSchedule.endTime
+        // Create a set of conflicting start times for quick lookup
+        const conflictStartTimes = new Set(professorConflicts.map(c => c.startTime.getTime()));
+
+        // Third pass: Batch validation for court availability (only for slots with courtId)
+        const slotsWithCourt = parsedSlots
+          .map((slot, idx) => ({ ...slot, courtIndex: idx }))
+          .filter(s => s.courtId);
+        
+        let courtAvailabilityMap = new Map<number, boolean>();
+        
+        if (slotsWithCourt.length > 0) {
+          const courtSlots = slotsWithCourt.map(s => ({
+            courtId: s.courtId!,
+            startTime: s.startTime,
+            endTime: s.endTime
+          }));
+          
+          courtAvailabilityMap = await this.bookingService.areCourtsAvailableBatch(
+            finalTenantId,
+            courtSlots
+          );
+        }
+
+        // Create a map from original slot to court index for quick lookup
+        const courtIndexMap = new Map<number, number>();
+        slotsWithCourt.forEach((slot, idx) => {
+          courtIndexMap.set(slot.originalIndex, idx);
         });
+
+        // Fourth pass: Build schedules to create, filtering out conflicts
+        for (const slot of parsedSlots) {
+          // Check professor conflict
+          if (conflictStartTimes.has(slot.startTime.getTime())) {
+            errors.push({ 
+              slot: schedules[slot.originalIndex], 
+              error: 'CONFLICT_SAME_TIME', 
+              message: 'Ya tienes un horario a esta hora' 
+            });
+            continue;
+          }
+
+          // Check court availability (if courtId is provided)
+          if (slot.courtId) {
+            const courtIndex = courtIndexMap.get(slot.originalIndex);
+            if (courtIndex !== undefined && !courtAvailabilityMap.get(courtIndex)) {
+              errors.push({ 
+                slot: schedules[slot.originalIndex], 
+                error: 'COURT_OCCUPIED', 
+                message: 'La cancha ya está ocupada' 
+              });
+              continue;
+            }
+          }
+
+          // Add to batch creation array
+          schedulesToCreate.push({
+            tenantId: finalTenantId,
+            professorId: professor._id,
+            courtId: slot.courtId,
+            date: slot.date,
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            isAvailable: true,
+            status: 'pending'
+          });
+        }
+      }
+
+      // Second pass: Create all valid schedules in a single batch operation
+      if (schedulesToCreate.length > 0) {
+        const createdSchedules = await ScheduleModel.insertMany(schedulesToCreate);
+        
+        results.push(...createdSchedules.map(schedule => ({
+          id: schedule._id,
+          date: schedule.date,
+          startTime: schedule.startTime,
+          endTime: schedule.endTime
+        })));
       }
 
       return res.status(201).json({

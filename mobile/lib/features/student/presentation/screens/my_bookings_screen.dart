@@ -21,6 +21,26 @@ class MyBookingsScreen extends ConsumerStatefulWidget {
 
 class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
   final _statusStrategy = StatusColorStrategyFactory.getStrategy(StatusType.booking);
+  String? _lastRouteName;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    final currentRouteName = route?.settings.name;
+    
+    if (route != null && 
+        route.isCurrent && 
+        currentRouteName != null &&
+        currentRouteName != _lastRouteName) {
+      _lastRouteName = currentRouteName;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.invalidate(studentBookingsProvider);
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

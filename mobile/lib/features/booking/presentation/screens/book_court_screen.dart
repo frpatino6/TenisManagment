@@ -1639,7 +1639,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
 
       if (result.success) {
         ref.invalidate(courtsProvider);
-        ref.invalidate(studentBookingsProvider);
+        final _ = ref.refresh(studentBookingsProvider);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

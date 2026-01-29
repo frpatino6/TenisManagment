@@ -1,58 +1,59 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/services/professor_service.dart';
+import '../../domain/repositories/professor_repository.dart';
+import '../../infrastructure/repositories/professor_repository_impl.dart';
 import '../../domain/models/professor_model.dart';
 import '../../domain/models/student_summary_model.dart';
 import '../../domain/models/class_schedule_model.dart';
 import '../../domain/models/professor_schedule_model.dart';
 import '../../../../core/providers/tenant_provider.dart';
 
-final professorServiceProvider = Provider<ProfessorService>((ref) {
-  return ProfessorService();
+final professorRepositoryProvider = Provider<ProfessorRepository>((ref) {
+  return ProfessorRepositoryImpl();
 });
 
 final professorInfoProvider = FutureProvider.autoDispose<ProfessorModel>((
   ref,
 ) async {
-  final service = ref.read(professorServiceProvider);
-  return await service.getProfessorInfo();
+  final repository = ref.read(professorRepositoryProvider);
+  return await repository.getProfessorInfo();
 });
 
 final professorStudentsProvider =
     FutureProvider.autoDispose<List<StudentSummaryModel>>((ref) async {
-      final service = ref.read(professorServiceProvider);
-      return await service.getStudents();
+      final repository = ref.read(professorRepositoryProvider);
+      return await repository.getStudents();
     });
 
 final todayScheduleProvider =
     FutureProvider.autoDispose<List<ClassScheduleModel>>((ref) async {
-      final service = ref.read(professorServiceProvider);
-      return await service.getTodaySchedule();
+      final repository = ref.read(professorRepositoryProvider);
+      return await repository.getTodaySchedule();
     });
 
 final scheduleByDateProvider = FutureProvider.autoDispose
     .family<List<ClassScheduleModel>, DateTime>((ref, date) async {
-      final service = ref.read(professorServiceProvider);
-      return await service.getScheduleByDate(date);
+      final repository = ref.read(professorRepositoryProvider);
+      return await repository.getScheduleByDate(date);
     });
 
 final weekScheduleProvider =
     FutureProvider.autoDispose<List<ClassScheduleModel>>((ref) async {
-      final service = ref.read(professorServiceProvider);
-      return await service.getWeekSchedule();
+      final repository = ref.read(professorRepositoryProvider);
+      return await repository.getWeekSchedule();
     });
 
 final earningsStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
   ref,
 ) async {
-  final service = ref.read(professorServiceProvider);
-  return await service.getEarningsStats();
+  final repository = ref.read(professorRepositoryProvider);
+  return await repository.getEarningsStats();
 });
 
 final professorSchedulesProvider =
     FutureProvider.autoDispose<List<ProfessorScheduleModel>>((ref) async {
       ref.watch(currentTenantIdProvider);
-      final service = ref.read(professorServiceProvider);
-      return await service.getMySchedules();
+      final repository = ref.read(professorRepositoryProvider);
+      return await repository.getMySchedules();
     });
 
 class ProfessorNotifier extends Notifier<AsyncValue<void>> {
@@ -71,8 +72,8 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
 
     try {
-      final service = ref.read(professorServiceProvider);
-      await service.updateProfile(
+      final repository = ref.read(professorRepositoryProvider);
+      await repository.updateProfile(
         name: name,
         phone: phone,
         specialties: specialties,
@@ -92,8 +93,8 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
 
     try {
-      final service = ref.read(professorServiceProvider);
-      await service.confirmClass(classId);
+      final repository = ref.read(professorRepositoryProvider);
+      await repository.confirmClass(classId);
 
       ref.invalidate(todayScheduleProvider);
       ref.invalidate(weekScheduleProvider);
@@ -108,8 +109,8 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
 
     try {
-      final service = ref.read(professorServiceProvider);
-      await service.cancelClass(classId, reason);
+      final repository = ref.read(professorRepositoryProvider);
+      await repository.cancelClass(classId, reason);
 
       ref.invalidate(todayScheduleProvider);
       ref.invalidate(weekScheduleProvider);
@@ -129,10 +130,10 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
 
     try {
-      final service = ref.read(professorServiceProvider);
+      final repository = ref.read(professorRepositoryProvider);
       final tenantId = ref.read(currentTenantIdProvider);
 
-      final result = await service.createSchedule(
+      final result = await repository.createSchedule(
         date: date,
         startTime: startTime,
         endTime: endTime,
@@ -159,10 +160,10 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
 
     try {
-      final service = ref.read(professorServiceProvider);
+      final repository = ref.read(professorRepositoryProvider);
       final tenantId = ref.read(currentTenantIdProvider);
 
-      final result = await service.createSchedulesBatch(
+      final result = await repository.createSchedulesBatch(
         schedules: schedules,
         tenantId: tenantId,
       );
@@ -183,8 +184,8 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
 
     try {
-      final service = ref.read(professorServiceProvider);
-      await service.deleteSchedule(scheduleId);
+      final repository = ref.read(professorRepositoryProvider);
+      await repository.deleteSchedule(scheduleId);
 
       ref.invalidate(professorSchedulesProvider);
       ref.invalidate(todayScheduleProvider);
@@ -204,8 +205,8 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
 
     try {
-      final service = ref.read(professorServiceProvider);
-      await service.completeClass(
+      final repository = ref.read(professorRepositoryProvider);
+      await repository.completeClass(
         scheduleId,
         paymentAmount: paymentAmount,
         paymentStatus: paymentStatus,
@@ -230,8 +231,8 @@ class ProfessorNotifier extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
 
     try {
-      final service = ref.read(professorServiceProvider);
-      await service.cancelBooking(
+      final repository = ref.read(professorRepositoryProvider);
+      await repository.cancelBooking(
         scheduleId,
         reason: reason,
         penaltyAmount: penaltyAmount,

@@ -5,18 +5,17 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../../../core/constants/timeouts.dart';
-import '../../../../features/tenant/domain/models/tenant_model.dart';
-import '../../../../features/tenant/domain/services/tenant_service.dart'
-    as tenant_domain;
+import '../../../../core/interfaces/interfaces.dart';
+import '../../../../features/tenant/infrastructure/providers/tenant_provider_impl.dart';
 import '../providers/professor_provider.dart';
 
 /// Provider for professor's tenants
-final professorTenantsProvider = FutureProvider.autoDispose<List<TenantModel>>((
+final professorTenantsProvider = FutureProvider.autoDispose<List<ITenantInfo>>((
   ref,
 ) async {
-  final service = ref.watch(tenant_domain.tenantDomainServiceProvider);
+  final provider = ref.watch(tenantProviderImplProvider);
   // Use getMyTenants which will call the professor endpoint
-  return service.getMyTenants();
+  return provider.getMyTenants();
 });
 
 /// Widget to display and select tenant (center) for professors
@@ -29,8 +28,8 @@ class TenantSelectorWidget extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final currentTenantId = ref.watch(currentTenantIdProvider);
-    final currentTenant = ref.watch(currentTenantProvider);
-    final tenantsAsync = ref.watch(professorTenantsProvider);
+    final AsyncValue<ITenantInfo?> currentTenant = ref.watch(currentTenantProvider);
+    final AsyncValue<List<ITenantInfo>> tenantsAsync = ref.watch(professorTenantsProvider);
 
     return tenantsAsync.when(
       data: (tenants) {
@@ -67,8 +66,8 @@ class TenantSelectorWidget extends ConsumerWidget {
     WidgetRef ref,
     ColorScheme colorScheme,
     String? currentTenantId,
-    AsyncValue<TenantModel?> currentTenant,
-    AsyncValue<List<TenantModel>> tenantsAsync,
+    AsyncValue<ITenantInfo?> currentTenant,
+    AsyncValue<List<ITenantInfo>> tenantsAsync,
   ) {
     return Card(
       elevation: 2,
@@ -184,10 +183,10 @@ class TenantSelectorWidget extends ConsumerWidget {
                   );
                 }
 
-                final currentTenantModel = tenants.firstWhere(
-                  (t) => t.id == currentTenantId,
-                  orElse: () => tenants.first,
-                );
+                final matchingTenants = tenants.where((t) => t.id == currentTenantId).toList();
+                final ITenantInfo currentTenantModel = matchingTenants.isNotEmpty 
+                    ? matchingTenants.first 
+                    : tenants.first;
 
                 return Column(
                   children: [

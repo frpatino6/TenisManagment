@@ -7,7 +7,7 @@ import '../../../../core/constants/timeouts.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../providers/professor_provider.dart';
 import '../../../booking/domain/models/court_model.dart';
-import '../../../booking/domain/services/court_service.dart';
+import '../../../booking/presentation/providers/booking_provider.dart';
 
 class CreateScheduleScreen extends ConsumerStatefulWidget {
   const CreateScheduleScreen({super.key});

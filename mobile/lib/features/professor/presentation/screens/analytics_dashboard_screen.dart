@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import '../../data/providers/analytics_provider.dart';
+import '../providers/analytics_provider.dart';
 import '../../domain/models/analytics_error.dart';
 import '../widgets/analytics_metric_card.dart';
 import '../widgets/analytics_chart_widget.dart';

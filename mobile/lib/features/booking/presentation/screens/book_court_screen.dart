@@ -7,21 +7,26 @@ import '../../../payment/presentation/widgets/payment_dialog.dart';
 import '../../../../core/constants/timeouts.dart';
 import '../../../../core/logging/logger.dart';
 import '../../domain/models/court_model.dart';
-import '../../application/use_cases/book_court_use_case.dart';
 import '../providers/booking_provider.dart';
+import '../states/booking_screen_state.dart';
 import '../../../../core/providers/tenant_provider.dart';
-import '../../../tenant/domain/services/tenant_service.dart' as tenant_domain;
-import '../../../tenant/domain/models/tenant_model.dart';
+import '../../../../core/interfaces/interfaces.dart';
+import '../../../tenant/infrastructure/providers/tenant_provider_impl.dart';
 import '../../../student/presentation/providers/student_provider.dart';
 import '../../../../core/widgets/web_image.dart';
 import '../../../../core/config/app_config.dart';
+import '../../application/commands/booking_command_invoker.dart';
+import '../../application/commands/validate_booking_command.dart';
+import '../../application/commands/calculate_price_command.dart';
+import '../../application/commands/process_booking_command.dart';
+import '../../application/commands/refresh_data_command.dart';
 
 /// Provider for available tenants for dropdown selection
-final availableTenantsProvider = FutureProvider.autoDispose<List<TenantModel>>((
+final availableTenantsProvider = FutureProvider.autoDispose<List<ITenantInfo>>((
   ref,
 ) async {
-  final service = ref.watch(tenant_domain.tenantDomainServiceProvider);
-  return service.getAvailableTenants();
+  final provider = ref.watch(tenantProviderImplProvider);
+  return provider.getAvailableTenants();
 });
 
 typedef BookCourtPaymentDialogBuilder =
@@ -51,11 +56,11 @@ class BookCourtScreen extends ConsumerStatefulWidget {
 
 class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   final _logger = AppLogger.tag('BookCourtScreen');
+  final _commandInvoker = BookingCommandInvoker();
   CourtModel? _selectedCourt;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
-  bool _isBooking = false;
-  bool _isSyncing = false;
+  BookingScreenState _bookingState = const BookingInitial();
   final ScrollController _scrollController = ScrollController();
 
   bool get _hasWompiConfigured {
@@ -197,9 +202,9 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             )
             .firstOrNull;
 
-        if (booking != null && mounted && !_isBooking) {
+        if (booking != null && mounted && _bookingState is! BookingLoading) {
           setState(() {
-            _isSyncing = false;
+            _bookingState = const BookingInitial();
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -224,7 +229,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         // Re-calculate price
         final price = _selectedCourt!.pricePerHour; // 1 hour default
 
-        if (balance >= price && !_isBooking) {
+        if (balance >= price && _bookingState is! BookingLoading) {
           _logger.info(
             'Saldo suficiente (Cancha). Iniciando reserva automática...',
           );
@@ -257,42 +262,49 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               return _buildErrorState(context, error);
             },
           ),
-          if (_isBooking || _isSyncing)
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.7),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                      const Gap(20),
-                      Text(
-                        'Procesando reserva...',
-                        style: GoogleFonts.outfit(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const Gap(8),
-                      Text(
-                        'Estamos sincronizando con el servidor',
-                        style: GoogleFonts.outfit(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+          _buildBookingOverlay(),
         ],
       ),
     );
+  }
+
+  Widget _buildBookingOverlay() {
+    return switch (_bookingState) {
+      BookingLoading(:final message) ||
+      BookingSyncing(:final message) => Positioned.fill(
+        child: Container(
+          color: Colors.black.withValues(alpha: 0.7),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+                const Gap(20),
+                Text(
+                  message ?? 'Procesando reserva...',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Gap(8),
+                Text(
+                  'Estamos sincronizando con el servidor',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      _ => const SizedBox.shrink(),
+    };
   }
 
   Widget _buildNoTenantScreen(BuildContext context) {
@@ -661,7 +673,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
     );
   }
 
-  Widget _buildTenantDropdown(BuildContext context, TenantModel currentTenant) {
+  Widget _buildTenantDropdown(BuildContext context, ITenantInfo currentTenant) {
     final currentTenantId = ref.watch(currentTenantIdProvider);
     final tenantsAsync = ref.watch(availableTenantsProvider);
 
@@ -1490,7 +1502,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               void onPaymentStart() {
                 if (!mounted) return;
                 setState(() {
-                  _isSyncing = true;
+                  _bookingState = const BookingSyncing('Procesando reserva...');
                 });
               }
 
@@ -1510,7 +1522,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                             onPaymentFailed: () {
                               if (!mounted) return;
                               setState(() {
-                                _isSyncing = false;
+                                _bookingState = const BookingInitial();
                               });
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -1525,7 +1537,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
                             onPaymentPending: () {
                               if (!mounted) return;
                               setState(() {
-                                _isSyncing = false;
+                                _bookingState = const BookingInitial();
                               });
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -1559,15 +1571,16 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
               );
             }
 
+            final isLoading = _bookingState is BookingLoading;
             return FilledButton(
-              onPressed: _isBooking ? null : _handleBooking,
+              onPressed: isLoading ? null : _handleBooking,
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: _isBooking
+              child: isLoading
                   ? const SizedBox(
                       height: 20,
                       width: 20,
@@ -1597,22 +1610,24 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
   }
 
   Future<void> _handleBooking() async {
-    if (_selectedCourt == null ||
-        _selectedDate == null ||
-        _selectedTime == null) {
-      return;
-    }
-
     setState(() {
-      _isBooking = true;
-      _isSyncing = true;
+      _bookingState = const BookingLoading('Procesando reserva...');
     });
 
     try {
-      if (_selectedTime == null) {
-        throw Exception('Error: No se pudo determinar la hora seleccionada');
-      }
+      // 1. Validate booking data
+      await _commandInvoker.executeCommand(
+        ValidateBookingCommand(
+          courtId: _selectedCourt?.id,
+          date: _selectedDate,
+          time: _selectedTime,
+        ),
+      );
 
+      // Build start and end times using the selected local time
+      // The selected time is in the server's local timezone (matching operatingHours)
+      // operatingHours are configured in the server's local time, so we create UTC directly
+      // This ensures that 10:00 selected = 10:00 UTC stored (not 15:00 UTC)
       final startDateTime = DateTime.utc(
         _selectedDate!.year,
         _selectedDate!.month,
@@ -1623,63 +1638,70 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
 
       final endDateTime = startDateTime.add(const Duration(hours: 1));
 
-      final durationInHours = endDateTime.difference(startDateTime).inHours;
-      final totalPrice = _selectedCourt!.pricePerHour * durationInHours;
-
-      final useCase = ref.read(bookCourtUseCaseProvider);
-
-      final request = BookCourtRequest(
-        courtId: _selectedCourt!.id,
+      // 2. Calculate price
+      final priceCommand = CalculatePriceCommand(
+        court: _selectedCourt!,
         startTime: startDateTime,
         endTime: endDateTime,
-        price: totalPrice,
+      );
+      await _commandInvoker.executeCommand(priceCommand);
+
+      // 3. Process booking
+      await _commandInvoker.executeCommand(
+        ProcessBookingCommand(
+          courtService: ref.read(courtServiceProvider),
+          courtId: _selectedCourt!.id,
+          startTime: startDateTime,
+          endTime: endDateTime,
+          price: priceCommand.calculatedPrice,
+        ),
       );
 
-      final result = await useCase.execute(request);
+      // 4. Refresh data
+      await _commandInvoker.executeCommand(
+        RefreshDataCommand(ref),
+      );
 
-      if (result.success) {
-        ref.invalidate(courtsProvider);
-        final _ = ref.refresh(studentBookingsProvider);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Reserva realizada exitosamente',
-                style: GoogleFonts.inter(),
-              ),
-              backgroundColor: Colors.green,
-              duration: Timeouts.snackbarSuccess,
-            ),
+      // 5. Show success and navigate
+      if (mounted) {
+        setState(() {
+          _bookingState = BookingSuccess(
+            'Reserva realizada exitosamente',
+            courtName: _selectedCourt!.name,
+            date: _selectedDate,
           );
-
-          setState(() {
-            _selectedCourt = null;
-            _selectedDate = null;
-            _selectedTime = null;
-          });
-
-          await Future.delayed(Timeouts.animationExtraLong);
-          if (mounted) {
-            context.pop();
-          }
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                result.errorMessage ?? 'Error al realizar la reserva',
-                style: GoogleFonts.inter(),
-              ),
-              backgroundColor: Colors.red,
-              duration: Timeouts.snackbarError,
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Reserva realizada exitosamente',
+              style: GoogleFonts.inter(),
             ),
-          );
+            backgroundColor: Colors.green,
+            duration: Timeouts.snackbarSuccess,
+          ),
+        );
+        setState(() {
+          _selectedCourt = null;
+          _selectedDate = null;
+          _selectedTime = null;
+          _bookingState = const BookingInitial();
+        });
+        await Future.delayed(Timeouts.animationExtraLong);
+        if (mounted) {
+          context.pop();
         }
       }
     } catch (e) {
+      // Undo executed commands on error
+      while (_commandInvoker.canUndo()) {
+        await _commandInvoker.undo();
+      }
+
       if (mounted) {
+        setState(() {
+          _bookingState = BookingError('Error al realizar la reserva: $e');
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -1690,12 +1712,14 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
             duration: Timeouts.snackbarError,
           ),
         );
+        setState(() {
+          _bookingState = const BookingInitial();
+        });
       }
     } finally {
-      if (mounted) {
+      if (mounted && _bookingState is BookingLoading) {
         setState(() {
-          _isBooking = false;
-          _isSyncing = false;
+          _bookingState = const BookingInitial();
         });
       }
     }

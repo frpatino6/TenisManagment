@@ -2,13 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:tennis_management/features/professor/presentation/providers/professor_provider.dart';
-import 'package:tennis_management/features/professor/domain/services/professor_service.dart';
+import 'package:tennis_management/features/professor/domain/repositories/professor_repository.dart';
 import 'package:tennis_management/features/professor/domain/models/professor_model.dart';
 import 'package:tennis_management/core/providers/tenant_provider.dart';
 import 'package:tennis_management/core/exceptions/exceptions.dart';
 
 // Mocks
-class MockProfessorService extends Mock implements ProfessorService {}
+class MockProfessorRepository extends Mock implements ProfessorRepository {}
 
 void main() {
   setUpAll(() {
@@ -18,14 +18,14 @@ void main() {
   });
 
   group('ProfessorNotifier', () {
-    late MockProfessorService mockService;
+    late MockProfessorRepository mockRepository;
     late ProviderContainer container;
 
     setUp(() {
-      mockService = MockProfessorService();
+      mockRepository = MockProfessorRepository();
       container = ProviderContainer(
         overrides: [
-          professorServiceProvider.overrideWithValue(mockService),
+          professorRepositoryProvider.overrideWithValue(mockRepository),
           // Override currentTenantIdProvider to return a simple value
           // We'll use a StateProvider for testing instead
         ],
@@ -55,7 +55,7 @@ void main() {
           weeklyEarnings: 1250.0,
         );
 
-        when(() => mockService.updateProfile(
+        when(() => mockRepository.updateProfile(
               name: any(named: 'name'),
               phone: any(named: 'phone'),
               specialties: any(named: 'specialties'),
@@ -79,7 +79,7 @@ void main() {
       });
 
       test('should handle errors when updating profile', () async {
-        when(() => mockService.updateProfile(
+        when(() => mockRepository.updateProfile(
               name: any(named: 'name'),
               phone: any(named: 'phone'),
               specialties: any(named: 'specialties'),
@@ -105,7 +105,7 @@ void main() {
 
     group('confirmClass', () {
       test('should confirm class successfully', () async {
-        when(() => mockService.confirmClass(any())).thenAnswer((_) async => {});
+        when(() => mockRepository.confirmClass(any())).thenAnswer((_) async => {});
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -117,7 +117,7 @@ void main() {
       });
 
       test('should handle errors when confirming class', () async {
-        when(() => mockService.confirmClass(any()))
+        when(() => mockRepository.confirmClass(any()))
             .thenThrow(ScheduleException.notFound());
 
         final notifier = container.read(professorNotifierProvider.notifier);
@@ -132,7 +132,7 @@ void main() {
 
     group('cancelClass', () {
       test('should cancel class successfully', () async {
-        when(() => mockService.cancelClass(any(), any())).thenAnswer((_) async => {});
+        when(() => mockRepository.cancelClass(any(), any())).thenAnswer((_) async => {});
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -144,7 +144,7 @@ void main() {
       });
 
       test('should handle errors when canceling class', () async {
-        when(() => mockService.cancelClass(any(), any()))
+        when(() => mockRepository.cancelClass(any(), any()))
             .thenThrow(ScheduleException.notFound());
 
         final notifier = container.read(professorNotifierProvider.notifier);
@@ -163,7 +163,7 @@ void main() {
           'date': '2024-01-01T10:00:00Z',
         };
 
-        when(() => mockService.createSchedule(
+        when(() => mockRepository.createSchedule(
               date: any(named: 'date'),
               startTime: any(named: 'startTime'),
               endTime: any(named: 'endTime'),
@@ -184,7 +184,7 @@ void main() {
       });
 
       test('should handle errors when creating schedule', () async {
-        when(() => mockService.createSchedule(
+        when(() => mockRepository.createSchedule(
               date: any(named: 'date'),
               startTime: any(named: 'startTime'),
               endTime: any(named: 'endTime'),
@@ -206,7 +206,7 @@ void main() {
 
     group('deleteSchedule', () {
       test('should delete schedule successfully', () async {
-        when(() => mockService.deleteSchedule(any())).thenAnswer((_) async => {});
+        when(() => mockRepository.deleteSchedule(any())).thenAnswer((_) async => {});
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -218,7 +218,7 @@ void main() {
       });
 
       test('should handle errors when deleting schedule', () async {
-        when(() => mockService.deleteSchedule(any()))
+        when(() => mockRepository.deleteSchedule(any()))
             .thenThrow(ScheduleException.notFound());
 
         final notifier = container.read(professorNotifierProvider.notifier);
@@ -232,7 +232,7 @@ void main() {
 
     group('completeClass', () {
       test('should complete class successfully', () async {
-        when(() => mockService.completeClass(any(), paymentAmount: any(named: 'paymentAmount')))
+        when(() => mockRepository.completeClass(any(), paymentAmount: any(named: 'paymentAmount')))
             .thenAnswer((_) async => {});
 
         final notifier = container.read(professorNotifierProvider.notifier);
@@ -245,7 +245,7 @@ void main() {
       });
 
       test('should complete class without payment amount', () async {
-        when(() => mockService.completeClass(any(), paymentAmount: any(named: 'paymentAmount')))
+        when(() => mockRepository.completeClass(any(), paymentAmount: any(named: 'paymentAmount')))
             .thenAnswer((_) async => {});
 
         final notifier = container.read(professorNotifierProvider.notifier);
@@ -259,7 +259,7 @@ void main() {
 
     group('cancelBooking', () {
       test('should cancel booking successfully', () async {
-        when(() => mockService.cancelBooking(
+        when(() => mockRepository.cancelBooking(
               any(),
               reason: any(named: 'reason'),
               penaltyAmount: any(named: 'penaltyAmount'),
@@ -279,7 +279,7 @@ void main() {
       });
 
       test('should cancel booking without optional parameters', () async {
-        when(() => mockService.cancelBooking(
+        when(() => mockRepository.cancelBooking(
               any(),
               reason: any(named: 'reason'),
               penaltyAmount: any(named: 'penaltyAmount'),
@@ -310,7 +310,7 @@ void main() {
     test('should return false when professor info is loading', () {
       final container = ProviderContainer(
         overrides: [
-          professorServiceProvider.overrideWithValue(MockProfessorService()),
+          professorRepositoryProvider.overrideWithValue(MockProfessorRepository()),
           professorInfoProvider.overrideWith(
             (ref) => Future<ProfessorModel>.delayed(
               Duration(seconds: 10),

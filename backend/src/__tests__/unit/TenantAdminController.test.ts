@@ -695,7 +695,7 @@ describe('TenantAdminController', () => {
 
       const responseData = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
       const booking = responseData.bookings[0];
-      
+
       expect(booking.startTime).toBeDefined();
       expect(booking.endTime).toBeDefined();
       expect(new Date(booking.startTime).getTime()).toBe(bookingDate.getTime());
@@ -705,7 +705,7 @@ describe('TenantAdminController', () => {
     it('should return startTime and endTime from schedule for bookings with schedule', async () => {
       const ScheduleModel = require('../../infrastructure/database/models/ScheduleModel').ScheduleModel;
       const ProfessorModel = require('../../infrastructure/database/models/ProfessorModel').ProfessorModel;
-      
+
       const student = await StudentModel.create({
         authUserId: new Types.ObjectId(),
         name: 'Test Student',
@@ -719,6 +719,7 @@ describe('TenantAdminController', () => {
         email: 'professor@test.com',
         phone: '123456789',
         hourlyRate: 100,
+        experienceYears: 5,
       });
 
       const scheduleStartTime = new Date('2026-01-26T14:00:00Z');
@@ -751,7 +752,7 @@ describe('TenantAdminController', () => {
 
       const responseData = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
       const booking = responseData.bookings[0];
-      
+
       expect(booking.startTime).toBeDefined();
       expect(booking.endTime).toBeDefined();
       expect(new Date(booking.startTime).getTime()).toBe(scheduleStartTime.getTime());
@@ -856,7 +857,7 @@ describe('TenantAdminController', () => {
       await controller.getBookingDetails(mockRequest as Request, mockResponse as Response);
 
       const responseData = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
-      
+
       expect(responseData.startTime).toBeDefined();
       expect(responseData.endTime).toBeDefined();
       expect(new Date(responseData.startTime).getTime()).toBe(bookingDate.getTime());
@@ -1195,6 +1196,155 @@ describe('TenantAdminController', () => {
           newBalance: 25,
         }),
       );
+    });
+  });
+
+  describe('getDebtReport', () => {
+    it('should return students with debt or pending payments', async () => {
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
+      // Student 1: Recarga 100, Booking 150 -> Debt 50
+      const student1 = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Deudor 1',
+        email: 'deudor1@test.com',
+        membershipType: 'basic',
+      });
+      await StudentTenantModel.create({
+        tenantId: tenantObjectId,
+        studentId: student1._id,
+        balance: -50, // This is a cache, we want the system to calculate it
+      });
+      await PaymentModel.create({
+        tenantId: tenantObjectId,
+        studentId: student1._id,
+        amount: 100,
+        status: 'paid',
+        method: 'cash',
+        date: new Date(),
+      });
+      await BookingModel.create({
+        tenantId: tenantObjectId,
+        studentId: student1._id,
+        serviceType: 'court_rental',
+        price: 150,
+        status: 'completed',
+        bookingDate: new Date(),
+      });
+
+      // Student 2: No debt, but has a pending payment
+      const student2 = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Deudor 2 (Pending)',
+        email: 'deudor2@test.com',
+        membershipType: 'basic',
+      });
+      await StudentTenantModel.create({
+        tenantId: tenantObjectId,
+        studentId: student2._id,
+        balance: 0,
+      });
+      await PaymentModel.create({
+        tenantId: tenantObjectId,
+        studentId: student2._id,
+        amount: 30000,
+        status: 'pending',
+        method: 'cash',
+        date: new Date(),
+      });
+
+      // Student 3: Positive balance (Should not appear)
+      const student3 = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Sin Deuda',
+        email: 'sindeuda@test.com',
+        membershipType: 'basic',
+      });
+      await StudentTenantModel.create({
+        tenantId: tenantObjectId,
+        studentId: student3._id,
+        balance: 50,
+      });
+      await PaymentModel.create({
+        tenantId: tenantObjectId,
+        studentId: student3._id,
+        amount: 200,
+        status: 'paid',
+        method: 'cash',
+        date: new Date(),
+      });
+
+      await controller.getDebtReport(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          summary: expect.objectContaining({
+            debtorCount: 2,
+            totalDebt: 50,
+          }),
+          debtors: expect.arrayContaining([
+            expect.objectContaining({ name: 'Deudor 1', balance: -50 }),
+            expect.objectContaining({ name: 'Deudor 2 (Pending)', pendingPaymentsAmount: 30000 }),
+          ]),
+        }),
+      );
+
+      // Verify that 'Sin Deuda' is not in the list
+      const responseData = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
+      const names = responseData.debtors.map((d: any) => d.name);
+      expect(names).not.toContain('Sin Deuda');
+    });
+
+    it('should filter debtors by name search', async () => {
+      const tenantObjectId = new Types.ObjectId(tenantId);
+
+      const student1 = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Juan Perez',
+        email: 'juan@test.com',
+        membershipType: 'basic',
+      });
+      await StudentTenantModel.create({
+        tenantId: tenantObjectId,
+        studentId: student1._id,
+        balance: 0,
+      });
+      await BookingModel.create({
+        tenantId: tenantObjectId,
+        studentId: student1._id,
+        serviceType: 'court_rental',
+        price: 100,
+        status: 'completed',
+        bookingDate: new Date(),
+      });
+
+      const student2 = await StudentModel.create({
+        authUserId: new Types.ObjectId(),
+        name: 'Maria Lopez',
+        email: 'maria@test.com',
+        membershipType: 'basic',
+      });
+      await StudentTenantModel.create({
+        tenantId: tenantObjectId,
+        studentId: student2._id,
+        balance: 0,
+      });
+      await BookingModel.create({
+        tenantId: tenantObjectId,
+        studentId: student2._id,
+        serviceType: 'court_rental',
+        price: 200,
+        status: 'completed',
+        bookingDate: new Date(),
+      });
+
+      mockRequest.query = { search: 'Maria' };
+
+      await controller.getDebtReport(mockRequest as Request, mockResponse as Response);
+
+      const responseData = (mockResponse.json as jest.Mock).mock.calls[0][0] as any;
+      expect(responseData.debtors.length).toBe(1);
+      expect(responseData.debtors[0].name).toBe('Maria Lopez');
     });
   });
 });

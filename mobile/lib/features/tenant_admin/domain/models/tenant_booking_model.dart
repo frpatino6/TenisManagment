@@ -76,7 +76,7 @@ class TenantBookingModel {
               (json['student'] ?? json['studentId']) as Map<String, dynamic>,
             )
           : StudentInfo(id: '', name: 'Estudiante no encontrado', email: '-'),
-      serviceType: json['serviceType'] as String? ?? 'court_rental',
+      serviceType: serviceType,
       status: json['status'] as String? ?? 'pending',
       paymentStatus: json['paymentStatus'] as String? ?? 'pending',
       price: (json['totalPrice'] ?? json['price'] ?? 0.0).toDouble(),

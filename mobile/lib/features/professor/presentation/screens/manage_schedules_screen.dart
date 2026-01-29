@@ -9,7 +9,7 @@ import '../providers/professor_provider.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../booking/domain/models/court_model.dart';
-import '../../../booking/domain/services/court_service.dart';
+import '../../../booking/presentation/providers/booking_provider.dart';
 
 enum ScheduleFilter { all, available, blocked, booked }
 
@@ -671,8 +671,8 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
                         });
 
                         try {
-                          final service = ref.read(professorServiceProvider);
-                          await service.blockSchedule(
+                          final repository = ref.read(professorRepositoryProvider);
+                          await repository.blockSchedule(
                             schedule.id,
                             reasonController.text,
                             courtId: selectedCourtId,
@@ -762,8 +762,8 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
 
     if (confirmed == true && context.mounted) {
       try {
-        final service = ref.read(professorServiceProvider);
-        await service.unblockSchedule(scheduleId);
+        final repository = ref.read(professorRepositoryProvider);
+        await repository.unblockSchedule(scheduleId);
 
         ref.invalidate(professorSchedulesProvider);
 

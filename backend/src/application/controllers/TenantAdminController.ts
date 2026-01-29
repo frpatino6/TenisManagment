@@ -1929,8 +1929,8 @@ export class TenantAdminController {
       } else if (booking.price > 0) {
         // Si no hay pago, verificar si ya existe uno con método 'wallet' (pagado con saldo)
         // Si existe Payment con wallet, no crear otro ni sumar balance
-        const walletPayment = await PaymentModel.findOne({ 
-          bookingId: booking._id, 
+        const walletPayment = await PaymentModel.findOne({
+          bookingId: booking._id,
           method: 'wallet',
           status: 'paid'
         });
@@ -1954,7 +1954,7 @@ export class TenantAdminController {
           // 3. Si sumamos aquí, estaríamos dando crédito adicional cuando solo deberíamos cancelar la deuda
           // El BalanceService calculará correctamente: Recargas - Deudas - Gastos wallet
           // Donde el Payment 'cash' cancela la deuda del booking (lo remueve del cálculo de deudas)
-          
+
           // Sincronizar el balance después de crear el Payment
           await this.balanceService.syncBalance(booking.studentId, booking.tenantId);
         } else {
@@ -2531,6 +2531,7 @@ export class TenantAdminController {
   /**
    * GET /api/tenant/reports/debts
    * Reporte de deudas (estudiantes con balance negativo o pagos pendientes)
+   * Optimizado con cálculo masivo (Lead Architect refactor)
    */
   getDebtReport = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -2542,10 +2543,11 @@ export class TenantAdminController {
 
       const { search } = req.query;
       let studentFilter: any = {};
+      let searchStudentIds: Types.ObjectId[] | undefined;
 
+      // 1. Manejo de búsqueda
       if (search && typeof search === 'string' && search.trim() !== '') {
         const searchRegex = new RegExp(search.trim(), 'i');
-        // Primero buscamos los IDs de los estudiantes que coincidan con el nombre o email
         const matchingStudents = await StudentModel.find({
           $or: [
             { name: searchRegex },
@@ -2553,72 +2555,66 @@ export class TenantAdminController {
           ]
         }).select('_id');
 
-        const studentIds = matchingStudents.map(s => s._id);
-        studentFilter = { studentId: { $in: studentIds } };
+        searchStudentIds = matchingStudents.map(s => s._id);
+        studentFilter = { studentId: { $in: searchStudentIds } };
       }
 
-      // 1. Get all StudentTenant records for this tenant
-      // We'll calculate the actual balance for each student
-      const studentTenantsQuery: any = {
-        tenantId: new Types.ObjectId(tenantId),
-        ...studentFilter
-      };
+      // 2. Obtener balances masivos (O(1) database call instead of O(N))
+      // Esto resuelve el problema de rendimiento N+1
+      const balancesMap = await this.balanceService.getBulkBalances(tenantId);
 
-      const studentTenants = await StudentTenantModel.find(studentTenantsQuery).populate('studentId', 'name email phone');
+      // 3. Obtener registros de StudentTenant y Pagos Pendientes
+      // Solo traemos los que coincidan con la búsqueda (si existe)
+      const [studentTenants, pendingPayments] = await Promise.all([
+        StudentTenantModel.find({
+          tenantId: new Types.ObjectId(tenantId),
+          ...studentFilter
+        }).populate('studentId', 'name email phone'),
+        PaymentModel.find({
+          tenantId: new Types.ObjectId(tenantId),
+          status: 'pending',
+          ...studentFilter
+        }).populate('studentId', 'name email')
+      ]);
 
-      // 2. Pagos manuales pendientes de confirmación
-      const pendingPaymentsQuery: any = {
-        tenantId: new Types.ObjectId(tenantId),
-        status: 'pending',
-        ...studentFilter
-      };
-
-      const pendingPayments = await PaymentModel.find(pendingPaymentsQuery).populate('studentId', 'name email');
-
-      // Agrupar deudas por estudiante
+      // 4. Construir el mapa de deudas (Business Logic delegada al mapa de balances)
       const debtMap = new Map<string, any>();
 
-      // Calculate actual balance for each student from source of truth
       for (const st of studentTenants) {
         if (!st.studentId) continue;
         const sId = (st.studentId as any)._id.toString();
-        const calculatedBalance = await this.balanceService.getBalance(
-          sId,
-          new Types.ObjectId(tenantId),
-          false // Don't sync cache
-        );
+        const calculatedBalance = balancesMap.get(sId) || 0;
 
-        // Only include students with negative balance (debt)
+        // Solo incluir estudiantes con balance negativo (deuda)
         if (calculatedBalance < 0) {
           debtMap.set(sId, {
             studentId: sId,
             name: (st.studentId as any).name,
             email: (st.studentId as any).email,
             phone: (st.studentId as any).phone,
-            balance: calculatedBalance, // Calculated from source of truth
+            balance: calculatedBalance,
             pendingPaymentsAmount: 0,
             totalDebt: Math.abs(calculatedBalance),
           });
         }
       }
 
-      // Procesar pagos pendientes (estos suman a la deuda "real" hasta que se confirman)
-      // Nota: Si un profesor marca una clase como completada y NO pagada, se crea un Payment 'pending'.
-      // El balance del alumno disminuye por el precio de la reserva (vía webhook o lógica de reserva).
-      // Por lo tanto, el balance ya refleja la deuda. Los pagos pendientes son informativos.
+      // Procesar pagos pendientes (información adicional sobre deudas "en proceso")
       pendingPayments.forEach((p: any) => {
         if (!p.studentId) return;
         const sId = p.studentId._id.toString();
+
         if (debtMap.has(sId)) {
           const entry = debtMap.get(sId);
           entry.pendingPaymentsAmount += p.amount;
         } else {
+          // Si no tiene balance negativo pero si pagos pendientes, también es deudor
           debtMap.set(sId, {
             studentId: sId,
             name: p.studentId.name,
             email: p.studentId.email,
             phone: p.studentId.phone || '',
-            balance: 0, // No tiene balance negativo pero tiene pagos pendientes
+            balance: 0,
             pendingPaymentsAmount: p.amount,
             totalDebt: p.amount,
           });
@@ -2632,7 +2628,7 @@ export class TenantAdminController {
 
       res.json({
         summary: {
-          totalDebt: totalBalanceDebt, // CORRECCIÓN: La deuda real es el balance negativo. Los pagos pendientes son intentos de pago, no deuda adicional.
+          totalDebt: totalBalanceDebt,
           debtByBalance: totalBalanceDebt,
           debtByPendingPayments: totalPendingAmount,
           debtorCount: debtMap.size,
@@ -2640,7 +2636,10 @@ export class TenantAdminController {
         debtors: reportItems,
       });
     } catch (error) {
-      logger.error('Error generando reporte de deudas', { error: (error as Error).message });
+      logger.error('Error generando reporte de deudas optimizado', {
+        error: (error as Error).message,
+        tenantId: req.tenantId
+      });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

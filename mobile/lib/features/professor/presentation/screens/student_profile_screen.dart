@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import '../../data/providers/students_provider.dart';
+import '../providers/students_provider.dart';
 import '../../domain/models/student_model.dart';
 
 class StudentProfileScreen extends ConsumerWidget {

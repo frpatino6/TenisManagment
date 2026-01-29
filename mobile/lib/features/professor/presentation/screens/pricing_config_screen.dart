@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../domain/services/pricing_service.dart';
+import '../../domain/repositories/pricing_repository.dart';
+import '../../infrastructure/repositories/pricing_repository_impl.dart';
+import '../../domain/services/pricing_service.dart' show PricingResponse;
 
 class PricingConfigScreen extends StatefulWidget {
   const PricingConfigScreen({super.key});
@@ -12,7 +14,7 @@ class PricingConfigScreen extends StatefulWidget {
 }
 
 class _PricingConfigScreenState extends State<PricingConfigScreen> {
-  final _pricingService = PricingService();
+  final PricingRepository _pricingRepository = PricingRepositoryImpl();
   final _formKey = GlobalKey<FormState>();
 
   final _individualController = TextEditingController();
@@ -44,7 +46,8 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
     });
 
     try {
-      final data = await _pricingService.getMyPricing();
+      final dataMap = await _pricingRepository.getMyPricing();
+      final data = PricingResponse.fromJson(dataMap);
       
       setState(() {
         _pricingData = data;
@@ -77,11 +80,12 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
     });
 
     try {
-      final data = await _pricingService.updateMyPricing(
+      final dataMap = await _pricingRepository.updateMyPricing(
         individualClass: double.parse(_individualController.text),
         groupClass: double.parse(_groupController.text),
         courtRental: double.parse(_courtController.text),
       );
+      final data = PricingResponse.fromJson(dataMap);
 
       setState(() {
         _pricingData = data;
@@ -141,7 +145,8 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
     });
 
     try {
-      final data = await _pricingService.resetMyPricing();
+      final dataMap = await _pricingRepository.resetMyPricing();
+      final data = PricingResponse.fromJson(dataMap);
       
       setState(() {
         _pricingData = data;

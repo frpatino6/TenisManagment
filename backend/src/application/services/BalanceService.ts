@@ -77,7 +77,7 @@ export class BalanceService {
         // - 'confirmed': Only count if NO payment is associated (unpaid confirmed bookings)
         // - 'completed': Only count if NO payment is associated (unpaid completed bookings)
         // - 'cancelled': Should NOT count (cancelled reservations don't affect balance)
-        
+
         // First, get all bookings
         const allBookings = await BookingModel.find({
             studentId: studentObjectId,
@@ -299,5 +299,121 @@ export class BalanceService {
             calculatedBalance,
             difference,
         };
+    }
+
+    /**
+     * Calculates balances for all students in a tenant in a single operation.
+     * This is significantly more efficient than calling getBalance for each student.
+     * 
+     * @param tenantId - Tenant ID
+     * @returns Map of studentId to balance
+     */
+    async getBulkBalances(tenantId: Types.ObjectId | string): Promise<Map<string, number>> {
+        const tenantObjectId = new Types.ObjectId(tenantId.toString());
+
+        // 1. Aggregate Payments: Total Recargas and Total Wallet Expenses per student
+        const paymentsStats = await PaymentModel.aggregate([
+            {
+                $match: {
+                    tenantId: tenantObjectId,
+                    status: 'paid'
+                }
+            },
+            {
+                $group: {
+                    _id: '$studentId',
+                    totalRecargas: {
+                        $sum: {
+                            $cond: [
+                                { $or: [{ $eq: ['$bookingId', null] }, { $not: ['$bookingId'] }] },
+                                '$amount',
+                                0
+                            ]
+                        }
+                    },
+                    totalWalletExpenses: {
+                        $sum: {
+                            $cond: [
+                                { $and: [{ $ne: ['$bookingId', null] }, { $eq: ['$method', 'wallet'] }] },
+                                '$amount',
+                                0
+                            ]
+                        }
+                    }
+                }
+            }
+        ]);
+
+        // 2. Aggregate Bookings: Total Unpaid Bookings per student
+        // We need to join with Payments to see which bookings are paid
+        const bookingsStats = await BookingModel.aggregate([
+            {
+                $match: {
+                    tenantId: tenantObjectId,
+                    status: { $in: ['pending', 'confirmed', 'completed'] }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'payments',
+                    let: { bId: '$_id' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ['$bookingId', '$$bId'] },
+                                        { $eq: ['$status', 'paid'] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: 'paidPayments'
+                }
+            },
+            {
+                // Unpaid bookings are those that have NO paid payments
+                $match: {
+                    paidPayments: { $size: 0 }
+                }
+            },
+            {
+                $group: {
+                    _id: '$studentId',
+                    totalUnpaidBookings: { $sum: '$price' }
+                }
+            }
+        ]);
+
+        const result = new Map<string, number>();
+
+        // Create a set of all student IDs seen in either aggregation
+        const studentIds = new Set<string>();
+        paymentsStats.forEach(s => {
+            if (s._id) studentIds.add(s._id.toString());
+        });
+        bookingsStats.forEach(s => {
+            if (s._id) studentIds.add(s._id.toString());
+        });
+
+        // Convert stats to lookup maps for easy access
+        const paymentsMap = new Map(paymentsStats.map(s => [s._id ? s._id.toString() : '', s]));
+        const bookingsMap = new Map(bookingsStats.map(s => [s._id ? s._id.toString() : '', s]));
+
+        // Calculate balance for each student: Recargas - Deudas - WalletExpenses
+        for (const sId of studentIds) {
+            if (!sId) continue;
+            const p = paymentsMap.get(sId);
+            const b = bookingsMap.get(sId);
+
+            const recargas = p?.totalRecargas || 0;
+            const walletExpenses = p?.totalWalletExpenses || 0;
+            const deudas = b?.totalUnpaidBookings || 0;
+
+            result.set(sId, recargas - deudas - walletExpenses);
+        }
+
+        return result;
     }
 }

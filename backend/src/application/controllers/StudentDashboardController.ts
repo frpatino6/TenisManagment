@@ -15,6 +15,7 @@ import { UserPreferencesModel } from '../../infrastructure/database/models/UserP
 import { TenantService } from '../services/TenantService';
 import { BookingService } from '../services/BookingService';
 import { BalanceService } from '../services/BalanceService';
+import { ScheduleValidationService } from '../services/ScheduleValidationService';
 import { Types } from 'mongoose';
 
 // Default base pricing
@@ -439,9 +440,25 @@ export class StudentDashboardController {
         .sort({ startTime: 1 })
         .limit(100);
 
+      // Filter schedules that have conflicts with court_rental bookings
+      const scheduleValidationService = new ScheduleValidationService();
+      const tenantIdForValidation = req.tenantId 
+        ? new Types.ObjectId(req.tenantId) 
+        : schedules.length > 0 && schedules[0].tenantId 
+          ? new Types.ObjectId((schedules[0].tenantId as any)._id.toString())
+          : null;
+
+      let validSchedules: typeof schedules = schedules;
+      if (tenantIdForValidation) {
+        validSchedules = await scheduleValidationService.filterSchedulesWithoutConflicts(
+          schedules as any,
+          tenantIdForValidation
+        ) as typeof schedules;
+      }
+
       const schedulesData: any[] = [];
 
-      for (const schedule of schedules) {
+      for (const schedule of validSchedules) {
         const tenantId = schedule.tenantId ? (schedule.tenantId as any)._id.toString() : null;
 
         // SECURITY CHECK: Verify if professor is active in this tenant
@@ -520,10 +537,26 @@ export class StudentDashboardController {
         .sort({ startTime: 1 })
         .limit(200);
 
+      // Filter schedules that have conflicts with court_rental bookings
+      const scheduleValidationService = new ScheduleValidationService();
+      const tenantIdForValidation = authReq.tenantId 
+        ? new Types.ObjectId(authReq.tenantId) 
+        : schedules.length > 0 && schedules[0].tenantId 
+          ? new Types.ObjectId((schedules[0].tenantId as any)._id.toString())
+          : null;
+
+      let validSchedules: typeof schedules = schedules;
+      if (tenantIdForValidation) {
+        validSchedules = await scheduleValidationService.filterSchedulesWithoutConflicts(
+          schedules as any,
+          tenantIdForValidation
+        ) as typeof schedules;
+      }
+
       // Group schedules by tenantId
       const groupedByTenant: Record<string, any> = {};
 
-      for (const schedule of schedules) {
+      for (const schedule of validSchedules) {
         const tenantId = schedule.tenantId ? (schedule.tenantId as any)._id.toString() : 'unknown';
         const tenant = schedule.tenantId as any;
 
@@ -611,10 +644,17 @@ export class StudentDashboardController {
         .sort({ startTime: 1 })
         .limit(200);
 
+      // Filter schedules that have conflicts with court_rental bookings
+      const scheduleValidationService = new ScheduleValidationService();
+      const validSchedules = await scheduleValidationService.filterSchedulesWithoutConflicts(
+        schedules as any,
+        new Types.ObjectId(tenantId)
+      ) as typeof schedules;
+
       // Group schedules by professorId
       const groupedByProfessor: Record<string, any> = {};
 
-      for (const schedule of schedules) {
+      for (const schedule of validSchedules) {
         const professorId = schedule.professorId ? schedule.professorId.toString() : 'unknown';
         const professor = schedule.professorId as any;
 
@@ -682,10 +722,40 @@ export class StudentDashboardController {
         .sort({ startTime: 1 })
         .limit(500);
 
+      // Filter schedules by tenant groups to validate against court_rental bookings
+      // Group schedules by tenantId first for batch validation
+      const schedulesByTenant: Record<string, typeof schedules> = {};
+      for (const schedule of schedules) {
+        const tenantId = schedule.tenantId ? (schedule.tenantId as any)._id.toString() : 'unknown';
+        if (!schedulesByTenant[tenantId]) {
+          schedulesByTenant[tenantId] = [];
+        }
+        schedulesByTenant[tenantId].push(schedule);
+      }
+
+      // Validate schedules per tenant and collect valid ones
+      const scheduleValidationService = new ScheduleValidationService();
+      const validSchedules: typeof schedules = [];
+      
+      for (const [tenantIdStr, tenantSchedules] of Object.entries(schedulesByTenant)) {
+        if (tenantIdStr === 'unknown') {
+          // Schedules without tenant cannot have conflicts
+          validSchedules.push(...tenantSchedules);
+          continue;
+        }
+        
+        const tenantIdObj = new Types.ObjectId(tenantIdStr);
+        const filtered = await scheduleValidationService.filterSchedulesWithoutConflicts(
+          tenantSchedules as any,
+          tenantIdObj
+        ) as typeof schedules;
+        validSchedules.push(...filtered);
+      }
+
       // Group by tenant first, then by professor AND filter invalid links
       const groupedByTenant: Record<string, any> = {};
 
-      for (const schedule of schedules) {
+      for (const schedule of validSchedules) {
         const tenantId = schedule.tenantId ? (schedule.tenantId as any)._id.toString() : 'unknown';
         const professorId = schedule.professorId ? (schedule.professorId as any)._id.toString() : 'unknown';
 
@@ -1402,6 +1472,43 @@ export class StudentDashboardController {
         const scheduleStart = new Date(schedule.startTime);
         const hour = scheduleStart.getUTCHours();
         bookedSlots.add(`${hour.toString().padStart(2, '0')}:00`);
+      });
+
+      // Get available schedules and validate against court_rental bookings
+      const availableSchedules = await ScheduleModel.find({
+        tenantId: new Types.ObjectId(tenantId),
+        courtId: new Types.ObjectId(courtId),
+        isAvailable: true,
+        $or: [
+          { isBlocked: { $exists: false } },
+          { isBlocked: false }
+        ],
+        startTime: {
+          $gte: queryStart,
+          $lt: queryEnd,
+        }
+      }).lean();
+
+      // Validate schedules against court_rental bookings using batch filtering
+      const scheduleValidationService = new ScheduleValidationService();
+      const validSchedules = await scheduleValidationService.filterSchedulesWithoutConflicts(
+        availableSchedules,
+        new Types.ObjectId(tenantId)
+      );
+
+      // Mark as booked the schedules that were filtered out (have conflicts)
+      const invalidScheduleIds = new Set(
+        availableSchedules
+          .filter(s => !validSchedules.some(vs => vs._id.toString() === s._id.toString()))
+          .map(s => s._id.toString())
+      );
+
+      availableSchedules.forEach((schedule) => {
+        if (invalidScheduleIds.has(schedule._id.toString())) {
+          const scheduleStart = new Date(schedule.startTime);
+          const hour = scheduleStart.getUTCHours();
+          bookedSlots.add(`${hour.toString().padStart(2, '0')}:00`);
+        }
       });
 
       // Generate all possible slots based on operating hours (in local time)     

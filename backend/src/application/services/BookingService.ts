@@ -8,6 +8,7 @@ import { PaymentModel } from '../../infrastructure/database/models/PaymentModel'
 import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
 import { TenantService } from './TenantService';
 import { BalanceService } from './BalanceService';
+import { ScheduleValidationService } from './ScheduleValidationService';
 import { Logger } from '../../infrastructure/services/Logger';
 
 const logger = new Logger({ module: 'BookingService' });
@@ -182,6 +183,19 @@ export class BookingService {
                 const schedule = await ScheduleModel.findById(scheduleId);
                 if (!schedule || !schedule.isAvailable) {
                     throw new Error('El horario ya no está disponible');
+                }
+
+                // Validate that schedule doesn't have conflict with court_rental booking
+                if (schedule.courtId) {
+                    const scheduleValidationService = new ScheduleValidationService();
+                    const hasConflict = await scheduleValidationService.hasCourtRentalConflict(
+                        schedule,
+                        new Types.ObjectId(tenantId.toString())
+                    );
+
+                    if (hasConflict) {
+                        throw new Error('El horario seleccionado no está disponible debido a un alquiler de cancha');
+                    }
                 }
 
                 // Update schedule status

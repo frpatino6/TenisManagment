@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/utils/currency_utils.dart';
+import '../../../../core/events/data_change_event.dart';
+import '../../../../core/observers/data_change_observer.dart';
 import '../../domain/models/tenant_booking_model.dart';
 import '../providers/tenant_admin_provider.dart';
 
@@ -49,7 +51,15 @@ Future<void> confirmBookingQuickPayment(
         backgroundColor: Colors.green,
       ),
     );
-    ref.invalidate(tenantBookingsProvider);
+
+    final observer = ref.read(dataChangeObserverProvider);
+    observer.notifyChange(
+      DataChangeEvent(
+        changeType: DataChangeType.updated,
+        entityType: 'booking',
+        entityId: booking.id,
+      ),
+    );
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -1,0 +1,150 @@
+import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+import '../../../../core/config/app_config.dart';
+import '../../../../core/exceptions/exceptions.dart';
+import '../../domain/repositories/pricing_repository.dart';
+
+/// Infrastructure implementation of [PricingRepository]
+/// 
+/// Handles all HTTP communication, authentication, and data parsing.
+/// This is where all "dirty" infrastructure concerns live.
+class PricingRepositoryImpl implements PricingRepository {
+  final String _baseUrl = AppConfig.apiBaseUrl;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  @override
+  Future<Map<String, dynamic>> getMyPricing() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw AuthException.notAuthenticated();
+      }
+
+      final idToken = await user.getIdToken(true);
+      if (idToken == null) {
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
+      }
+
+      final response = await http.get(
+        Uri.parse('$_baseUrl/pricing/my-pricing'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return data;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else {
+        throw NetworkException.serverError(
+          message: 'Error al obtener precios',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateMyPricing({
+    double? individualClass,
+    double? groupClass,
+    double? courtRental,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw AuthException.notAuthenticated();
+      }
+
+      final idToken = await user.getIdToken(true);
+      if (idToken == null) {
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
+      }
+
+      final body = <String, dynamic>{};
+      if (individualClass != null) body['individualClass'] = individualClass;
+      if (groupClass != null) body['groupClass'] = groupClass;
+      if (courtRental != null) body['courtRental'] = courtRental;
+
+      final response = await http.put(
+        Uri.parse('$_baseUrl/pricing/my-pricing'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+        body: json.encode(body),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return data;
+      } else {
+        final error = json.decode(response.body) as Map<String, dynamic>;
+        final errorMessage =
+            error['error'] as String? ?? 'Error al actualizar precios';
+
+        if (response.statusCode == 400 || response.statusCode == 422) {
+          throw ValidationException(errorMessage, code: 'VALIDATION_ERROR');
+        } else if (response.statusCode == 401 || response.statusCode == 403) {
+          throw AuthException.tokenExpired();
+        } else {
+          throw NetworkException.serverError(
+            message: errorMessage,
+            statusCode: response.statusCode,
+          );
+        }
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> resetMyPricing() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw AuthException.notAuthenticated();
+      }
+
+      final idToken = await user.getIdToken(true);
+      if (idToken == null) {
+        throw AuthException.tokenExpired(
+          message: 'No se pudo obtener el token de autenticación',
+        );
+      }
+
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/pricing/my-pricing'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        return data;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else {
+        throw NetworkException.serverError(
+          message: 'Error al restablecer precios',
+          statusCode: response.statusCode,
+        );
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+}

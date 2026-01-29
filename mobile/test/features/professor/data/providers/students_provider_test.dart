@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tennis_management/features/professor/data/providers/students_provider.dart';
+import 'package:tennis_management/features/professor/presentation/providers/students_provider.dart';
 import 'package:tennis_management/features/professor/domain/models/student_model.dart';
 
 void main() {

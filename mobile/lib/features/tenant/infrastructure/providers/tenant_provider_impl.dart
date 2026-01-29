@@ -11,13 +11,13 @@ class TenantProviderImpl implements ITenantProviderInterface {
   @override
   Future<List<ITenantInfo>> getAvailableTenants() async {
     final tenants = await _tenantService.getAvailableTenants();
-    return tenants;
+    return tenants.cast<ITenantInfo>();
   }
 
   @override
   Future<List<ITenantInfo>> getMyTenants() async {
     final tenants = await _tenantService.getMyTenants();
-    return tenants;
+    return tenants.cast<ITenantInfo>();
   }
 }
 

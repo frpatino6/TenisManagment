@@ -183,10 +183,10 @@ class TenantSelectorWidget extends ConsumerWidget {
                   );
                 }
 
-                final currentTenantModel = tenants.firstWhere(
-                  (t) => t.id == currentTenantId,
-                  orElse: () => tenants.first,
-                );
+                final matchingTenants = tenants.where((t) => t.id == currentTenantId).toList();
+                final ITenantInfo currentTenantModel = matchingTenants.isNotEmpty 
+                    ? matchingTenants.first 
+                    : tenants.first;
 
                 return Column(
                   children: [

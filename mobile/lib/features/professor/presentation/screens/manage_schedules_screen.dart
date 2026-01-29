@@ -671,8 +671,8 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
                         });
 
                         try {
-                          final service = ref.read(professorServiceProvider);
-                          await service.blockSchedule(
+                          final repository = ref.read(professorRepositoryProvider);
+                          await repository.blockSchedule(
                             schedule.id,
                             reasonController.text,
                             courtId: selectedCourtId,
@@ -762,8 +762,8 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
 
     if (confirmed == true && context.mounted) {
       try {
-        final service = ref.read(professorServiceProvider);
-        await service.unblockSchedule(scheduleId);
+        final repository = ref.read(professorRepositoryProvider);
+        await repository.unblockSchedule(scheduleId);
 
         ref.invalidate(professorSchedulesProvider);
 

@@ -36,7 +36,7 @@ class _TenantBookingDetailsScreenState
         children: [
           FutureBuilder<TenantBookingModel>(
             future: ref
-                .read(tenantAdminServiceProvider)
+                .read(tenantAdminRepositoryProvider)
                 .getBookingDetails(widget.bookingId),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -491,7 +491,7 @@ class _TenantBookingDetailsScreenState
 
     try {
       await ref
-          .read(tenantAdminServiceProvider)
+          .read(tenantAdminRepositoryProvider)
           .confirmBooking(widget.bookingId, paymentStatus: 'paid');
 
       final observer = ref.read(dataChangeObserverProvider);
@@ -540,7 +540,7 @@ class _TenantBookingDetailsScreenState
 
     try {
       await ref
-          .read(tenantAdminServiceProvider)
+          .read(tenantAdminRepositoryProvider)
           .cancelBooking(
             widget.bookingId,
             reason: reason.isEmpty ? null : reason,

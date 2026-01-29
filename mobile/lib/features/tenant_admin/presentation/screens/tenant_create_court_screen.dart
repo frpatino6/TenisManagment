@@ -45,7 +45,7 @@ class _TenantCreateCourtScreenState
     });
 
     try {
-      final service = ref.read(tenantAdminServiceProvider);
+      final repository = ref.read(tenantAdminRepositoryProvider);
 
       // Parse features from comma-separated string
       final featuresList = _featuresController.text
@@ -54,7 +54,7 @@ class _TenantCreateCourtScreenState
           .where((f) => f.isNotEmpty)
           .toList();
 
-      await service.createCourt(
+      await repository.createCourt(
         name: _nameController.text.trim(),
         type: _selectedType,
         price: double.parse(_priceController.text),

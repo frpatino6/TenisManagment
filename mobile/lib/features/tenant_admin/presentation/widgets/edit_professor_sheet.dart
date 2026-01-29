@@ -59,8 +59,8 @@ class _EditProfessorSheetState extends ConsumerState<EditProfessorSheet> {
           .where((e) => e.isNotEmpty)
           .toList();
 
-      final service = ref.read(tenantAdminServiceProvider);
-      await service.updateProfessor(
+      final repository = ref.read(tenantAdminRepositoryProvider);
+      await repository.updateProfessor(
         professorId: widget.professor.id,
         name: _nameController.text.trim(),
         phone: _phoneController.text.trim(),

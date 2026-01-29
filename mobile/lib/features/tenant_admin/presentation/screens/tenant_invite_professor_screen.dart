@@ -45,7 +45,7 @@ class _TenantInviteProfessorScreenState
     });
 
     try {
-      final service = ref.read(tenantAdminServiceProvider);
+      final repository = ref.read(tenantAdminRepositoryProvider);
 
       Map<String, dynamic>? pricing;
       if (_showPricing) {
@@ -66,7 +66,7 @@ class _TenantInviteProfessorScreenState
         }
       }
 
-      await service.inviteProfessor(
+      await repository.inviteProfessor(
         email: _emailController.text.trim(),
         pricing: pricing,
       );

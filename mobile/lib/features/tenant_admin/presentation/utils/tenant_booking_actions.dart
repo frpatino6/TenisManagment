@@ -78,7 +78,7 @@ Future<void> confirmBookingQuickPayment(
 
   try {
     await ref
-        .read(tenantAdminServiceProvider)
+        .read(tenantAdminRepositoryProvider)
         .confirmBooking(booking.id, paymentStatus: 'paid');
 
     if (!context.mounted) return;

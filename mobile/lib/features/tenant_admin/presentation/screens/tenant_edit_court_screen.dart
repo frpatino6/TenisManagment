@@ -67,7 +67,7 @@ class _TenantEditCourtScreenState extends ConsumerState<TenantEditCourtScreen> {
     });
 
     try {
-      final service = ref.read(tenantAdminServiceProvider);
+      final repository = ref.read(tenantAdminRepositoryProvider);
 
       // Parse features from comma-separated string
       final featuresList = _featuresController.text
@@ -76,7 +76,7 @@ class _TenantEditCourtScreenState extends ConsumerState<TenantEditCourtScreen> {
           .where((f) => f.isNotEmpty)
           .toList();
 
-      await service.updateCourt(
+      await repository.updateCourt(
         courtId: widget.courtId,
         name: _nameController.text.trim(),
         type: _selectedType,

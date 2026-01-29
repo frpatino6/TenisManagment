@@ -33,7 +33,7 @@ void main() {
 
       // Wait for the future to complete
       await container.read(studentsListProvider.future);
-      
+
       final filtered = container.read(filteredStudentsProvider(''));
       expect(filtered.length, equals(2));
       expect(filtered, equals(testStudents));
@@ -181,10 +181,9 @@ void main() {
 
       // Wait a bit for the error to propagate
       await Future.delayed(Duration(milliseconds: 100));
-      
+
       final filtered = container.read(filteredStudentsProvider('test'));
       expect(filtered, isEmpty);
     });
   });
 }
-

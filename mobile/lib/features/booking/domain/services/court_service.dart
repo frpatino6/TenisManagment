@@ -2,7 +2,7 @@ import '../models/court_model.dart';
 import '../repositories/court_repository.dart';
 
 /// Domain service for managing court bookings
-/// 
+///
 /// This service orchestrates business logic related to courts.
 /// It delegates data access to the [CourtRepository] and focuses on
 /// domain validation and business rules.

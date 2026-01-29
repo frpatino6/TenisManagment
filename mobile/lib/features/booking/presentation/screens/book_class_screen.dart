@@ -898,21 +898,25 @@ class _BookClassScreenState extends ConsumerState<BookClassScreen> {
       if (!mounted) return;
 
       ref.invalidate(professorsProvider);
-      ref.invalidate(studentBookingsProvider);
+      final _ = ref.refresh(studentBookingsProvider);
       if (_selectedProfessor != null) {
         ref.invalidate(availableSchedulesProvider(_selectedProfessor!.id));
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '¡Clase reservada exitosamente!',
-            style: GoogleFonts.inter(),
+      await Future.delayed(Timeouts.animationShort);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '¡Clase reservada exitosamente!',
+              style: GoogleFonts.inter(),
+            ),
+            backgroundColor: Colors.green,
+            duration: Timeouts.snackbarSuccess,
           ),
-          backgroundColor: Colors.green,
-          duration: Timeouts.snackbarSuccess,
-        ),
-      );
+        );
+      }
 
       setState(() {
         _isBooking = false;

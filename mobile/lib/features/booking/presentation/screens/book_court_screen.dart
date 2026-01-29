@@ -1636,7 +1636,6 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
         _selectedTime!.minute,
       );
 
-      // Default to 1 hour duration for court rental
       final endDateTime = startDateTime.add(const Duration(hours: 1));
 
       // 2. Calculate price

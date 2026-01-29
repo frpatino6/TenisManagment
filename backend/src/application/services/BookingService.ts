@@ -8,6 +8,7 @@ import { PaymentModel } from '../../infrastructure/database/models/PaymentModel'
 import { StudentTenantModel } from '../../infrastructure/database/models/StudentTenantModel';
 import { TenantService } from './TenantService';
 import { BalanceService } from './BalanceService';
+import { ScheduleValidationService } from './ScheduleValidationService';
 import { Logger } from '../../infrastructure/services/Logger';
 
 const logger = new Logger({ module: 'BookingService' });
@@ -43,25 +44,53 @@ export class BookingService {
         endTime: Date,
         excludeScheduleId?: Types.ObjectId
     ): Promise<boolean> {
+        logger.info('Checking court availability', {
+            tenantId: tenantId.toString(),
+            courtId: courtId.toString(),
+            startTime: startTime.toISOString(),
+            endTime: endTime.toISOString(),
+            excludeScheduleId: excludeScheduleId?.toString()
+        });
+
         // 1. Check for Bookings that overlap
+        // Two time ranges overlap if: start1 < end2 && start2 < end1
+        // For bookings without endTime, we assume 1 hour duration
         const conflictingBooking = await BookingModel.findOne({
             tenantId,
             courtId,
             status: { $in: ['confirmed', 'pending'] },
             $or: [
-                { bookingDate: { $lt: endTime }, endTime: { $gt: startTime } },
-                // Fallback for old bookings without endTime
+                // Bookings with endTime that overlap
+                // bookingDate < requestedEndTime AND bookingEndTime > requestedStartTime
+                {
+                    bookingDate: { $lt: endTime },
+                    endTime: { $gt: startTime }
+                },
+                // Fallback for old bookings without endTime (assume 1 hour duration)
+                // bookingDate < requestedEndTime AND (bookingDate + 1 hour) > requestedStartTime
+                // Which is: bookingDate < requestedEndTime AND bookingDate > (requestedStartTime - 1 hour)
                 {
                     $and: [
                         { endTime: { $exists: false } },
-                        { bookingDate: { $lt: endTime, $gte: new Date(startTime.getTime() - 60 * 60 * 1000) } }
+                        { bookingDate: { $lt: endTime } },
+                        { bookingDate: { $gt: new Date(startTime.getTime() - 60 * 60 * 1000) } }
                     ]
                 }
             ]
         });
 
         if (conflictingBooking) {
-            logger.info('Court conflict found in Bookings', { courtId, startTime, endTime, bookingId: conflictingBooking._id });
+            logger.info('Court conflict found in Bookings', { 
+                courtId: courtId.toString(), 
+                startTime: startTime.toISOString(), 
+                endTime: endTime.toISOString(), 
+                bookingId: conflictingBooking._id.toString(),
+                conflictingBookingDate: conflictingBooking.bookingDate?.toISOString(),
+                conflictingEndTime: conflictingBooking.endTime?.toISOString(),
+                conflictingStatus: conflictingBooking.status,
+                conflictingServiceType: conflictingBooking.serviceType,
+                conflictingTenantId: conflictingBooking.tenantId?.toString()
+            });
             return false;
         }
 
@@ -93,18 +122,147 @@ export class BookingService {
 
         if (conflictingSchedule) {
             logger.info('Court conflict found in Schedules', { 
-                courtId, 
-                startTime, 
-                endTime, 
-                scheduleId: conflictingSchedule._id,
+                courtId: courtId.toString(), 
+                startTime: startTime.toISOString(), 
+                endTime: endTime.toISOString(), 
+                scheduleId: conflictingSchedule._id.toString(),
+                scheduleStartTime: conflictingSchedule.startTime?.toISOString(),
+                scheduleEndTime: conflictingSchedule.endTime?.toISOString(),
                 isAvailable: conflictingSchedule.isAvailable,
                 isBlocked: conflictingSchedule.isBlocked,
-                hasStudentId: !!conflictingSchedule.studentId
+                hasStudentId: !!conflictingSchedule.studentId,
+                scheduleStatus: conflictingSchedule.status
             });
             return false;
         }
 
+        logger.info('Court is available', {
+            tenantId: tenantId.toString(),
+            courtId: courtId.toString(),
+            startTime: startTime.toISOString(),
+            endTime: endTime.toISOString()
+        });
+
         return true;
+    }
+
+    /**
+     * Checks availability for multiple court slots in batch
+     * Returns a map of slot index to availability status
+     */
+    async areCourtsAvailableBatch(
+        tenantId: Types.ObjectId,
+        slots: Array<{ courtId: Types.ObjectId; startTime: Date; endTime: Date }>
+    ): Promise<Map<number, boolean>> {
+        logger.info('Checking court availability in batch', {
+            tenantId: tenantId.toString(),
+            slotCount: slots.length
+        });
+
+        const availabilityMap = new Map<number, boolean>();
+        
+        // Initialize all slots as available
+        slots.forEach((_, index) => availabilityMap.set(index, true));
+
+        if (slots.length === 0) {
+            return availabilityMap;
+        }
+
+        // Group slots by courtId for efficient querying
+        const slotsByCourt = new Map<string, Array<{ index: number; startTime: Date; endTime: Date }>>();
+        slots.forEach((slot, index) => {
+            const courtIdStr = slot.courtId.toString();
+            if (!slotsByCourt.has(courtIdStr)) {
+                slotsByCourt.set(courtIdStr, []);
+            }
+            slotsByCourt.get(courtIdStr)!.push({ index, startTime: slot.startTime, endTime: slot.endTime });
+        });
+
+        // Process each court's slots
+        for (const [courtIdStr, courtSlots] of slotsByCourt.entries()) {
+            const courtId = new Types.ObjectId(courtIdStr);
+            
+            // Find earliest start and latest end for this court's slots
+            const earliestStart = new Date(Math.min(...courtSlots.map(s => s.startTime.getTime())));
+            const latestEnd = new Date(Math.max(...courtSlots.map(s => s.endTime.getTime())));
+
+            // 1. Check for Bookings that overlap with any slot
+            const conflictingBookings = await BookingModel.find({
+                tenantId,
+                courtId,
+                status: { $in: ['confirmed', 'pending'] },
+                $or: [
+                    // Bookings with endTime that overlap
+                    {
+                        bookingDate: { $lt: latestEnd },
+                        endTime: { $gt: earliestStart }
+                    },
+                    // Fallback for old bookings without endTime
+                    {
+                        $and: [
+                            { endTime: { $exists: false } },
+                            { bookingDate: { $lt: latestEnd } },
+                            { bookingDate: { $gt: new Date(earliestStart.getTime() - 60 * 60 * 1000) } }
+                        ]
+                    }
+                ]
+            });
+
+            // Check each slot against conflicting bookings
+            for (const slot of courtSlots) {
+                const hasBookingConflict = conflictingBookings.some(booking => {
+                    const bookingStart = booking.bookingDate;
+                    if (!bookingStart) return false;
+                    const bookingEnd = booking.endTime || new Date(bookingStart.getTime() + 60 * 60 * 1000);
+                    return bookingStart < slot.endTime && bookingEnd > slot.startTime;
+                });
+
+                if (hasBookingConflict) {
+                    availabilityMap.set(slot.index, false);
+                    continue;
+                }
+            }
+
+            // 2. Check for Schedules that overlap with any slot
+            const conflictingSchedules = await ScheduleModel.find({
+                tenantId,
+                courtId,
+                status: { $in: ['confirmed', 'pending'] },
+                $or: [
+                    { isBlocked: true },
+                    { isAvailable: false },
+                    { studentId: { $exists: true, $ne: null } }
+                ],
+                $and: [
+                    { startTime: { $lt: latestEnd } },
+                    { endTime: { $gt: earliestStart } }
+                ]
+            });
+
+            // Check each slot against conflicting schedules
+            for (const slot of courtSlots) {
+                if (availabilityMap.get(slot.index) === false) {
+                    continue; // Already marked as unavailable
+                }
+
+                const hasScheduleConflict = conflictingSchedules.some(schedule => {
+                    return schedule.startTime < slot.endTime && schedule.endTime > slot.startTime;
+                });
+
+                if (hasScheduleConflict) {
+                    availabilityMap.set(slot.index, false);
+                }
+            }
+        }
+
+        logger.info('Court availability batch check completed', {
+            tenantId: tenantId.toString(),
+            totalSlots: slots.length,
+            availableSlots: Array.from(availabilityMap.values()).filter(v => v).length,
+            unavailableSlots: Array.from(availabilityMap.values()).filter(v => !v).length
+        });
+
+        return availabilityMap;
     }
 
     /**
@@ -182,6 +340,19 @@ export class BookingService {
                 const schedule = await ScheduleModel.findById(scheduleId);
                 if (!schedule || !schedule.isAvailable) {
                     throw new Error('El horario ya no está disponible');
+                }
+
+                // Validate that schedule doesn't have conflict with court_rental booking
+                if (schedule.courtId) {
+                    const scheduleValidationService = new ScheduleValidationService();
+                    const hasConflict = await scheduleValidationService.hasCourtRentalConflict(
+                        schedule,
+                        new Types.ObjectId(tenantId.toString())
+                    );
+
+                    if (hasConflict) {
+                        throw new Error('El horario seleccionado no está disponible debido a un alquiler de cancha');
+                    }
                 }
 
                 // Update schedule status

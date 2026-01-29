@@ -1142,8 +1142,20 @@ export class StudentDashboardController {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : 'No stack trace';
       console.error('Error details:', { errorMessage, errorStack });
-      res.status(500).json({
-        error: 'Error interno del servidor',
+      
+      // Check if it's a conflict error (court already booked)
+      const isConflictError = errorMessage.includes('ocupado') || 
+                             errorMessage.includes('no está disponible') ||
+                             errorMessage.includes('conflict');
+      
+      // Return 409 Conflict for booking conflicts, 500 for other errors
+      const statusCode = isConflictError ? 409 : 500;
+      const defaultMessage = isConflictError 
+        ? 'El horario seleccionado para esta cancha ya está ocupado'
+        : 'Error interno del servidor';
+      
+      res.status(statusCode).json({
+        error: defaultMessage,
         message: errorMessage,
         details: process.env.NODE_ENV === 'development' ? errorStack : undefined
       });

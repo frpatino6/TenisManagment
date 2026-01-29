@@ -192,8 +192,12 @@ class CourtService {
         return json.decode(response.body) as Map<String, dynamic>;
       } else {
         final error = json.decode(response.body) as Map<String, dynamic>;
+        // Prefer 'message' field if available (contains the actual error message)
+        // Fallback to 'error' field for backward compatibility
         final errorMessage =
-            error['error'] as String? ?? 'Error al reservar cancha';
+            error['message'] as String? ?? 
+            error['error'] as String? ?? 
+            'Error al reservar cancha';
 
         if (response.statusCode == 400 || response.statusCode == 422) {
           throw ValidationException(errorMessage, code: 'VALIDATION_ERROR');

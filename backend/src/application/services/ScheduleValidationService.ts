@@ -82,14 +82,43 @@ export class ScheduleValidationService {
     }
 
     // Extraer courtIds únicos de los schedules que tienen cancha asignada
-    const courtIds = [...new Set(
-      schedules
-        .map(s => s.courtId?.toString())
-        .filter(Boolean) as string[]
-    )];
+    // Manejar tanto ObjectId como objetos poblados
+    const courtIds: string[] = [];
+    for (const schedule of schedules) {
+      if (!schedule.courtId) {
+        continue;
+      }
 
-    if (courtIds.length === 0) {
-      // Si ningún schedule tiene cancha, todos están disponibles
+      let courtIdStr: string | null = null;
+      
+      // Si es un ObjectId directo
+      if (schedule.courtId instanceof Types.ObjectId) {
+        courtIdStr = schedule.courtId.toString();
+      }
+      // Si es un objeto poblado (tiene _id)
+      else if (typeof schedule.courtId === 'object' && schedule.courtId !== null && '_id' in schedule.courtId) {
+        const populatedCourtId = (schedule.courtId as any)._id;
+        if (populatedCourtId instanceof Types.ObjectId) {
+          courtIdStr = populatedCourtId.toString();
+        } else if (typeof populatedCourtId === 'string') {
+          courtIdStr = populatedCourtId;
+        }
+      }
+      // Si es un string
+      else if (typeof schedule.courtId === 'string') {
+        courtIdStr = schedule.courtId;
+      }
+
+      // Validar que sea un ObjectId válido (24 caracteres hex)
+      if (courtIdStr && /^[0-9a-fA-F]{24}$/.test(courtIdStr)) {
+        courtIds.push(courtIdStr);
+      }
+    }
+
+    const uniqueCourtIds = Array.from(new Set(courtIds));
+
+    if (uniqueCourtIds.length === 0) {
+      // Si ningún schedule tiene cancha válida, todos están disponibles
       return schedules;
     }
 
@@ -100,7 +129,7 @@ export class ScheduleValidationService {
     // Obtener TODOS los court_rental bookings activos para estas canchas en el rango de tiempo
     const courtRentalBookings = await BookingModel.find({
       tenantId,
-      courtId: { $in: courtIds.map(id => new Types.ObjectId(id)) },
+      courtId: { $in: uniqueCourtIds.map(id => new Types.ObjectId(id)) },
       serviceType: 'court_rental',
       status: { $in: ['confirmed', 'pending'] },
       $or: [
@@ -130,11 +159,32 @@ export class ScheduleValidationService {
       const scheduleStart = schedule.startTime;
       const scheduleEnd = schedule.endTime;
 
+      // Extraer el courtId del schedule de forma segura
+      let scheduleCourtIdStr: string | null = null;
+      if (schedule.courtId instanceof Types.ObjectId) {
+        scheduleCourtIdStr = schedule.courtId.toString();
+      } else if (typeof schedule.courtId === 'object' && schedule.courtId !== null && '_id' in schedule.courtId) {
+        const populatedCourtId = (schedule.courtId as any)._id;
+        scheduleCourtIdStr = populatedCourtId instanceof Types.ObjectId 
+          ? populatedCourtId.toString() 
+          : typeof populatedCourtId === 'string' ? populatedCourtId : null;
+      } else if (typeof schedule.courtId === 'string') {
+        scheduleCourtIdStr = schedule.courtId;
+      }
+
+      if (!scheduleCourtIdStr) {
+        return true; // Sin cancha válida, no puede tener conflicto
+      }
+
       // Buscar si hay algún booking que se solape con este schedule
       const hasConflict = courtRentalBookings.some(booking => {
         // Verificar que el booking sea para la misma cancha
-        if (!booking.courtId || !schedule.courtId ||
-            booking.courtId.toString() !== schedule.courtId.toString()) {
+        if (!booking.courtId) {
+          return false;
+        }
+
+        const bookingCourtIdStr = booking.courtId.toString();
+        if (bookingCourtIdStr !== scheduleCourtIdStr) {
           return false;
         }
 

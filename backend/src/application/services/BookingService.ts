@@ -44,25 +44,53 @@ export class BookingService {
         endTime: Date,
         excludeScheduleId?: Types.ObjectId
     ): Promise<boolean> {
+        logger.info('Checking court availability', {
+            tenantId: tenantId.toString(),
+            courtId: courtId.toString(),
+            startTime: startTime.toISOString(),
+            endTime: endTime.toISOString(),
+            excludeScheduleId: excludeScheduleId?.toString()
+        });
+
         // 1. Check for Bookings that overlap
+        // Two time ranges overlap if: start1 < end2 && start2 < end1
+        // For bookings without endTime, we assume 1 hour duration
         const conflictingBooking = await BookingModel.findOne({
             tenantId,
             courtId,
             status: { $in: ['confirmed', 'pending'] },
             $or: [
-                { bookingDate: { $lt: endTime }, endTime: { $gt: startTime } },
-                // Fallback for old bookings without endTime
+                // Bookings with endTime that overlap
+                // bookingDate < requestedEndTime AND bookingEndTime > requestedStartTime
+                {
+                    bookingDate: { $lt: endTime },
+                    endTime: { $gt: startTime }
+                },
+                // Fallback for old bookings without endTime (assume 1 hour duration)
+                // bookingDate < requestedEndTime AND (bookingDate + 1 hour) > requestedStartTime
+                // Which is: bookingDate < requestedEndTime AND bookingDate > (requestedStartTime - 1 hour)
                 {
                     $and: [
                         { endTime: { $exists: false } },
-                        { bookingDate: { $lt: endTime, $gte: new Date(startTime.getTime() - 60 * 60 * 1000) } }
+                        { bookingDate: { $lt: endTime } },
+                        { bookingDate: { $gt: new Date(startTime.getTime() - 60 * 60 * 1000) } }
                     ]
                 }
             ]
         });
 
         if (conflictingBooking) {
-            logger.info('Court conflict found in Bookings', { courtId, startTime, endTime, bookingId: conflictingBooking._id });
+            logger.info('Court conflict found in Bookings', { 
+                courtId: courtId.toString(), 
+                startTime: startTime.toISOString(), 
+                endTime: endTime.toISOString(), 
+                bookingId: conflictingBooking._id.toString(),
+                conflictingBookingDate: conflictingBooking.bookingDate?.toISOString(),
+                conflictingEndTime: conflictingBooking.endTime?.toISOString(),
+                conflictingStatus: conflictingBooking.status,
+                conflictingServiceType: conflictingBooking.serviceType,
+                conflictingTenantId: conflictingBooking.tenantId?.toString()
+            });
             return false;
         }
 
@@ -94,16 +122,26 @@ export class BookingService {
 
         if (conflictingSchedule) {
             logger.info('Court conflict found in Schedules', { 
-                courtId, 
-                startTime, 
-                endTime, 
-                scheduleId: conflictingSchedule._id,
+                courtId: courtId.toString(), 
+                startTime: startTime.toISOString(), 
+                endTime: endTime.toISOString(), 
+                scheduleId: conflictingSchedule._id.toString(),
+                scheduleStartTime: conflictingSchedule.startTime?.toISOString(),
+                scheduleEndTime: conflictingSchedule.endTime?.toISOString(),
                 isAvailable: conflictingSchedule.isAvailable,
                 isBlocked: conflictingSchedule.isBlocked,
-                hasStudentId: !!conflictingSchedule.studentId
+                hasStudentId: !!conflictingSchedule.studentId,
+                scheduleStatus: conflictingSchedule.status
             });
             return false;
         }
+
+        logger.info('Court is available', {
+            tenantId: tenantId.toString(),
+            courtId: courtId.toString(),
+            startTime: startTime.toISOString(),
+            endTime: endTime.toISOString()
+        });
 
         return true;
     }

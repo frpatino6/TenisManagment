@@ -14,12 +14,28 @@ abstract class StudentRepository {
     String? status,
   });
 
-  /// Retrieves recent activities for the authenticated student
-  Future<List<RecentActivityModel>> getRecentActivities();
+  /// Retrieves activities for the authenticated student with optional filters
+  /// 
+  /// [fromDate] - Only return activities from this date onwards (inclusive)
+  /// [toDate] - Only return activities up to this date (inclusive)
+  /// [type] - Filter by activity type: 'booking', 'payment', 'service_request', or null for all
+  Future<List<RecentActivityModel>> getRecentActivities({
+    DateTime? fromDate,
+    DateTime? toDate,
+    String? type,
+  });
 
   /// Retrieves the student's profile information
   Future<Map<String, dynamic>> getStudentInfo();
 
-  /// Retrieves all bookings for the authenticated student
-  Future<List<BookingModel>> getBookings();
+  /// Retrieves bookings for the authenticated student with optional filters
+  /// 
+  /// [fromDate] - Only return bookings from this date onwards (inclusive)
+  /// [toDate] - Only return bookings up to this date (inclusive)
+  /// [serviceType] - Filter by service type: 'individual_class', 'group_class', 'court_rental', or null for all
+  Future<List<BookingModel>> getBookings({
+    DateTime? fromDate,
+    DateTime? toDate,
+    String? serviceType,
+  });
 }

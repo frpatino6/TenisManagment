@@ -19,24 +19,42 @@ class MyBookingsScreen extends ConsumerStatefulWidget {
   ConsumerState<MyBookingsScreen> createState() => _MyBookingsScreenState();
 }
 
-class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
-  final _statusStrategy = StatusColorStrategyFactory.getStrategy(StatusType.booking);
+class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
+    with SingleTickerProviderStateMixin {
+  final _statusStrategy =
+      StatusColorStrategyFactory.getStrategy(StatusType.booking);
+  late TabController _tabController;
+  String? _serviceTypeFilter;
   String? _lastRouteName;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final route = ModalRoute.of(context);
     final currentRouteName = route?.settings.name;
-    
-    if (route != null && 
-        route.isCurrent && 
+
+    if (route != null &&
+        route.isCurrent &&
         currentRouteName != null &&
         currentRouteName != _lastRouteName) {
       _lastRouteName = currentRouteName;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          ref.invalidate(studentBookingsProvider);
+          ref.invalidate(upcomingBookingsProvider(
+            _serviceTypeFilter == 'classes' ? null : _serviceTypeFilter,
+          ));
         }
       });
     }
@@ -55,125 +73,254 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              ref.invalidate(studentBookingsProvider);
+              ref.invalidate(upcomingBookingsProvider(
+                _serviceTypeFilter == 'classes' ? null : _serviceTypeFilter,
+              ));
+              if (_tabController.index == 1) {
+                ref.invalidate(bookingHistoryProvider(
+                  _serviceTypeFilter == 'classes' ? null : _serviceTypeFilter,
+                ));
+              }
             },
           ),
         ],
-      ),
-      body: ref
-          .watch(studentBookingsProvider)
-          .when(
-            data: (bookings) {
-              if (bookings.isEmpty) {
-                return EmptyStateWidget.booking(
-                  action: ElevatedButton.icon(
-                    onPressed: () => context.push('/book-class'),
-                    icon: const Icon(Icons.book_online),
-                    label: Text(AppStrings.bookClass),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                );
-              }
-              return _buildBookingsList(context, bookings);
-            },
-            loading: () => const LoadingWidget(),
-            error: (error, stack) => AppErrorWidget.fromError(
-              error,
-              onRetry: () => ref.invalidate(studentBookingsProvider),
+        bottom: TabBar(
+          controller: _tabController,
+          labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          unselectedLabelStyle: GoogleFonts.inter(),
+          onTap: (index) {
+            if (index == 1 && _tabController.previousIndex == 0) {
+              ref.read(bookingHistoryProvider(_serviceTypeFilter));
+            }
+          },
+          tabs: const [
+            Tab(
+              icon: Icon(Icons.calendar_today, size: 20),
+              text: 'Próximas',
             ),
-          ),
+            Tab(
+              icon: Icon(Icons.history, size: 20),
+              text: 'Historial',
+            ),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildUpcomingTab(),
+          _buildHistoryTab(),
+        ],
+      ),
     );
   }
 
-  // Empty and error states are now handled by reusable widgets
+  Widget _buildUpcomingTab() {
+    return Column(
+      children: [
+        _buildFilterChips(),
+        Expanded(
+          child: ref
+              .watch(upcomingBookingsProvider(
+                _serviceTypeFilter == 'classes' ? null : _serviceTypeFilter,
+              ))
+              .when(
+                data: (bookings) {
+                  final filteredBookings =
+                      _filterBookingsByServiceType(bookings, _serviceTypeFilter);
+                  if (filteredBookings.isEmpty) {
+                    return EmptyStateWidget.booking(
+                      action: ElevatedButton.icon(
+                        onPressed: () => context.push('/book-class'),
+                        icon: const Icon(Icons.book_online),
+                        label: Text(AppStrings.bookClass),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  return _buildUpcomingList(filteredBookings);
+                },
+                loading: () => const LoadingWidget(),
+                error: (error, stack) => AppErrorWidget.fromError(
+                  error,
+                  onRetry: () => ref.invalidate(upcomingBookingsProvider(
+                        _serviceTypeFilter == 'classes'
+                            ? null
+                            : _serviceTypeFilter,
+                      )),
+                ),
+              ),
+        ),
+      ],
+    );
+  }
 
-  Widget _buildBookingsList(BuildContext context, List<BookingModel> bookings) {
-    final pendingBookings = bookings
-        .where((b) => b.status == 'pending')
-        .toList();
+  Widget _buildHistoryTab() {
+    return Column(
+      children: [
+        _buildFilterChips(),
+        Expanded(
+          child: ref
+              .watch(bookingHistoryProvider(
+                _serviceTypeFilter == 'classes' ? null : _serviceTypeFilter,
+              ))
+              .when(
+                data: (bookings) {
+                  final filteredBookings =
+                      _filterBookingsByServiceType(bookings, _serviceTypeFilter);
+                  if (filteredBookings.isEmpty) {
+                    return const Center(
+                      child: Text('No hay reservas en el historial'),
+                    );
+                  }
+                  return _buildHistoryList(filteredBookings);
+                },
+                loading: () => const LoadingWidget(),
+                error: (error, stack) => AppErrorWidget.fromError(
+                  error,
+                  onRetry: () =>
+                      ref.invalidate(bookingHistoryProvider(_serviceTypeFilter)),
+                ),
+              ),
+        ),
+      ],
+    );
+  }
 
-    final upcomingBookings = bookings
-        .where(
-          (b) =>
-              b.status == 'confirmed' &&
-              DateTime.parse(b.schedule.startTime).isAfter(DateTime.now()),
-        )
-        .toList();
+  Widget _buildFilterChips() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _buildFilterChip('Todas', null),
+            const Gap(8),
+            _buildFilterChip('Clases', 'classes'),
+            const Gap(8),
+            _buildFilterChip('Canchas', 'court_rental'),
+          ],
+        ),
+      ),
+    );
+  }
 
-    final pastBookings = bookings
-        .where(
-          (b) =>
-              b.status == 'confirmed' &&
-              DateTime.parse(b.schedule.startTime).isBefore(DateTime.now()),
-        )
-        .toList();
+  Widget _buildFilterChip(String label, String? value) {
+    final isSelected = _serviceTypeFilter == value;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() {
+          _serviceTypeFilter = selected ? value : null;
+        });
+        ref.invalidate(upcomingBookingsProvider(_serviceTypeFilter));
+        if (_tabController.index == 1) {
+          ref.invalidate(bookingHistoryProvider(_serviceTypeFilter));
+        }
+      },
+      selectedColor: Theme.of(context).colorScheme.primaryContainer,
+      checkmarkColor: Theme.of(context).colorScheme.onPrimaryContainer,
+    );
+  }
 
-    final cancelledBookings = bookings
-        .where((b) => b.status == 'cancelled')
-        .toList();
+  List<BookingModel> _filterBookingsByServiceType(
+    List<BookingModel> bookings,
+    String? filter,
+  ) {
+    if (filter == null) {
+      return bookings;
+    }
+    if (filter == 'classes') {
+      return bookings
+          .where((b) =>
+              b.serviceType == 'individual_class' ||
+              b.serviceType == 'group_class')
+          .toList();
+    }
+    return bookings.where((b) => b.serviceType == filter).toList();
+  }
+
+  Widget _buildUpcomingList(List<BookingModel> bookings) {
+    final now = DateTime.now();
+    final endOfWeek = now.add(Duration(days: 7 - now.weekday));
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final startOfWeekDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
+    final endOfWeekDate = DateTime(endOfWeek.year, endOfWeek.month, endOfWeek.day);
+
+    final thisWeekBookings = <BookingModel>[];
+    final laterBookings = <BookingModel>[];
+
+    for (final booking in bookings) {
+      final startTime = DateTime.parse(booking.schedule.startTime);
+      final bookingDate = DateTime(startTime.year, startTime.month, startTime.day);
+
+      if (bookingDate.isAfter(endOfWeekDate)) {
+        laterBookings.add(booking);
+      } else if (bookingDate.compareTo(startOfWeekDate) >= 0 &&
+          bookingDate.compareTo(endOfWeekDate) <= 0) {
+        thisWeekBookings.add(booking);
+      } else {
+        laterBookings.add(booking);
+      }
+    }
+
+    thisWeekBookings.sort((a, b) {
+      final dateA = DateTime.parse(a.schedule.startTime);
+      final dateB = DateTime.parse(b.schedule.startTime);
+      return dateA.compareTo(dateB);
+    });
+
+    laterBookings.sort((a, b) {
+      final dateA = DateTime.parse(a.schedule.startTime);
+      final dateB = DateTime.parse(b.schedule.startTime);
+      return dateA.compareTo(dateB);
+    });
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (pendingBookings.isNotEmpty) ...[
-            _buildSectionHeader(
-              context,
-              'Reservas Pendientes',
-              pendingBookings.length,
-            ),
+          if (thisWeekBookings.isNotEmpty) ...[
+            _buildSectionHeader(context, 'Esta Semana', thisWeekBookings.length),
             const Gap(12),
-            ...pendingBookings.map(
-              (booking) =>
-                  _buildBookingCard(context, booking, isUpcoming: true),
+            ...thisWeekBookings.map(
+              (booking) => _buildUpcomingCard(context, booking),
             ),
             const Gap(24),
           ],
-
-          if (upcomingBookings.isNotEmpty) ...[
-            _buildSectionHeader(
-              context,
-              'Próximas Clases',
-              upcomingBookings.length,
-            ),
+          if (laterBookings.isNotEmpty) ...[
+            _buildSectionHeader(context, 'Más adelante', laterBookings.length),
             const Gap(12),
-            ...upcomingBookings.map(
-              (booking) =>
-                  _buildBookingCard(context, booking, isUpcoming: true),
-            ),
-            const Gap(24),
-          ],
-
-          if (pastBookings.isNotEmpty) ...[
-            _buildSectionHeader(context, 'Clases Pasadas', pastBookings.length),
-            const Gap(12),
-            ...pastBookings.map(
-              (booking) =>
-                  _buildBookingCard(context, booking, isUpcoming: false),
-            ),
-            const Gap(24),
-          ],
-
-          if (cancelledBookings.isNotEmpty) ...[
-            _buildSectionHeader(
-              context,
-              'Canceladas',
-              cancelledBookings.length,
-            ),
-            const Gap(12),
-            ...cancelledBookings.map(
-              (booking) =>
-                  _buildBookingCard(context, booking, isUpcoming: false),
+            ...laterBookings.map(
+              (booking) => _buildUpcomingCard(context, booking),
             ),
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildHistoryList(List<BookingModel> bookings) {
+    final sortedBookings = List<BookingModel>.from(bookings)
+      ..sort((a, b) {
+        final dateA = DateTime.parse(a.schedule.startTime);
+        final dateB = DateTime.parse(b.schedule.startTime);
+        return dateB.compareTo(dateA);
+      });
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: sortedBookings.length,
+      itemBuilder: (context, index) {
+        return _buildHistoryCard(context, sortedBookings[index]);
+      },
     );
   }
 
@@ -182,9 +329,9 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
       children: [
         Text(
           title,
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
         ),
         const Gap(8),
         Container(
@@ -196,29 +343,25 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
           child: Text(
             count.toString(),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onPrimary,
-              fontWeight: FontWeight.w600,
-            ),
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildBookingCard(
-    BuildContext context,
-    BookingModel booking, {
-    required bool isUpcoming,
-  }) {
+  Widget _buildUpcomingCard(BuildContext context, BookingModel booking) {
     final startTime = DateTime.parse(booking.schedule.startTime);
     final endTime = DateTime.parse(booking.schedule.endTime);
-    final isToday =
-        startTime.day == DateTime.now().day &&
+    final isToday = startTime.day == DateTime.now().day &&
         startTime.month == DateTime.now().month &&
         startTime.year == DateTime.now().year;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -239,11 +382,11 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
                   child: Text(
                     booking.professor.name,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                          fontWeight: FontWeight.w600,
+                        ),
                   ),
                 ),
-                if (isUpcoming && isToday)
+                if (isToday)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -256,9 +399,9 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
                     child: Text(
                       'HOY',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
                     ),
                   ),
               ],
@@ -306,9 +449,9 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
                 Text(
                   CurrencyUtils.format(booking.price),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                 ),
               ],
             ),
@@ -325,13 +468,13 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
                   Text(
                     'Cancha: ${booking.court!.name}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
+                          fontWeight: FontWeight.w500,
+                        ),
                   ),
                 ],
               ),
             ],
-            if (isUpcoming && booking.status == 'confirmed') ...[
+            if (booking.status == 'confirmed' || booking.status == 'pending') ...[
               const Gap(16),
               Row(
                 children: [
@@ -360,6 +503,141 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildHistoryCard(BuildContext context, BookingModel booking) {
+    final startTime = DateTime.parse(booking.schedule.startTime);
+    final endTime = DateTime.parse(booking.schedule.endTime);
+    final statusColor = _statusStrategy.getColor(booking.status);
+    final statusLabel = _statusStrategy.getLabel(booking.status);
+    final statusIcon = _getStatusIcon(booking.status);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 1,
+      child: InkWell(
+        onTap: () => _showBookingDetails(context, booking),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const Gap(12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(statusIcon, size: 16, color: statusColor),
+                        const Gap(4),
+                        Text(
+                          statusLabel,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: statusColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const Gap(4),
+                    Text(
+                      booking.professor.name,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const Gap(4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const Gap(4),
+                        Text(
+                          '${_formatDate(startTime)} • ${_formatTime(startTime)} - ${_formatTime(endTime)}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                    const Gap(4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.sports_tennis,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const Gap(4),
+                        Text(
+                          _getServiceTypeText(booking.serviceType),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        if (booking.court != null) ...[
+                          const Gap(8),
+                          Icon(
+                            Icons.location_on,
+                            size: 14,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                          const Gap(4),
+                          Text(
+                            booking.court!.name,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    CurrencyUtils.format(booking.price),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
+                  const Gap(4),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status) {
+      case 'completed':
+        return Icons.check_circle;
+      case 'cancelled':
+        return Icons.cancel;
+      case 'confirmed':
+        return Icons.check_circle_outline;
+      case 'pending':
+        return Icons.pending;
+      default:
+        return Icons.info;
+    }
   }
 
   String _getServiceTypeText(String serviceType) {
@@ -427,7 +705,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Detalles de la Reserva'),
+        title: const Text('Detalles de la Reserva'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -479,7 +757,6 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
   }
 
   void _cancelBooking(BookingModel booking) {
-    // TODO: TEN-110 - Implement cancel booking functionality
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Funcionalidad de cancelación en desarrollo'),

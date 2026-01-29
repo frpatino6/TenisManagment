@@ -17,6 +17,44 @@ final recentActivitiesProvider =
       return repository.getRecentActivities();
     });
 
+final recentActivitiesFilteredProvider = FutureProvider.autoDispose
+    .family<List<RecentActivityModel>, ({DateTime? fromDate, DateTime? toDate, String? type})>(
+  (ref, params) async {
+    final repository = ref.watch(studentRepositoryProvider);
+    return repository.getRecentActivities(
+      fromDate: params.fromDate,
+      toDate: params.toDate,
+      type: params.type,
+    );
+  },
+);
+
+final recentActivitiesTabProvider = FutureProvider.autoDispose
+    .family<List<RecentActivityModel>, String?>((ref, typeFilter) async {
+  final repository = ref.watch(studentRepositoryProvider);
+  final now = DateTime.now();
+  final startOfToday = DateTime(now.year, now.month, now.day);
+  final sevenDaysAgo = startOfToday.subtract(const Duration(days: 7));
+  
+  return repository.getRecentActivities(
+    fromDate: sevenDaysAgo,
+    type: typeFilter,
+  );
+});
+
+final activityHistoryProvider = FutureProvider.autoDispose
+    .family<List<RecentActivityModel>, String?>((ref, typeFilter) async {
+  final repository = ref.watch(studentRepositoryProvider);
+  final now = DateTime.now();
+  final startOfToday = DateTime(now.year, now.month, now.day);
+  final sevenDaysAgo = startOfToday.subtract(const Duration(days: 7));
+  
+  return repository.getRecentActivities(
+    toDate: sevenDaysAgo.subtract(const Duration(seconds: 1)),
+    type: typeFilter,
+  );
+});
+
 final studentInfoProvider = FutureProvider.autoDispose<Map<String, dynamic>>((
   ref,
 ) async {
@@ -47,6 +85,30 @@ final studentBookingsProvider = FutureProvider.autoDispose<List<BookingModel>>((
 ) async {
   final repository = ref.watch(studentRepositoryProvider);
   return repository.getBookings();
+});
+
+final upcomingBookingsProvider = FutureProvider.autoDispose
+    .family<List<BookingModel>, String?>((ref, serviceTypeFilter) async {
+  final repository = ref.watch(studentRepositoryProvider);
+  final now = DateTime.now();
+  final startOfToday = DateTime(now.year, now.month, now.day);
+  
+  return repository.getBookings(
+    fromDate: startOfToday,
+    serviceType: serviceTypeFilter,
+  );
+});
+
+final bookingHistoryProvider = FutureProvider.autoDispose
+    .family<List<BookingModel>, String?>((ref, serviceTypeFilter) async {
+  final repository = ref.watch(studentRepositoryProvider);
+  final now = DateTime.now();
+  final startOfToday = DateTime(now.year, now.month, now.day);
+  
+  return repository.getBookings(
+    toDate: startOfToday.subtract(const Duration(seconds: 1)),
+    serviceType: serviceTypeFilter,
+  );
 });
 
 final paymentHistoryProvider = FutureProvider.autoDispose

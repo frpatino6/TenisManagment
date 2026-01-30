@@ -3,7 +3,7 @@
         <div class="flex justify-between items-center h-20">
             <!-- Logo -->
             <div class="flex-shrink-0 flex items-center gap-2 cursor-pointer" routerLink="/">
-                <img src="/images/favicon-96x96.png" alt="CourtHub" class="h-8 w-8 object-contain">
+                <img src="/images/favicon-96x96.png" alt="CourtHub" class="h-8 w-8 object-contain" fetchpriority="high">
                 <span
                     class="text-2xl font-bold bg-gradient-to-r from-tenis-dark to-tenis-green bg-clip-text text-transparent">
                     CourtHub
@@ -12,13 +12,14 @@
 
             <!-- Desktop Navigation -->
             <nav class="hidden md:flex space-x-8">
-                <a href="#white-label"
-                    class="text-gray-600 hover:text-tenis-green transition-colors font-medium">White Label</a>
-                <a href="#financial-dashboard"
+                <a href="#white-label" class="text-gray-600 hover:text-tenis-green transition-colors font-medium">White
+                    Label</a>
+                <a href="#features"
                     class="text-gray-600 hover:text-tenis-green transition-colors font-medium">Dashboard</a>
                 <a href="#loyalty"
                     class="text-gray-600 hover:text-tenis-green transition-colors font-medium">Fidelización</a>
-                <a href="#prices" class="text-gray-600 hover:text-tenis-green transition-colors font-medium">Precios</a>
+                <a href="#pricing"
+                    class="text-gray-600 hover:text-tenis-green transition-colors font-medium">Precios</a>
             </nav>
 
             <!-- Desktop Actions -->
@@ -28,7 +29,7 @@
                     Acceso Administrativo
                 </a>
                 <a href="#contact">
-                <app-ui-button variant="primary" label="Solicitar Demo"></app-ui-button>
+                    <app-ui-button variant="primary" label="Solicitar Demo"></app-ui-button>
                 </a>
             </div>
 
@@ -50,12 +51,13 @@
     <div *ngIf="isMenuOpen" class="md:hidden bg-white border-t border-gray-100 absolute w-full shadow-lg">
         <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 flex flex-col">
             <a href="#white-label" (click)="isMenuOpen = false"
-                class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-tenis-green hover:bg-gray-50">White Label</a>
-            <a href="#financial-dashboard" (click)="isMenuOpen = false"
+                class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-tenis-green hover:bg-gray-50">White
+                Label</a>
+            <a href="#features" (click)="isMenuOpen = false"
                 class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-tenis-green hover:bg-gray-50">Dashboard</a>
             <a href="#loyalty" (click)="isMenuOpen = false"
                 class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-tenis-green hover:bg-gray-50">Fidelización</a>
-            <a href="#prices" (click)="isMenuOpen = false"
+            <a href="#pricing" (click)="isMenuOpen = false"
                 class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-tenis-green hover:bg-gray-50">Precios</a>
             <div class="mt-4 px-3 flex flex-col space-y-3">
                 <a href="https://tennis-management-fcd54.web.app" target="_blank" rel="noopener noreferrer"
@@ -63,7 +65,7 @@
                     Acceso Administrativo
                 </a>
                 <a href="#contact">
-                <app-ui-button variant="primary" label="Solicitar Demo" [fullWidth]="true"></app-ui-button>
+                    <app-ui-button variant="primary" label="Solicitar Demo" [fullWidth]="true"></app-ui-button>
                 </a>
             </div>
         </div>

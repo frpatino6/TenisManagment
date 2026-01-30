@@ -3,6 +3,7 @@ import { MongoLeadRepository } from '../../infrastructure/repositories/MongoRepo
 import { CreateLeadUseCase } from '../use-cases/CreateLeadUseCase';
 import { LeadCreateSchema } from '../dtos/lead';
 import { Logger } from '../../infrastructure/services/Logger';
+import { EmailService } from '../../infrastructure/services/EmailService';
 
 /**
  * Controlador para operaciones públicas (sin autenticación).
@@ -11,11 +12,13 @@ import { Logger } from '../../infrastructure/services/Logger';
 export class PublicController {
     private readonly logger = new Logger({ context: 'PublicController' });
     private readonly createLeadUseCase: CreateLeadUseCase;
+    private readonly emailService: EmailService;
 
     constructor() {
         // Inyección manual de dependencias
         const leadRepository = new MongoLeadRepository();
         this.createLeadUseCase = new CreateLeadUseCase(leadRepository);
+        this.emailService = new EmailService();
     }
 
     /**
@@ -35,6 +38,16 @@ export class PublicController {
             const lead = await this.createLeadUseCase.execute(validatedData);
 
             this.logger.info('Lead procesado exitosamente', { leadId: lead.id });
+
+            // Notificación por email de forma asíncrona (no bloquea la respuesta)
+            this.emailService.sendDemoRequestNotification({
+                clubName: validatedData.clubName,
+                contactName: validatedData.contactName,
+                email: validatedData.email,
+                phone: validatedData.phone
+            }).catch(err => {
+                this.logger.error('Error asíncrono enviando notificación de lead', { error: err.message });
+            });
 
             res.status(201).json({
                 message: 'Lead registrado exitosamente',

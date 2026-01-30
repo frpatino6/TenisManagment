@@ -32,46 +32,72 @@ export class EmailService {
     }
 
     /**
-     * Enviar invitación a profesor
+     * Envía una notificación de solicitud de demo al administrador y una confirmación al usuario.
      */
-    async sendInvitationEmail(to: string, tenantName: string): Promise<boolean> {
+    async sendDemoRequestNotification(leadData: {
+        clubName: string;
+        contactName: string;
+        email: string;
+        phone: string;
+    }): Promise<boolean> {
         try {
-            const subject = `Invitación a unirse a ${tenantName}`;
-            // TODO: Mejorar template HTML con diseño real
-            const html = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>¡Has sido invitado!</h2>
-          <p>Hola,</p>
-          <p>El administrador de <strong>${tenantName}</strong> te ha invitado a unirte a su equipo de profesores en Tennis Management.</p>
-          <p>Para aceptar la invitación:</p>
-          <ol>
-            <li>Descarga la aplicación Tennis Management.</li>
-            <li>Regístrate usando este mismo correo electrónico: <strong>${to}</strong></li>
-            <li>¡Listo! Tu cuenta se vinculará automáticamente con el centro.</li>
-          </ol>
-          <br>
-          <p>Si ya tienes una cuenta, simplemente ignora este correo o contáctanos si crees que es un error.</p>
-        </div>
-      `;
+            // 1. Notificación al Administrador
+            const adminSubject = `Nueva Solicitud de Demo: ${leadData.clubName}`;
+            const adminHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                    <h2 style="color: #2D3748;">Nueva Solicitud de Demo</h2>
+                    <p>Se ha recibido una nueva solicitud desde la landing page:</p>
+                    <div style="background-color: #F7FAFC; padding: 20px; border-radius: 8px; border: 1px solid #E2E8F0;">
+                        <p><strong>Club:</strong> ${leadData.clubName}</p>
+                        <p><strong>Contacto:</strong> ${leadData.contactName}</p>
+                        <p><strong>Email:</strong> ${leadData.email}</p>
+                        <p><strong>Teléfono:</strong> ${leadData.phone}</p>
+                    </div>
+                </div>
+            `;
 
-            const info = await this.transporter.sendMail({
+            await this.transporter.sendMail({
                 from: config.email.from,
-                to,
-                subject,
-                html,
+                to: config.email.from, // Se envía al administrador (mismo correo de origen por defecto)
+                subject: adminSubject,
+                html: adminHtml,
             });
 
-            this.logger.info('Email de invitación enviado', { to, tenantName, messageId: info.messageId });
+            // 2. Auto-respuesta al Cliente
+            const userSubject = `Confirmación de Recepción: Solicitud de Demo CourtHub`;
+            const userHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6;">
+                    <div style="text-align: center; padding: 20px 0;">
+                        <h1 style="color: #2FB344;">¡Hola ${leadData.contactName}!</h1>
+                    </div>
+                    <p>Gracias por tu interés en <strong>CourtHub</strong>. Hemos recibido exitosamente tu solicitud para el club <strong>${leadData.clubName}</strong>.</p>
+                    <p>Uno de nuestro especialistas se pondrá en contacto contigo a la brevedad para agendar la demo y mostrarte cómo podemos ayudarte a optimizar la gestión de tu centro.</p>
+                    <p>Mientras tanto, si tienes alguna duda urgente, puedes responder a este correo.</p>
+                    <br>
+                    <hr style="border: 0; border-top: 1px solid #EEE;">
+                    <p style="font-size: 12px; color: #777; text-align: center;">&copy; ${new Date().getFullYear()} CourtHub - Gestión Inteligente de Tenis y Pádel</p>
+                </div>
+            `;
 
-            // Loguear URL de previsualización si es una cuenta de prueba de Ethereal
-            const previewUrl = nodemailer.getTestMessageUrl(info);
-            if (previewUrl) {
-                this.logger.info(`Preview URL: ${previewUrl}`);
-            }
+            const userInfo = await this.transporter.sendMail({
+                from: config.email.from,
+                to: leadData.email,
+                subject: userSubject,
+                html: userHtml,
+            });
+
+            this.logger.info('Notificación de demo y auto-respuesta enviadas', {
+                email: leadData.email,
+                club: leadData.clubName,
+                messageId: userInfo.messageId
+            });
 
             return true;
         } catch (error) {
-            this.logger.error('Error enviando email de invitación', { error: (error as Error).message, to });
+            this.logger.error('Error enviando notificaciones de demo', {
+                error: (error as Error).message,
+                email: leadData.email
+            });
             return false;
         }
     }

@@ -101,4 +101,46 @@ export class EmailService {
             return false;
         }
     }
+
+    /**
+     * Envía un email de invitación a un profesor.
+     */
+    async sendInvitationEmail(email: string, tenantName: string): Promise<boolean> {
+        try {
+            const subject = `Invitación a unirse a ${tenantName} en CourtHub`;
+            const html = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6;">
+                    <div style="text-align: center; padding: 20px 0;">
+                        <h1 style="color: #2FB344;">¡Hola!</h1>
+                    </div>
+                    <p>Has sido invitado a unirte como profesor al centro <strong>${tenantName}</strong> en nuestra plataforma <strong>CourtHub</strong>.</p>
+                    <p>Nuestra aplicación te permitirá gestionar tus clases, horarios y pagos de manera sencilla desde tu dispositivo móvil.</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="https://courthub.app/registro" style="background-color: #2FB344; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Comenzar ahora</a>
+                    </div>
+                    <p>Si ya tienes una cuenta, simplemente inicia sesión para ver tu nueva vinculación.</p>
+                    <p>Si tienes alguna duda, ponte en contacto con el administrador del centro.</p>
+                    <br>
+                    <hr style="border: 0; border-top: 1px solid #EEE;">
+                    <p style="font-size: 12px; color: #777; text-align: center;">&copy; ${new Date().getFullYear()} CourtHub - Gestión Inteligente de Tenis y Pádel</p>
+                </div>
+            `;
+
+            await this.transporter.sendMail({
+                from: config.email.from,
+                to: email,
+                subject,
+                html,
+            });
+
+            this.logger.info('Email de invitación enviado', { email, tenantName });
+            return true;
+        } catch (error) {
+            this.logger.error('Error enviando email de invitación', {
+                error: (error as Error).message,
+                email
+            });
+            return false;
+        }
+    }
 }

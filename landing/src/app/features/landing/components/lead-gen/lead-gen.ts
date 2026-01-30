@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UiButtonComponent } from '../../../../shared/components/ui-button/ui-button';
+import { LeadService } from '../../../../core/services/lead.service';
 
 @Component({
   selector: 'app-lead-gen',
@@ -14,8 +15,12 @@ export class LeadGenComponent {
   leadForm: FormGroup;
   isSubmitting = false;
   successMessage: string | null = null;
+  errorMessage: string | null = null;
 
-  constructor(private fb: FormBuilder) {
+  constructor(
+    private fb: FormBuilder,
+    private leadService: LeadService
+  ) {
     this.leadForm = this.fb.group({
       clubName: ['', [Validators.required, Validators.minLength(3)]],
       contactName: ['', [Validators.required, Validators.minLength(3)]],
@@ -27,20 +32,25 @@ export class LeadGenComponent {
   onSubmit() {
     if (this.leadForm.valid) {
       this.isSubmitting = true;
+      this.errorMessage = null;
+      this.successMessage = null;
 
-      // Simulate API call
-      console.log('Sending lead data to POST /api/public/leads:', this.leadForm.value);
+      this.leadService.createLead(this.leadForm.value).subscribe({
+        next: (response: { message: string; leadId: string }) => {
+          this.isSubmitting = false;
+          this.successMessage = '¡Gracias! Un agente activará tu club en breve.';
+          this.leadForm.reset();
 
-      setTimeout(() => {
-        this.isSubmitting = false;
-        this.successMessage = '¡Gracias! Un agente activará tu club en breve.';
-        this.leadForm.reset();
-
-        // Clear message after 5 seconds
-        setTimeout(() => {
-          this.successMessage = null;
-        }, 5000);
-      }, 1500);
+          // Limpiar mensaje después de 5 segundos
+          setTimeout(() => {
+            this.successMessage = null;
+          }, 5000);
+        },
+        error: (err: unknown) => {
+          this.isSubmitting = false;
+          this.errorMessage = 'Hubo un error al procesar tu solicitud. Por favor, intenta de nuevo.';
+        }
+      });
     } else {
       this.leadForm.markAllAsTouched();
     }

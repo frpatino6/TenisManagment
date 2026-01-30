@@ -541,8 +541,8 @@ class _TenantCourtsListScreenState
     if (confirmed != true) return;
 
     try {
-      final service = ref.read(tenantAdminServiceProvider);
-      await service.updateCourt(courtId: court.id, isActive: !court.isActive);
+      final repository = ref.read(tenantAdminRepositoryProvider);
+      await repository.updateCourt(courtId: court.id, isActive: !court.isActive);
 
       // Refresh list
       ref.invalidate(tenantCourtsProvider);
@@ -605,8 +605,8 @@ class _TenantCourtsListScreenState
     if (confirmed != true) return;
 
     try {
-      final service = ref.read(tenantAdminServiceProvider);
-      await service.deleteCourt(court.id);
+      final repository = ref.read(tenantAdminRepositoryProvider);
+      await repository.deleteCourt(court.id);
 
       // Refresh list
       ref.invalidate(tenantCourtsProvider);

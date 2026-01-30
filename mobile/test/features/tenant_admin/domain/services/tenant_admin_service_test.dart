@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
-import 'package:tennis_management/features/tenant_admin/domain/services/tenant_admin_service.dart';
+import 'package:tennis_management/features/tenant_admin/infrastructure/repositories/tenant_admin_repository_impl.dart';
 import 'package:tennis_management/features/tenant_admin/domain/models/tenant_booking_model.dart';
 import 'package:tennis_management/core/services/http_client.dart';
 
@@ -18,8 +18,8 @@ void main() {
     registerFallbackValue(Uri.parse('https://example.com'));
   });
 
-  group('TenantAdminService', () {
-    late TenantAdminService service;
+  group('TenantAdminRepositoryImpl', () {
+    late TenantAdminRepositoryImpl repository;
     late MockFirebaseAuth mockAuth;
     late MockUser mockUser;
     late MockAppHttpClient mockHttpClient;
@@ -29,7 +29,10 @@ void main() {
       mockUser = MockUser();
       mockHttpClient = MockAppHttpClient();
 
-      service = TenantAdminService(httpClient: mockHttpClient, auth: mockAuth);
+      repository = TenantAdminRepositoryImpl(
+        httpClient: mockHttpClient,
+        auth: mockAuth,
+      );
 
       when(() => mockAuth.currentUser).thenReturn(mockUser);
       when(
@@ -62,7 +65,7 @@ void main() {
           ),
         ).thenAnswer((_) async => http.Response(jsonEncode(bookingJson), 200));
 
-        final result = await service.getBookingDetails('b1');
+        final result = await repository.getBookingDetails('b1');
 
         expect(result, isA<TenantBookingModel>());
         expect(result.id, 'b1');
@@ -81,7 +84,7 @@ void main() {
           ),
         ).thenAnswer((_) async => http.Response('Not Found', 404));
 
-        expect(() => service.getBookingDetails('b1'), throwsException);
+        expect(() => repository.getBookingDetails('b1'), throwsException);
       },
     );
   });

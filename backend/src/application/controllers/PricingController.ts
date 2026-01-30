@@ -32,7 +32,6 @@ export class PricingController {
         updatedAt: config.updatedAt,
       });
     } catch (error) {
-      console.error('Error getting base pricing:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -71,7 +70,6 @@ export class PricingController {
         basePricing,
       });
     } catch (error) {
-      console.error('Error getting professor pricing:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -115,7 +113,6 @@ export class PricingController {
         hasCustomPricing: !!professor.pricing,
       });
     } catch (error) {
-      console.error('Error getting my pricing:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -125,17 +122,12 @@ export class PricingController {
    */
   updateMyPricing = async (req: Request, res: Response) => {
     try {
-      console.log('=== updateMyPricing called ===');
-      console.log('Request body:', req.body);
-      
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
-        console.log('ERROR: No firebaseUid');
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
       const { individualClass, groupClass, courtRental } = req.body;
-      console.log('Prices to update:', { individualClass, groupClass, courtRental });
 
       // Validate pricing values
       if (individualClass !== undefined && (individualClass < 0 || individualClass > 1000000)) {
@@ -160,7 +152,7 @@ export class PricingController {
 
       // Build update object
       const updateData: any = {};
-      
+
       if (individualClass !== undefined) {
         if (individualClass === null) {
           updateData['pricing.individualClass'] = null;
@@ -168,7 +160,7 @@ export class PricingController {
           updateData['pricing.individualClass'] = individualClass;
         }
       }
-      
+
       if (groupClass !== undefined) {
         if (groupClass === null) {
           updateData['pricing.groupClass'] = null;
@@ -176,7 +168,7 @@ export class PricingController {
           updateData['pricing.groupClass'] = groupClass;
         }
       }
-      
+
       if (courtRental !== undefined) {
         if (courtRental === null) {
           updateData['pricing.courtRental'] = null;
@@ -186,7 +178,6 @@ export class PricingController {
       }
 
       // Update using findOneAndUpdate
-      console.log('Updating professor with data:', updateData);
       const updatedProfessor = await ProfessorModel.findOneAndUpdate(
         { authUserId: authUser._id },
         { $set: updateData },
@@ -194,11 +185,8 @@ export class PricingController {
       );
 
       if (!updatedProfessor) {
-        console.log('ERROR: Professor not found after update');
         return res.status(404).json({ error: 'Error al actualizar precios' });
       }
-      
-      console.log('Professor updated successfully:', updatedProfessor.pricing);
 
       // Get base pricing for response
       const baseConfig = await SystemConfigModel.findOne({ key: 'base_pricing' });
@@ -219,7 +207,6 @@ export class PricingController {
         hasCustomPricing: !!updatedProfessor.pricing && Object.keys(updatedProfessor.pricing).length > 0,
       });
     } catch (error) {
-      console.error('Error updating pricing:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -260,7 +247,6 @@ export class PricingController {
         hasCustomPricing: false,
       });
     } catch (error) {
-      console.error('Error resetting pricing:', error);
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

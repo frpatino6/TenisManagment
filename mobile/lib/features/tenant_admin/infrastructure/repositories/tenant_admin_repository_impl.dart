@@ -4,29 +4,48 @@ import '../../../../core/config/app_config.dart';
 import '../../../../core/exceptions/exceptions.dart';
 import '../../../../core/services/http_client.dart';
 import '../../../../core/constants/timeouts.dart';
-import '../models/tenant_metrics_model.dart';
-import '../models/tenant_config_model.dart';
-import '../models/tenant_professor_model.dart';
-import '../models/tenant_court_model.dart';
-import '../models/tenant_booking_model.dart';
-import '../models/booking_stats_model.dart';
-import '../models/tenant_student_model.dart';
-import '../models/tenant_payment_model.dart';
-import '../models/tenant_debt_report_model.dart';
+import '../../domain/repositories/tenant_admin_repository.dart';
+import '../../domain/models/tenant_metrics_model.dart';
+import '../../domain/models/tenant_config_model.dart';
+import '../../domain/models/tenant_professor_model.dart';
+import '../../domain/models/tenant_court_model.dart';
+import '../../domain/models/tenant_booking_model.dart';
+import '../../domain/models/booking_stats_model.dart';
+import '../../domain/models/tenant_student_model.dart';
+import '../../domain/models/tenant_payment_model.dart';
+import '../../domain/models/tenant_debt_report_model.dart';
 
-/// Service responsible for tenant admin operations
-/// Handles API communication for tenant admin endpoints
-class TenantAdminService {
+/// Infrastructure implementation of [TenantAdminRepository]
+/// 
+/// Handles all HTTP communication, authentication, and data parsing.
+/// This is where all "dirty" infrastructure concerns live.
+class TenantAdminRepositoryImpl implements TenantAdminRepository {
   final FirebaseAuth _auth;
   final String _baseUrl = AppConfig.apiBaseUrl;
   final AppHttpClient _httpClient;
 
-  TenantAdminService({required AppHttpClient httpClient, FirebaseAuth? auth})
-    : _httpClient = httpClient,
-      _auth = auth ?? FirebaseAuth.instance;
+  TenantAdminRepositoryImpl({
+    required AppHttpClient httpClient,
+    FirebaseAuth? auth,
+  })  : _httpClient = httpClient,
+        _auth = auth ?? FirebaseAuth.instance;
 
-  /// GET /api/tenant/reports/debts
-  /// Get debt report for the tenant
+  /// Get authorization headers
+  Future<Map<String, String>> _getAuthHeaders() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw AuthException.notAuthenticated();
+    }
+
+    final idToken = await user.getIdToken(true);
+    if (idToken == null) {
+      throw AuthException.tokenExpired();
+    }
+
+    return {'Authorization': 'Bearer $idToken'};
+  }
+
+  @override
   Future<TenantDebtReportModel> getDebtReport({String? search}) async {
     try {
       final headers = await _getAuthHeaders();
@@ -65,23 +84,7 @@ class TenantAdminService {
     }
   }
 
-  /// Get authorization headers
-  Future<Map<String, String>> _getAuthHeaders() async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      throw AuthException.notAuthenticated();
-    }
-
-    final idToken = await user.getIdToken(true);
-    if (idToken == null) {
-      throw AuthException.tokenExpired();
-    }
-
-    return {'Authorization': 'Bearer $idToken'};
-  }
-
-  /// GET /api/tenant/metrics
-  /// Get metrics for the tenant
+  @override
   Future<TenantMetricsModel> getMetrics() async {
     try {
       final headers = await _getAuthHeaders();
@@ -121,8 +124,7 @@ class TenantAdminService {
     }
   }
 
-  /// GET /api/tenant/me
-  /// Get tenant information
+  @override
   Future<TenantConfigModel> getTenantInfo() async {
     try {
       final headers = await _getAuthHeaders();
@@ -162,8 +164,7 @@ class TenantAdminService {
     }
   }
 
-  /// GET /api/tenant/payments
-  /// List tenant payment transactions
+  @override
   Future<TenantPaymentsResponse> getPayments({
     int page = 1,
     int limit = 20,
@@ -241,8 +242,7 @@ class TenantAdminService {
     }
   }
 
-  /// PUT /api/tenant/me
-  /// Update tenant configuration
+  @override
   Future<TenantConfigModel> updateTenantConfig({
     String? name,
     String? slug,
@@ -299,11 +299,9 @@ class TenantAdminService {
     }
   }
 
-  /// PUT /api/tenant/operating-hours
-  /// Update operating hours
+  @override
   Future<TenantConfigModel> updateOperatingHours({
-    required List<Map<String, dynamic>>
-    schedule, // Array of {dayOfWeek, open, close}
+    required List<Map<String, dynamic>> schedule,
   }) async {
     try {
       final headers = await _getAuthHeaders();
@@ -321,7 +319,6 @@ class TenantAdminService {
       );
 
       if (response.statusCode == 200) {
-        // Operating hours update returns the full tenant config
         final data = json.decode(response.body) as Map<String, dynamic>;
         return TenantConfigModel.fromJson(data);
       } else if (response.statusCode == 401 || response.statusCode == 403) {
@@ -355,8 +352,7 @@ class TenantAdminService {
     }
   }
 
-  /// GET /api/tenant/professors
-  /// Get list of professors for the tenant
+  @override
   Future<List<TenantProfessorModel>> getProfessors() async {
     try {
       final headers = await _getAuthHeaders();
@@ -402,8 +398,7 @@ class TenantAdminService {
     }
   }
 
-  /// POST /api/tenant/professors/invite
-  /// Invite a professor to the tenant
+  @override
   Future<void> inviteProfessor({
     required String email,
     Map<String, dynamic>? pricing,
@@ -425,7 +420,7 @@ class TenantAdminService {
       );
 
       if (response.statusCode == 201) {
-        return; // Success
+        return;
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         throw AuthException.tokenExpired();
       } else if (response.statusCode == 404) {
@@ -462,8 +457,7 @@ class TenantAdminService {
     }
   }
 
-  /// PATCH /api/tenant/professors/:id/activate
-  /// Activate a professor in the tenant
+  @override
   Future<void> activateProfessor(String professorId) async {
     try {
       final headers = await _getAuthHeaders();
@@ -478,7 +472,7 @@ class TenantAdminService {
       );
 
       if (response.statusCode == 200) {
-        return; // Success
+        return;
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         throw AuthException.tokenExpired();
       } else if (response.statusCode == 404) {
@@ -508,8 +502,7 @@ class TenantAdminService {
     }
   }
 
-  /// PATCH /api/tenant/professors/:id/deactivate
-  /// Deactivate a professor in the tenant
+  @override
   Future<void> deactivateProfessor(String professorId) async {
     try {
       final headers = await _getAuthHeaders();
@@ -524,7 +517,7 @@ class TenantAdminService {
       );
 
       if (response.statusCode == 200) {
-        return; // Success
+        return;
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         throw AuthException.tokenExpired();
       } else if (response.statusCode == 404) {
@@ -554,8 +547,7 @@ class TenantAdminService {
     }
   }
 
-  /// PUT /api/tenant/professors/:id
-  /// Update professor details
+  @override
   Future<TenantProfessorModel> updateProfessor({
     required String professorId,
     String? name,
@@ -616,8 +608,7 @@ class TenantAdminService {
     }
   }
 
-  /// GET /api/tenant/courts
-  /// Get list of courts for the tenant
+  @override
   Future<List<TenantCourtModel>> getCourts() async {
     try {
       final headers = await _getAuthHeaders();
@@ -662,8 +653,7 @@ class TenantAdminService {
     }
   }
 
-  /// POST /api/tenant/courts
-  /// Create a new court
+  @override
   Future<TenantCourtModel> createCourt({
     required String name,
     required String type,
@@ -724,8 +714,7 @@ class TenantAdminService {
     }
   }
 
-  /// PUT /api/tenant/courts/:id
-  /// Update a court
+  @override
   Future<TenantCourtModel> updateCourt({
     required String courtId,
     String? name,
@@ -782,8 +771,7 @@ class TenantAdminService {
     }
   }
 
-  /// DELETE /api/tenant/courts/:id
-  /// Delete a court
+  @override
   Future<void> deleteCourt(String courtId) async {
     try {
       final headers = await _getAuthHeaders();
@@ -822,8 +810,7 @@ class TenantAdminService {
     }
   }
 
-  /// GET /api/tenant/bookings
-  /// Get list of bookings with filters
+  @override
   Future<Map<String, dynamic>> getBookings({
     String? status,
     DateTime? from,
@@ -902,8 +889,7 @@ class TenantAdminService {
     }
   }
 
-  /// GET /api/tenant/bookings/calendar
-  /// Get calendar view of bookings
+  @override
   Future<Map<String, List<Map<String, dynamic>>>> getBookingCalendar({
     required DateTime from,
     required DateTime to,
@@ -969,8 +955,7 @@ class TenantAdminService {
     }
   }
 
-  /// GET /api/tenant/bookings/:id
-  /// Get booking details
+  @override
   Future<TenantBookingModel> getBookingDetails(String bookingId) async {
     try {
       final headers = await _getAuthHeaders();
@@ -1013,8 +998,7 @@ class TenantAdminService {
     }
   }
 
-  /// PATCH /api/tenant/bookings/:id/cancel
-  /// Cancel a booking
+  @override
   Future<void> cancelBooking(String bookingId, {String? reason}) async {
     try {
       final headers = await _getAuthHeaders();
@@ -1031,7 +1015,7 @@ class TenantAdminService {
       );
 
       if (response.statusCode == 200) {
-        return; // Success
+        return;
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         throw AuthException.tokenExpired();
       } else if (response.statusCode == 404) {
@@ -1066,8 +1050,7 @@ class TenantAdminService {
     }
   }
 
-  /// PATCH /api/tenant/bookings/:id/confirm
-  /// Confirm a booking and register manual payment
+  @override
   Future<void> confirmBooking(String bookingId, {String? paymentStatus}) async {
     try {
       final headers = await _getAuthHeaders();
@@ -1084,7 +1067,7 @@ class TenantAdminService {
       );
 
       if (response.statusCode == 200) {
-        return; // Success
+        return;
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         throw AuthException.tokenExpired();
       } else if (response.statusCode == 404) {
@@ -1119,8 +1102,7 @@ class TenantAdminService {
     }
   }
 
-  /// GET /api/tenant/bookings/stats
-  /// Get booking statistics
+  @override
   Future<BookingStatsModel> getBookingStats({
     DateTime? from,
     DateTime? to,
@@ -1170,8 +1152,7 @@ class TenantAdminService {
     }
   }
 
-  /// GET /api/tenant/students
-  /// Get list of students with filters and pagination
+  @override
   Future<TenantStudentsResponse> getStudents({
     String? search,
     int page = 1,
@@ -1223,8 +1204,7 @@ class TenantAdminService {
     }
   }
 
-  /// GET /api/tenant/students/:id
-  /// Get detailed information of a student
+  @override
   Future<TenantStudentDetailsModel> getStudentDetails(String studentId) async {
     try {
       final headers = await _getAuthHeaders();
@@ -1267,12 +1247,11 @@ class TenantAdminService {
     }
   }
 
-  /// PATCH /api/tenant/students/:id/balance
-  /// Update student balance
+  @override
   Future<double> updateStudentBalance(
     String studentId, {
     required double amount,
-    required String type, // 'add' | 'subtract' | 'set'
+    required String type,
     String? reason,
   }) async {
     try {
@@ -1326,8 +1305,7 @@ class TenantAdminService {
     }
   }
 
-  /// PATCH /api/tenant/payments/:id/confirm
-  /// Confirm a manual payment
+  @override
   Future<void> confirmPayment(String paymentId) async {
     try {
       final headers = await _getAuthHeaders();
@@ -1340,7 +1318,7 @@ class TenantAdminService {
       );
 
       if (response.statusCode == 200) {
-        return; // Success
+        return;
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         throw AuthException.tokenExpired();
       } else if (response.statusCode == 404) {

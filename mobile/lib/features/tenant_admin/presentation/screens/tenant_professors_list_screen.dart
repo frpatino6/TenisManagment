@@ -673,11 +673,11 @@ class _TenantProfessorsListScreenState
     if (confirmed != true) return;
 
     try {
-      final service = ref.read(tenantAdminServiceProvider);
+      final repository = ref.read(tenantAdminRepositoryProvider);
       if (professor.isActive) {
-        await service.deactivateProfessor(professor.id);
+        await repository.deactivateProfessor(professor.id);
       } else {
-        await service.activateProfessor(professor.id);
+        await repository.activateProfessor(professor.id);
       }
 
       // Refresh list

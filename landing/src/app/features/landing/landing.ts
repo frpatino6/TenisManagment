@@ -10,6 +10,8 @@ import { SavingsCalculatorComponent } from './components/savings-calculator/savi
 import { WhiteLabelComponent } from './components/white-label/white-label';
 import { LoyaltyComponent } from './components/loyalty/loyalty';
 import { ProofComponent } from './components/proof/proof';
+import { ProcessComponent } from './components/process/process';
+import { TournamentsPreviewComponent } from './components/tournaments-preview/tournaments-preview';
 import { SeoService } from '../../core/services/seo.service';
 
 @Component({
@@ -19,6 +21,8 @@ import { SeoService } from '../../core/services/seo.service';
         HeaderComponent,
         FooterComponent,
         HeroComponent,
+        ProcessComponent,
+        TournamentsPreviewComponent,
         ProofComponent,
         WhiteLabelComponent,
         FeaturesComponent,
@@ -34,8 +38,8 @@ import { SeoService } from '../../core/services/seo.service';
 export class LandingComponent {
     constructor(private seo: SeoService) {
         this.seo.updateMetaTags({
-            title: 'CourtHub | BI financiero para clubes de raqueta',
-            description: 'Tome decisiones basadas en datos con dashboard ejecutivo, ahorro por monedero y desglose por servicio.',
+            title: 'CourtHub | Gestión de Tenis y Administración de Clubes de Raqueta',
+            description: 'Optimice su academia de tenis con CourtHub. Gestión inteligente de inventario, reservas, rankings y monedero digital profesionales.',
             image: 'https://courthub.co/images/og-image-1200x630.jpg',
             url: 'https://courthub.co/'
         });

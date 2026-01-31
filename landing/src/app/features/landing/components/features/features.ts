@@ -11,33 +11,33 @@ import { CommonModule } from '@angular/common';
 export class FeaturesComponent {
   features = [
     {
-      title: 'Dashboard Financiero',
-      description: 'Reportes de ingresos (Facturación) con ahorro real del club y ticket promedio por servicio.',
-      icon: 'chart-bar'
+      title: 'Su Club en su Bolsillo',
+      description: 'Control total desde su móvil. Supervise ingresos, reservas y personal en tiempo real con la tranquilidad de tener el mando total.',
+      icon: 'device-mobile'
     },
     {
-      title: 'Pagos Automatizados',
-      description: 'Ecosistema de pagos propios vía Wompi para eliminar micro-comisiones y acelerar la cobranza.',
+      title: 'Recaudo Automatizado',
+      description: 'Diga adiós a la cobranza manual. El monedero digital gestiona y automatiza el cobro de saldos pendientes sin errores.',
       icon: 'credit-card'
     },
     {
-      title: 'Penetración de Monedero',
-      description: 'Controle la adopción del monedero por parte de socios y su impacto en la recurrencia.',
+      title: 'Control de Profesores en Cancha',
+      description: 'Elimine las planillas de papel. Los profesores marcan asistencia en segundos y el pago de sus clases se calcula automáticamente.',
       icon: 'users'
     },
     {
-      title: 'Desglose Ejecutivo',
-      description: 'Rentabilidad por tipo de servicio: clases vs. alquiler de pistas.',
+      title: 'Rentabilidad Operativa',
+      description: 'Sepa exactamente qué servicios le dejan más dinero. Compare la ganancia real entre clases grupales, individuales y alquiler de pistas.',
       icon: 'database'
     },
     {
-      title: 'Rendimiento por periodos',
-      description: 'Comparativa 7, 30 y 90 días para detectar picos y ajustar estrategia.',
+      title: 'Seguro de Retención',
+      description: 'Detecte a tiempo cuando un alumno deja de asistir y actúe automáticamente antes de que se retire del club.',
       icon: 'calendar'
     },
     {
-      title: 'Proyecciones y alertas',
-      description: 'Anticipe desviaciones y tome decisiones con señales tempranas del negocio.',
+      title: 'Cero Fugas de Dinero',
+      description: 'Recupere hasta un 5% de sus ingresos eliminando comisiones bancarias innecesarias y errores de registro manual.',
       icon: 'chart-bar'
     }
   ];

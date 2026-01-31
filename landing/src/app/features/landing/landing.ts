@@ -39,7 +39,7 @@ export class LandingComponent {
     constructor(private seo: SeoService) {
         this.seo.updateMetaTags({
             title: 'CourtHub | Gestión de Tenis y Administración de Clubes de Raqueta',
-            description: 'Optimice su academia de tenis con CourtHub. Gestión inteligente de inventario, reservas, rankings y monedero digital profesionales.',
+            description: 'Optimice su academia de tenis con CourtHub. Gestión sencilla de inventario, reservas, rankings y monedero digital profesionales.',
             image: 'https://courthub.co/images/og-image-1200x630.jpg',
             url: 'https://courthub.co/'
         });

@@ -1,0 +1,32 @@
+Analyzing mobile...
+
+   info - integration_test/balance_payment_flow_test.dart:61:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - integration_test/balance_payment_flow_test.dart:64:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - integration_test/balance_payment_flow_test.dart:70:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - integration_test/balance_payment_flow_test.dart:73:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - integration_test/balance_payment_flow_test.dart:193:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - integration_test/balance_payment_flow_test.dart:196:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - integration_test/balance_payment_flow_test.dart:219:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - integration_test/balance_payment_flow_test.dart:228:7 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - integration_test/balance_payment_flow_test.dart:242:5 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - integration_test/balance_payment_flow_test.dart:256:9 - Don't invoke 'print' in production code. Try using a logging framework. - avoid_print
+   info - lib/features/booking/application/commands/commands.dart:1:1 - Dangling library doc comment. Add a 'library' directive after the library comment. - dangling_library_doc_comments
+   info - lib/features/matches/presentation/screens/report_match_screen.dart:181:15 - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/matches/presentation/screens/report_match_screen.dart:195:15 - 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/ranking/presentation/providers/ranking_providers.dart:50:18 - Unnecessary use of multiple underscores. Try using '_'. - unnecessary_underscores
+   info - lib/features/tenant/domain/models/tenant_model.dart:5:16 - The member 'id' overrides an inherited member but isn't annotated with '@override'. Try adding the '@override' annotation. - annotate_overrides
+   info - lib/features/tenant/domain/models/tenant_model.dart:6:16 - The member 'name' overrides an inherited member but isn't annotated with '@override'. Try adding the '@override' annotation. - annotate_overrides
+   info - lib/features/tenant/domain/models/tenant_model.dart:7:16 - The member 'slug' overrides an inherited member but isn't annotated with '@override'. Try adding the '@override' annotation. - annotate_overrides
+   info - lib/features/tenant/domain/models/tenant_model.dart:10:17 - The member 'logo' overrides an inherited member but isn't annotated with '@override'. Try adding the '@override' annotation. - annotate_overrides
+   info - lib/features/tenant/domain/models/tenant_model.dart:11:31 - The member 'config' overrides an inherited member but isn't annotated with '@override'. Try adding the '@override' annotation. - annotate_overrides
+   info - lib/features/tenant_admin/presentation/screens/tenant_debt_report_screen.dart:210:49 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/tenant_admin/presentation/screens/tenant_student_details_screen.dart:415:30 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - lib/features/tenant_admin/presentation/screens/tenant_student_details_screen.dart:425:30 - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check. Guard a 'State.context' use with a 'mounted' check on the State, and other BuildContext use with a 'mounted' check on the BuildContext. - use_build_context_synchronously
+   info - lib/features/tournaments/presentation/screens/tournament_detail_screen.dart:141:29 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/tournaments/presentation/screens/tournament_detail_screen.dart:176:30 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/tournaments/presentation/widgets/bracket_match_card.dart:35:35 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/tournaments/presentation/widgets/bracket_match_card.dart:71:40 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/tournaments/presentation/widgets/tournament_card.dart:91:29 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+   info - lib/features/tournaments/presentation/widgets/tournament_card.dart:119:22 - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss. Try replacing the use of the deprecated member with the replacement. - deprecated_member_use
+
+28 issues found.

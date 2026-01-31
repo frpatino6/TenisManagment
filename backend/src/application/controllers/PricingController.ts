@@ -3,6 +3,8 @@ import { SystemConfigModel } from '../../infrastructure/database/models/SystemCo
 import { ProfessorModel } from '../../infrastructure/database/models/ProfessorModel';
 import { AuthUserModel } from '../../infrastructure/database/models/AuthUserModel';
 
+import { Logger } from '../../infrastructure/services/Logger';
+
 // Default base pricing
 const DEFAULT_BASE_PRICING = {
   individualClass: 50000,
@@ -11,6 +13,12 @@ const DEFAULT_BASE_PRICING = {
 };
 
 export class PricingController {
+  private readonly logger: Logger;
+
+  constructor() {
+    this.logger = new Logger({ service: 'PricingController' });
+  }
+
   /**
    * Get base pricing configuration (system-wide defaults)
    */
@@ -26,13 +34,15 @@ export class PricingController {
         });
       }
 
+      this.logger.info('Base pricing retrieved', { source: config ? 'system' : 'default' });
+
       res.json({
-        pricing: config.value,
-        source: 'system',
-        updatedAt: config.updatedAt,
+        pricing: config?.value || DEFAULT_BASE_PRICING,
+        source: config ? 'system' : 'default',
+        updatedAt: config?.updatedAt,
       });
     } catch (error) {
-      console.error('Error getting base pricing:', error);
+      this.logger.error('Error getting base pricing', { error: (error as Error).message });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -63,6 +73,8 @@ export class PricingController {
         courtRental: professor.pricing?.courtRental ?? basePricing.courtRental,
       };
 
+      this.logger.info('Producer pricing retrieved', { professorId, professorName: professor.name });
+
       res.json({
         professorId: professor._id,
         professorName: professor.name,
@@ -71,7 +83,7 @@ export class PricingController {
         basePricing,
       });
     } catch (error) {
-      console.error('Error getting professor pricing:', error);
+      this.logger.error('Error getting professor pricing', { error: (error as Error).message, professorId: req.params.professorId });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -108,6 +120,8 @@ export class PricingController {
         courtRental: professor.pricing?.courtRental ?? basePricing.courtRental,
       };
 
+      this.logger.info('My pricing retrieved', { professorId: professor._id });
+
       res.json({
         pricing: effectivePricing,
         customPricing: professor.pricing || {},
@@ -115,7 +129,7 @@ export class PricingController {
         hasCustomPricing: !!professor.pricing,
       });
     } catch (error) {
-      console.error('Error getting my pricing:', error);
+      this.logger.error('Error getting my pricing', { error: (error as Error).message });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -125,17 +139,14 @@ export class PricingController {
    */
   updateMyPricing = async (req: Request, res: Response) => {
     try {
-      console.log('=== updateMyPricing called ===');
-      console.log('Request body:', req.body);
-      
       const firebaseUid = req.user?.uid;
       if (!firebaseUid) {
-        console.log('ERROR: No firebaseUid');
+        this.logger.warn('No firebaseUid found in updateMyPricing');
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
       const { individualClass, groupClass, courtRental } = req.body;
-      console.log('Prices to update:', { individualClass, groupClass, courtRental });
+      this.logger.info('Updating pricing', { firebaseUid, prices: { individualClass, groupClass, courtRental } });
 
       // Validate pricing values
       if (individualClass !== undefined && (individualClass < 0 || individualClass > 1000000)) {
@@ -160,33 +171,20 @@ export class PricingController {
 
       // Build update object
       const updateData: any = {};
-      
+
       if (individualClass !== undefined) {
-        if (individualClass === null) {
-          updateData['pricing.individualClass'] = null;
-        } else {
-          updateData['pricing.individualClass'] = individualClass;
-        }
+        updateData['pricing.individualClass'] = individualClass;
       }
-      
+
       if (groupClass !== undefined) {
-        if (groupClass === null) {
-          updateData['pricing.groupClass'] = null;
-        } else {
-          updateData['pricing.groupClass'] = groupClass;
-        }
+        updateData['pricing.groupClass'] = groupClass;
       }
-      
+
       if (courtRental !== undefined) {
-        if (courtRental === null) {
-          updateData['pricing.courtRental'] = null;
-        } else {
-          updateData['pricing.courtRental'] = courtRental;
-        }
+        updateData['pricing.courtRental'] = courtRental;
       }
 
       // Update using findOneAndUpdate
-      console.log('Updating professor with data:', updateData);
       const updatedProfessor = await ProfessorModel.findOneAndUpdate(
         { authUserId: authUser._id },
         { $set: updateData },
@@ -194,11 +192,11 @@ export class PricingController {
       );
 
       if (!updatedProfessor) {
-        console.log('ERROR: Professor not found after update');
+        this.logger.error('Professor not found after update', { authUserId: authUser._id });
         return res.status(404).json({ error: 'Error al actualizar precios' });
       }
-      
-      console.log('Professor updated successfully:', updatedProfessor.pricing);
+
+      this.logger.info('Pricing updated successfully', { professorId: updatedProfessor._id });
 
       // Get base pricing for response
       const baseConfig = await SystemConfigModel.findOne({ key: 'base_pricing' });
@@ -219,7 +217,7 @@ export class PricingController {
         hasCustomPricing: !!updatedProfessor.pricing && Object.keys(updatedProfessor.pricing).length > 0,
       });
     } catch (error) {
-      console.error('Error updating pricing:', error);
+      this.logger.error('Error updating pricing', { error: (error as Error).message });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };
@@ -252,6 +250,8 @@ export class PricingController {
       const baseConfig = await SystemConfigModel.findOne({ key: 'base_pricing' });
       const basePricing = baseConfig?.value || DEFAULT_BASE_PRICING;
 
+      this.logger.info('Pricing reset to default', { professorId: professor._id });
+
       res.json({
         message: 'Precios restablecidos a valores base',
         pricing: basePricing,
@@ -260,7 +260,7 @@ export class PricingController {
         hasCustomPricing: false,
       });
     } catch (error) {
-      console.error('Error resetting pricing:', error);
+      this.logger.error('Error resetting pricing', { error: (error as Error).message });
       res.status(500).json({ error: 'Error interno del servidor' });
     }
   };

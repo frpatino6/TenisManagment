@@ -40,6 +40,11 @@ import '../../features/tenant_admin/presentation/screens/tenant_student_details_
 import '../../features/tenant_admin/presentation/screens/tenant_professor_details_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_payments_list_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_debt_report_screen.dart';
+import '../../features/ranking/presentation/screens/ranking_screen.dart';
+import '../../features/tournaments/presentation/screens/tournaments_list_screen.dart';
+import '../../features/tournaments/presentation/screens/tournament_detail_screen.dart';
+import '../../features/tournaments/presentation/screens/create_tournament_screen.dart';
+import '../../features/tournaments/presentation/screens/bracket_view_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../providers/tenant_provider.dart';
 
@@ -120,7 +125,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         // tenant_admin should NEVER see select-tenant screen
         if (user.role == 'tenant_admin') {
           if (currentPath != '/tenant-admin-home' &&
-              !currentPath.startsWith('/tenant-')) {
+              !currentPath.startsWith('/tenant-') &&
+              currentPath != '/ranking' &&
+              !currentPath.startsWith('/tournaments')) {
             return '/tenant-admin-home';
           }
           return null;
@@ -380,6 +387,39 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/select-tenant',
         name: 'select-tenant',
         builder: (context, state) => const SelectTenantScreen(),
+      ),
+      GoRoute(
+        path: '/ranking',
+        name: 'ranking',
+        builder: (context, state) => const RankingScreen(),
+      ),
+      GoRoute(
+        path: '/tournaments',
+        name: 'tournaments',
+        builder: (context, state) => const TournamentsListScreen(),
+      ),
+      GoRoute(
+        path: '/tournaments/create',
+        name: 'create-tournament',
+        builder: (context, state) => const CreateTournamentScreen(),
+      ),
+      GoRoute(
+        path: '/tournaments/:id',
+        name: 'tournament-detail',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return TournamentDetailScreen(tournamentId: id);
+        },
+      ),
+      GoRoute(
+        path: '/tournaments/:id/bracket/:categoryId',
+        name: 'tournament-bracket',
+        builder: (context, state) {
+          return BracketViewScreen(
+            tournamentId: state.pathParameters['id']!,
+            categoryId: state.pathParameters['categoryId']!,
+          );
+        },
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

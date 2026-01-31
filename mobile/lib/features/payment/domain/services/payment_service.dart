@@ -17,6 +17,12 @@ class PaymentService {
     : _auth = firebaseAuth ?? FirebaseAuth.instance,
       _httpClient = httpClient ?? http.Client();
 
+  /// Inicia el proceso de pago.
+  ///
+  /// [amount] Monto a pagar.
+  /// [tenantId] ID del tenant.
+  /// [bookingData] Información opcional de la reserva.
+  /// [redirectUrl] URL de redirección tras el pago.
   Future<Map<String, dynamic>> initPayment(
     double amount,
     String tenantId, {
@@ -86,6 +92,9 @@ class PaymentService {
     }
   }
 
+  /// Obtiene el estado de una transacción.
+  ///
+  /// Requiere [transactionId] o [reference].
   Future<Map<String, dynamic>> getTransactionStatus({
     String? transactionId,
     String? reference,

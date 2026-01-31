@@ -10,6 +10,9 @@ import tenant from './tenant';
 import config from './config';
 import payment from './payment';
 import test from './test';
+import ranking from './ranking';
+import match from './match';
+import tournament from './tournament';
 
 const router = Router();
 
@@ -26,6 +29,9 @@ router.use('/student', student);
 router.use('/pricing', pricing);
 router.use('/admin', admin);
 router.use('/tenant', tenant);
+router.use('/ranking', ranking);
+router.use('/matches', match);
+router.use('/tournaments', tournament);
 router.use('/config', config);
 router.use('/payments', payment);
 router.use('/test', test);

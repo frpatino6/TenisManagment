@@ -195,6 +195,24 @@ class QuickActionsGrid extends StatelessWidget {
         },
       ),
       QuickAction(
+        title: 'Ranking',
+        subtitle: 'Ver posiciones y puntuaciones',
+        icon: Icons.leaderboard,
+        color: const Color(0xFFCCFF00),
+        onTap: () {
+          context.push('/ranking');
+        },
+      ),
+      QuickAction(
+        title: 'Torneos',
+        subtitle: 'Inscríbete y compite',
+        icon: Icons.emoji_events,
+        color: Colors.amber,
+        onTap: () {
+          context.push('/tournaments');
+        },
+      ),
+      QuickAction(
         title: 'Mi Balance',
         subtitle: 'Revisa tu saldo',
         icon: Icons.account_balance_wallet,

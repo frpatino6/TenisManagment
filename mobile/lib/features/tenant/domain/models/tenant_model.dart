@@ -2,12 +2,17 @@ import '../../../../core/interfaces/tenant_info_interface.dart';
 
 /// Model for Tenant (Center) information
 class TenantModel implements ITenantInfo {
+  @override
   final String id;
+  @override
   final String name;
+  @override
   final String slug;
   final String? domain;
   final bool isActive;
+  @override
   final String? logo;
+  @override
   final Map<String, dynamic>? config;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -56,4 +61,3 @@ class TenantModel implements ITenantInfo {
     };
   }
 }
-

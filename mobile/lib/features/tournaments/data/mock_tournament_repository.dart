@@ -1,5 +1,6 @@
 import '../../../../core/logging/logger.dart';
 import '../domain/dtos/create_tournament_dto.dart';
+import '../domain/dtos/update_tournament_dto.dart';
 import '../domain/models/bracket_model.dart';
 import '../domain/models/tournament_model.dart';
 import '../domain/repositories/tournament_repository.dart';
@@ -325,5 +326,47 @@ class MockTournamentRepository implements TournamentRepository {
           )
           .toList(),
     );
+  }
+
+  @override
+  Future<TournamentModel> updateTournament(
+    String id,
+    UpdateTournamentDto dto,
+  ) async {
+    _logger.debug('Actualizando torneo (MOCK)', {'tournamentId': id});
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    return TournamentModel(
+      id: id,
+      name: dto.name ?? 'Torneo Actualizado',
+      description: dto.description ?? 'Descripción actualizada',
+      startDate: dto.startDate ?? DateTime.now(),
+      endDate: dto.endDate ?? DateTime.now().add(const Duration(days: 7)),
+      status: TournamentStatus.draft,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      categories:
+          dto.categories?.map((c) {
+            return TournamentCategoryModel(
+              id: c.id,
+              name: c.name ?? 'Categoría',
+              gender: c.gender ?? CategoryGender.mixed,
+              participants: [],
+              format: c.format ?? TournamentFormat.singleElimination,
+            );
+          }).toList() ??
+          [],
+    );
+  }
+
+  @override
+  Future<void> deleteBracket(String tournamentId, String categoryId) async {
+    _logger.debug('Eliminando bracket (MOCK)', {
+      'tournamentId': tournamentId,
+      'categoryId': categoryId,
+    });
+    await Future.delayed(const Duration(milliseconds: 500));
+    _mockMatches = null;
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/tournaments_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../widgets/bracket_tree_widget.dart';
 import '../widgets/tournament_match_result_dialog.dart';
 import '../../../../core/exceptions/network_exception.dart';
@@ -44,6 +45,20 @@ class _BracketViewScreenState extends ConsumerState<BracketViewScreen> {
                   );
                 },
               ),
+              if (ref.watch(currentUserProvider)?.isTenantAdmin ?? false)
+                bracketAsync.maybeWhen(
+                  data: (bracket) => bracket != null
+                      ? IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                          ),
+                          tooltip: 'Reiniciar Cuadro',
+                          onPressed: () => _handleResetBracket(context, ref),
+                        )
+                      : const SizedBox.shrink(),
+                  orElse: () => const SizedBox.shrink(),
+                ),
             ],
           ),
           body: bracketAsync.when(
@@ -253,5 +268,64 @@ class _BracketViewScreenState extends ConsumerState<BracketViewScreen> {
           ),
       ],
     );
+  }
+
+  Future<void> _handleResetBracket(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Reiniciar Cuadro?'),
+        content: const Text(
+          'Esta acción eliminará el cuadro actual y todos sus enfrentamientos. '
+          'Solo podrás hacerlo si no hay resultados registrados.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('CANCELAR'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('REINICIAR'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() => _isProcessing = true);
+      try {
+        await ref
+            .read(
+              bracketProvider(widget.tournamentId, widget.categoryId).notifier,
+            )
+            .deleteBracket();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cuadro reiniciado exitosamente'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // Volver a la pantalla anterior ya que el cuadro ya no existe
+          context.pop();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isProcessing = false);
+        }
+      }
+    }
   }
 }

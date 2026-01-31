@@ -22,6 +22,27 @@ class TournamentDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Detalle del Torneo'),
         actions: [
+          if (ref.watch(currentUserProvider)?.isTenantAdmin ?? false)
+            tournamentAsync.when(
+              data: (tournament) => IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () async {
+                  await context.push(
+                    '/tournaments/${tournament.id}/edit',
+                    extra: tournament,
+                  );
+                  // Refrescar al volver
+                  if (context.mounted) {
+                    ref
+                        .read(tournamentDetailProvider(tournamentId).notifier)
+                        .refresh();
+                  }
+                },
+                tooltip: 'Editar Torneo',
+              ),
+              loading: () => const SizedBox(),
+              error: (_, __) => const SizedBox(),
+            ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
@@ -281,6 +302,23 @@ class TournamentDetailScreen extends ConsumerWidget {
             onGenerateBracket: category.id != null
                 ? () {
                     _handleGenerateBracket(context, ref, category.id!);
+                  }
+                : null,
+            onConfigureGroups: category.id != null
+                ? () {
+                    context.push(
+                      '/tournaments/$tournamentId/categories/${category.id}/groups/config',
+                      extra: {
+                        'totalParticipants': category.participants.length,
+                      },
+                    );
+                  }
+                : null,
+            onViewGroups: category.id != null
+                ? () {
+                    context.push(
+                      '/tournaments/$tournamentId/categories/${category.id}/groups',
+                    );
                   }
                 : null,
           );

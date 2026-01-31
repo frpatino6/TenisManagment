@@ -29,10 +29,15 @@ class CreateTournamentDto {
 class CreateCategoryDto {
   final String name;
   final CategoryGender gender;
+  final TournamentFormat format;
 
-  const CreateCategoryDto({required this.name, required this.gender});
+  const CreateCategoryDto({
+    required this.name,
+    required this.gender,
+    this.format = TournamentFormat.singleElimination,
+  });
 
   Map<String, dynamic> toJson() {
-    return {'name': name, 'gender': gender.value};
+    return {'name': name, 'gender': gender.value, 'format': format.value};
   }
 }

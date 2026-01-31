@@ -63,13 +63,108 @@ class _TournamentMatchResultDialogState
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Información del partido (Header Premium)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(top: 8, bottom: 20),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 20,
+                  horizontal: 16,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Theme.of(context).primaryColor.withOpacity(0.1),
+                      Theme.of(context).primaryColor.withOpacity(0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Theme.of(context).primaryColor.withOpacity(0.2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          const Icon(
+                            Icons.person,
+                            size: 24,
+                            color: Colors.blueGrey,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            widget.player1Name ?? 'Jugador 1',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Theme.of(context).primaryColor,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(
+                                context,
+                              ).primaryColor.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Text(
+                          'VS',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          const Icon(
+                            Icons.person,
+                            size: 24,
+                            color: Colors.blueGrey,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            widget.player2Name ?? 'Jugador 2',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               Text(
                 'Selecciona al ganador:',
                 style: theme.textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
               // Player 1
               if (widget.match.player1Id != null)
@@ -105,18 +200,41 @@ class _TournamentMatchResultDialogState
                 TextFormField(
                   controller: _scoreController,
                   keyboardType: TextInputType.number,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
                     _ScoreInputFormatter(),
                   ],
                   decoration: InputDecoration(
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceVariant.withOpacity(
+                      0.3,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.primary.withOpacity(0.4),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: theme.colorScheme.primary,
+                        width: 2,
+                      ),
+                    ),
                     hintText: 'Ingrese números: ej 6264',
+                    hintStyle: TextStyle(color: Colors.grey.withOpacity(0.5)),
                     helperText:
                         'Escriba solo los números, el formato es automático',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    filled: true,
+                    contentPadding: const EdgeInsets.all(16),
                   ),
                   validator: (value) {
                     if (_selectedWinnerId != null &&
@@ -126,26 +244,79 @@ class _TournamentMatchResultDialogState
                     return null;
                   },
                 ),
+                const SizedBox(height: 20),
+                // Ejemplos de formato (Sutil)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.brightness == Brightness.dark
+                        ? Colors.grey.withOpacity(0.05)
+                        : Colors.blue.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            size: 18,
+                            color: Colors.blue,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Ejemplos de formato:',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade400,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      _buildExampleRow('6-4 6-3', '(2 sets)'),
+                      const SizedBox(height: 4),
+                      _buildExampleRow('7-6 6-4', '(tie-break)'),
+                    ],
+                  ),
+                ),
               ] else ...[
                 const SizedBox(height: 24),
+                // Ejemplos de formato (Sutil) para BYE o informacional
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.blue.withValues(alpha: 0.3),
-                    ),
+                    color: theme.brightness == Brightness.dark
+                        ? Colors.grey.withOpacity(0.05)
+                        : Colors.blue.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.withOpacity(0.2)),
                   ),
-                  child: const Row(
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.info_outline, color: Colors.blue, size: 20),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'No se requiere marcador para un BYE.',
-                          style: TextStyle(color: Colors.blue, fontSize: 13),
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 18,
+                            color: Colors.blue,
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'No se requiere marcador para un BYE.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -176,7 +347,7 @@ class _TournamentMatchResultDialogState
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.disabledColor.withValues(alpha: 0.1),
+        color: theme.disabledColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Row(
@@ -208,7 +379,7 @@ class _TournamentMatchResultDialogState
           ),
           borderRadius: BorderRadius.circular(8),
           color: isSelected
-              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.2)
+              ? theme.colorScheme.primaryContainer.withOpacity(0.2)
               : null,
         ),
         child: Row(
@@ -236,6 +407,27 @@ class _TournamentMatchResultDialogState
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildExampleRow(String formula, String description) {
+    return Row(
+      children: [
+        const Text('• ', style: TextStyle(color: Colors.blue)),
+        Text(
+          formula,
+          style: const TextStyle(
+            fontSize: 12,
+            fontFamily: 'monospace',
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          description,
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+        ),
+      ],
     );
   }
 

@@ -1,4 +1,5 @@
 import '../dtos/create_tournament_dto.dart';
+import '../dtos/update_tournament_dto.dart';
 import '../models/bracket_model.dart';
 import '../models/tournament_model.dart';
 
@@ -30,4 +31,10 @@ abstract class TournamentRepository {
 
   /// Crea un nuevo torneo (Solo Admin).
   Future<TournamentModel> createTournament(CreateTournamentDto dto);
+
+  /// Actualiza un torneo existente (Solo Admin).
+  Future<TournamentModel> updateTournament(String id, UpdateTournamentDto dto);
+
+  /// Elimina el bracket de una categoría específica (Solo Admin).
+  Future<void> deleteBracket(String tournamentId, String categoryId);
 }

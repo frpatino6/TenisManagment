@@ -45,6 +45,9 @@ import '../../features/tournaments/presentation/screens/tournaments_list_screen.
 import '../../features/tournaments/presentation/screens/tournament_detail_screen.dart';
 import '../../features/tournaments/presentation/screens/create_tournament_screen.dart';
 import '../../features/tournaments/presentation/screens/bracket_view_screen.dart';
+import '../../features/tournaments/presentation/screens/group_stage_config_screen.dart';
+import '../../features/tournaments/presentation/screens/group_stage_view_screen.dart';
+import '../../features/tournaments/domain/models/tournament_model.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../providers/tenant_provider.dart';
 
@@ -405,11 +408,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/tournaments/:id',
-        name: 'tournament-detail',
+        name: 'tournament_detail',
         builder: (context, state) {
           final id = state.pathParameters['id']!;
           return TournamentDetailScreen(tournamentId: id);
         },
+        routes: [
+          GoRoute(
+            path: 'edit',
+            name: 'edit-tournament',
+            builder: (context, state) {
+              final tournament = state.extra as TournamentModel?;
+              return CreateTournamentScreen(tournament: tournament);
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: '/tournaments/:id/bracket/:categoryId',
@@ -418,6 +431,31 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return BracketViewScreen(
             tournamentId: state.pathParameters['id']!,
             categoryId: state.pathParameters['categoryId']!,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/tournaments/:id/categories/:categoryId/groups/config',
+        name: 'group-stage-config',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return GroupStageConfigScreen(
+            tournamentId: state.pathParameters['id']!,
+            categoryId: state.pathParameters['categoryId']!,
+            totalParticipants: extra?['totalParticipants'] ?? 0,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/tournaments/:id/categories/:categoryId/groups',
+        name: 'group-stage-view',
+        builder: (context, state) {
+          final isOrganizer =
+              ref.watch(currentUserProvider)?.isTenantAdmin ?? false;
+          return GroupStageViewScreen(
+            tournamentId: state.pathParameters['id']!,
+            categoryId: state.pathParameters['categoryId']!,
+            isOrganizer: isOrganizer,
           );
         },
       ),

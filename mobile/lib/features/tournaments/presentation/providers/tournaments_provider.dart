@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/dtos/create_tournament_dto.dart';
+import '../../domain/dtos/update_tournament_dto.dart';
 
 import '../../../../core/services/http_client.dart';
 import '../../data/tournament_repository_impl.dart';
@@ -38,10 +39,28 @@ class Tournaments extends _$Tournaments {
   Future<void> create(CreateTournamentDto dto) async {
     final repository = ref.read(tournamentRepositoryProvider);
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
+    final result = await AsyncValue.guard(() async {
       await repository.createTournament(dto);
       return repository.getTournaments();
     });
+    state = result;
+    if (result.hasError) {
+      throw result.error!;
+    }
+  }
+
+  /// Actualiza un torneo existente.
+  Future<void> updateTournament(String id, UpdateTournamentDto dto) async {
+    final repository = ref.read(tournamentRepositoryProvider);
+    state = const AsyncValue.loading();
+    final result = await AsyncValue.guard(() async {
+      await repository.updateTournament(id, dto);
+      return repository.getTournaments();
+    });
+    state = result;
+    if (result.hasError) {
+      throw result.error!;
+    }
   }
 }
 
@@ -115,5 +134,23 @@ class Bracket extends _$Bracket {
         score: score,
       );
     });
+  }
+
+  /// Elimina el bracket del torneo (Solo Admin).
+  Future<void> deleteBracket() async {
+    final repository = ref.read(tournamentRepositoryProvider);
+    state = const AsyncValue.loading();
+
+    final result = await AsyncValue.guard(() async {
+      await repository.deleteBracket(tournamentId, categoryId);
+      // Invalida el torneo para que el CategoryCard se actualice (hasBracket: false)
+      ref.invalidate(tournamentDetailProvider(tournamentId));
+      return null;
+    });
+
+    state = result;
+    if (result.hasError) {
+      throw result.error!;
+    }
   }
 }

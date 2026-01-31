@@ -61,8 +61,11 @@ export class MongoBracketRepository implements IBracketRepository {
             },
             { new: true }
         ).lean();
-
         return doc ? this.toEntityWithNames(doc) : null;
+    }
+
+    async delete(tournamentId: string, categoryId: string): Promise<void> {
+        await BracketModel.deleteOne({ tournamentId, categoryId });
     }
 
     private async toEntityWithNames(doc: any): Promise<Bracket> {

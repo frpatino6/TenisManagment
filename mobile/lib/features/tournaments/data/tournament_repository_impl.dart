@@ -6,6 +6,7 @@ import '../../../../core/services/http_client.dart';
 import '../../../../core/logging/logger.dart';
 import '../../../../core/exceptions/exceptions.dart';
 import '../domain/dtos/create_tournament_dto.dart';
+import '../domain/dtos/update_tournament_dto.dart';
 import '../domain/models/bracket_model.dart';
 import '../domain/models/tournament_model.dart';
 import '../domain/repositories/tournament_repository.dart';
@@ -76,7 +77,12 @@ class TournamentRepositoryImpl implements TournamentRepository {
 
     final response = await _httpClient.get(
       Uri.parse('$_baseUrl/tournaments/$id'),
-      headers: {'Authorization': 'Bearer $idToken'},
+      headers: {
+        'Authorization': 'Bearer $idToken',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
     );
 
     if (response.statusCode != 200) {
@@ -93,6 +99,17 @@ class TournamentRepositoryImpl implements TournamentRepository {
     _logger.info('Torneo obtenido', {
       'tournamentId': id,
       'name': tournament.name,
+      'categoriesCount': tournament.categories.length,
+      'categories': tournament.categories
+          .map(
+            (c) => {
+              'id': c.id,
+              'name': c.name,
+              'hasGroupStage': c.hasGroupStage,
+              'hasBracket': c.hasBracket,
+            },
+          )
+          .toList(),
     });
     return tournament;
   }
@@ -385,5 +402,106 @@ class TournamentRepositoryImpl implements TournamentRepository {
     });
 
     return tournament;
+  }
+
+  @override
+  Future<TournamentModel> updateTournament(
+    String id,
+    UpdateTournamentDto dto,
+  ) async {
+    _logger.debug('Actualizando torneo', {'tournamentId': id});
+
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw AuthException.notAuthenticated();
+    }
+
+    final idToken = await user.getIdToken(true);
+    if (idToken == null) {
+      throw AuthException.tokenExpired(
+        message: 'No se pudo obtener el token de autenticación',
+      );
+    }
+
+    final response = await _httpClient.patch(
+      Uri.parse('$_baseUrl/tournaments/$id'),
+      headers: {
+        'Authorization': 'Bearer $idToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(dto.toJson()),
+    );
+
+    if (response.statusCode != 200) {
+      String errorMessage = 'Error al actualizar torneo';
+      try {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (body.containsKey('error')) {
+          errorMessage = body['error'] as String;
+        } else if (body.containsKey('message')) {
+          errorMessage = body['message'] as String;
+        }
+      } catch (_) {
+        // Ignorar error de parsing
+      }
+
+      throw NetworkException.serverError(
+        message: errorMessage,
+        statusCode: response.statusCode,
+      );
+    }
+
+    final tournament = TournamentModel.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+
+    _logger.info('Torneo actualizado exitosamente', {
+      'tournamentId': tournament.id,
+      'name': tournament.name,
+    });
+
+    return tournament;
+  }
+
+  @override
+  Future<void> deleteBracket(String tournamentId, String categoryId) async {
+    _logger.debug('Eliminando bracket', {
+      'tournamentId': tournamentId,
+      'categoryId': categoryId,
+    });
+
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw AuthException.notAuthenticated();
+    }
+
+    final idToken = await user.getIdToken(true);
+    if (idToken == null) {
+      throw AuthException.tokenExpired(
+        message: 'No se pudo obtener el token de autenticación',
+      );
+    }
+
+    final response = await _httpClient.delete(
+      Uri.parse(
+        '$_baseUrl/tournaments/$tournamentId/categories/$categoryId/bracket',
+      ),
+      headers: {'Authorization': 'Bearer $idToken'},
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      String errorMessage = 'Error al eliminar bracket';
+      try {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        errorMessage = body['error'] ?? body['message'] ?? errorMessage;
+      } catch (_) {}
+
+      throw NetworkException.serverError(
+        message: errorMessage,
+        statusCode: response.statusCode,
+      );
+    }
+
+    _logger.info('Bracket eliminado exitosamente');
   }
 }

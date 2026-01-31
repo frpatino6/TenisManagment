@@ -12,4 +12,5 @@ export interface IBracketRepository {
         matchId: string,
         update: Partial<BracketMatch>
     ): Promise<Bracket | null>;
+    delete(tournamentId: string, categoryId: string): Promise<void>;
 }

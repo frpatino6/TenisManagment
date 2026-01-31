@@ -119,6 +119,9 @@ class TournamentCategoryModel {
   final CategoryGender gender;
   final List<String> participants;
   final bool hasBracket;
+  final bool hasGroupStage;
+  final TournamentFormat format;
+  final GroupStageConfig? groupStageConfig;
 
   const TournamentCategoryModel({
     this.id,
@@ -126,6 +129,9 @@ class TournamentCategoryModel {
     required this.gender,
     required this.participants,
     this.hasBracket = false,
+    this.hasGroupStage = false,
+    this.format = TournamentFormat.singleElimination,
+    this.groupStageConfig,
   });
 
   factory TournamentCategoryModel.fromJson(Map<String, dynamic> json) {
@@ -139,17 +145,27 @@ class TournamentCategoryModel {
       }
 
       return TournamentCategoryModel(
-        id: json['id'] as String?,
-        name: json['name'] as String,
+        id: json['id'] as String? ?? json['_id'] as String?,
+        name: json['name'] as String? ?? 'Sin Nombre',
         gender: CategoryGender.fromString(json['gender'] as String? ?? 'MIXED'),
         participants: participantsList,
         hasBracket: json['hasBracket'] as bool? ?? false,
+        hasGroupStage: json['hasGroupStage'] as bool? ?? false,
+        format: TournamentFormat.fromString(
+          json['format'] as String? ?? 'SINGLE_ELIMINATION',
+        ),
+        groupStageConfig: json['groupStageConfig'] != null
+            ? GroupStageConfig.fromJson(
+                json['groupStageConfig'] as Map<String, dynamic>,
+              )
+            : null,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       final logger = AppLogger.tag('TournamentCategoryModel');
       logger.error(
         'Error parsing TournamentCategoryModel',
         error: e,
+        stackTrace: stackTrace,
         context: {'json': json},
       );
       rethrow;
@@ -163,6 +179,10 @@ class TournamentCategoryModel {
       'gender': gender.value,
       'participants': participants,
       'hasBracket': hasBracket,
+      'hasGroupStage': hasGroupStage,
+      'format': format.value,
+      if (groupStageConfig != null)
+        'groupStageConfig': groupStageConfig!.toJson(),
     };
   }
 
@@ -189,6 +209,85 @@ enum CategoryGender {
   }
 }
 
+/// Formato de torneo.
+enum TournamentFormat {
+  singleElimination('SINGLE_ELIMINATION'),
+  roundRobin('ROUND_ROBIN'),
+  hybrid('HYBRID');
+
+  final String value;
+  const TournamentFormat(this.value);
+
+  static TournamentFormat fromString(String value) {
+    return TournamentFormat.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => TournamentFormat.singleElimination,
+    );
+  }
+}
+
+/// Método de seeding para grupos.
+enum SeedingMethod {
+  ranking('RANKING'),
+  random('RANDOM');
+
+  final String value;
+  const SeedingMethod(this.value);
+
+  static SeedingMethod fromString(String value) {
+    return SeedingMethod.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => SeedingMethod.ranking,
+    );
+  }
+}
+
+/// Configuración de la fase de grupos para torneos híbridos.
+class GroupStageConfig {
+  final int numberOfGroups;
+  final int playersAdvancingPerGroup;
+  final SeedingMethod seedingMethod;
+  final int pointsForWin;
+  final int pointsForDraw;
+  final int pointsForLoss;
+
+  const GroupStageConfig({
+    required this.numberOfGroups,
+    required this.playersAdvancingPerGroup,
+    required this.seedingMethod,
+    this.pointsForWin = 3,
+    this.pointsForDraw = 1,
+    this.pointsForLoss = 0,
+  });
+
+  factory GroupStageConfig.fromJson(Map<String, dynamic> json) {
+    return GroupStageConfig(
+      numberOfGroups: json['numberOfGroups'] as int? ?? 0,
+      playersAdvancingPerGroup:
+          (json['playersAdvancingPerGroup'] as int?) ??
+          (json['advancePerGroup'] as int?) ??
+          0,
+      seedingMethod: SeedingMethod.fromString(
+        json['seedingMethod'] as String? ?? 'RANKING',
+      ),
+      pointsForWin: json['pointsForWin'] as int? ?? 3,
+      pointsForDraw: json['pointsForDraw'] as int? ?? 1,
+      pointsForLoss: json['pointsForLoss'] as int? ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'numberOfGroups': numberOfGroups,
+      'playersAdvancingPerGroup': playersAdvancingPerGroup,
+      'seedingMethod': seedingMethod.value,
+      'pointsForWin': pointsForWin,
+      'pointsForDraw': pointsForDraw,
+      'pointsForLoss': pointsForLoss,
+    };
+  }
+}
+
 // Eliminamos TournamentParticipant ya que el backend solo envía IDs por ahora
 
 /// Participante de un torneo.
@@ -200,8 +299,8 @@ class TournamentParticipant {
 
   factory TournamentParticipant.fromJson(Map<String, dynamic> json) {
     return TournamentParticipant(
-      userId: json['userId'] as String,
-      eloRating: json['eloRating'] as int,
+      userId: json['userId'] as String? ?? 'UNKNOWN',
+      eloRating: json['eloRating'] as int? ?? 0,
     );
   }
 

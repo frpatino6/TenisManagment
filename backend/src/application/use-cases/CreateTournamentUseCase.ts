@@ -35,7 +35,11 @@ export class CreateTournamentUseCase {
                 gender: cat.gender,
                 minElo: cat.minElo,
                 maxElo: cat.maxElo,
-                participants: []
+                participants: [],
+                format: 'SINGLE_ELIMINATION',
+                groupStageConfig: undefined,
+                hasGroupStage: false,
+                hasBracket: false,
             }))
         };
 

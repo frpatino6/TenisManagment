@@ -4,11 +4,15 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/dtos/create_tournament_dto.dart';
+import '../../domain/dtos/update_tournament_dto.dart';
 import '../../domain/models/tournament_model.dart';
 import '../providers/tournaments_provider.dart';
+import '../../../../core/widgets/loading_screen.dart';
 
 class CreateTournamentScreen extends ConsumerStatefulWidget {
-  const CreateTournamentScreen({super.key});
+  final TournamentModel? tournament;
+
+  const CreateTournamentScreen({super.key, this.tournament});
 
   @override
   ConsumerState<CreateTournamentScreen> createState() =>
@@ -23,10 +27,40 @@ class _CreateTournamentScreenState
 
   DateTime? _startDate;
   DateTime? _endDate;
+  bool _isLoading = false;
 
-  final List<_CategoryFormItem> _categories = [
-    _CategoryFormItem(name: 'Single Masculino A', gender: CategoryGender.male),
-  ];
+  late final List<_CategoryFormItem> _categories;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.tournament != null) {
+      final t = widget.tournament!;
+      _nameController.text = t.name;
+      _descriptionController.text = t.description ?? '';
+      _startDate = t.startDate;
+      _endDate = t.endDate;
+      _categories = t.categories
+          .map(
+            (c) => _CategoryFormItem(
+              id: c.id,
+              name: c.name,
+              gender: c.gender,
+              format: c.format,
+              hasParticipants: c.participants.isNotEmpty,
+            ),
+          )
+          .toList();
+    } else {
+      _categories = [
+        _CategoryFormItem(
+          name: 'Single Masculino A',
+          gender: CategoryGender.male,
+          format: TournamentFormat.singleElimination,
+        ),
+      ];
+    }
+  }
 
   @override
   void dispose() {
@@ -92,31 +126,81 @@ class _CreateTournamentScreenState
       return;
     }
 
-    final dto = CreateTournamentDto(
-      name: _nameController.text,
-      description: _descriptionController.text.isEmpty
-          ? null
-          : _descriptionController.text,
-      startDate: _startDate!,
-      endDate: _endDate!,
-      categories: _categories
-          .map((c) => CreateCategoryDto(name: c.name, gender: c.gender))
-          .toList(),
-    );
-
+    setState(() => _isLoading = true);
     try {
-      await ref.read(tournamentsProvider.notifier).create(dto);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Torneo creado exitosamente')),
+      if (widget.tournament != null) {
+        final dto = UpdateTournamentDto(
+          name: _nameController.text,
+          description: _descriptionController.text.isEmpty
+              ? null
+              : _descriptionController.text,
+          startDate: _startDate,
+          endDate: _endDate,
+          categories: _categories
+              .map(
+                (c) => UpdateCategoryDto(
+                  id: c.id,
+                  name: c.name,
+                  gender: c.gender,
+                  format: c.format,
+                ),
+              )
+              .toList(),
         );
-        context.pop();
+
+        await ref
+            .read(tournamentsProvider.notifier)
+            .updateTournament(widget.tournament!.id, dto);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Torneo actualizado exitosamente')),
+          );
+          context.pop();
+        }
+      } else {
+        final dto = CreateTournamentDto(
+          name: _nameController.text,
+          description: _descriptionController.text.isEmpty
+              ? null
+              : _descriptionController.text,
+          startDate: _startDate!,
+          endDate: _endDate!,
+          categories: _categories
+              .map(
+                (c) => CreateCategoryDto(
+                  name: c.name,
+                  gender: c.gender,
+                  format: c.format,
+                ),
+              )
+              .toList(),
+        );
+
+        await ref.read(tournamentsProvider.notifier).create(dto);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Torneo creado exitosamente')),
+          );
+          context.pop();
+        }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.tournament != null
+                  ? 'Error al actualizar: $e'
+                  : 'Error al crear: $e',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -127,120 +211,131 @@ class _CreateTournamentScreenState
     final dateFormat = DateFormat('dd/MM/yyyy');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Crear Torneo')),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(
-              'Información General',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+      appBar: AppBar(
+        title: Text(
+          widget.tournament == null ? 'Crear Torneo' : 'Editar Torneo',
+        ),
+      ),
+      body: LoadingOverlay(
+        isLoading: _isLoading,
+        message: widget.tournament == null
+            ? 'Creando torneo...'
+            : 'Actualizando torneo...',
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Text(
+                'Información General',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nombre del Torneo',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.event),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre del Torneo',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.event),
+                ),
+                validator: (value) => (value == null || value.isEmpty)
+                    ? 'El nombre es requerido'
+                    : null,
               ),
-              validator: (value) => (value == null || value.isEmpty)
-                  ? 'El nombre es requerido'
-                  : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Descripción (Opcional)',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.description),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Descripción (Opcional)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.description),
+                ),
+                maxLines: 3,
               ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            Text(
-              'Fechas',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+              Text(
+                'Fechas',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: ListTile(
-                    title: const Text('Inicio'),
-                    subtitle: Text(
-                      _startDate == null
-                          ? 'Seleccionar'
-                          : dateFormat.format(_startDate!),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: ListTile(
+                      title: const Text('Inicio'),
+                      subtitle: Text(
+                        _startDate == null
+                            ? 'Seleccionar'
+                            : dateFormat.format(_startDate!),
+                      ),
+                      leading: const Icon(Icons.calendar_today),
+                      onTap: _selectStartDate,
                     ),
-                    leading: const Icon(Icons.calendar_today),
-                    onTap: _selectStartDate,
                   ),
-                ),
-                Expanded(
-                  child: ListTile(
-                    title: const Text('Fin'),
-                    subtitle: Text(
-                      _endDate == null
-                          ? 'Seleccionar'
-                          : dateFormat.format(_endDate!),
+                  Expanded(
+                    child: ListTile(
+                      title: const Text('Fin'),
+                      subtitle: Text(
+                        _endDate == null
+                            ? 'Seleccionar'
+                            : dateFormat.format(_endDate!),
+                      ),
+                      leading: const Icon(Icons.calendar_today),
+                      onTap: _selectEndDate,
                     ),
-                    leading: const Icon(Icons.calendar_today),
-                    onTap: _selectEndDate,
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
+                ],
+              ),
+              const SizedBox(height: 24),
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Categorías',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Categorías',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                IconButton.filledTonal(
-                  onPressed: _addCategory,
-                  icon: const Icon(Icons.add),
-                  tooltip: 'Agregar Categoría',
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ..._categories.asMap().entries.map((entry) {
-              final index = entry.key;
-              final category = entry.value;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildCategoryItem(index, category, theme),
-              );
-            }),
+                  IconButton.filledTonal(
+                    onPressed: _addCategory,
+                    icon: const Icon(Icons.add),
+                    tooltip: 'Agregar Categoría',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ..._categories.asMap().entries.map((entry) {
+                final index = entry.key;
+                final category = entry.value;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildCategoryItem(index, category, theme),
+                );
+              }),
 
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: _submit,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: theme.colorScheme.primary,
-                foregroundColor: theme.colorScheme.onPrimary,
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                ),
+                child: Text(
+                  widget.tournament == null
+                      ? 'GUARDAR TORNEO'
+                      : 'ACTUALIZAR TORNEO',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
-              child: const Text(
-                'GUARDAR TORNEO',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 40),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -296,6 +391,35 @@ class _CreateTournamentScreenState
                 });
               },
             ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<TournamentFormat>(
+              value: item.format,
+              decoration: const InputDecoration(
+                labelText: 'Formato del Torneo',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+              items: const [
+                DropdownMenuItem(
+                  value: TournamentFormat.singleElimination,
+                  child: Text('Eliminación Simple'),
+                ),
+                DropdownMenuItem(
+                  value: TournamentFormat.hybrid,
+                  child: Text('Híbrido (Grupos + Eliminación)'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    item.format = value;
+                  });
+                }
+              },
+            ),
           ],
         ),
       ),
@@ -304,8 +428,17 @@ class _CreateTournamentScreenState
 }
 
 class _CategoryFormItem {
+  String? id;
   String name;
   CategoryGender gender;
+  TournamentFormat format;
+  bool hasParticipants;
 
-  _CategoryFormItem({this.name = '', this.gender = CategoryGender.mixed});
+  _CategoryFormItem({
+    this.id,
+    this.name = '',
+    this.gender = CategoryGender.mixed,
+    this.format = TournamentFormat.singleElimination,
+    this.hasParticipants = false,
+  });
 }

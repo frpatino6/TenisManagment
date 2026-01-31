@@ -29,6 +29,32 @@ const CategorySchema = new Schema({
     minElo: { type: Number },
     maxElo: { type: Number },
     participants: [{ type: Schema.Types.ObjectId, ref: 'AuthUser' }],
+
+    // Configuración de formato
+    format: {
+        type: String,
+        enum: ['SINGLE_ELIMINATION', 'ROUND_ROBIN', 'HYBRID'],
+        default: 'SINGLE_ELIMINATION',
+        required: true
+    },
+
+    // Configuración de fase de grupos
+    groupStageConfig: {
+        numberOfGroups: { type: Number },
+        advancePerGroup: { type: Number },
+        pointsForWin: { type: Number, default: 3 },
+        pointsForDraw: { type: Number, default: 1 },
+        pointsForLoss: { type: Number, default: 0 },
+        seedingMethod: {
+            type: String,
+            enum: ['RANKING', 'RANDOM', 'MANUAL'],
+            default: 'RANKING'
+        }
+    },
+
+    // Referencias a las fases
+    hasGroupStage: { type: Boolean, default: false },
+    hasBracket: { type: Boolean, default: false },
 });
 
 const TournamentSchema = new Schema<TournamentDocument>(

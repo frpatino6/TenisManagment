@@ -246,7 +246,7 @@ final class CurrentUserRankingProvider
 }
 
 String _$currentUserRankingHash() =>
-    r'fb027d1258987b8a2552e421975486e0f59de06c';
+    r'f006be4d963da4e7c619d32b1b97c799bfac7363';
 
 final class CurrentUserRankingFamily extends $Family
     with

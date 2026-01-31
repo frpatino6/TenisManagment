@@ -12,6 +12,8 @@ class CategoryCard extends ConsumerWidget {
   final VoidCallback onEnroll;
   final VoidCallback onViewBracket;
   final VoidCallback? onGenerateBracket;
+  final VoidCallback? onConfigureGroups;
+  final VoidCallback? onViewGroups;
 
   const CategoryCard({
     super.key,
@@ -21,6 +23,8 @@ class CategoryCard extends ConsumerWidget {
     required this.onEnroll,
     required this.onViewBracket,
     this.onGenerateBracket,
+    this.onConfigureGroups,
+    this.onViewGroups,
   });
 
   @override
@@ -65,41 +69,89 @@ class CategoryCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                if (isEnrolled) Expanded(child: _buildEnrolledChip()),
-                if (isEnrolled) const SizedBox(width: 8),
-                if (tournamentStatus == TournamentStatus.draft &&
-                    !isEnrolled &&
-                    !(currentUser?.isTenantAdmin ?? false))
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: onEnroll,
-                      icon: const Icon(Icons.how_to_reg, size: 18),
-                      label: const Text('Inscribirme'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
+
+            // Botones de acción
+            _buildActionButtons(context, ref, currentUser, isEnrolled),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(
+    BuildContext context,
+    WidgetRef ref,
+    dynamic currentUser,
+    bool isEnrolled,
+  ) {
+    final isAdmin = currentUser?.isTenantAdmin ?? false;
+    final isHybrid = category.format == TournamentFormat.hybrid;
+    final hasGroups = category.groupStageConfig != null;
+
+    // Para torneos híbridos, mostrar botones de grupos
+    if (isHybrid) {
+      return Column(
+        children: [
+          // Fila 1: Inscripción o estado
+          Row(
+            children: [
+              if (isEnrolled) Expanded(child: _buildEnrolledChip()),
+              if (tournamentStatus == TournamentStatus.draft &&
+                  !isEnrolled &&
+                  !isAdmin)
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: onEnroll,
+                    icon: const Icon(Icons.how_to_reg, size: 18),
+                    label: const Text('Inscribirme'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
-                if ((tournamentStatus == TournamentStatus.draft ||
-                        tournamentStatus == TournamentStatus.inProgress) &&
-                    (currentUser?.isTenantAdmin ?? false) &&
-                    !category.hasBracket &&
-                    onGenerateBracket != null)
+                ),
+            ],
+          ),
+
+          if (isAdmin) const SizedBox(height: 8),
+
+          // Fila 2: Botones de grupos (solo admin)
+          if (isAdmin)
+            Row(
+              children: [
+                // Configurar grupos (si no se ha generado la fase de grupos)
+                // Usamos una lógica más robusta: Mostrar Configurar si hay callback
+                // y NO mostrar Ver Grupos si NO hay callback de Ver Grupos
+                if (onConfigureGroups != null &&
+                    (!category.hasGroupStage || onViewGroups == null))
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed: onGenerateBracket,
-                      icon: const Icon(Icons.play_circle_outline, size: 18),
-                      label: const Text('Generar Bracket'),
+                      onPressed: onConfigureGroups,
+                      icon: const Icon(Icons.settings, size: 18),
+                      label: const Text('Configurar Grupos'),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         backgroundColor: Colors.orange,
                       ),
                     ),
                   ),
-                if (category.hasBracket ||
-                    tournamentStatus != TournamentStatus.draft)
+
+                // Ver grupos (si ya se generó la fase de grupos)
+                if (category.hasGroupStage && onViewGroups != null)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: onViewGroups,
+                      icon: const Icon(Icons.groups, size: 18),
+                      label: const Text('Ver Grupos'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+
+                if (hasGroups && category.hasBracket) const SizedBox(width: 8),
+
+                // Ver bracket (si existe)
+                if (category.hasBracket)
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: onViewBracket,
@@ -112,9 +164,56 @@ class CategoryCard extends ConsumerWidget {
                   ),
               ],
             ),
-          ],
-        ),
-      ),
+        ],
+      );
+    }
+
+    // Para torneos no híbridos, mostrar botones originales
+    return Row(
+      children: [
+        if (isEnrolled) Expanded(child: _buildEnrolledChip()),
+        if (isEnrolled) const SizedBox(width: 8),
+        if (tournamentStatus == TournamentStatus.draft &&
+            !isEnrolled &&
+            !isAdmin)
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: onEnroll,
+              icon: const Icon(Icons.how_to_reg, size: 18),
+              label: const Text('Inscribirme'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+        if ((tournamentStatus == TournamentStatus.draft ||
+                tournamentStatus == TournamentStatus.inProgress) &&
+            isAdmin &&
+            !category.hasBracket &&
+            onGenerateBracket != null)
+          Expanded(
+            child: FilledButton.icon(
+              onPressed: onGenerateBracket,
+              icon: const Icon(Icons.play_circle_outline, size: 18),
+              label: const Text('Generar Bracket'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                backgroundColor: Colors.orange,
+              ),
+            ),
+          ),
+        if (category.hasBracket || tournamentStatus != TournamentStatus.draft)
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: onViewBracket,
+              icon: const Icon(Icons.account_tree, size: 18),
+              label: const Text('Ver Bracket'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+      ],
     );
   }
 

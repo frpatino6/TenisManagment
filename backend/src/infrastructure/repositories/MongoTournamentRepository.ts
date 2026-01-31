@@ -60,10 +60,17 @@ export class MongoTournamentRepository implements ITournamentRepository {
         if (tournament.tenantId) updateData.tenantId = new Types.ObjectId(tournament.tenantId);
 
         if (tournament.categories) {
-            updateData.categories = tournament.categories.map(cat => ({
-                ...cat,
-                participants: cat.participants.map(p => new Types.ObjectId(p))
-            }));
+            updateData.categories = tournament.categories.map(cat => {
+                const mappedCategory: any = {
+                    ...cat,
+                    _id: cat.id ? new Types.ObjectId(cat.id) : undefined,
+                    participants: cat.participants.map(p => new Types.ObjectId(p)),
+                    hasGroupStage: cat.hasGroupStage,
+                    hasBracket: cat.hasBracket
+                };
+                delete mappedCategory.id;
+                return mappedCategory;
+            });
         }
 
         const updated = await TournamentModel.findByIdAndUpdate(
@@ -126,7 +133,11 @@ export class MongoTournamentRepository implements ITournamentRepository {
                     gender: cat.gender || 'MIXED',
                     minElo: cat.minElo,
                     maxElo: cat.maxElo,
-                    participants: (cat.participants || []).map((p: any) => p?.toString() ?? '')
+                    participants: (cat.participants || []).map((p: any) => p?.toString() ?? ''),
+                    format: cat.format || 'SINGLE_ELIMINATION',
+                    groupStageConfig: cat.groupStageConfig,
+                    hasGroupStage: cat.hasGroupStage || false,
+                    hasBracket: cat.hasBracket || false,
                 })),
                 metadata: doc.metadata,
                 createdAt: doc.createdAt,

@@ -58,9 +58,28 @@ class CategoryCard extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        _getGenderLabel(),
-                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                      Row(
+                        children: [
+                          Text(
+                            _getGenderLabel(),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(Icons.circle, size: 4, color: Colors.grey[400]),
+                          const SizedBox(width: 8),
+                          Text(
+                            category.format == TournamentFormat.hybrid
+                                ? 'Híbrido'
+                                : 'Eliminación Simple',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -68,7 +87,13 @@ class CategoryCard extends ConsumerWidget {
                 _buildParticipantsBadge(),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            if (category.format == TournamentFormat.hybrid &&
+                category.groupStageConfig != null) ...[
+              _buildConfigSummary(theme: Theme.of(context)),
+              const SizedBox(height: 12),
+            ] else
+              const SizedBox(height: 16),
 
             // Botones de acción
             _buildActionButtons(context, ref, currentUser, isEnrolled),
@@ -95,7 +120,7 @@ class CategoryCard extends ConsumerWidget {
           // Fila 1: Inscripción o estado
           Row(
             children: [
-              if (isEnrolled) Expanded(child: _buildEnrolledChip()),
+              if (isEnrolled && !isAdmin) Expanded(child: _buildEnrolledChip()),
               if (tournamentStatus == TournamentStatus.draft &&
                   !isEnrolled &&
                   !isAdmin)
@@ -171,8 +196,10 @@ class CategoryCard extends ConsumerWidget {
     // Para torneos no híbridos, mostrar botones originales
     return Row(
       children: [
-        if (isEnrolled) Expanded(child: _buildEnrolledChip()),
-        if (isEnrolled) const SizedBox(width: 8),
+        if (isEnrolled && !isAdmin) ...[
+          Expanded(child: _buildEnrolledChip()),
+          const SizedBox(width: 8),
+        ],
         if (tournamentStatus == TournamentStatus.draft &&
             !isEnrolled &&
             !isAdmin)
@@ -274,6 +301,74 @@ class CategoryCard extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildConfigSummary({required ThemeData theme}) {
+    final config = category.groupStageConfig!;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildConfigItem(
+                Icons.grid_view,
+                'Grupos',
+                '${config.numberOfGroups}',
+              ),
+              _buildConfigItem(
+                Icons.trending_up,
+                'Clasifican',
+                '${config.playersAdvancingPerGroup}',
+              ),
+              _buildConfigItem(
+                Icons.shuffle,
+                'Sorteo',
+                config.seedingMethod == SeedingMethod.random
+                    ? 'Azar'
+                    : 'Ranking',
+              ),
+            ],
+          ),
+          const Divider(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Puntos: ',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                'PG: ${config.pointsForWin} | PE: ${config.pointsForDraw} | PP: ${config.pointsForLoss}',
+                style: const TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConfigItem(IconData icon, String label, String value) {
+    return Column(
+      children: [
+        Icon(icon, size: 16, color: Colors.grey[600]),
+        const SizedBox(height: 4),
+        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+        ),
+      ],
     );
   }
 

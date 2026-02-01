@@ -13,6 +13,15 @@ export class CreateTournamentUseCase {
         categories: Array<{
             name: string;
             gender: 'MALE' | 'FEMALE' | 'MIXED';
+            format?: 'SINGLE_ELIMINATION' | 'HYBRID';
+            groupStageConfig?: {
+                numberOfGroups: number;
+                advancePerGroup: number;
+                pointsForWin: number;
+                pointsForDraw: number;
+                pointsForLoss: number;
+                seedingMethod: 'RANKING' | 'RANDOM';
+            };
             minElo?: number;
             maxElo?: number;
         }>;
@@ -36,9 +45,9 @@ export class CreateTournamentUseCase {
                 minElo: cat.minElo,
                 maxElo: cat.maxElo,
                 participants: [],
-                format: 'SINGLE_ELIMINATION',
-                groupStageConfig: undefined,
-                hasGroupStage: false,
+                format: cat.format || 'SINGLE_ELIMINATION',
+                groupStageConfig: cat.groupStageConfig,
+                hasGroupStage: !!cat.groupStageConfig,
                 hasBracket: false,
             }))
         };

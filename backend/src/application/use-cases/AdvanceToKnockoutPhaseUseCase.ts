@@ -67,7 +67,7 @@ export class AdvanceToKnockoutPhaseUseCase {
             topN.forEach(standing => {
                 standing.qualifiedForKnockout = true;
                 qualified.push({
-                    userId: standing.playerId,
+                    userId: standing.playerId.toString(), // Forzado a string
                     groupSeed: group.seed,
                     position: standing.position,
                 });
@@ -88,7 +88,7 @@ export class AdvanceToKnockoutPhaseUseCase {
         });
 
         const participantsWithNames = seededParticipants.map(userId => {
-            const user = participantsData.find(u => u._id.toString() === userId);
+            const user = participantsData.find(u => u._id.toString() === userId.toString());
             return {
                 userId,
                 name: user?.name || 'Jugador',
@@ -103,11 +103,11 @@ export class AdvanceToKnockoutPhaseUseCase {
         // Enriquecer matches con nombres
         matches.forEach(match => {
             if (match.player1Id) {
-                const p1 = participantsWithNames.find(p => p.userId === match.player1Id);
+                const p1 = participantsWithNames.find(p => p.userId.toString() === match.player1Id!.toString());
                 match.player1Name = p1?.name;
             }
             if (match.player2Id) {
-                const p2 = participantsWithNames.find(p => p.userId === match.player2Id);
+                const p2 = participantsWithNames.find(p => p.userId.toString() === match.player2Id!.toString());
                 match.player2Name = p2?.name;
             }
         });

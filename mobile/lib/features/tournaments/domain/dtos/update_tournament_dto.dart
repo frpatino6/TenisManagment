@@ -33,8 +33,15 @@ class UpdateCategoryDto {
   final String? name;
   final CategoryGender? gender;
   final TournamentFormat? format;
+  final GroupStageConfig? groupStageConfig;
 
-  const UpdateCategoryDto({this.id, this.name, this.gender, this.format});
+  const UpdateCategoryDto({
+    this.id,
+    this.name,
+    this.gender,
+    this.format,
+    this.groupStageConfig,
+  });
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -42,6 +49,9 @@ class UpdateCategoryDto {
     if (name != null) json['name'] = name;
     if (gender != null) json['gender'] = gender!.value;
     if (format != null) json['format'] = format!.value;
+    if (groupStageConfig != null) {
+      json['groupStageConfig'] = groupStageConfig!.toJson();
+    }
     return json;
   }
 }

@@ -8,10 +8,23 @@ export interface TournamentDocument extends Document {
     endDate: Date;
     status: 'DRAFT' | 'IN_PROGRESS' | 'FINISHED' | 'CANCELLED';
     categories: Array<{
+        _id: Types.ObjectId;
         name: string;
+        gender: 'MALE' | 'FEMALE' | 'MIXED';
         minElo?: number;
         maxElo?: number;
         participants: Types.ObjectId[];
+        format: 'SINGLE_ELIMINATION' | 'ROUND_ROBIN' | 'HYBRID';
+        groupStageConfig?: {
+            numberOfGroups: number;
+            advancePerGroup: number;
+            pointsForWin: number;
+            pointsForDraw: number;
+            pointsForLoss: number;
+            seedingMethod: 'RANKING' | 'RANDOM' | 'MANUAL';
+        };
+        hasGroupStage: boolean;
+        hasBracket: boolean;
     }>;
     metadata?: Record<string, any>;
     createdAt: Date;

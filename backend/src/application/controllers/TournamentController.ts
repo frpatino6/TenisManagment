@@ -7,6 +7,7 @@ import { RecordTournamentMatchResultUseCase } from '../use-cases/RecordTournamen
 import { EnrollPlayerUseCase } from '../use-cases/EnrollPlayerUseCase';
 import { GenerateGroupsUseCase } from '../use-cases/GenerateGroupsUseCase';
 import { MoveParticipantBetweenGroupsUseCase } from '../use-cases/MoveParticipantBetweenGroupsUseCase';
+import { SwapParticipantsBetweenGroupsUseCase } from '../use-cases/SwapParticipantsBetweenGroupsUseCase';
 import { LockGroupsAndGenerateFixturesUseCase } from '../use-cases/LockGroupsAndGenerateFixturesUseCase';
 import { RecordGroupMatchResultUseCase } from '../use-cases/RecordGroupMatchResultUseCase';
 import { AdvanceToKnockoutPhaseUseCase } from '../use-cases/AdvanceToKnockoutPhaseUseCase';
@@ -33,6 +34,7 @@ export class TournamentController {
         private readonly bracketRepository: IBracketRepository,
         private readonly generateGroupsUseCase: GenerateGroupsUseCase,
         private readonly moveParticipantBetweenGroupsUseCase: MoveParticipantBetweenGroupsUseCase,
+        private readonly swapParticipantsBetweenGroupsUseCase: SwapParticipantsBetweenGroupsUseCase,
         private readonly lockGroupsAndGenerateFixturesUseCase: LockGroupsAndGenerateFixturesUseCase,
         private readonly recordGroupMatchResultUseCase: RecordGroupMatchResultUseCase,
         private readonly advanceToKnockoutPhaseUseCase: AdvanceToKnockoutPhaseUseCase,
@@ -355,6 +357,50 @@ export class TournamentController {
             return res.json(groupStage);
         } catch (error) {
             this.logger.error('Error al mover participante entre grupos', {
+                error: (error as Error).message,
+                tournamentId: req.params.id,
+                categoryId: req.params.categoryId,
+            });
+
+            const message = (error as Error).message;
+            if (message.includes('no encontrado')) {
+                return res.status(404).json({ error: message });
+            }
+            if (message.includes('estado DRAFT')) {
+                return res.status(409).json({ error: message });
+            }
+
+            return res.status(400).json({ error: message });
+        }
+    };
+
+    /**
+     * PUT /api/tournaments/:id/categories/:categoryId/groups/swap-participants
+     * Intercambia dos participantes entre grupos
+     */
+    swapParticipantsBetweenGroups = async (req: Request, res: Response) => {
+        try {
+            const { id: tournamentId, categoryId } = req.params;
+            const { participant1Id, group1Id, participant2Id, group2Id } = req.body;
+
+            if (!participant1Id || !group1Id || !participant2Id || !group2Id) {
+                return res.status(400).json({
+                    error: 'participant1Id, group1Id, participant2Id y group2Id son requeridos',
+                });
+            }
+
+            const groupStage = await this.swapParticipantsBetweenGroupsUseCase.execute({
+                tournamentId,
+                categoryId,
+                participant1Id,
+                group1Id,
+                participant2Id,
+                group2Id,
+            });
+
+            return res.json(groupStage);
+        } catch (error) {
+            this.logger.error('Error al intercambiar participantes entre grupos', {
                 error: (error as Error).message,
                 tournamentId: req.params.id,
                 categoryId: req.params.categoryId,

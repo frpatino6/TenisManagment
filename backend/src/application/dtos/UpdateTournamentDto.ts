@@ -23,4 +23,12 @@ export interface UpdateCategoryDto {
     format?: 'SINGLE_ELIMINATION' | 'HYBRID';
     minAge?: number;
     maxAge?: number;
+    groupStageConfig?: {
+        numberOfGroups: number;
+        advancePerGroup: number;
+        pointsForWin: number;
+        pointsForDraw: number;
+        pointsForLoss: number;
+        seedingMethod: 'RANKING' | 'RANDOM';
+    };
 }

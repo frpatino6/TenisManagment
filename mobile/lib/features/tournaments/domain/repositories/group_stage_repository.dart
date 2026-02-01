@@ -21,6 +21,17 @@ abstract class GroupStageRepository {
     required String toGroupId,
   });
 
+  /// Intercambia dos participantes entre grupos (solo en estado DRAFT).
+  /// A diferencia de mover, el intercambio siempre mantiene el balance de grupos.
+  Future<GroupStageModel> swapParticipantsBetweenGroups({
+    required String tournamentId,
+    required String categoryId,
+    required String participant1Id,
+    required String group1Id,
+    required String participant2Id,
+    required String group2Id,
+  });
+
   /// Bloquea los grupos y genera los fixtures de Round Robin.
   Future<GroupStageModel> lockGroupsAndGenerateFixtures({
     required String tournamentId,

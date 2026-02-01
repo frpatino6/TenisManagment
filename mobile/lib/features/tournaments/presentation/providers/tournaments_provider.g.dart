@@ -89,7 +89,7 @@ final class TournamentsProvider
   Tournaments create() => Tournaments();
 }
 
-String _$tournamentsHash() => r'c0fa28da801227172691fa42cdbfd333f453d9fb';
+String _$tournamentsHash() => r'67b70e5e550f51b07a7781db7d39320ffae1337b';
 
 /// Provider para la lista de torneos.
 
@@ -262,7 +262,7 @@ final class BracketProvider
   }
 }
 
-String _$bracketHash() => r'f56f9d2ec30c1008a889f2021e0ac1ea68bbcd1e';
+String _$bracketHash() => r'4c242a2bb8e784a3971adb1f25835f84b8846b13';
 
 /// Provider para el bracket de una categoría.
 

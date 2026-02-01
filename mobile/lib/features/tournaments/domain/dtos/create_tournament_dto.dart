@@ -30,14 +30,22 @@ class CreateCategoryDto {
   final String name;
   final CategoryGender gender;
   final TournamentFormat format;
+  final GroupStageConfig? groupStageConfig;
 
   const CreateCategoryDto({
     required this.name,
     required this.gender,
     this.format = TournamentFormat.singleElimination,
+    this.groupStageConfig,
   });
 
   Map<String, dynamic> toJson() {
-    return {'name': name, 'gender': gender.value, 'format': format.value};
+    return {
+      'name': name,
+      'gender': gender.value,
+      'format': format.value,
+      if (groupStageConfig != null)
+        'groupStageConfig': groupStageConfig!.toJson(),
+    };
   }
 }

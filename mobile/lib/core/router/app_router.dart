@@ -450,8 +450,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/tournaments/:id/categories/:categoryId/groups',
         name: 'group-stage-view',
         builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
           final isOrganizer =
-              ref.watch(currentUserProvider)?.isTenantAdmin ?? false;
+              extra?['isOrganizer'] as bool? ??
+              (ref.watch(currentUserProvider)?.isTenantAdmin ?? false);
           return GroupStageViewScreen(
             tournamentId: state.pathParameters['id']!,
             categoryId: state.pathParameters['categoryId']!,

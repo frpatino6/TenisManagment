@@ -92,6 +92,42 @@ class GroupStageGenerator extends _$GroupStageGenerator {
     });
 
     _safeSetState(newState);
+
+    // Si hubo error, lanzarlo para que el caller pueda manejarlo
+    if (newState.hasError) {
+      throw newState.error!;
+    }
+  }
+
+  /// Intercambia dos participantes entre grupos.
+  Future<void> swapParticipants({
+    required String tournamentId,
+    required String categoryId,
+    required String participant1Id,
+    required String group1Id,
+    required String participant2Id,
+    required String group2Id,
+  }) async {
+    _safeSetState(const AsyncValue.loading());
+
+    final newState = await AsyncValue.guard(() async {
+      final repository = ref.read(groupStageRepositoryProvider);
+      return repository.swapParticipantsBetweenGroups(
+        tournamentId: tournamentId,
+        categoryId: categoryId,
+        participant1Id: participant1Id,
+        group1Id: group1Id,
+        participant2Id: participant2Id,
+        group2Id: group2Id,
+      );
+    });
+
+    _safeSetState(newState);
+
+    // Si hubo error, lanzarlo para que el caller pueda manejarlo
+    if (newState.hasError) {
+      throw newState.error!;
+    }
   }
 
   /// Bloquea los grupos y genera fixtures.

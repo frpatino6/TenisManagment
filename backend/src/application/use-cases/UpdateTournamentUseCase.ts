@@ -84,15 +84,20 @@ export class UpdateTournamentUseCase {
                         name: categoryUpdate.name !== undefined ? categoryUpdate.name : existingCategory.name,
                         gender: categoryUpdate.gender !== undefined ? categoryUpdate.gender : existingCategory.gender,
                         format: categoryUpdate.format !== undefined ? categoryUpdate.format : existingCategory.format,
+                        groupStageConfig: categoryUpdate.groupStageConfig !== undefined ? categoryUpdate.groupStageConfig : existingCategory.groupStageConfig,
+                        hasGroupStage: categoryUpdate.groupStageConfig !== undefined ? !!categoryUpdate.groupStageConfig : existingCategory.hasGroupStage,
                     });
                 } else {
                     // Nueva categoría
                     const newCategory = {
-                        id: Math.random().toString(36).substring(2, 11), // Generar un ID simple o usar crypto.randomUUID()
+                        id: Math.random().toString(36).substring(2, 11),
                         name: categoryUpdate.name || 'Nueva Categoría',
                         gender: categoryUpdate.gender || 'MIXED',
                         participants: [],
                         format: categoryUpdate.format || 'SINGLE_ELIMINATION',
+                        groupStageConfig: categoryUpdate.groupStageConfig,
+                        hasGroupStage: !!categoryUpdate.groupStageConfig,
+                        hasBracket: false,
                     };
                     this.logger.info('Agregando nueva categoría', { tournamentId, categoryName: newCategory.name });
                     finalCategories.push(newCategory);

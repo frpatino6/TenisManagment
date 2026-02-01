@@ -59,7 +59,7 @@ final class GroupStageRepositoryProvider
 }
 
 String _$groupStageRepositoryHash() =>
-    r'9d9f3e7550e4cf97d158ade0f8b491a7c9d2bd5e';
+    r'adb213ca21a4be70560f4e1998c5ecb1fb324373';
 
 /// Provider para obtener la fase de grupos de una categoría.
 
@@ -188,7 +188,7 @@ final class GroupStageGeneratorProvider
 }
 
 String _$groupStageGeneratorHash() =>
-    r'45a2f719b38d12dfd246e996af5a626945dbfbad';
+    r'0aae4e74c569c47305785ed9e6c054a6d9817086';
 
 /// Provider para generar grupos.
 

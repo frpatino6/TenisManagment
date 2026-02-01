@@ -48,6 +48,13 @@ class _CreateTournamentScreenState
               gender: c.gender,
               format: c.format,
               hasParticipants: c.participants.isNotEmpty,
+              groupStageConfig:
+                  c.groupStageConfig ??
+                  const GroupStageConfig(
+                    numberOfGroups: 0,
+                    playersAdvancingPerGroup: 0,
+                    seedingMethod: SeedingMethod.ranking,
+                  ),
             ),
           )
           .toList();
@@ -143,6 +150,9 @@ class _CreateTournamentScreenState
                   name: c.name,
                   gender: c.gender,
                   format: c.format,
+                  groupStageConfig: c.format == TournamentFormat.hybrid
+                      ? c.groupStageConfig
+                      : null,
                 ),
               )
               .toList(),
@@ -172,6 +182,9 @@ class _CreateTournamentScreenState
                   name: c.name,
                   gender: c.gender,
                   format: c.format,
+                  groupStageConfig: c.format == TournamentFormat.hybrid
+                      ? c.groupStageConfig
+                      : null,
                 ),
               )
               .toList(),
@@ -420,6 +433,191 @@ class _CreateTournamentScreenState
                 }
               },
             ),
+            if (item.format == TournamentFormat.hybrid) ...[
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              const Text(
+                'Configuración de Fase de Grupos',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: item.groupStageConfig.numberOfGroups
+                          .toString(),
+                      decoration: const InputDecoration(
+                        labelText: 'Nº de Grupos',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (val) {
+                        setState(() {
+                          item.groupStageConfig = GroupStageConfig(
+                            numberOfGroups: int.tryParse(val) ?? 0,
+                            playersAdvancingPerGroup:
+                                item.groupStageConfig.playersAdvancingPerGroup,
+                            seedingMethod: item.groupStageConfig.seedingMethod,
+                            pointsForWin: item.groupStageConfig.pointsForWin,
+                            pointsForDraw: item.groupStageConfig.pointsForDraw,
+                            pointsForLoss: item.groupStageConfig.pointsForLoss,
+                          );
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: item
+                          .groupStageConfig
+                          .playersAdvancingPerGroup
+                          .toString(),
+                      decoration: const InputDecoration(
+                        labelText: 'Clasifican x G.',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (val) {
+                        setState(() {
+                          item.groupStageConfig = GroupStageConfig(
+                            numberOfGroups:
+                                item.groupStageConfig.numberOfGroups,
+                            playersAdvancingPerGroup: int.tryParse(val) ?? 0,
+                            seedingMethod: item.groupStageConfig.seedingMethod,
+                            pointsForWin: item.groupStageConfig.pointsForWin,
+                            pointsForDraw: item.groupStageConfig.pointsForDraw,
+                            pointsForLoss: item.groupStageConfig.pointsForLoss,
+                          );
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<SeedingMethod>(
+                value: item.groupStageConfig.seedingMethod,
+                decoration: const InputDecoration(
+                  labelText: 'Método de Sorteo',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: SeedingMethod.ranking,
+                    child: Text('Por Ranking (Siembra)'),
+                  ),
+                  DropdownMenuItem(
+                    value: SeedingMethod.random,
+                    child: Text('Al Azar'),
+                  ),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      item.groupStageConfig = GroupStageConfig(
+                        numberOfGroups: item.groupStageConfig.numberOfGroups,
+                        playersAdvancingPerGroup:
+                            item.groupStageConfig.playersAdvancingPerGroup,
+                        seedingMethod: val,
+                        pointsForWin: item.groupStageConfig.pointsForWin,
+                        pointsForDraw: item.groupStageConfig.pointsForDraw,
+                        pointsForLoss: item.groupStageConfig.pointsForLoss,
+                      );
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Puntaje',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: item.groupStageConfig.pointsForWin
+                          .toString(),
+                      decoration: const InputDecoration(
+                        labelText: 'Victoria',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (val) {
+                        setState(() {
+                          item.groupStageConfig = GroupStageConfig(
+                            numberOfGroups:
+                                item.groupStageConfig.numberOfGroups,
+                            playersAdvancingPerGroup:
+                                item.groupStageConfig.playersAdvancingPerGroup,
+                            seedingMethod: item.groupStageConfig.seedingMethod,
+                            pointsForWin: int.tryParse(val) ?? 3,
+                            pointsForDraw: item.groupStageConfig.pointsForDraw,
+                            pointsForLoss: item.groupStageConfig.pointsForLoss,
+                          );
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: item.groupStageConfig.pointsForDraw
+                          .toString(),
+                      decoration: const InputDecoration(
+                        labelText: 'Empate',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (val) {
+                        setState(() {
+                          item.groupStageConfig = GroupStageConfig(
+                            numberOfGroups:
+                                item.groupStageConfig.numberOfGroups,
+                            playersAdvancingPerGroup:
+                                item.groupStageConfig.playersAdvancingPerGroup,
+                            seedingMethod: item.groupStageConfig.seedingMethod,
+                            pointsForWin: item.groupStageConfig.pointsForWin,
+                            pointsForDraw: int.tryParse(val) ?? 1,
+                            pointsForLoss: item.groupStageConfig.pointsForLoss,
+                          );
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: item.groupStageConfig.pointsForLoss
+                          .toString(),
+                      decoration: const InputDecoration(
+                        labelText: 'Derrota',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (val) {
+                        setState(() {
+                          item.groupStageConfig = GroupStageConfig(
+                            numberOfGroups:
+                                item.groupStageConfig.numberOfGroups,
+                            playersAdvancingPerGroup:
+                                item.groupStageConfig.playersAdvancingPerGroup,
+                            seedingMethod: item.groupStageConfig.seedingMethod,
+                            pointsForWin: item.groupStageConfig.pointsForWin,
+                            pointsForDraw: item.groupStageConfig.pointsForDraw,
+                            pointsForLoss: int.tryParse(val) ?? 0,
+                          );
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -433,6 +631,7 @@ class _CategoryFormItem {
   CategoryGender gender;
   TournamentFormat format;
   bool hasParticipants;
+  GroupStageConfig groupStageConfig;
 
   _CategoryFormItem({
     this.id,
@@ -440,5 +639,13 @@ class _CategoryFormItem {
     this.gender = CategoryGender.mixed,
     this.format = TournamentFormat.singleElimination,
     this.hasParticipants = false,
+    this.groupStageConfig = const GroupStageConfig(
+      numberOfGroups: 4,
+      playersAdvancingPerGroup: 2,
+      seedingMethod: SeedingMethod.ranking,
+      pointsForWin: 3,
+      pointsForDraw: 1,
+      pointsForLoss: 0,
+    ),
   });
 }

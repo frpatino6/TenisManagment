@@ -6,6 +6,10 @@ import '../../domain/models/group_stage_model.dart';
 typedef OnMoveParticipant =
     void Function(String participantId, String fromGroupId, String toGroupId);
 
+/// Callback para intercambiar participantes entre grupos.
+typedef OnSwapParticipant =
+    void Function(String participant1Id, String group1Id);
+
 /// Widget que muestra una card de un grupo con sus participantes.
 class GroupCard extends StatelessWidget {
   final GroupModel group;
@@ -15,6 +19,7 @@ class GroupCard extends StatelessWidget {
   final GroupStageStatus? status;
   final List<GroupModel> otherGroups;
   final OnMoveParticipant? onMoveParticipant;
+  final OnSwapParticipant? onSwapParticipant;
 
   const GroupCard({
     super.key,
@@ -25,6 +30,7 @@ class GroupCard extends StatelessWidget {
     this.status,
     this.otherGroups = const [],
     this.onMoveParticipant,
+    this.onSwapParticipant,
   });
 
   bool get _isEditMode => isOrganizer && status == GroupStageStatus.draft;
@@ -148,23 +154,48 @@ class GroupCard extends StatelessWidget {
                       ],
                       if (_isEditMode && otherGroups.isNotEmpty)
                         PopupMenuButton<String>(
-                          icon: const Icon(Icons.compare_arrows),
-                          tooltip: 'Mover a otro grupo',
-                          onSelected: (toGroupId) {
-                            onMoveParticipant?.call(
-                              standing.playerId,
-                              group.id,
-                              toGroupId,
-                            );
+                          icon: const Icon(Icons.more_vert),
+                          tooltip: 'Opciones',
+                          onSelected: (value) {
+                            if (value == 'swap') {
+                              onSwapParticipant?.call(
+                                standing.playerId,
+                                group.id,
+                              );
+                            } else if (value.startsWith('move:')) {
+                              final toGroupId = value.substring(5);
+                              onMoveParticipant?.call(
+                                standing.playerId,
+                                group.id,
+                                toGroupId,
+                              );
+                            }
                           },
-                          itemBuilder: (context) => otherGroups
-                              .map(
-                                (g) => PopupMenuItem(
-                                  value: g.id,
-                                  child: Text('Mover al ${g.name}'),
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'swap',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.swap_horiz, size: 20),
+                                  SizedBox(width: 8),
+                                  Text('Intercambiar con...'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuDivider(),
+                            ...otherGroups.map(
+                              (g) => PopupMenuItem(
+                                value: 'move:${g.id}',
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.arrow_forward, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text('Mover al ${g.name}'),
+                                  ],
                                 ),
-                              )
-                              .toList(),
+                              ),
+                            ),
+                          ],
                         ),
                     ],
                   ),

@@ -114,14 +114,75 @@ class GroupStageRepositoryImpl implements GroupStageRepository {
     );
 
     if (response.statusCode != 200) {
+      String errorMessage = 'Error al mover participante';
+      try {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        errorMessage = body['error'] ?? body['message'] ?? errorMessage;
+      } catch (_) {}
+
       throw NetworkException.serverError(
-        message: 'Error al mover participante',
+        message: errorMessage,
         statusCode: response.statusCode,
       );
     }
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     _logger.info('Participante movido exitosamente');
+
+    return GroupStageModel.fromJson(data);
+  }
+
+  @override
+  Future<GroupStageModel> swapParticipantsBetweenGroups({
+    required String tournamentId,
+    required String categoryId,
+    required String participant1Id,
+    required String group1Id,
+    required String participant2Id,
+    required String group2Id,
+  }) async {
+    _logger.debug('Intercambiando participantes entre grupos', {
+      'tournamentId': tournamentId,
+      'categoryId': categoryId,
+      'participant1Id': participant1Id,
+      'group1Id': group1Id,
+      'participant2Id': participant2Id,
+      'group2Id': group2Id,
+    });
+
+    final token = await _getAuthToken();
+
+    final response = await _httpClient.put(
+      Uri.parse(
+        '$_baseUrl/tournaments/$tournamentId/categories/$categoryId/groups/swap-participants',
+      ),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'participant1Id': participant1Id,
+        'group1Id': group1Id,
+        'participant2Id': participant2Id,
+        'group2Id': group2Id,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      String errorMessage = 'Error al intercambiar participantes';
+      try {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        errorMessage = body['error'] ?? body['message'] ?? errorMessage;
+      } catch (_) {}
+
+      throw NetworkException.serverError(
+        message: errorMessage,
+        statusCode: response.statusCode,
+      );
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    _logger.info('Participantes intercambiados exitosamente');
 
     return GroupStageModel.fromJson(data);
   }

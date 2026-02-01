@@ -279,7 +279,8 @@ class GroupStageConfig {
   Map<String, dynamic> toJson() {
     return {
       'numberOfGroups': numberOfGroups,
-      'playersAdvancingPerGroup': playersAdvancingPerGroup,
+      'advancePerGroup': playersAdvancingPerGroup, // Backend espera esto
+      'playersAdvancingPerGroup': playersAdvancingPerGroup, // Compatibilidad
       'seedingMethod': seedingMethod.value,
       'pointsForWin': pointsForWin,
       'pointsForDraw': pointsForDraw,

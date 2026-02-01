@@ -127,9 +127,11 @@ class TournamentDetailScreen extends ConsumerWidget {
                         runSpacing: 4,
                         children: [
                           _buildStatusChip(tournament.status),
-                          if (tournament.isUserEnrolled(
-                            ref.watch(currentUserProvider)?.id ?? '',
-                          ))
+                          if (!(ref.watch(currentUserProvider)?.isTenantAdmin ??
+                                  false) &&
+                              tournament.isUserEnrolled(
+                                ref.watch(currentUserProvider)?.id ?? '',
+                              ))
                             _buildEnrolledChip(),
                         ],
                       ),
@@ -318,6 +320,11 @@ class TournamentDetailScreen extends ConsumerWidget {
                 ? () {
                     context.push(
                       '/tournaments/$tournamentId/categories/${category.id}/groups',
+                      extra: {
+                        'isOrganizer':
+                            ref.read(currentUserProvider)?.isTenantAdmin ??
+                            false,
+                      },
                     );
                   }
                 : null,

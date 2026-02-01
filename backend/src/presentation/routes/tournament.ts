@@ -8,6 +8,7 @@ import { RecordTournamentMatchResultUseCase } from '../../application/use-cases/
 import { EnrollPlayerUseCase } from '../../application/use-cases/EnrollPlayerUseCase';
 import { GenerateGroupsUseCase } from '../../application/use-cases/GenerateGroupsUseCase';
 import { MoveParticipantBetweenGroupsUseCase } from '../../application/use-cases/MoveParticipantBetweenGroupsUseCase';
+import { SwapParticipantsBetweenGroupsUseCase } from '../../application/use-cases/SwapParticipantsBetweenGroupsUseCase';
 import { LockGroupsAndGenerateFixturesUseCase } from '../../application/use-cases/LockGroupsAndGenerateFixturesUseCase';
 import { RecordGroupMatchResultUseCase } from '../../application/use-cases/RecordGroupMatchResultUseCase';
 import { AdvanceToKnockoutPhaseUseCase } from '../../application/use-cases/AdvanceToKnockoutPhaseUseCase';
@@ -60,6 +61,9 @@ const generateGroupsUseCase = new GenerateGroupsUseCase(
 const moveParticipantBetweenGroupsUseCase = new MoveParticipantBetweenGroupsUseCase(
     groupStageRepository
 );
+const swapParticipantsBetweenGroupsUseCase = new SwapParticipantsBetweenGroupsUseCase(
+    groupStageRepository
+);
 const lockGroupsAndGenerateFixturesUseCase = new LockGroupsAndGenerateFixturesUseCase(
     groupStageRepository,
     groupStageGenerationService
@@ -91,6 +95,7 @@ const controller = new TournamentController(
     bracketRepository,
     generateGroupsUseCase,
     moveParticipantBetweenGroupsUseCase,
+    swapParticipantsBetweenGroupsUseCase,
     lockGroupsAndGenerateFixturesUseCase,
     recordGroupMatchResultUseCase,
     advanceToKnockoutPhaseUseCase,
@@ -197,6 +202,18 @@ router.put(
     firebaseAuthMiddleware,
     extractTenantId,
     controller.moveParticipantBetweenGroups
+);
+
+/**
+ * @route PUT /api/tournaments/:id/categories/:categoryId/groups/swap-participants
+ * @desc Intercambiar dos participantes entre grupos
+ * @access Private
+ */
+router.put(
+    '/:id/categories/:categoryId/groups/swap-participants',
+    firebaseAuthMiddleware,
+    extractTenantId,
+    controller.swapParticipantsBetweenGroups
 );
 
 /**

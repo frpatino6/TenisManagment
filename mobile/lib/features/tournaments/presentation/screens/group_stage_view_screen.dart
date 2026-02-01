@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../domain/models/group_stage_model.dart';
+import '../dialogs/swap_player_dialog.dart';
 import '../providers/group_stage_provider.dart';
 import '../providers/tournaments_provider.dart';
 import '../widgets/group_card.dart';
@@ -123,21 +125,126 @@ class _GroupStageViewScreenState extends ConsumerState<GroupStageViewScreen>
       ),
       floatingActionButton: groupStageAsync.maybeWhen(
         data: (groupStage) {
-          if (groupStage != null &&
-              groupStage.status == GroupStageStatus.draft &&
-              widget.isOrganizer) {
-            return FloatingActionButton.extended(
-              onPressed: _confirmLockGroups,
-              icon: const Icon(Icons.lock_outline),
-              label: const Text('Confirmar Grupos'),
-              backgroundColor: Theme.of(context).primaryColor,
-            );
+          if (groupStage != null && widget.isOrganizer) {
+            if (groupStage.status == GroupStageStatus.draft) {
+              return FloatingActionButton.extended(
+                onPressed: _confirmLockGroups,
+                icon: const Icon(Icons.lock_outline),
+                label: const Text('Confirmar Grupos'),
+                backgroundColor: Theme.of(context).primaryColor,
+              );
+            } else if (groupStage.status == GroupStageStatus.inProgress ||
+                groupStage.status == GroupStageStatus.locked ||
+                groupStage.status == GroupStageStatus.completed) {
+              final allCompleted = _areAllMatchesCompleted(groupStage);
+              return FloatingActionButton.extended(
+                onPressed: allCompleted
+                    ? _confirmAdvanceToKnockout
+                    : () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Debes completar todos los partidos para finalizar la fase de grupos',
+                            ),
+                            backgroundColor: Colors.orange,
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                icon: const Icon(Icons.emoji_events_outlined),
+                label: const Text('Finalizar Fase Grupos'),
+                backgroundColor: allCompleted ? Colors.orange : Colors.grey,
+              );
+            }
           }
           return null;
         },
         orElse: () => null,
       ),
     );
+  }
+
+  bool _areAllMatchesCompleted(GroupStageModel groupStage) {
+    for (final group in groupStage.groups) {
+      for (final match in group.matches) {
+        if (!match.isCompleted) return false;
+      }
+    }
+    return true;
+  }
+
+  Future<void> _confirmAdvanceToKnockout() async {
+    if (!mounted) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Finalizar Fase de Grupos?'),
+        content: const Text(
+          'Esto generará el bracket final basado en los resultados. '
+          'Asegúrate de que todos los marcadores sean correctos.\n\n'
+          'Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Finalizar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        // Mostrar loading
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) =>
+              const Center(child: CircularProgressIndicator()),
+        );
+
+        await ref
+            .read(groupStageGeneratorProvider.notifier)
+            .advanceToKnockout(
+              tournamentId: widget.tournamentId,
+              categoryId: widget.categoryId,
+            );
+
+        if (mounted) {
+          // Cerrar loading usando navegador raíz
+          Navigator.of(context, rootNavigator: true).pop();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Bracket generado exitosamente'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          // Ir directamente a la pantalla del bracket
+          if (context.mounted) {
+            context.pushReplacement(
+              '/tournaments/${widget.tournamentId}/bracket/${widget.categoryId}',
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
   Future<void> _confirmLockGroups() async {
@@ -175,14 +282,15 @@ class _GroupStageViewScreenState extends ConsumerState<GroupStageViewScreen>
 
         if (!mounted) return;
 
-        // Refrescar para actualizar la vista inmediatamente
-        // ignore: unused_result
-        ref.refresh(
-          groupStageProvider(
-            tournamentId: widget.tournamentId,
-            categoryId: widget.categoryId,
-          ),
+        // Invalidar el provider y esperar a que se carguen los nuevos datos
+        final provider = groupStageProvider(
+          tournamentId: widget.tournamentId,
+          categoryId: widget.categoryId,
         );
+        ref.invalidate(provider);
+        await ref.read(provider.future);
+
+        if (!mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -220,6 +328,8 @@ class _GroupStageViewScreenState extends ConsumerState<GroupStageViewScreen>
           showQualified: groupStage.status == GroupStageStatus.completed,
           onMoveParticipant: (participantId, fromGroupId, toGroupId) =>
               _handleMoveParticipant(participantId, fromGroupId, toGroupId),
+          onSwapParticipant: (participantId, groupId) =>
+              _handleSwapParticipant(participantId, groupId, otherGroups),
           onTap: () {
             // Navegar a detalles del grupo si es necesario
           },
@@ -246,14 +356,15 @@ class _GroupStageViewScreenState extends ConsumerState<GroupStageViewScreen>
 
       if (!mounted) return;
 
-      // Refrescar para actualizar la vista inmediatamente
-      // ignore: unused_result
-      ref.refresh(
-        groupStageProvider(
-          tournamentId: widget.tournamentId,
-          categoryId: widget.categoryId,
-        ),
+      // Invalidar el provider y esperar a que se carguen los nuevos datos
+      final provider = groupStageProvider(
+        tournamentId: widget.tournamentId,
+        categoryId: widget.categoryId,
       );
+      ref.invalidate(provider);
+      await ref.read(provider.future);
+
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -263,10 +374,91 @@ class _GroupStageViewScreenState extends ConsumerState<GroupStageViewScreen>
       );
     } catch (e) {
       if (!mounted) return;
+      // Extraer el mensaje de error limpio
+      String errorMessage = e.toString();
+      if (errorMessage.contains('message:')) {
+        // Extraer solo el mensaje del NetworkException
+        final match = RegExp(r'message:\s*([^,\]]+)').firstMatch(errorMessage);
+        if (match != null) {
+          errorMessage = match.group(1)?.trim() ?? errorMessage;
+        }
+      } else if (errorMessage.startsWith('Exception:')) {
+        errorMessage = errorMessage.replaceFirst('Exception:', '').trim();
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al mover participante: $e'),
+          content: Text(errorMessage),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleSwapParticipant(
+    String participant1Id,
+    String group1Id,
+    List<GroupModel> otherGroups,
+  ) async {
+    if (!mounted) return;
+
+    final result = await showDialog<SwapPlayerResult>(
+      context: context,
+      builder: (context) => SwapPlayerDialog(
+        currentPlayerId: participant1Id,
+        currentGroupId: group1Id,
+        otherGroups: otherGroups,
+      ),
+    );
+
+    if (result == null || !mounted) return;
+
+    try {
+      final generator = ref.read(groupStageGeneratorProvider.notifier);
+      await generator.swapParticipants(
+        tournamentId: widget.tournamentId,
+        categoryId: widget.categoryId,
+        participant1Id: participant1Id,
+        group1Id: group1Id,
+        participant2Id: result.participant2Id,
+        group2Id: result.group2Id,
+      );
+
+      if (!mounted) return;
+
+      final provider = groupStageProvider(
+        tournamentId: widget.tournamentId,
+        categoryId: widget.categoryId,
+      );
+      ref.invalidate(provider);
+      await ref.read(provider.future);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Participantes intercambiados con éxito'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      String errorMessage = e.toString();
+      if (errorMessage.contains('message:')) {
+        final match = RegExp(r'message:\s*([^,\]]+)').firstMatch(errorMessage);
+        if (match != null) {
+          errorMessage = match.group(1)?.trim() ?? errorMessage;
+        }
+      } else if (errorMessage.startsWith('Exception:')) {
+        errorMessage = errorMessage.replaceFirst('Exception:', '').trim();
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
         ),
       );
     }

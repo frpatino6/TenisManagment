@@ -30,6 +30,10 @@ export interface TournamentCategory {
     // Referencias a las fases
     hasGroupStage?: boolean;
     hasBracket?: boolean;
+
+    // Resultados finales
+    championId?: string;
+    runnerUpId?: string;
 }
 
 /**

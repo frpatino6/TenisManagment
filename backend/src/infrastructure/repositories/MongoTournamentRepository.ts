@@ -138,6 +138,8 @@ export class MongoTournamentRepository implements ITournamentRepository {
                     groupStageConfig: cat.groupStageConfig,
                     hasGroupStage: cat.hasGroupStage || false,
                     hasBracket: cat.hasBracket || false,
+                    championId: cat.championId?.toString(),
+                    runnerUpId: cat.runnerUpId?.toString(),
                 })),
                 metadata: doc.metadata,
                 createdAt: doc.createdAt,

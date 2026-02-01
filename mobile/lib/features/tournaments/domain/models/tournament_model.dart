@@ -122,6 +122,8 @@ class TournamentCategoryModel {
   final bool hasGroupStage;
   final TournamentFormat format;
   final GroupStageConfig? groupStageConfig;
+  final String? championId;
+  final String? runnerUpId;
 
   const TournamentCategoryModel({
     this.id,
@@ -132,6 +134,8 @@ class TournamentCategoryModel {
     this.hasGroupStage = false,
     this.format = TournamentFormat.singleElimination,
     this.groupStageConfig,
+    this.championId,
+    this.runnerUpId,
   });
 
   factory TournamentCategoryModel.fromJson(Map<String, dynamic> json) {
@@ -159,6 +163,8 @@ class TournamentCategoryModel {
                 json['groupStageConfig'] as Map<String, dynamic>,
               )
             : null,
+        championId: json['championId'] as String?,
+        runnerUpId: json['runnerUpId'] as String?,
       );
     } catch (e, stackTrace) {
       final logger = AppLogger.tag('TournamentCategoryModel');
@@ -183,6 +189,8 @@ class TournamentCategoryModel {
       'format': format.value,
       if (groupStageConfig != null)
         'groupStageConfig': groupStageConfig!.toJson(),
+      'championId': championId,
+      'runnerUpId': runnerUpId,
     };
   }
 

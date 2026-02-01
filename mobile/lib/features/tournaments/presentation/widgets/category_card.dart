@@ -88,17 +88,64 @@ class CategoryCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 12),
+            if (category.championId != null) ...[
+              _buildChampionInfo(context),
+              const SizedBox(height: 12),
+            ],
             if (category.format == TournamentFormat.hybrid &&
                 category.groupStageConfig != null) ...[
               _buildConfigSummary(theme: Theme.of(context)),
               const SizedBox(height: 12),
-            ] else
-              const SizedBox(height: 16),
+            ],
 
             // Botones de acción
             _buildActionButtons(context, ref, currentUser, isEnrolled),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildChampionInfo(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.amber.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.emoji_events, color: Colors.amber, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Torneo Finalizado',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber[900],
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const Text(
+                      '¡Felicidades al Campeón!',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -7,6 +7,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../widgets/bracket_tree_widget.dart';
 import '../widgets/tournament_match_result_dialog.dart';
 import '../../../../core/exceptions/network_exception.dart';
+import '../../domain/models/bracket_model.dart';
 
 class BracketViewScreen extends ConsumerStatefulWidget {
   final String tournamentId;
@@ -99,89 +100,95 @@ class _BracketViewScreenState extends ConsumerState<BracketViewScreen> {
                 boundaryMargin: const EdgeInsets.all(100),
                 minScale: 0.1,
                 maxScale: 2.0,
-                child: BracketTreeWidget(
-                  bracket: bracket,
-                  onMatchTap: (match) async {
-                    final isBye =
-                        match.player1Id == null || match.player2Id == null;
-                    if (isBye && match.winnerId != null) {
-                      final nextMatch = match.nextMatchId != null
-                          ? bracket.matches
-                                .where((m) => m.id == match.nextMatchId)
-                                .firstOrNull
-                          : null;
+                child: Column(
+                  children: [
+                    if (bracket.status == 'COMPLETED')
+                      _buildChampionCelebration(bracket),
+                    BracketTreeWidget(
+                      bracket: bracket,
+                      onMatchTap: (match) async {
+                        final isBye =
+                            match.player1Id == null || match.player2Id == null;
+                        if (isBye && match.winnerId != null) {
+                          final nextMatch = match.nextMatchId != null
+                              ? bracket.matches
+                                    .where((m) => m.id == match.nextMatchId)
+                                    .firstOrNull
+                              : null;
 
-                      final alreadyAdvanced =
-                          nextMatch != null &&
-                          (nextMatch.player1Id == match.winnerId ||
-                              nextMatch.player2Id == match.winnerId);
+                          final alreadyAdvanced =
+                              nextMatch != null &&
+                              (nextMatch.player1Id == match.winnerId ||
+                                  nextMatch.player2Id == match.winnerId);
 
-                      if (alreadyAdvanced) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Este avance por BYE ya fue procesado.',
-                            ),
-                            behavior: SnackBarBehavior.floating,
+                          if (alreadyAdvanced) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Este avance por BYE ya fue procesado.',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                            return;
+                          }
+                        }
+
+                        final result = await showDialog<Map<String, dynamic>>(
+                          context: context,
+                          builder: (context) => TournamentMatchResultDialog(
+                            match: match,
+                            player1Name: match.player1Name,
+                            player2Name: match.player2Name,
                           ),
                         );
-                        return;
-                      }
-                    }
 
-                    final result = await showDialog<Map<String, dynamic>>(
-                      context: context,
-                      builder: (context) => TournamentMatchResultDialog(
-                        match: match,
-                        player1Name: match.player1Name,
-                        player2Name: match.player2Name,
-                      ),
-                    );
+                        if (result != null) {
+                          setState(() => _isProcessing = true);
+                          try {
+                            await ref
+                                .read(
+                                  bracketProvider(
+                                    widget.tournamentId,
+                                    widget.categoryId,
+                                  ).notifier,
+                                )
+                                .recordMatchResult(
+                                  matchId: match.id,
+                                  winnerId: result['winnerId'] as String,
+                                  score: result['score'] as String,
+                                );
 
-                    if (result != null) {
-                      setState(() => _isProcessing = true);
-                      try {
-                        await ref
-                            .read(
-                              bracketProvider(
-                                widget.tournamentId,
-                                widget.categoryId,
-                              ).notifier,
-                            )
-                            .recordMatchResult(
-                              matchId: match.id,
-                              winnerId: result['winnerId'] as String,
-                              score: result['score'] as String,
-                            );
-
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Resultado registrado exitosamente',
-                              ),
-                              backgroundColor: Colors.green,
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Resultado registrado exitosamente',
+                                  ),
+                                  backgroundColor: Colors.green,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error: ${e.toString()}'),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (mounted) {
+                              setState(() => _isProcessing = false);
+                            }
+                          }
                         }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error: ${e.toString()}'),
-                              backgroundColor: Colors.red,
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        }
-                      } finally {
-                        if (mounted) {
-                          setState(() => _isProcessing = false);
-                        }
-                      }
-                    }
-                  },
+                      },
+                    ),
+                  ],
                 ),
               );
             },
@@ -267,6 +274,75 @@ class _BracketViewScreenState extends ConsumerState<BracketViewScreen> {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildChampionCelebration(BracketModel bracket) {
+    // Buscar el partido final (sin nextMatchId)
+    final finalMatch = bracket.matches
+        .where((m) => m.nextMatchId == null)
+        .firstOrNull;
+    if (finalMatch == null || finalMatch.winnerId == null)
+      return const SizedBox.shrink();
+
+    final championName = finalMatch.winnerId == finalMatch.player1Id
+        ? finalMatch.player1Name
+        : finalMatch.player2Name;
+
+    return Container(
+      width: 400,
+      margin: const EdgeInsets.only(top: 40, bottom: 20),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.amber[400]!, Colors.amber[700]!],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.amber.withOpacity(0.3),
+            blurRadius: 15,
+            spreadRadius: 2,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.emoji_events, color: Colors.white, size: 60),
+          const SizedBox(height: 16),
+          const Text(
+            '¡CAMPEÓN!',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            championName ?? 'Desconocido',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Torneo Finalizado',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -137,12 +137,49 @@ export class RecordTournamentMatchResultUseCase {
                 status: 'COMPLETED'
             });
             updatedBracket.status = 'COMPLETED';
+
+            // 9. Identificar campeón y subcampeón
+            // El último match es el que no tiene nextMatchId
+            const finalMatch = bracket.matches.find(m => !m.nextMatchId);
+            if (finalMatch && finalMatch.winnerId) {
+                const championId = finalMatch.winnerId;
+                const runnerUpId = championId === finalMatch.player1Id
+                    ? finalMatch.player2Id
+                    : finalMatch.player1Id;
+
+                // Actualizar la categoría en el torneo
+                const categoryIndex = tournament.categories.findIndex(c => c.id === bracket!.categoryId);
+                if (categoryIndex !== -1) {
+                    tournament.categories[categoryIndex].championId = championId;
+                    tournament.categories[categoryIndex].runnerUpId = runnerUpId;
+
+                    // Verificar si todas las categorías del torneo han terminado
+                    // Un torneo termina si todas sus categorías tienen un campeón
+                    const allCategoriesFinished = tournament.categories.every(c => c.championId);
+                    if (allCategoriesFinished) {
+                        tournament.status = 'FINISHED';
+                    }
+
+                    await this.tournamentRepository.update(tournament.id!, {
+                        categories: tournament.categories,
+                        status: tournament.status
+                    });
+                }
+            }
+
         } else if (updatedBracket.status === 'PENDING') {
             // Cambiar a IN_PROGRESS al registrar el primer resultado
             await this.bracketRepository.update(updatedBracket.id!, {
                 status: 'IN_PROGRESS'
             });
             updatedBracket.status = 'IN_PROGRESS';
+
+            // También actualizar el torneo a IN_PROGRESS si estaba en DRAFT/CREATED
+            if (tournament.status !== 'IN_PROGRESS' && tournament.status !== 'FINISHED') {
+                await this.tournamentRepository.update(tournament.id!, {
+                    status: 'IN_PROGRESS'
+                });
+            }
         }
 
         return updatedBracket;

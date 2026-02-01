@@ -219,6 +219,9 @@ class _GroupStageViewScreenState extends ConsumerState<GroupStageViewScreen>
           // Cerrar loading usando navegador raíz
           Navigator.of(context, rootNavigator: true).pop();
 
+          // Invalidar el provider del torneo para que se refresque
+          ref.invalidate(tournamentDetailProvider(widget.tournamentId));
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Bracket generado exitosamente'),

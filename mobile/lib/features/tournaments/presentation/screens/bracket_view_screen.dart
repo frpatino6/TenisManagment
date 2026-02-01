@@ -102,7 +102,7 @@ class _BracketViewScreenState extends ConsumerState<BracketViewScreen> {
                 maxScale: 2.0,
                 child: Column(
                   children: [
-                    if (bracket.status == 'COMPLETED')
+                    if (bracket.status == BracketStatus.completed)
                       _buildChampionCelebration(bracket),
                     BracketTreeWidget(
                       bracket: bracket,

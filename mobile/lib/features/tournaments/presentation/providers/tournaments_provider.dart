@@ -134,6 +134,11 @@ class Bracket extends _$Bracket {
         score: score,
       );
     });
+
+    // Invalida el torneo para que el CategoryCard se actualice (championId)
+    ref.invalidate(tournamentDetailProvider(tournamentId));
+    // Invalida la lista de torneos por si el estado cambió a FINISHED
+    ref.invalidate(tournamentsProvider);
   }
 
   /// Elimina el bracket del torneo (Solo Admin).

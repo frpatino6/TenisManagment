@@ -33,7 +33,9 @@ export interface TournamentCategory {
 
     // Resultados finales
     championId?: string;
+    championName?: string;
     runnerUpId?: string;
+    runnerUpName?: string;
 }
 
 /**

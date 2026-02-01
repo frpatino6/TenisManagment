@@ -26,7 +26,9 @@ export interface TournamentDocument extends Document {
         hasGroupStage: boolean;
         hasBracket: boolean;
         championId?: Types.ObjectId;
+        championName?: string;
         runnerUpId?: Types.ObjectId;
+        runnerUpName?: string;
     }>;
     metadata?: Record<string, any>;
     createdAt: Date;
@@ -73,7 +75,9 @@ const CategorySchema = new Schema({
 
     // Resultados finales
     championId: { type: Schema.Types.ObjectId, ref: 'AuthUser' },
+    championName: { type: String },
     runnerUpId: { type: Schema.Types.ObjectId, ref: 'AuthUser' },
+    runnerUpName: { type: String },
 });
 
 const TournamentSchema = new Schema<TournamentDocument>(

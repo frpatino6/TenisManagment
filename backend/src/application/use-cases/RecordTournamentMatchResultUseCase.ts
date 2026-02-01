@@ -2,6 +2,7 @@ import { IBracketRepository } from '../../domain/repositories/IBracketRepository
 import { ITournamentRepository } from '../../domain/repositories/ITournamentRepository';
 import { RankingService } from '../services/RankingService';
 import { Bracket, BracketMatch } from '../../domain/entities/Bracket';
+import { Logger } from '../../infrastructure/services/Logger';
 
 interface RecordMatchResultInput {
     tournamentId: string;
@@ -11,6 +12,8 @@ interface RecordMatchResultInput {
 }
 
 export class RecordTournamentMatchResultUseCase {
+    private logger = new Logger({ context: 'RecordTournamentMatchResultUseCase' });
+
     constructor(
         private bracketRepository: IBracketRepository,
         private tournamentRepository: ITournamentRepository,
@@ -128,34 +131,40 @@ export class RecordTournamentMatchResultUseCase {
         }
 
         // 8. Verificar si el bracket está completo
-        const allMatchesCompleted = updatedBracket.matches.every(m =>
-            m.winnerId !== undefined || (!m.player1Id || !m.player2Id)
-        );
+        // Un bracket está completo si el partido de la Gran Final (round 1, sin nextMatchId) tiene un ganador.
+        const finalMatch = updatedBracket.matches.find(m => m.round === 1 && !m.nextMatchId);
+        const isBracketFinished = finalMatch && !!finalMatch.winnerId;
 
-        if (allMatchesCompleted && updatedBracket.status !== 'COMPLETED') {
+        if (isBracketFinished && updatedBracket.status !== 'COMPLETED') {
             await this.bracketRepository.update(updatedBracket.id!, {
                 status: 'COMPLETED'
             });
             updatedBracket.status = 'COMPLETED';
 
             // 9. Identificar campeón y subcampeón
-            // El último match es el que no tiene nextMatchId
-            const finalMatch = bracket.matches.find(m => !m.nextMatchId);
             if (finalMatch && finalMatch.winnerId) {
                 const championId = finalMatch.winnerId;
+                const championName = championId === finalMatch.player1Id
+                    ? finalMatch.player1Name
+                    : finalMatch.player2Name;
+
                 const runnerUpId = championId === finalMatch.player1Id
                     ? finalMatch.player2Id
                     : finalMatch.player1Id;
+                const runnerUpName = runnerUpId === finalMatch.player1Id
+                    ? finalMatch.player1Name
+                    : finalMatch.player2Name;
 
                 // Actualizar la categoría en el torneo
                 const categoryIndex = tournament.categories.findIndex(c => c.id === bracket!.categoryId);
                 if (categoryIndex !== -1) {
                     tournament.categories[categoryIndex].championId = championId;
+                    tournament.categories[categoryIndex].championName = championName;
                     tournament.categories[categoryIndex].runnerUpId = runnerUpId;
+                    tournament.categories[categoryIndex].runnerUpName = runnerUpName;
 
                     // Verificar si todas las categorías del torneo han terminado
-                    // Un torneo termina si todas sus categorías tienen un campeón
-                    const allCategoriesFinished = tournament.categories.every(c => c.championId);
+                    const allCategoriesFinished = tournament.categories.every(c => !!c.championId);
                     if (allCategoriesFinished) {
                         tournament.status = 'FINISHED';
                     }
@@ -163,6 +172,13 @@ export class RecordTournamentMatchResultUseCase {
                     await this.tournamentRepository.update(tournament.id!, {
                         categories: tournament.categories,
                         status: tournament.status
+                    });
+
+                    this.logger.info('Categoría finalizada exitosamente', {
+                        categoryId: bracket!.categoryId,
+                        championId,
+                        runnerUpId,
+                        tournamentStatus: tournament.status
                     });
                 }
             }

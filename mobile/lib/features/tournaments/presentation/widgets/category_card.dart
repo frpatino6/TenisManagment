@@ -133,13 +133,21 @@ class CategoryCard extends ConsumerWidget {
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const Text(
-                      '¡Felicidades al Campeón!',
-                      style: TextStyle(
-                        fontSize: 14,
+                    Text(
+                      category.championName ?? '¡Felicidades al Campeón!',
+                      style: const TextStyle(
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    if (category.championName != null)
+                      const Text(
+                        '¡Campeón!',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                   ],
                 ),
               ),

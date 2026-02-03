@@ -1,15 +1,19 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/models/user_ranking.dart';
 import '../../domain/repositories/ranking_repository.dart';
-import '../../infrastructure/repositories/mock_ranking_repository.dart';
+import '../../infrastructure/repositories/http_ranking_repository.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../core/services/http_client.dart';
 import '../../application/use_cases/get_rankings_use_case.dart';
 
 part 'ranking_providers.g.dart';
 
 @riverpod
+@riverpod
 RankingRepository rankingRepository(Ref ref) {
-  // Cambio temporal a Mock para visualización en UI
-  return MockRankingRepository();
+  final httpClient = ref.watch(appHttpClientProvider);
+  final currentUser = ref.watch(currentUserProvider);
+  return HttpRankingRepository(httpClient, currentUser);
 }
 
 @riverpod

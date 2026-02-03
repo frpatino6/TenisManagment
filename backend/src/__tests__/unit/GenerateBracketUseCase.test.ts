@@ -5,6 +5,18 @@ import { IBracketRepository } from '../../domain/repositories/IBracketRepository
 import { BracketGenerationService } from '../../domain/services/BracketGenerationService';
 import { Tournament } from '../../domain/entities/Tournament';
 import { Bracket } from '../../domain/entities/Bracket';
+import { AuthUserModel } from '../../infrastructure/database/models/AuthUserModel';
+
+jest.mock('../../infrastructure/database/models/AuthUserModel', () => ({
+    AuthUserModel: {
+        find: jest.fn(() => ({
+            lean: jest.fn().mockResolvedValue([
+                { _id: '507f1f77bcf86cd799439011', name: 'Player 1' },
+                { _id: '507f1f77bcf86cd799439012', name: 'Player 2' }
+            ])
+        }))
+    }
+}));
 
 describe('GenerateBracketUseCase', () => {
     let useCase: GenerateBracketUseCase;
@@ -24,7 +36,7 @@ describe('GenerateBracketUseCase', () => {
             {
                 id: categoryId,
                 name: 'Pro',
-                participants: [{ id: 'p1', name: 'Player 1' }, { id: 'p2', name: 'Player 2' }],
+                participants: ['507f1f77bcf86cd799439011', '507f1f77bcf86cd799439012'],
                 prizes: []
             } as any
         ],
@@ -76,10 +88,10 @@ describe('GenerateBracketUseCase', () => {
         await expect(useCase.execute(tournamentId, categoryId)).rejects.toThrow('Torneo no encontrado');
     });
 
-    it('should throw error if tournament is not DRAFT', async () => {
-        mockTournamentRepository.findById.mockResolvedValue({ ...mockTournament, status: 'IN_PROGRESS' });
+    it('should throw error if tournament is FINISHED', async () => {
+        mockTournamentRepository.findById.mockResolvedValue({ ...mockTournament, status: 'FINISHED' });
 
-        await expect(useCase.execute(tournamentId, categoryId)).rejects.toThrow('Solo se pueden generar brackets para torneos en estado DRAFT');
+        await expect(useCase.execute(tournamentId, categoryId)).rejects.toThrow('No se pueden generar brackets para torneos en estado FINISHED');
     });
 
     it('should throw error if category not found', async () => {
@@ -91,7 +103,7 @@ describe('GenerateBracketUseCase', () => {
     it('should throw error if not enough participants', async () => {
         const tournamentWithFewParticipants = {
             ...mockTournament,
-            categories: [{ ...mockTournament.categories[0], participants: [{ id: 'p1' }] }]
+            categories: [{ ...mockTournament.categories[0], participants: ['507f1f77bcf86cd799439011'] }]
         };
         mockTournamentRepository.findById.mockResolvedValue(tournamentWithFewParticipants as any);
 

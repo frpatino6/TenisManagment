@@ -60,6 +60,7 @@ describe('RecordTournamentMatchResultUseCase', () => {
 
         mockTournamentRepository = {
             findById: jest.fn(),
+            update: jest.fn(),
         } as any;
 
         mockRankingService = {
@@ -128,7 +129,7 @@ describe('RecordTournamentMatchResultUseCase', () => {
     it('should mark bracket as completed if all matches finished', async () => {
         const finalMatch: BracketMatch = {
             id: 'final-match',
-            round: 2,
+            round: 1,
             position: 0,
             player1Id: 'p1',
             player2Id: 'p2'

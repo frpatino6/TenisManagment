@@ -70,6 +70,12 @@ export class UpdateTournamentUseCase {
                         categoryUpdate.format &&
                         existingCategory.format !== categoryUpdate.format
                     ) {
+                        if (existingCategory.participants && existingCategory.participants.length > 0) {
+                            throw new Error(
+                                `No se puede cambiar el formato de la categoría "${existingCategory.name}" porque tiene participantes inscritos`
+                            );
+                        }
+
                         if (existingCategory.hasBracket || existingCategory.hasGroupStage) {
                             throw new Error(
                                 `No se puede cambiar el formato de la categoría "${existingCategory.name}" ` +

@@ -40,6 +40,14 @@ import '../../features/tenant_admin/presentation/screens/tenant_student_details_
 import '../../features/tenant_admin/presentation/screens/tenant_professor_details_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_payments_list_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_debt_report_screen.dart';
+import '../../features/ranking/presentation/screens/ranking_screen.dart';
+import '../../features/tournaments/presentation/screens/tournaments_list_screen.dart';
+import '../../features/tournaments/presentation/screens/tournament_detail_screen.dart';
+import '../../features/tournaments/presentation/screens/create_tournament_screen.dart';
+import '../../features/tournaments/presentation/screens/bracket_view_screen.dart';
+import '../../features/tournaments/presentation/screens/group_stage_config_screen.dart';
+import '../../features/tournaments/presentation/screens/group_stage_view_screen.dart';
+import '../../features/tournaments/domain/models/tournament_model.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../providers/tenant_provider.dart';
 
@@ -120,7 +128,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         // tenant_admin should NEVER see select-tenant screen
         if (user.role == 'tenant_admin') {
           if (currentPath != '/tenant-admin-home' &&
-              !currentPath.startsWith('/tenant-')) {
+              !currentPath.startsWith('/tenant-') &&
+              currentPath != '/ranking' &&
+              !currentPath.startsWith('/tournaments')) {
             return '/tenant-admin-home';
           }
           return null;
@@ -380,6 +390,76 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/select-tenant',
         name: 'select-tenant',
         builder: (context, state) => const SelectTenantScreen(),
+      ),
+      GoRoute(
+        path: '/ranking',
+        name: 'ranking',
+        builder: (context, state) => const RankingScreen(),
+      ),
+      GoRoute(
+        path: '/tournaments',
+        name: 'tournaments',
+        builder: (context, state) => const TournamentsListScreen(),
+      ),
+      GoRoute(
+        path: '/tournaments/create',
+        name: 'create-tournament',
+        builder: (context, state) => const CreateTournamentScreen(),
+      ),
+      GoRoute(
+        path: '/tournaments/:id',
+        name: 'tournament_detail',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return TournamentDetailScreen(tournamentId: id);
+        },
+        routes: [
+          GoRoute(
+            path: 'edit',
+            name: 'edit-tournament',
+            builder: (context, state) {
+              final tournament = state.extra as TournamentModel?;
+              return CreateTournamentScreen(tournament: tournament);
+            },
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/tournaments/:id/bracket/:categoryId',
+        name: 'tournament-bracket',
+        builder: (context, state) {
+          return BracketViewScreen(
+            tournamentId: state.pathParameters['id']!,
+            categoryId: state.pathParameters['categoryId']!,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/tournaments/:id/categories/:categoryId/groups/config',
+        name: 'group-stage-config',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return GroupStageConfigScreen(
+            tournamentId: state.pathParameters['id']!,
+            categoryId: state.pathParameters['categoryId']!,
+            totalParticipants: extra?['totalParticipants'] ?? 0,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/tournaments/:id/categories/:categoryId/groups',
+        name: 'group-stage-view',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          final isOrganizer =
+              extra?['isOrganizer'] as bool? ??
+              (ref.watch(currentUserProvider)?.isTenantAdmin ?? false);
+          return GroupStageViewScreen(
+            tournamentId: state.pathParameters['id']!,
+            categoryId: state.pathParameters['categoryId']!,
+            isOrganizer: isOrganizer,
+          );
+        },
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

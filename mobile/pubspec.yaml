@@ -57,6 +57,7 @@ dependencies:
   # Modern UI components
   gap: ^3.0.1
   flutter_animate: ^4.5.0
+  shimmer: ^3.0.0
   
   # Navigation - Modern
   go_router: ^16.2.4

@@ -74,7 +74,7 @@ final class PaymentControllerProvider
   PaymentController create() => PaymentController();
 }
 
-String _$paymentControllerHash() => r'318e775658a7781a5ca7aa6ce9a4532d4c0af238';
+String _$paymentControllerHash() => r'906a53bea9a8ba31e8a710aae3d894da25ec4c9f';
 
 abstract class _$PaymentController extends $AsyncNotifier<void> {
   FutureOr<void> build();

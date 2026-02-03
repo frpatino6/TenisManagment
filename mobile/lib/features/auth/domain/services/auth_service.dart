@@ -25,9 +25,9 @@ class AuthService {
     FirebaseAuth? firebaseAuth,
     GoogleSignIn? googleSignIn,
     http.Client? httpClient,
-  })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn(),
-        _httpClient = httpClient ?? http.Client();
+  }) : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+       _googleSignIn = googleSignIn ?? GoogleSignIn(),
+       _httpClient = httpClient ?? http.Client();
 
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
@@ -105,6 +105,10 @@ class AuthService {
     }
   }
 
+  /// Autentica al usuario con email y contraseña.
+  ///
+  /// Si falla debido a credenciales inválidas o usuario no encontrado,
+  /// lanza excepciones específicas.
   Future<UserModel> signInWithEmail(String email, String password) async {
     _logger.info('Iniciando autenticación con email', {'email': email});
     try {
@@ -217,6 +221,10 @@ class AuthService {
     }
   }
 
+  /// Registra un nuevo usuario con email y contraseña.
+  ///
+  /// Si el email ya está en uso en Firebase, intenta verificar si existe en el backend.
+  /// Crea el usuario tanto en Firebase Auth como en la base de datos del backend.
   Future<UserModel> registerWithEmail({
     required String name,
     required String email,
@@ -322,6 +330,7 @@ class AuthService {
     }
   }
 
+  /// Cierra la sesión del usuario actual.
   Future<void> signOut() async {
     try {
       if (kIsWeb) {
@@ -334,6 +343,9 @@ class AuthService {
     }
   }
 
+  /// Obtiene la información detallada del usuario actual desde el backend.
+  ///
+  /// Requiere que el usuario esté autenticado en Firebase.
   Future<UserModel> getUserInfo() async {
     try {
       final User? user = currentFirebaseUser;
@@ -558,6 +570,7 @@ class AuthService {
     }
   }
 
+  /// Envía un correo de verificación al usuario actual.
   Future<void> sendEmailVerification() async {
     try {
       final User? user = currentFirebaseUser;
@@ -569,6 +582,7 @@ class AuthService {
     }
   }
 
+  /// Envía un correo para restablecer la contraseña.
   Future<void> sendPasswordResetEmail(String email) async {
     try {
       await _firebaseAuth.sendPasswordResetEmail(email: email);

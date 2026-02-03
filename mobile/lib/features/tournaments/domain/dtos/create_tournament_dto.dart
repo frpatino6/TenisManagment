@@ -1,0 +1,51 @@
+import '../models/tournament_model.dart';
+
+class CreateTournamentDto {
+  final String name;
+  final String? description;
+  final DateTime startDate;
+  final DateTime endDate;
+  final List<CreateCategoryDto> categories;
+
+  const CreateTournamentDto({
+    required this.name,
+    this.description,
+    required this.startDate,
+    required this.endDate,
+    required this.categories,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'description': description,
+      'startDate': startDate.toIso8601String(),
+      'endDate': endDate.toIso8601String(),
+      'categories': categories.map((e) => e.toJson()).toList(),
+    };
+  }
+}
+
+class CreateCategoryDto {
+  final String name;
+  final CategoryGender gender;
+  final TournamentFormat format;
+  final GroupStageConfig? groupStageConfig;
+
+  const CreateCategoryDto({
+    required this.name,
+    required this.gender,
+    this.format = TournamentFormat.singleElimination,
+    this.groupStageConfig,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'gender': gender.value,
+      'format': format.value,
+      if (groupStageConfig != null)
+        'groupStageConfig': groupStageConfig!.toJson(),
+    };
+  }
+}

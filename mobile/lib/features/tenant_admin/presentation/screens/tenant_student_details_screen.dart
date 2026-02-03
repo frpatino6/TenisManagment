@@ -411,7 +411,7 @@ class _TenantStudentDetailsScreenState
             reason: reason.isEmpty ? null : reason,
           );
 
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Balance actualizado'),
@@ -421,7 +421,7 @@ class _TenantStudentDetailsScreenState
         setState(() {}); // Refresh view
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),

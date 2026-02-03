@@ -1,5 +1,7 @@
 /// Barrel file for booking commands.
 /// Provides convenient access to all booking command classes.
+library;
+
 export 'booking_command.dart';
 export 'booking_command_invoker.dart';
 export 'calculate_price_command.dart';

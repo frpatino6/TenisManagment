@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Logger } from '../../infrastructure/services/Logger';
 import { MongoProfessorRepository } from '../../infrastructure/repositories/MongoRepositories';
 import { MongoBookingRepository } from '../../infrastructure/repositories/MongoRepositories';
 import { MongoPaymentRepository } from '../../infrastructure/repositories/MongoRepositories';
@@ -10,35 +11,50 @@ export class AnalyticsController {
   private payments: MongoPaymentRepository;
   private schedules: MongoScheduleRepository;
 
+  private readonly logger: Logger;
+
   constructor() {
     this.professors = new MongoProfessorRepository();
     this.bookings = new MongoBookingRepository();
     this.payments = new MongoPaymentRepository();
     this.schedules = new MongoScheduleRepository();
+    this.logger = new Logger({ service: 'AnalyticsController' });
   }
 
   getOverview = async (req: Request, res: Response) => {
     try {
       const professorId = req.user?.id;
       if (!professorId) {
+        this.logger.warn('No professor ID found in request');
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
+      // Find the Professor document using the authUserId
       const ProfessorModel = require('../../infrastructure/database/models/ProfessorModel').ProfessorModel;
       const professor = await ProfessorModel.findOne({ authUserId: professorId });
 
       if (!professor) {
+        this.logger.warn('Professor not found in database', { authUserId: professorId });
         return res.status(404).json({ error: 'Profesor no encontrado' });
       }
+
+      this.logger.debug('Professor found', { mongoId: professor._id });
 
       const { period = 'month', serviceType, status } = req.query;
       const actualProfessorId = professor._id.toString();
 
+      this.logger.debug('Query params', { period, serviceType, status });
+
+      // Get date range based on period
       const dateRange = this.getDateRange(period as string);
 
+      // Get metrics
       const metrics = await this.getMetrics(actualProfessorId, dateRange, serviceType as string, status as string);
 
+      // Get charts
       const charts = await this.getCharts(actualProfessorId, dateRange, serviceType as string, status as string);
+
+
 
       const overview = {
         metrics,
@@ -47,8 +63,10 @@ export class AnalyticsController {
         period: period as string,
       };
 
+      this.logger.info('Overview generated successfully');
       return res.json(overview);
     } catch (e) {
+      this.logger.error('Error in getOverview', { error: (e as Error).message });
       return res.status(400).json({ error: (e as Error).message });
     }
   };
@@ -274,10 +292,14 @@ export class AnalyticsController {
     }
   };
 
+
   getOccupancyDetails = async (req: Request, res: Response) => {
     try {
+      this.logger.info('Occupancy details requested');
+
       const professorId = req.user?.id;
       if (!professorId) {
+        this.logger.warn('No professor ID found');
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
@@ -285,18 +307,23 @@ export class AnalyticsController {
       const professor = await ProfessorModel.findOne({ authUserId: professorId });
 
       if (!professor) {
+        this.logger.warn('Professor not found');
         return res.status(404).json({ error: 'Profesor no encontrado' });
       }
 
       const { period = 'month' } = req.query;
       const actualProfessorId = professor._id.toString();
 
+      this.logger.debug('Getting occupancy details', { professorId: actualProfessorId, period });
+
       const occupancyData = await this.getOccupancyDetailsData(actualProfessorId, period as string);
       return res.json(occupancyData);
     } catch (e) {
+      this.logger.error('Error in getOccupancyDetails', { error: (e as Error).message });
       return res.status(400).json({ error: (e as Error).message });
     }
   };
+
 
   private getDateRange(period: string): { start: Date; end: Date } {
     const now = new Date();
@@ -322,6 +349,7 @@ export class AnalyticsController {
     return { start, end: now };
   }
 
+
   private async getMetrics(professorId: string, dateRange: { start: Date; end: Date }, serviceType?: string, status?: string) {
     try {
       // Get data from database models directly
@@ -343,10 +371,9 @@ export class AnalyticsController {
         b.createdAt <= dateRange.end
       );
 
-      // Get all payments for the professor (don't filter by status yet)
+      // Filter payments by date range and criteria
       const payments = await PaymentModel.find({ professorId }).lean();
 
-      // Filter payments by date range and criteria
       // 1. Calculate revenue from PAID payments
       let totalRevenue = 0;
       const paidBookingIds = new Set<string>();
@@ -456,6 +483,7 @@ export class AnalyticsController {
 
       return metrics;
     } catch (error) {
+      this.logger.error('Error in getMetrics', { error: (error as Error).message });
       throw error;
     }
   }

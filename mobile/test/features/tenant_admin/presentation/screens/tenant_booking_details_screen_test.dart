@@ -3,22 +3,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:tennis_management/features/tenant_admin/presentation/screens/tenant_booking_details_screen.dart';
-import 'package:tennis_management/features/tenant_admin/domain/services/tenant_admin_service.dart';
+import 'package:tennis_management/features/tenant_admin/domain/repositories/tenant_admin_repository.dart';
 import 'package:tennis_management/features/tenant_admin/domain/models/tenant_booking_model.dart';
 import 'package:tennis_management/features/tenant_admin/presentation/providers/tenant_admin_provider.dart';
 
-class MockTenantAdminService extends Mock implements TenantAdminService {}
+class MockTenantAdminRepository extends Mock implements TenantAdminRepository {}
 
 void main() {
-  late MockTenantAdminService mockService;
+  late MockTenantAdminRepository mockRepository;
 
   setUp(() {
-    mockService = MockTenantAdminService();
+    mockRepository = MockTenantAdminRepository();
   });
 
   Widget createTestWidget(String bookingId) {
     return ProviderScope(
-      overrides: [tenantAdminServiceProvider.overrideWithValue(mockService)],
+      overrides: [
+        tenantAdminRepositoryProvider.overrideWithValue(mockRepository),
+      ],
       child: MaterialApp(
         home: TenantBookingDetailsScreen(bookingId: bookingId),
       ),
@@ -48,7 +50,7 @@ void main() {
       );
 
       when(
-        () => mockService.getBookingDetails('b1'),
+        () => mockRepository.getBookingDetails('b1'),
       ).thenAnswer((_) async => booking);
 
       await tester.pumpWidget(createTestWidget('b1'));
@@ -68,7 +70,7 @@ void main() {
 
     testWidgets('should show error widget when request fails', (tester) async {
       when(
-        () => mockService.getBookingDetails('b1'),
+        () => mockRepository.getBookingDetails('b1'),
       ).thenAnswer((_) async => throw Exception('Failed to load'));
 
       await tester.pumpWidget(createTestWidget('b1'));

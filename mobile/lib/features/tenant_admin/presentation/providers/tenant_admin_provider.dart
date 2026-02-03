@@ -5,7 +5,8 @@ import '../../domain/models/tenant_config_model.dart';
 import '../../domain/models/tenant_professor_model.dart';
 import '../../domain/models/tenant_court_model.dart';
 import '../../domain/models/tenant_debt_report_model.dart';
-import '../../domain/services/tenant_admin_service.dart';
+import '../../domain/repositories/tenant_admin_repository.dart';
+import '../../infrastructure/repositories/tenant_admin_repository_impl.dart';
 import '../../../../core/providers/tenant_provider.dart';
 import '../../domain/models/tenant_student_model.dart';
 import '../../domain/models/tenant_booking_model.dart';
@@ -14,10 +15,10 @@ import '../../domain/models/tenant_payment_model.dart';
 
 import '../../../../core/services/http_client.dart';
 
-/// Provider for TenantAdminService
-final tenantAdminServiceProvider = Provider<TenantAdminService>((ref) {
+/// Provider for TenantAdminRepository
+final tenantAdminRepositoryProvider = Provider<TenantAdminRepository>((ref) {
   final httpClient = ref.watch(appHttpClientProvider);
-  return TenantAdminService(httpClient: httpClient);
+  return TenantAdminRepositoryImpl(httpClient: httpClient);
 });
 
 /// Provider for tenant metrics
@@ -26,14 +27,14 @@ final tenantMetricsProvider = FutureProvider<TenantMetricsModel>((ref) async {
   if (tenantId == null || tenantId.isEmpty) {
     throw Exception('Tenant ID requerido. Cargando tenant...');
   }
-  final service = ref.read(tenantAdminServiceProvider);
-  return await service.getMetrics();
+  final repository = ref.read(tenantAdminRepositoryProvider);
+  return await repository.getMetrics();
 });
 
 /// Provider for tenant configuration/info
 final tenantInfoProvider = FutureProvider<TenantConfigModel>((ref) async {
-  final service = ref.read(tenantAdminServiceProvider);
-  return await service.getTenantInfo();
+  final repository = ref.read(tenantAdminRepositoryProvider);
+  return await repository.getTenantInfo();
 });
 
 /// Provider for list of professors
@@ -44,8 +45,8 @@ final tenantProfessorsProvider = FutureProvider<List<TenantProfessorModel>>((
   if (tenantId == null || tenantId.isEmpty) {
     throw Exception('Tenant ID requerido');
   }
-  final service = ref.read(tenantAdminServiceProvider);
-  return await service.getProfessors();
+  final repository = ref.read(tenantAdminRepositoryProvider);
+  return await repository.getProfessors();
 });
 
 /// Provider for list of courts
@@ -56,8 +57,8 @@ final tenantCourtsProvider = FutureProvider<List<TenantCourtModel>>((
   if (tenantId == null || tenantId.isEmpty) {
     throw Exception('Tenant ID requerido');
   }
-  final service = ref.read(tenantAdminServiceProvider);
-  return await service.getCourts();
+  final repository = ref.read(tenantAdminRepositoryProvider);
+  return await repository.getCourts();
 });
 
 /// Provider for filtering professors by status (active/inactive)
@@ -189,7 +190,7 @@ final tenantBookingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
       throw Exception('Tenant ID requerido');
     }
 
-    final service = ref.read(tenantAdminServiceProvider);
+    final repository = ref.read(tenantAdminRepositoryProvider);
     final page = ref.watch(bookingPageProvider);
 
     // Watch filters
@@ -198,7 +199,7 @@ final tenantBookingsProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
     final professorId = ref.watch(bookingProfessorFilterProvider);
     final studentSearch = ref.watch(bookingStudentSearchProvider);
 
-    return await service.getBookings(
+    return await repository.getBookings(
       page: page,
       limit: 20,
       status: status,
@@ -217,9 +218,9 @@ final bookingStatsProvider = FutureProvider.autoDispose<BookingStatsModel>((
   if (tenantId == null || tenantId.isEmpty) {
     throw Exception('Tenant ID requerido');
   }
-  final service = ref.read(tenantAdminServiceProvider);
+  final repository = ref.read(tenantAdminRepositoryProvider);
   final dateRange = ref.watch(bookingStatsDateRangeProvider);
-  return await service.getBookingStats(
+  return await repository.getBookingStats(
     from: dateRange?.start,
     to: dateRange?.end,
   );
@@ -311,7 +312,7 @@ final tenantPaymentsProvider =
       if (tenantId == null || tenantId.isEmpty) {
         throw Exception('Tenant ID requerido');
       }
-      final service = ref.read(tenantAdminServiceProvider);
+      final repository = ref.read(tenantAdminRepositoryProvider);
       final page = ref.watch(paymentsPageProvider);
       final dateRange = ref.watch(paymentsDateRangeProvider);
       final status = ref.watch(paymentStatusFilterProvider);
@@ -319,7 +320,7 @@ final tenantPaymentsProvider =
       final channel = ref.watch(paymentChannelFilterProvider);
       final search = ref.watch(paymentSearchQueryProvider);
 
-      return await service.getPayments(
+      return await repository.getPayments(
         page: page,
         limit: 20,
         from: dateRange?.start,
@@ -341,8 +342,8 @@ class TenantAdminActionsNotifier extends Notifier<AsyncValue<void>> {
   Future<void> confirmPayment(String paymentId) async {
     state = const AsyncValue.loading();
     try {
-      final service = ref.read(tenantAdminServiceProvider);
-      await service.confirmPayment(paymentId);
+      final repository = ref.read(tenantAdminRepositoryProvider);
+      await repository.confirmPayment(paymentId);
 
       // Invalidate relevant providers to refresh UI
       ref.invalidate(tenantPaymentsProvider);
@@ -371,8 +372,8 @@ final bookingCalendarProvider = FutureProvider.autoDispose
       if (tenantId == null || tenantId.isEmpty) {
         throw Exception('Tenant ID requerido');
       }
-      final service = ref.read(tenantAdminServiceProvider);
-      return await service.getBookingCalendar(from: range.from, to: range.to);
+      final repository = ref.read(tenantAdminRepositoryProvider);
+      return await repository.getBookingCalendar(from: range.from, to: range.to);
     });
 
 // ============================================================================
@@ -407,11 +408,11 @@ final tenantStudentsProvider =
         throw Exception('Tenant ID requerido');
       }
 
-      final service = ref.read(tenantAdminServiceProvider);
+      final repository = ref.read(tenantAdminRepositoryProvider);
       final page = ref.watch(studentPageProvider);
       final search = ref.watch(studentSearchProvider);
 
-      return await service.getStudents(
+      return await repository.getStudents(
         page: page,
         search: search.isEmpty ? null : search,
       );
@@ -429,10 +430,10 @@ final professorBookingsProvider = FutureProvider.autoDispose
         throw Exception('Tenant ID requerido');
       }
 
-      final service = ref.read(tenantAdminServiceProvider);
+      final repository = ref.read(tenantAdminRepositoryProvider);
 
       // Fetch bookings for this professor (upcoming and recent)
-      final result = await service.getBookings(
+      final result = await repository.getBookings(
         professorId: professorId,
         page: 1,
         limit: 50,
@@ -461,7 +462,7 @@ final debtReportProvider = FutureProvider.autoDispose<TenantDebtReportModel>((
   }
 
   final search = ref.watch(debtSearchProvider);
-  final service = ref.read(tenantAdminServiceProvider);
+  final repository = ref.read(tenantAdminRepositoryProvider);
 
-  return await service.getDebtReport(search: search.isEmpty ? null : search);
+  return await repository.getDebtReport(search: search.isEmpty ? null : search);
 });

@@ -5,6 +5,14 @@ import { Booking } from '../entities/Booking';
 import { Payment } from '../entities/Payment';
 import { Service } from '../entities/Service';
 import { ServiceRequest } from '../entities/ServiceRequest';
+import { Lead } from '../entities/Lead';
+
+export interface LeadRepository {
+  create(lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>): Promise<Lead>;
+  findById(id: string): Promise<Lead | null>;
+  findByEmail(email: string): Promise<Lead | null>;
+  list(): Promise<Lead[]>;
+}
 
 export interface ProfessorRepository {
   create(professor: Omit<Professor, 'id'>): Promise<Professor>;

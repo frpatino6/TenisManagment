@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import auth from './auth';
+import publicRoutes from './public';
 import professor from './professor';
 import professorDashboard from './professor-dashboard';
 import analytics from './analytics';
@@ -22,6 +23,7 @@ router.get('/', (_req, res) => {
 });
 
 router.use('/auth', auth);
+router.use('/public', publicRoutes);
 router.use('/professor', professor);
 router.use('/professor-dashboard', professorDashboard);
 router.use('/professor-dashboard/analytics', analytics);

@@ -1,4 +1,4 @@
-<section id="prices" class="py-24 bg-gray-50">
+<section id="pricing" class="py-24 bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center max-w-3xl mx-auto mb-16">
             <h2 class="text-base font-semibold text-tenis-green tracking-wide uppercase">Precios</h2>
@@ -48,8 +48,10 @@
                     </ul>
                 </div>
                 <div class="p-8 bg-gray-50 rounded-b-2xl border-t border-gray-100">
-                    <app-ui-button [variant]="plan.recommended ? 'primary' : 'outline'" [fullWidth]="true"
-                        label="Seleccionar Plan"></app-ui-button>
+                    <a href="#contact">
+                        <app-ui-button [variant]="plan.recommended ? 'primary' : 'outline'" [fullWidth]="true"
+                            label="Seleccionar Plan"></app-ui-button>
+                    </a>
                 </div>
             </div>
         </div>

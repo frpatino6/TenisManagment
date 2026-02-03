@@ -859,7 +859,7 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
     });
 
     try {
-      final service = ref.read(tenantAdminServiceProvider);
+      final repository = ref.read(tenantAdminRepositoryProvider);
 
       // Convert _daySchedules to schedule array
       final schedule = _daySchedules.entries.map((entry) {
@@ -870,7 +870,7 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
         };
       }).toList();
 
-      await service.updateOperatingHours(schedule: schedule);
+      await repository.updateOperatingHours(schedule: schedule);
 
       // Refresh tenant info
       ref.invalidate(tenantInfoProvider);
@@ -961,7 +961,7 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
     });
 
     try {
-      final service = ref.read(tenantAdminServiceProvider);
+      final repository = ref.read(tenantAdminRepositoryProvider);
       final currentTenant = ref.read(tenantInfoProvider).value;
 
       if (currentTenant == null) {
@@ -991,7 +991,7 @@ class _TenantConfigScreenState extends ConsumerState<TenantConfigScreen> {
         operatingHours: existingConfig.operatingHours,
       );
 
-      await service.updateTenantConfig(
+      await repository.updateTenantConfig(
         name: _nameController.text.trim(),
         slug: _slugController.text.trim(),
         domain: _domainController.text.trim().isEmpty

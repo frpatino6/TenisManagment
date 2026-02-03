@@ -4,7 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:tennis_management/core/services/http_client.dart';
-import 'package:tennis_management/features/tenant_admin/domain/services/tenant_admin_service.dart';
+import 'package:tennis_management/features/tenant_admin/infrastructure/repositories/tenant_admin_repository_impl.dart';
 
 class MockHttpClient extends Mock implements AppHttpClient {}
 
@@ -13,7 +13,7 @@ class MockFirebaseAuth extends Mock implements FirebaseAuth {}
 class MockUser extends Mock implements User {}
 
 void main() {
-  late TenantAdminService service;
+  late TenantAdminRepositoryImpl repository;
   late MockHttpClient mockHttpClient;
   late MockFirebaseAuth mockAuth;
   late MockUser mockUser;
@@ -28,12 +28,15 @@ void main() {
       () => mockUser.getIdToken(any()),
     ).thenAnswer((_) async => 'fake-token');
 
-    service = TenantAdminService(httpClient: mockHttpClient, auth: mockAuth);
+    repository = TenantAdminRepositoryImpl(
+      httpClient: mockHttpClient,
+      auth: mockAuth,
+    );
 
     registerFallbackValue(Uri());
   });
 
-  group('TenantAdminService - Students', () {
+  group('TenantAdminRepositoryImpl - Students', () {
     test('getStudents should return pagination response', () async {
       final responseJson = {
         'students': [
@@ -58,7 +61,7 @@ void main() {
         ),
       ).thenAnswer((_) async => http.Response(json.encode(responseJson), 200));
 
-      final result = await service.getStudents();
+      final result = await repository.getStudents();
 
       expect(result.students.length, 1);
       expect(result.students[0].name, 'John');
@@ -85,7 +88,7 @@ void main() {
         ),
       ).thenAnswer((_) async => http.Response(json.encode(responseJson), 200));
 
-      final result = await service.getStudentDetails('s1');
+      final result = await repository.getStudentDetails('s1');
 
       expect(result.name, 'John');
       expect(result.balance, 50.0);
@@ -107,7 +110,7 @@ void main() {
         ),
       ).thenAnswer((_) async => http.Response(json.encode(responseJson), 200));
 
-      final result = await service.updateStudentBalance(
+      final result = await repository.updateStudentBalance(
         's1',
         amount: 50,
         type: 'add',

@@ -8,6 +8,7 @@ import {
   ServiceRepository,
   ReportRepository,
   ServiceRequestRepository,
+  LeadRepository,
 } from '../../domain/repositories/index';
 import { Professor } from '../../domain/entities/Professor';
 import { Student } from '../../domain/entities/Student';
@@ -15,6 +16,7 @@ import { Schedule } from '../../domain/entities/Schedule';
 import { Booking } from '../../domain/entities/Booking';
 import { Payment } from '../../domain/entities/Payment';
 import { Service } from '../../domain/entities/Service';
+import { Lead } from '../../domain/entities/Lead';
 import { ProfessorModel } from '../database/models/ProfessorModel';
 import { StudentModel } from '../database/models/StudentModel';
 import { ScheduleModel } from '../database/models/ScheduleModel';
@@ -22,7 +24,66 @@ import { BookingModel } from '../database/models/BookingModel';
 import { PaymentModel } from '../database/models/PaymentModel';
 import { ServiceModel } from '../database/models/ServiceModel';
 import { ServiceRequestModel } from '../database/models/ServiceRequestModel';
+import { LeadModel } from '../database/models/LeadModel';
 import { ServiceRequest } from '../../domain/entities/ServiceRequest';
+
+export class MongoLeadRepository implements LeadRepository {
+  async create(lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>): Promise<Lead> {
+    const created = await LeadModel.create(lead);
+    return {
+      id: created._id.toString(),
+      clubName: created.clubName,
+      contactName: created.contactName,
+      email: created.email,
+      phone: created.phone,
+      status: created.status,
+      createdAt: created.createdAt,
+      updatedAt: created.updatedAt,
+    };
+  }
+
+  async findById(id: string): Promise<Lead | null> {
+    const doc = await LeadModel.findById(id).lean();
+    return doc ? {
+      id: doc._id.toString(),
+      clubName: doc.clubName,
+      contactName: doc.contactName,
+      email: doc.email,
+      phone: doc.phone,
+      status: doc.status,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    } : null;
+  }
+
+  async findByEmail(email: string): Promise<Lead | null> {
+    const doc = await LeadModel.findOne({ email }).lean();
+    return doc ? {
+      id: doc._id.toString(),
+      clubName: doc.clubName,
+      contactName: doc.contactName,
+      email: doc.email,
+      phone: doc.phone,
+      status: doc.status,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    } : null;
+  }
+
+  async list(): Promise<Lead[]> {
+    const docs = await LeadModel.find({}).lean();
+    return docs.map(doc => ({
+      id: doc._id.toString(),
+      clubName: doc.clubName,
+      contactName: doc.contactName,
+      email: doc.email,
+      phone: doc.phone,
+      status: doc.status,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    }));
+  }
+}
 
 export class MongoProfessorRepository implements ProfessorRepository {
   async create(professor: Omit<Professor, 'id'>): Promise<Professor> {

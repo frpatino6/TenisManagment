@@ -33,20 +33,31 @@ const isProd = config.nodeEnv === 'production';
 
 // Mobile apps typically don't send an Origin header, or send null
 // We allow requests without origin (mobile apps) and from allowed origins (web apps)
+const isOriginAllowed = (origin: string | undefined): boolean => {
+  if (!origin) return true;
+  if (allowedOrigins.has(origin)) return true;
+
+  // Check for wildcards
+  for (const pattern of config.http.corsOrigins) {
+    if (pattern.includes('*')) {
+      const regex = new RegExp(
+        '^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '.*') + '$'
+      );
+      if (regex.test(origin)) return true;
+    }
+  }
+
+  return false;
+};
+
 const corsOptions: cors.CorsOptions = {
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    // Allow requests without origin (mobile apps, Postman, curl, etc.)
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    // Allow requests from explicitly allowed origins (web apps)
-    if (allowedOrigins.has(origin)) {
+    if (isOriginAllowed(origin)) {
       return callback(null, true);
     }
 
     // In development, if no origins are configured, allow all
-    if (!isProd && allowedOrigins.size === 0) {
+    if (!isProd && config.http.corsOrigins.length === 0) {
       return callback(null, true);
     }
 

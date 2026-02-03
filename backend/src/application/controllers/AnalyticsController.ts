@@ -23,8 +23,6 @@ export class AnalyticsController {
 
   getOverview = async (req: Request, res: Response) => {
     try {
-
-
       const professorId = req.user?.id;
       if (!professorId) {
         this.logger.warn('No professor ID found in request');
@@ -44,8 +42,6 @@ export class AnalyticsController {
 
       const { period = 'month', serviceType, status } = req.query;
       const actualProfessorId = professor._id.toString();
-
-
 
       this.logger.debug('Query params', { period, serviceType, status });
 
@@ -383,7 +379,7 @@ export class AnalyticsController {
       const paidBookingIds = new Set<string>();
 
       // Filter payments for period and count realized revenue
-      const periodPayments = payments.filter((p: any) => {
+      payments.filter((p: any) => {
         const isInDateRange = p.date >= dateRange.start && p.date <= dateRange.end;
         if (isInDateRange && p.status === 'paid') {
           totalRevenue += p.amount;
@@ -402,18 +398,10 @@ export class AnalyticsController {
         }
       });
 
-      console.log('📊 Total revenue (Realized + Accrued):', totalRevenue);
-
-      // Get completed bookings
       const completedBookings = periodBookings.filter((b: any) => b.status === 'completed');
-      console.log('📊 Completed bookings:', completedBookings.length);
-
-      // Calculate active students (simplified)
       const uniqueStudentIds = [...new Set(periodBookings.map((b: any) => b.studentId.toString()))];
       const activeStudentsCount = uniqueStudentIds.length;
-      console.log('📊 Active students:', activeStudentsCount);
 
-      // Get occupancy rate
       const schedules = await ScheduleModel.find({ professorId }).lean();
       const periodSchedules = schedules.filter((s: any) =>
         s.date >= dateRange.start && s.date <= dateRange.end
@@ -422,7 +410,6 @@ export class AnalyticsController {
       const occupancyRate = periodSchedules.length > 0
         ? Math.round((occupiedSchedules.length / periodSchedules.length) * 100)
         : 0;
-      console.log('📊 Occupancy rate:', occupancyRate);
 
       // Calculate previous period for comparison
       const previousDateRange = this.getPreviousPeriod(dateRange);
@@ -494,8 +481,6 @@ export class AnalyticsController {
         },
       ];
 
-
-
       return metrics;
     } catch (error) {
       this.logger.error('Error in getMetrics', { error: (error as Error).message });
@@ -505,27 +490,21 @@ export class AnalyticsController {
 
   private async getCharts(professorId: string, dateRange: { start: Date; end: Date }, serviceType?: string, status?: string) {
     try {
-      console.log('📈 Getting charts for professor:', professorId);
       const charts = [];
-
       // Revenue chart
       const revenueChart = await this.getRevenueChart(professorId, dateRange, serviceType, status);
       if (revenueChart.data && revenueChart.data.length > 0) {
         charts.push(revenueChart);
-        console.log('📈 Revenue chart added');
       }
 
       // Bookings chart
       const bookingsChart = await this.getBookingsChart(professorId, dateRange, serviceType, status);
       if (bookingsChart.data && bookingsChart.data.length > 0) {
         charts.push(bookingsChart);
-        console.log('📈 Bookings chart added');
       }
 
-      console.log('📈 Total charts:', charts.length);
       return charts;
     } catch (error) {
-      console.error('❌ Error in getCharts:', error);
       return [];
     }
   }
@@ -703,16 +682,11 @@ export class AnalyticsController {
   }
 
   private async getRevenueBreakdownData(professorId: string, dateRange: { start: Date; end: Date }, serviceType?: string, status?: string) {
-    console.log('🔍 BREAKDOWN DEBUG - Starting breakdown calculation');
-    console.log('🔍 BREAKDOWN DEBUG - Filters:', { serviceType, status });
-    console.log('🔍 BREAKDOWN DEBUG - Date range:', dateRange);
-
     const PaymentModel = require('../../infrastructure/database/models/PaymentModel').PaymentModel;
     const BookingModel = require('../../infrastructure/database/models/BookingModel').BookingModel;
 
     // Get bookings first to apply serviceType filter
     const bookings = await BookingModel.find({ professorId }).lean();
-    console.log('🔍 BREAKDOWN DEBUG - Total bookings found:', bookings.length);
 
     const periodBookings = bookings.filter((b: any) =>
       b.createdAt &&
@@ -721,16 +695,9 @@ export class AnalyticsController {
       (!serviceType || b.serviceType === serviceType) &&
       (!status || b.status === status)
     );
-    console.log('🔍 BREAKDOWN DEBUG - Period bookings:', periodBookings.length);
-
-    // Log service types in period bookings
-    const serviceTypesInBookings = [...new Set(periodBookings.map((b: any) => b.serviceType))];
-    console.log('🔍 BREAKDOWN DEBUG - Service types in bookings:', serviceTypesInBookings);
 
     // Get payments related to filtered bookings
     const payments = await PaymentModel.find({ professorId }).lean();
-    console.log('🔍 BREAKDOWN DEBUG - Total payments found:', payments.length);
-
     const periodPayments = payments.filter((p: any) => {
       const isInDateRange = p.date >= dateRange.start && p.date <= dateRange.end;
 
@@ -753,12 +720,10 @@ export class AnalyticsController {
 
       return isInDateRange;
     });
-    console.log('🔍 BREAKDOWN DEBUG - Period payments:', periodPayments.length);
 
     // Group by service type
     const serviceTypeBreakdown = new Map<string, number>();
     const totalRevenue = periodPayments.reduce((sum: number, p: any) => sum + p.amount, 0);
-    console.log('🔍 BREAKDOWN DEBUG - Total revenue:', totalRevenue);
 
     for (const payment of periodPayments) {
       if (payment.bookingId) {
@@ -766,16 +731,9 @@ export class AnalyticsController {
         if (relatedBooking) {
           const serviceType = relatedBooking.serviceType || 'unknown';
           serviceTypeBreakdown.set(serviceType, (serviceTypeBreakdown.get(serviceType) || 0) + payment.amount);
-          console.log(`🔍 BREAKDOWN DEBUG - Payment ${payment.amount} for ${serviceType}`);
-        } else {
-          console.log('🔍 BREAKDOWN DEBUG - Payment without related booking:', payment._id);
         }
-      } else {
-        console.log('🔍 BREAKDOWN DEBUG - Payment without bookingId:', payment._id);
       }
     }
-
-    console.log('🔍 BREAKDOWN DEBUG - Service type breakdown:', Object.fromEntries(serviceTypeBreakdown));
 
     // Convert to array with percentages
     const breakdown = Array.from(serviceTypeBreakdown.entries()).map(([type, amount]) => ({
@@ -783,8 +741,6 @@ export class AnalyticsController {
       amount: amount,
       percentage: totalRevenue > 0 ? Math.round((amount / totalRevenue) * 100) : 0,
     }));
-
-    console.log('🔍 BREAKDOWN DEBUG - Final breakdown:', breakdown);
 
     return {
       totalRevenue,
@@ -1120,13 +1076,13 @@ export class AnalyticsController {
 
   private async getOccupancyDetailsData(professorId: string, period: string) {
     try {
-      console.log('📊 Getting occupancy details data for professor:', professorId, 'period:', period);
+
 
       const ScheduleModel = require('../../infrastructure/database/models/ScheduleModel').ScheduleModel;
       const BookingModel = require('../../infrastructure/database/models/BookingModel').BookingModel;
 
       const dateRange = this.getDateRange(period);
-      console.log('📊 Date range:', dateRange);
+
 
       // Get all schedules for the period
       const allSchedules = await ScheduleModel.find({
@@ -1134,7 +1090,7 @@ export class AnalyticsController {
         startTime: { $gte: dateRange.start, $lte: dateRange.end }
       }).lean();
 
-      console.log('📊 Total schedules found:', allSchedules.length);
+
 
       // Group schedules by time slots (2-hour intervals)
       const timeSlots = [
@@ -1218,9 +1174,6 @@ export class AnalyticsController {
         });
       }
 
-      console.log('📊 Occupancy breakdown calculated:', breakdown.length, 'time slots');
-      console.log('📊 Occupancy trend calculated:', trend.length, 'months');
-
       return {
         type: 'occupancy',
         breakdown: breakdown,
@@ -1231,7 +1184,6 @@ export class AnalyticsController {
           : 0,
       };
     } catch (error) {
-      console.error('❌ Error in getOccupancyDetailsData:', error);
       throw error;
     }
   }
@@ -1270,7 +1222,6 @@ export class AnalyticsController {
 
       return bookingsCount > 0 || paymentsCount > 0 || schedulesCount > 0;
     } catch (error) {
-      console.error('Error validating professor data:', error);
       return false;
     }
   }

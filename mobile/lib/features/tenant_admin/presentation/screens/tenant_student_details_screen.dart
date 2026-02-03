@@ -29,7 +29,7 @@ class _TenantStudentDetailsScreenState
       appBar: AppBar(title: const Text('Detalles del Estudiante')),
       body: FutureBuilder<TenantStudentDetailsModel>(
         future: ref
-            .read(tenantAdminServiceProvider)
+            .read(tenantAdminRepositoryProvider)
             .getStudentDetails(widget.studentId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -403,7 +403,7 @@ class _TenantStudentDetailsScreenState
 
     try {
       await ref
-          .read(tenantAdminServiceProvider)
+          .read(tenantAdminRepositoryProvider)
           .updateStudentBalance(
             studentId,
             amount: amount,

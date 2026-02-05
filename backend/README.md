@@ -84,6 +84,10 @@ npm start
 ### Seguridad
 - `scripts/security/security-cleanup.sh` - Limpia datos sensibles del historial
 
+### Seeds (datos mínimos para probar)
+- `npm run seed:tenant` - Crea un tenant de prueba con admin, profesor, estudiante y 2 canchas de pádel (sin torneos). Los usuarios se crean en **Firebase Auth** (email/contraseña) y se enlazan en MongoDB. Opcional: `npm run seed:tenant -- "Nombre del Centro"`. Requiere en `.env`: `MONGO_URI` y credenciales Firebase (`FIREBASE_PROJECT_ID`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_CLIENT_EMAIL`). Contraseña por defecto: `Test123!` (o `SEED_PASSWORD`).
+- `npm run seed:tenant:rollback` - Borra **solo** lo creado por el seed para un tenant (por slug). No toca datos previos. Usar el mismo nombre que en el seed: `npm run seed:tenant:rollback -- "Nombre del Centro"` (por defecto "Centro Demo"). Requiere `MONGO_URI` y credenciales Firebase.
+
 ## 🤖 Servidor MCP
 
 El proyecto incluye un servidor MCP (Model Context Protocol) para automatizar despliegues:

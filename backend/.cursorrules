@@ -82,6 +82,15 @@ Apply these patterns when you encounter specific code smells:
 
 ---
 
+### Academy Module Rules (Node.js)
+- **Domain Integrity**: All academy logic must follow the architecture defined in `ACADEMY_MODULE_DESIGN.md`.
+- **Conflict Prevention**: Every court booking (`court_rental`) MUST be validated against `AcademyBlock` using `AcademyBlockConflictService.hasConflict`.
+- **No Over-generation**: Do not materialize individual `Booking` records for academy sessions; use `AcademyBlock` for recurring availability and `AcademySession` for attendance only.
+- **Performance**: Queries to `AcademyBlock` must use the compound index `{ tenantId, courtId, dayOfWeek, status, effectiveFrom, effectiveTo }` and `.lean()` for performance.
+- **Financial Logic**: Always implement `firstMonthProratedAmount` logic for new enrollments to handle mid-month starts.
+
+---
+
 ## 🚫 PROHIBITIONS
 1.  ❌ **NO `console.log`**: Use the structured `Logger` service.
 2.  ❌ **NO Magic Strings/Numbers**: Define constants or enums.

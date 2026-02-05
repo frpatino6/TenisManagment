@@ -24,6 +24,8 @@
     "test:e2e": "jest --config config/jest/jest.e2e.config.js",
     "test:ci": "jest --ci --coverage --watchAll=false",
     "test:ci-safe": "node scripts/test-ci.js",
+    "seed:tenant": "tsx scripts/seed-tenant-minimal.ts",
+    "seed:tenant:rollback": "tsx scripts/seed-tenant-rollback.ts",
     "postinstall": "npm run build",
     "render-postbuild": "npm run build"
   },

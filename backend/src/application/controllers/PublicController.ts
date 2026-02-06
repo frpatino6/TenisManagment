@@ -96,6 +96,17 @@ export class PublicController {
                 });
             });
 
+            this.emailService.sendCalculatorLeadConfirmationToUser({
+                clubName: validatedData.clubName,
+                email: validatedData.email,
+                monthlyLoss: validatedData.monthlyLoss,
+                horasGestionManual: validatedData.horasGestionManual
+            }).catch(err => {
+                this.logger.error('Error asíncrono enviando confirmación de calculadora al usuario', {
+                    error: (err as Error).message
+                });
+            });
+
             res.status(201).json({
                 message: 'Registro exitoso. Nos pondremos en contacto contigo pronto.',
                 leadId: String(lead._id)

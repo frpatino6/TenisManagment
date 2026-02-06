@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DashboardService, DashboardTab, FinancesData, ReservationsData, FacturacionData, DeudasData, AcademiesData } from '../../services/dashboard.service';
 
+declare let gtag: Function;
+
 @Component({
   selector: 'app-dashboard-preview',
   standalone: true,
@@ -42,6 +44,14 @@ export class DashboardPreviewComponent {
   selectTab(tab: DashboardTab): void {
     this.activeTab = tab;
     this.loadData();
+
+    // GA4 Interaction Event
+    if (typeof gtag !== 'undefined') {
+      gtag('event', 'mockup_interaction', {
+        'event_category': 'App Preview',
+        'event_label': tab
+      });
+    }
   }
 
   private loadData(): void {

@@ -167,7 +167,7 @@ module.exports = {
   "test:integration": "jest --config config/jest/jest.integration.config.js",
   "test:e2e": "jest --config config/jest/jest.e2e.config.js",
   "test:ci": "jest --ci --coverage --watchAll=false",
-  "test:ci-safe": "node scripts/test-ci.js"
+  "test:ci-safe": "jest --ci --coverage --watchAll=false"
 }
 ```
 

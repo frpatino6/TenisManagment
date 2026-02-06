@@ -86,11 +86,15 @@ export class FinancialHealthCalculatorComponent {
                 next: () => {
                     this.isSubmitting = false;
                     this.success = true;
-                    // Google Ads Conversion Event
-                    if (typeof gtag !== 'undefined') {
+                    // Google Ads Conversion Event - Fire only once per session
+                    const conversionKey = 'courthub_roi_conversion_fired';
+                    if (typeof gtag !== 'undefined' && !sessionStorage.getItem(conversionKey)) {
                         gtag('event', 'conversion', {
-                            'send_to': 'AW-XXXXXXXXX/CALCULATOR_SUBMIT_LABEL'
+                            'send_to': 'AW-XXXXXXXXX/VALOR_GENERADO',
+                            'value': 1.0,
+                            'currency': 'USD'
                         });
+                        sessionStorage.setItem(conversionKey, 'true');
                     }
                 },
                 error: () => {

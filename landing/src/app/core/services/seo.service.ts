@@ -11,7 +11,10 @@ export class SeoService {
         this.title.setTitle(title);
     }
 
-    updateMetaTags(config: { title?: string, description?: string, image?: string, url?: string }) {
+    updateMetaTags(config: { title?: string, description?: string, image?: string, url?: string, keywords?: string }) {
+        if (config.keywords) {
+            this.meta.updateTag({ name: 'keywords', content: config.keywords });
+        }
         if (config.title) {
             this.updateTitle(config.title);
             this.meta.updateTag({ name: 'twitter:title', content: config.title });

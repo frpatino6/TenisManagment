@@ -10,6 +10,7 @@ import { SavingsCalculatorComponent } from './components/savings-calculator/savi
 import { WhiteLabelComponent } from './components/white-label/white-label';
 import { LoyaltyComponent } from './components/loyalty/loyalty';
 import { ProofComponent } from './components/proof/proof';
+import { BenefitsComponent } from './components/benefits/benefits';
 import { SeoService } from '../../core/services/seo.service';
 
 @Component({
@@ -26,7 +27,8 @@ import { SeoService } from '../../core/services/seo.service';
         PricingComponent,
         SavingsCalculatorComponent,
         FaqComponent,
-        LeadGenComponent
+        LeadGenComponent,
+        BenefitsComponent
     ],
     templateUrl: './landing.html',
     styleUrl: './landing.scss'
@@ -34,10 +36,11 @@ import { SeoService } from '../../core/services/seo.service';
 export class LandingComponent {
     constructor(private seo: SeoService) {
         this.seo.updateMetaTags({
-            title: 'CourtHub | BI financiero para clubes de raqueta',
-            description: 'Tome decisiones basadas en datos con dashboard ejecutivo, ahorro por monedero y desglose por servicio.',
+            title: 'CourtHub | Software Gestión Padel Tenis y Administración de Clubes',
+            description: 'CourtHub: El mejor software de gestión para clubes de padel y tenis. Automatización de pagos, BI financiero y administración de academias. ¡Solicita tu demo!',
             image: 'https://courthub.co/images/og-image-1200x630.jpg',
-            url: 'https://courthub.co/'
+            url: 'https://courthub.co/',
+            keywords: 'Software Gestión Padel Tenis, Administración de Clubes Deportivos, BI Financiero, Automatización de pagos, Rankings ELO'
         });
     }
 }

@@ -5,4 +5,55 @@
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
+  <url>
+    <loc>https://courthub.co/blog</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://courthub.co/privacidad</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://courthub.co/terminos</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://courthub.co/blog/monedero-digital-bi-financiero-eliminan-deudas-club-tenis-padel</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-02-05</lastmod>
+  </url>
+  <url>
+    <loc>https://courthub.co/blog/reservas-no-llegan-caja-bi-financiero</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-02-06</lastmod>
+  </url>
+  <url>
+    <loc>https://courthub.co/blog/padel-vs-tenis-mas-rentable-complejo-deportivo</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-02-07</lastmod>
+  </url>
+  <url>
+    <loc>https://courthub.co/blog/guia-pagos-automaticos-wompi-canchas-raqueta</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-02-08</lastmod>
+  </url>
+  <url>
+    <loc>https://courthub.co/blog/rankings-elo-retencion-alumnos-academia-tenis</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-02-09</lastmod>
+  </url>
+  <url>
+    <loc>https://courthub.co/blog/gestion-deudas-pago-anticipado-monedero-digital</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-02-10</lastmod>
+  </url>
 </urlset>

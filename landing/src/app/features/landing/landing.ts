@@ -7,6 +7,7 @@ import { LeadGenComponent } from './components/lead-gen/lead-gen';
 import { PricingComponent } from './components/pricing/pricing';
 import { FaqComponent } from './components/faq/faq';
 import { SavingsCalculatorComponent } from './components/savings-calculator/savings-calculator';
+import { BlogPreviewComponent } from './components/blog-preview/blog-preview';
 import { WhiteLabelComponent } from './components/white-label/white-label';
 import { LoyaltyComponent } from './components/loyalty/loyalty';
 import { ProofComponent } from './components/proof/proof';
@@ -26,6 +27,7 @@ import { SeoService } from '../../core/services/seo.service';
         LoyaltyComponent,
         PricingComponent,
         SavingsCalculatorComponent,
+        BlogPreviewComponent,
         FaqComponent,
         LeadGenComponent,
         BenefitsComponent

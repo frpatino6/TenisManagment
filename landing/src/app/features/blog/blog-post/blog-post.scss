@@ -1,0 +1,25 @@
+:host {
+    display: block;
+}
+
+.blog-content {
+    line-height: 1.8;
+
+    :deep(p) {
+        margin-bottom: 1.5rem;
+    }
+
+    :deep(h2) {
+        scroll-margin-top: 6rem;
+    }
+
+    :deep(ul) {
+        list-style-type: disc;
+        padding-left: 1.5rem;
+    }
+
+    :deep(strong) {
+        font-weight: 600;
+        color: theme('colors.tenis-dark');
+    }
+}

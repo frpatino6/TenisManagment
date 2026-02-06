@@ -1,0 +1,66 @@
+@if (notFound) {
+    <app-header></app-header>
+    <main class="pt-32 pb-20 min-h-screen bg-gray-50 flex items-center justify-center">
+        <div class="text-center px-4">
+            <h1 class="text-3xl font-bold text-tenis-dark">Artículo no encontrado</h1>
+            <p class="mt-4 text-gray-600">El artículo que buscas no existe o ha sido eliminado.</p>
+            <a routerLink="/blog" class="mt-6 inline-block text-tenis-green font-semibold hover:underline">
+                Volver al blog
+            </a>
+        </div>
+    </main>
+    <app-footer></app-footer>
+} @else if (post) {
+    <app-header></app-header>
+    <main class="pt-32 pb-20 min-h-screen bg-gradient-to-br from-white to-gray-50">
+        <article class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <header class="mb-12">
+                <a routerLink="/blog"
+                    class="inline-flex items-center text-sm text-gray-600 hover:text-tenis-green transition-colors mb-8">
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Volver al blog
+                </a>
+                <time [attr.datetime]="post.publishedAt"
+                    class="text-sm font-medium text-tenis-green uppercase tracking-wider">
+                    {{ formatDate(post.publishedAt) }}
+                </time>
+                <h1 class="mt-4 text-4xl lg:text-5xl font-bold text-tenis-dark leading-tight tracking-tight">
+                    {{ post.title }}
+                </h1>
+                <p class="mt-4 text-lg text-gray-600">
+                    Por {{ post.author }}
+                </p>
+            </header>
+
+            <div class="prose prose-lg max-w-none text-gray-700 blog-content"
+                [innerHTML]="post.content">
+            </div>
+
+            <footer class="mt-16 pt-10 border-t border-gray-200">
+                <div
+                    class="bg-tenis-dark rounded-2xl p-8 sm:p-10 text-center relative overflow-hidden">
+                    <div class="absolute inset-0 overflow-hidden">
+                        <div
+                            class="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-tenis-green opacity-10 blur-2xl">
+                        </div>
+                    </div>
+                    <div class="relative z-10">
+                        <h3 class="text-2xl font-bold text-white">
+                            ¿Listo para transformar tu club?
+                        </h3>
+                        <p class="mt-3 text-gray-300 max-w-lg mx-auto">
+                            Descubre cómo CourtHub puede ayudarte a eliminar deudas, automatizar cobros y tomar
+                            mejores decisiones con BI financiero.
+                        </p>
+                        <a href="/#contact" class="mt-8 inline-block">
+                            <app-ui-button variant="primary" label="Solicitar Demo"></app-ui-button>
+                        </a>
+                    </div>
+                </div>
+            </footer>
+        </article>
+    </main>
+    <app-footer></app-footer>
+}

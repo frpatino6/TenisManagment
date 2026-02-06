@@ -1,0 +1,50 @@
+<app-header></app-header>
+<main class="pt-32 pb-20 min-h-screen bg-gradient-to-br from-white to-gray-50">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h1 class="text-4xl lg:text-5xl font-bold text-tenis-dark tracking-tight">
+                Blog CourtHub
+            </h1>
+            <p class="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
+                Consejos, tendencias y estrategias para optimizar la gestión de tu club de tenis y pádel.
+            </p>
+        </div>
+
+        <div class="space-y-10">
+            @for (post of posts; track post.slug) {
+                <article
+                    class="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg hover:border-tenis-green/20 transition-all duration-300">
+                    <div class="p-8 sm:p-10">
+                        <time [attr.datetime]="post.publishedAt"
+                            class="text-sm font-medium text-tenis-green uppercase tracking-wider">
+                            {{ formatDate(post.publishedAt) }}
+                        </time>
+                        <h2 class="mt-3 text-2xl font-bold text-tenis-dark group-hover:text-tenis-green transition-colors">
+                            <a [routerLink]="['/blog', post.slug]" class="block">
+                                {{ post.title }}
+                            </a>
+                        </h2>
+                        <p class="mt-4 text-gray-600 leading-relaxed">
+                            {{ post.excerpt }}
+                        </p>
+                        <a [routerLink]="['/blog', post.slug]"
+                            class="mt-6 inline-flex items-center text-tenis-green font-semibold hover:underline">
+                            Leer más
+                            <svg class="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5l7 7-7 7" />
+                            </svg>
+                        </a>
+                    </div>
+                </article>
+            } @empty {
+                <div class="text-center py-20">
+                    <p class="text-gray-500 text-lg">No hay artículos publicados aún.</p>
+                    <a href="/" class="mt-4 inline-block text-tenis-green font-medium hover:underline">Volver al
+                        inicio</a>
+                </div>
+            }
+        </div>
+    </div>
+</main>
+<app-footer></app-footer>

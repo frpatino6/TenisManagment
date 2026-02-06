@@ -1,0 +1,51 @@
+<section id="blog" class="py-24 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl lg:text-4xl font-bold text-tenis-dark">
+                Blog CourtHub
+            </h2>
+            <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+                Consejos y estrategias para optimizar la gestión de tu club.
+            </p>
+        </div>
+
+        @if (posts.length > 0) {
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                @for (post of posts; track post.slug) {
+                    <article
+                        class="group bg-gray-50 rounded-2xl p-8 border border-gray-100 hover:shadow-lg hover:border-tenis-green/30 transition-all duration-300">
+                        <time [attr.datetime]="post.publishedAt"
+                            class="text-sm font-medium text-tenis-green uppercase tracking-wider">
+                            {{ formatDate(post.publishedAt) }}
+                        </time>
+                        <h3 class="mt-3 text-xl font-bold text-tenis-dark group-hover:text-tenis-green transition-colors">
+                            <a [routerLink]="['/blog', post.slug]" class="block">
+                                {{ post.title }}
+                            </a>
+                        </h3>
+                        <p class="mt-4 text-gray-600 leading-relaxed">
+                            {{ post.excerpt }}
+                        </p>
+                        <a [routerLink]="['/blog', post.slug]"
+                            class="mt-6 inline-flex items-center text-tenis-green font-semibold hover:underline">
+                            Leer más
+                            <svg class="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5l7 7-7 7" />
+                            </svg>
+                        </a>
+                    </article>
+                }
+            </div>
+            <div class="mt-12 text-center">
+                <a routerLink="/blog"
+                    class="inline-flex items-center px-6 py-3 rounded-lg bg-tenis-green text-white font-semibold hover:bg-green-600 transition-colors">
+                    Ver todos los artículos
+                    <svg class="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                </a>
+            </div>
+        }
+    </div>
+</section>

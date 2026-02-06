@@ -1,30 +1,54 @@
-<section id="faq" class="py-24 bg-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center max-w-3xl mx-auto mb-16">
-            <h2 class="text-base font-semibold text-tenis-green tracking-wide uppercase">FAQ</h2>
-            <p class="mt-2 text-3xl font-extrabold text-tenis-dark sm:text-4xl">
-                Preguntas Frecuentes
-            </p>
-        </div>
+<section
+  id="faq"
+  class="faq-section"
+  aria-labelledby="faq-heading"
+  role="region">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header class="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+      <p class="text-base font-semibold text-tenis-green tracking-wide uppercase">FAQ</p>
+      <h2 id="faq-heading" class="mt-2 text-3xl font-extrabold text-tenis-dark sm:text-4xl">
+        Preguntas Frecuentes
+      </h2>
+      <p class="mt-4 text-lg text-gray-600">
+        Seguridad de pagos, software para torneos y soporte técnico. Resolvemos tus dudas antes de que empieces.
+      </p>
+    </header>
 
-        <div class="max-w-3xl mx-auto divide-y divide-gray-200">
-            <div *ngFor="let faq of faqs; let i = index" class="py-6">
-                <button (click)="toggleFaq(i)"
-                    class="text-left w-full flex justify-between items-start text-gray-400 focus:outline-none">
-                    <span class="font-medium text-gray-900 text-lg">{{ faq.question }}</span>
-                    <span class="ml-6 h-7 flex items-center transform transition-transform duration-200"
-                        [class.rotate-180]="faq.isOpen">
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </span>
-                </button>
-                <div *ngIf="faq.isOpen" class="mt-2 pr-12 animate-fade-in-up">
-                    <p class="text-base text-gray-500">
-                        {{ faq.answer }}
-                    </p>
-                </div>
-            </div>
-        </div>
+    <div class="max-w-3xl mx-auto" role="list">
+      @for (faq of faqs; track faq.id; let i = $index) {
+        <article
+          class="faq-item"
+          [attr.aria-expanded]="faq.isOpen"
+          role="listitem">
+          <h3 class="faq-question-wrapper">
+            <button
+              type="button"
+              [id]="faq.id + '-trigger'"
+              [attr.aria-expanded]="faq.isOpen"
+              [attr.aria-controls]="faq.id + '-panel'"
+              (click)="toggleFaq(i)"
+              class="faq-trigger">
+              <span class="faq-question-text">{{ faq.question }}</span>
+              <span
+                class="faq-icon"
+                [class.faq-icon-open]="faq.isOpen"
+                aria-hidden="true">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </span>
+            </button>
+          </h3>
+          <div
+            [id]="faq.id + '-panel'"
+            role="region"
+            [attr.aria-labelledby]="faq.id + '-trigger'"
+            [attr.hidden]="!faq.isOpen ? '' : null"
+            class="faq-panel">
+            <p class="faq-answer">{{ faq.answer }}</p>
+          </div>
+        </article>
+      }
     </div>
+  </div>
 </section>

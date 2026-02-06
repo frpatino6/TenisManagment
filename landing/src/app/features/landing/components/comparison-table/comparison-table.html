@@ -1,0 +1,175 @@
+<section class="py-24 bg-white relative overflow-hidden">
+    <!-- Background Decoration -->
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+        <div class="absolute top-20 left-20 w-64 h-64 bg-tenis-green/5 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-20 right-20 w-80 h-80 bg-tenis-blue/5 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="text-center max-w-3xl mx-auto mb-16">
+            <h2 class="text-base font-semibold text-tenis-green tracking-wide uppercase">
+                Evolución Digital
+            </h2>
+            <p class="mt-2 text-3xl font-extrabold text-tenis-dark sm:text-4xl">
+                ¿Por qué CourtHub es la evolución de tu club?
+            </p>
+            <p class="mt-4 text-xl text-gray-500">
+                Comparativa directa: Mira lo que gana tu club al migrar a la automatización deportiva moderna.
+            </p>
+        </div>
+
+        <!-- Mobile View (Cards) -->
+        <div class="md:hidden space-y-8">
+            <div *ngFor="let row of rows" class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                <h3 class="text-lg font-bold text-tenis-dark mb-4 text-center border-b border-gray-100 pb-2">{{
+                    row.criteria }}</h3>
+
+                <div class="space-y-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 mt-1">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-xs text-gray-500 font-medium uppercase">Papel / WhatsApp</p>
+                            <p class="text-sm text-gray-600">{{ row.paper.text }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 mt-1">
+                            <svg *ngIf="row.excel.type === 'bad'" class="h-5 w-5 text-gray-400" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            <svg *ngIf="row.excel.type === 'neutral'" class="h-5 w-5 text-yellow-500" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-xs text-gray-500 font-medium uppercase">Excel</p>
+                            <p class="text-sm text-gray-600">{{ row.excel.text }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start bg-tenis-green/5 p-3 rounded-lg border border-tenis-green/20">
+                        <div class="flex-shrink-0 mt-1">
+                            <svg class="h-5 w-5 text-tenis-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-xs text-tenis-green font-bold uppercase">CourtHub</p>
+                            <p class="text-sm text-tenis-dark font-semibold">{{ row.courthub.text }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desktop View (Table) -->
+        <div class="hidden md:block overflow-hidden rounded-2xl shadow-xl border border-gray-200">
+            <table class="w-full text-left border-collapse bg-white">
+                <thead>
+                    <tr>
+                        <th
+                            class="p-6 bg-gray-50 text-xs font-semibold tracking-wider text-gray-500 uppercase border-b border-gray-200 w-1/4">
+                            Criterio
+                        </th>
+                        <th
+                            class="p-6 bg-gray-50 text-xs font-semibold tracking-wider text-gray-400 uppercase border-b border-gray-200 w-1/4 text-center">
+                            Papel / WhatsApp
+                        </th>
+                        <th
+                            class="p-6 bg-gray-50 text-xs font-semibold tracking-wider text-gray-500 uppercase border-b border-gray-200 w-1/4 text-center">
+                            Excel
+                        </th>
+                        <th
+                            class="p-6 bg-tenis-green text-xs font-bold tracking-wider text-white uppercase border-b border-tenis-green w-1/4 text-center relative">
+                            CourtHub
+                            <div
+                                class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-tenis-dark text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm">
+                                RECOMENDADO
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <tr *ngFor="let row of rows" class="hover:bg-gray-50 transition-colors">
+                        <td class="p-6 text-sm font-bold text-gray-900">
+                            {{ row.criteria }}
+                        </td>
+
+                        <!-- Papel -->
+                        <td class="p-6 text-center">
+                            <div class="flex flex-col items-center justify-center opacity-50">
+                                <svg class="h-8 w-8 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                <span class="text-sm text-gray-500">{{ row.paper.text }}</span>
+                            </div>
+                        </td>
+
+                        <!-- Excel -->
+                        <td class="p-6 text-center">
+                            <div class="flex flex-col items-center justify-center">
+                                <ng-container [ngSwitch]="row.excel.type">
+                                    <svg *ngSwitchCase="'bad'" class="h-8 w-8 text-gray-300 mb-2 opacity-50" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    <svg *ngSwitchCase="'neutral'" class="h-8 w-8 text-yellow-500 mb-2" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </ng-container>
+                                <span class="text-sm" [class.text-gray-500]="row.excel.type === 'bad'"
+                                    [class.text-gray-700]="row.excel.type === 'neutral'">{{ row.excel.text }}</span>
+                            </div>
+                        </td>
+
+                        <!-- CourtHub -->
+                        <td class="p-6 text-center bg-tenis-green/5 border-l border-r border-tenis-green/10 relative">
+                            <!-- Subtle side highlight borders -->
+                            <div
+                                class="absolute inset-y-0 left-0 w-px bg-gradient-to-b from-transparent via-tenis-green/20 to-transparent">
+                            </div>
+                            <div
+                                class="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-tenis-green/20 to-transparent">
+                            </div>
+
+                            <div class="flex flex-col items-center justify-center transform scale-105">
+                                <div
+                                    class="h-10 w-10 bg-tenis-green rounded-full flex items-center justify-center mb-2 shadow-md">
+                                    <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                            d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <span class="text-sm font-bold text-tenis-dark">{{ row.courthub.text }}</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- CTA -->
+        <div class="mt-16 text-center">
+            <app-ui-button (click)="scrollToLeadGen()" variant="primary" size="lg">
+                Migra tu club a la era digital - Solicitar Demo
+            </app-ui-button>
+        </div>
+    </div>
+</section>

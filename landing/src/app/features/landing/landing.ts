@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { ComparisonTableComponent } from './components/comparison-table/comparison-table';
 import { HeaderComponent } from '../../core/layout/header/header';
 import { FooterComponent } from '../../core/layout/footer/footer';
 import { HeroComponent } from './components/hero/hero';
@@ -38,7 +39,8 @@ import { SeoService } from '../../core/services/seo.service';
         BlogPreviewComponent,
         FaqComponent,
         LeadGenComponent,
-        BenefitsComponent
+        BenefitsComponent,
+        ComparisonTableComponent
     ],
     templateUrl: './landing.html',
     styleUrl: './landing.scss'

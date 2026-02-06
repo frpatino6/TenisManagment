@@ -13,6 +13,9 @@ import { WhiteLabelComponent } from './components/white-label/white-label';
 import { LoyaltyComponent } from './components/loyalty/loyalty';
 import { ProofComponent } from './components/proof/proof';
 import { BenefitsComponent } from './components/benefits/benefits';
+import { InfrastructureComponent } from './components/infrastructure/infrastructure';
+import { PaymentSecurityComponent } from './components/payment-security/payment-security';
+import { EloCompetitivenessComponent } from './components/elo-competitiveness/elo-competitiveness';
 import { SeoService } from '../../core/services/seo.service';
 
 @Component({
@@ -23,9 +26,12 @@ import { SeoService } from '../../core/services/seo.service';
         FooterComponent,
         HeroComponent,
         ProofComponent,
+        InfrastructureComponent,
         WhiteLabelComponent,
         FeaturesComponent,
+        PaymentSecurityComponent,
         LoyaltyComponent,
+        EloCompetitivenessComponent,
         PricingComponent,
         SavingsCalculatorComponent,
         FinancialHealthCalculatorComponent,

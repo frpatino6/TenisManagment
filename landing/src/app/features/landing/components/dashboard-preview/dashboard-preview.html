@@ -1,0 +1,168 @@
+<div class="dashboard-preview">
+  <div class="dashboard-preview__device">
+    <div class="dashboard-preview__screen">
+      <div class="dashboard-preview__header">
+        <h3 class="dashboard-preview__title">CourtHub</h3>
+        <span class="dashboard-preview__badge">Preview</span>
+      </div>
+
+      <nav class="dashboard-preview__tabs" role="tablist">
+        <button
+          *ngFor="let tab of tabs"
+          class="dashboard-preview__tab"
+          [class.dashboard-preview__tab--active]="activeTab === tab.id"
+          [attr.aria-selected]="activeTab === tab.id"
+          [attr.aria-label]="'Ver ' + tab.label"
+          role="tab"
+          (click)="selectTab(tab.id)"
+        >
+          <ng-container [ngSwitch]="tab.icon">
+            <svg *ngSwitchCase="'chart-bar'" class="dashboard-preview__tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
+            </svg>
+            <svg *ngSwitchCase="'calendar'" class="dashboard-preview__tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <svg *ngSwitchCase="'trophy'" class="dashboard-preview__tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+            </svg>
+          </ng-container>
+          <span class="dashboard-preview__tab-label">{{ tab.label }}</span>
+        </button>
+      </nav>
+
+      <div class="dashboard-preview__content">
+        <!-- Finanzas Tab -->
+        <div *ngIf="activeTab === 'finanzas' && financesData" class="dashboard-preview__panel" role="tabpanel">
+          <div class="dashboard-preview__hero-card">
+            <p class="dashboard-preview__hero-label">Ingresos Netos Totales (Wompi)</p>
+            <p class="dashboard-preview__hero-value">{{ formatCurrency(financesData.totalRevenue) }}</p>
+            <span class="dashboard-preview__trend" [class.dashboard-preview__trend--positive]="financesData.trendPercent >= 0">
+              {{ financesData.trendPercent >= 0 ? '+' : '' }}{{ financesData.trendPercent }}% vs período anterior
+            </span>
+          </div>
+
+          <p class="dashboard-preview__section-title">Rendimiento Financiero</p>
+          <div class="dashboard-preview__metrics dashboard-preview__metrics--three">
+            <div class="dashboard-preview__metric-card">
+              <span class="dashboard-preview__metric-icon dashboard-preview__metric-icon--receipt" aria-hidden="true">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              </span>
+              <div>
+                <p class="dashboard-preview__metric-label">Ticket Promedio</p>
+                <p class="dashboard-preview__metric-value">{{ formatCurrency(financesData.ticketPromedio) }}</p>
+              </div>
+            </div>
+            <div class="dashboard-preview__metric-card">
+              <span class="dashboard-preview__metric-icon dashboard-preview__metric-icon--wallet" aria-hidden="true">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+              </span>
+              <div>
+                <p class="dashboard-preview__metric-label">Saldo en Monederos</p>
+                <p class="dashboard-preview__metric-value">{{ formatCurrency(financesData.walletBalance.total) }}</p>
+              </div>
+            </div>
+            <div class="dashboard-preview__metric-card">
+              <span class="dashboard-preview__metric-icon dashboard-preview__metric-icon--savings" aria-hidden="true">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </span>
+              <div>
+                <p class="dashboard-preview__metric-label">Ahorro Monedero</p>
+                <p class="dashboard-preview__metric-value">{{ formatCurrency(financesData.ahorroMonedero) }}/mes</p>
+                <p class="dashboard-preview__metric-sublabel">{{ financesData.penetracionMonedero }}% penetración</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashboard-preview__chart">
+            <p class="dashboard-preview__chart-title">Ingresos Mensuales</p>
+            <div class="dashboard-preview__chart-bars">
+              <div
+                *ngFor="let item of financesData.monthlyRevenue"
+                class="dashboard-preview__chart-bar-wrapper"
+              >
+                <div
+                  class="dashboard-preview__chart-bar"
+                  [style.height.%]="(item.amount / chartMaxValue) * 100"
+                ></div>
+              </div>
+            </div>
+            <div class="dashboard-preview__chart-labels">
+              <span *ngFor="let item of financesData.monthlyRevenue">{{ item.month }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reservas Tab -->
+        <div *ngIf="activeTab === 'reservas' && reservationsData" class="dashboard-preview__panel" role="tabpanel">
+          <div class="dashboard-preview__hero-card">
+            <span class="dashboard-preview__hero-icon" aria-hidden="true">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+            </span>
+            <p class="dashboard-preview__hero-label">Reservas Hoy</p>
+            <p class="dashboard-preview__hero-value">{{ reservationsData.todayCount }}</p>
+          </div>
+          <div class="dashboard-preview__metrics">
+            <div class="dashboard-preview__metric-card">
+              <span class="dashboard-preview__metric-icon dashboard-preview__metric-icon--calendar" aria-hidden="true">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              </span>
+              <div>
+                <p class="dashboard-preview__metric-label">Esta Semana</p>
+                <p class="dashboard-preview__metric-value">{{ reservationsData.weekCount }}</p>
+              </div>
+            </div>
+            <div class="dashboard-preview__metric-card">
+              <span class="dashboard-preview__metric-icon dashboard-preview__metric-icon--chart" aria-hidden="true">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" /></svg>
+              </span>
+              <div>
+                <p class="dashboard-preview__metric-label">Ocupación</p>
+                <p class="dashboard-preview__metric-value">{{ reservationsData.occupancyRate }}%</p>
+              </div>
+            </div>
+          </div>
+          <p class="dashboard-preview__section-title">Próximas hoy</p>
+          <div class="dashboard-preview__bookings">
+            <div
+              *ngFor="let booking of reservationsData.upcomingBookings"
+              class="dashboard-preview__booking-row"
+            >
+              <span class="dashboard-preview__booking-time">{{ booking.time }}</span>
+              <span class="dashboard-preview__booking-court">{{ booking.court }}</span>
+              <span class="dashboard-preview__booking-type">{{ booking.type }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Academias Tab -->
+        <div *ngIf="activeTab === 'academias' && academiesData" class="dashboard-preview__panel" role="tabpanel">
+          <p class="dashboard-preview__section-title">
+            <span class="dashboard-preview__section-icon" aria-hidden="true">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" /></svg>
+            </span>
+            Próximos Torneos (Ranking ELO)
+          </p>
+          <div class="dashboard-preview__tournaments">
+            <div
+              *ngFor="let tournament of academiesData.upcomingTournaments"
+              class="dashboard-preview__tournament-card"
+            >
+              <span class="dashboard-preview__tournament-icon" aria-hidden="true">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" /></svg>
+              </span>
+              <div class="dashboard-preview__tournament-content">
+                <div class="dashboard-preview__tournament-header">
+                  <span class="dashboard-preview__tournament-name">{{ tournament.name }}</span>
+                  <span class="dashboard-preview__tournament-elo">{{ tournament.eloRange }}</span>
+                </div>
+                <p class="dashboard-preview__tournament-date">{{ tournament.date }}</p>
+                <p class="dashboard-preview__tournament-meta">{{ tournament.category }} · {{ tournament.participants }} participantes</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -52,7 +52,6 @@ export class HeroComponent {
 
   setIndex(index: number) {
     this.currentImageIndex = index;
-    // Reset timer on manual interaction
     this.stopAutoSlide();
     this.startAutoSlide();
   }

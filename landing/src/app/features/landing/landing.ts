@@ -36,8 +36,8 @@ import { SeoService } from '../../core/services/seo.service';
 export class LandingComponent {
     constructor(private seo: SeoService) {
         this.seo.updateMetaTags({
-            title: 'CourtHub | Software Gestión Padel Tenis y Administración de Clubes',
-            description: 'CourtHub: El mejor software de gestión para clubes de padel y tenis. Automatización de pagos, BI financiero y administración de academias. ¡Solicita tu demo!',
+            title: 'CourtHub | Software de Gestión y BI para Clubes de Tenis y Padel',
+            description: 'Optimiza la rentabilidad de tu club de tenis o padel con BI financiero, monedero digital y pagos automatizados vía Wompi.',
             image: 'https://courthub.co/images/og-image-1200x630.jpg',
             url: 'https://courthub.co/',
             keywords: 'Software Gestión Padel Tenis, Administración de Clubes Deportivos, BI Financiero, Automatización de pagos, Rankings ELO'

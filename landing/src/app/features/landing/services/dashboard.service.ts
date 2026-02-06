@@ -28,26 +28,65 @@ export interface FinancesData {
   ticketPromedio: number;
   ahorroMonedero: number;
   penetracionMonedero: number;
+  transactions?: PaymentTransaction[];
 }
 
-export interface UpcomingBooking {
-  time: string;
+export interface ReservationCard {
+  clientName: string;
   court: string;
+  date: string;
+  professor: string;
+  timeSlot: string;
   type: string;
+  price: number;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
 }
 
 export interface ReservationsData {
-  todayCount: number;
-  weekCount: number;
-  occupancyRate: number;
-  upcomingBookings: UpcomingBooking[];
+  totalCount: number;
+  reservations: ReservationCard[];
 }
 
 export interface AcademiesData {
   upcomingTournaments: UpcomingTournament[];
 }
 
-export type DashboardTab = 'finanzas' | 'reservas' | 'academias';
+export interface ServiceDistribution {
+  label: string;
+  amount: number;
+  percent: number;
+  color: string;
+}
+
+export interface ExecutiveRow {
+  service: string;
+  icon: string;
+  quantity: number;
+  total: number;
+  percent: number;
+}
+
+export interface FacturacionData {
+  totalNetIncome: number;
+  trendPercent: number;
+  ticketPromedio: number;
+  ahorroMonedero: number;
+  penetracionMonedero: number;
+  serviceDistribution: ServiceDistribution[];
+  executiveBreakdown: ExecutiveRow[];
+}
+
+export interface PaymentTransaction {
+  amount: number;
+  type: 'online' | 'manual';
+  date: string;
+  payer: string;
+  reference: string;
+  status: 'approved' | 'pending';
+  description?: string;
+}
+
+export type DashboardTab = 'inicio' | 'finanzas' | 'reservas' | 'facturacion' | 'academias';
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
@@ -70,19 +109,41 @@ export class DashboardService {
       ticketPromedio: 38200,
       ahorroMonedero: 2140,
       penetracionMonedero: 68.5,
+      transactions: [
+        { amount: 50000, type: 'manual', date: '29/01/2026', payer: 'fernando rodriguez', reference: 'MAN-697AE9A5', status: 'approved', description: 'individual_class' },
+        { amount: 35000, type: 'online', date: '28/01/2026', payer: 'maría garcía', reference: 'TRX-1769648262798', status: 'approved' },
+        { amount: 45000, type: 'manual', date: '27/01/2026', payer: 'carlos lópez', reference: 'MAN-697AE997', status: 'approved', description: 'court_rental' },
+        { amount: 38000, type: 'online', date: '27/01/2026', payer: 'ana martínez', reference: 'TRX-1769648123456', status: 'approved' },
+      ],
     };
   }
 
   getReservationsData(): ReservationsData {
     return {
-      todayCount: 24,
-      weekCount: 156,
-      occupancyRate: 72,
-      upcomingBookings: [
-        { time: '09:00', court: 'Cancha 1', type: 'Clase individual' },
-        { time: '10:30', court: 'Cancha 2', type: 'Alquiler' },
-        { time: '14:00', court: 'Cancha 1', type: 'Clase grupal' },
-        { time: '16:00', court: 'Cancha 3', type: 'Alquiler' },
+      totalCount: 4,
+      reservations: [
+        { clientName: 'Ginna Piñeros', court: 'Cancha Padel 1', date: '03/02/2026', professor: 'Sin profesor', timeSlot: '12:00 - 13:00', type: 'Alquiler', price: 40000, status: 'pending' },
+        { clientName: 'Fernando Rodriguez', court: 'Cancha 1', date: '05/02/2026', professor: 'Fernando Rodriguez', timeSlot: '09:00 - 10:00', type: 'Clase', price: 50000, status: 'confirmed' },
+        { clientName: 'María García', court: 'Cancha 2', date: '05/02/2026', professor: 'Sin profesor', timeSlot: '14:00 - 15:00', type: 'Alquiler', price: 38000, status: 'confirmed' },
+        { clientName: 'Carlos López', court: 'Cancha Padel 1', date: '06/02/2026', professor: 'Juan Pérez', timeSlot: '16:00 - 17:00', type: 'Clase', price: 45000, status: 'confirmed' },
+      ],
+    };
+  }
+
+  getFacturacionData(): FacturacionData {
+    return {
+      totalNetIncome: 390000,
+      trendPercent: -33,
+      ticketPromedio: 48750,
+      ahorroMonedero: 3000,
+      penetracionMonedero: 25.6,
+      serviceDistribution: [
+        { label: 'Alquiler de cancha', amount: 290000, percent: 74.4, color: '#009688' },
+        { label: 'Clase Individual', amount: 100000, percent: 25.6, color: '#4caf50' },
+      ],
+      executiveBreakdown: [
+        { service: 'Alquiler de cancha', icon: 'tennis', quantity: 6, total: 290000, percent: 74 },
+        { service: 'Clase Individual', icon: 'person', quantity: 2, total: 100000, percent: 26 },
       ],
     };
   }
@@ -118,12 +179,16 @@ export class DashboardService {
     };
   }
 
-  getDataForTab(tab: DashboardTab): FinancesData | ReservationsData | AcademiesData {
+  getDataForTab(tab: DashboardTab): FinancesData | ReservationsData | FacturacionData | AcademiesData | null {
     switch (tab) {
+      case 'inicio':
+        return null;
       case 'finanzas':
         return this.getFinancesData();
       case 'reservas':
         return this.getReservationsData();
+      case 'facturacion':
+        return this.getFacturacionData();
       case 'academias':
         return this.getAcademiesData();
       default:
@@ -145,5 +210,9 @@ export class DashboardService {
 
   getAcademiesData$(): Observable<AcademiesData> {
     return of(this.getAcademiesData());
+  }
+
+  getFacturacionData$(): Observable<FacturacionData> {
+    return of(this.getFacturacionData());
   }
 }

@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DashboardService, DashboardTab, FinancesData, ReservationsData, FacturacionData, AcademiesData } from '../../services/dashboard.service';
+import { DashboardService, DashboardTab, FinancesData, ReservationsData, FacturacionData, DeudasData, AcademiesData } from '../../services/dashboard.service';
 
 @Component({
   selector: 'app-dashboard-preview',
@@ -14,14 +14,16 @@ export class DashboardPreviewComponent {
   financesData: FinancesData | null = null;
   reservationsData: ReservationsData | null = null;
   facturacionData: FacturacionData | null = null;
+  deudasData: DeudasData | null = null;
   academiesData: AcademiesData | null = null;
 
   tabs: { id: DashboardTab; label: string; icon: string }[] = [
     { id: 'inicio', label: 'Inicio', icon: 'home' },
     { id: 'finanzas', label: 'Pagos', icon: 'chart-bar' },
     { id: 'reservas', label: 'Reservas', icon: 'calendar' },
-    { id: 'facturacion', label: 'Facturación', icon: 'receipt' },
-    { id: 'academias', label: 'Academias', icon: 'trophy' },
+    { id: 'facturacion', label: 'Fact.', icon: 'receipt' },
+    { id: 'deudas', label: 'Deudas', icon: 'debt' },
+    { id: 'academias', label: 'Acad.', icon: 'trophy' },
   ];
 
   quickAccessCards = [
@@ -48,24 +50,35 @@ export class DashboardPreviewComponent {
         this.financesData = null;
         this.reservationsData = null;
         this.facturacionData = null;
+        this.deudasData = null;
         this.academiesData = null;
         break;
       case 'finanzas':
         this.financesData = this.dashboardService.getFinancesData();
         this.reservationsData = null;
         this.facturacionData = null;
+        this.deudasData = null;
         this.academiesData = null;
         break;
       case 'reservas':
         this.reservationsData = this.dashboardService.getReservationsData();
         this.financesData = null;
         this.facturacionData = null;
+        this.deudasData = null;
         this.academiesData = null;
         break;
       case 'facturacion':
         this.facturacionData = this.dashboardService.getFacturacionData();
         this.financesData = null;
         this.reservationsData = null;
+        this.deudasData = null;
+        this.academiesData = null;
+        break;
+      case 'deudas':
+        this.deudasData = this.dashboardService.getDeudasData();
+        this.financesData = null;
+        this.reservationsData = null;
+        this.facturacionData = null;
         this.academiesData = null;
         break;
       case 'academias':
@@ -73,6 +86,7 @@ export class DashboardPreviewComponent {
         this.financesData = null;
         this.reservationsData = null;
         this.facturacionData = null;
+        this.deudasData = null;
         break;
     }
   }

@@ -76,6 +76,23 @@ export interface FacturacionData {
   executiveBreakdown: ExecutiveRow[];
 }
 
+export interface DebtorEntry {
+  name: string;
+  email: string;
+  initial: string;
+  balance: number;
+  totalDebt: number;
+  pending: number;
+}
+
+export interface DeudasData {
+  totalDebt: number;
+  debtByBalance: number;
+  debtorCount: number;
+  debtByPending: number;
+  debtors: DebtorEntry[];
+}
+
 export interface PaymentTransaction {
   amount: number;
   type: 'online' | 'manual';
@@ -86,7 +103,7 @@ export interface PaymentTransaction {
   description?: string;
 }
 
-export type DashboardTab = 'inicio' | 'finanzas' | 'reservas' | 'facturacion' | 'academias';
+export type DashboardTab = 'inicio' | 'finanzas' | 'reservas' | 'facturacion' | 'deudas' | 'academias';
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
@@ -148,6 +165,18 @@ export class DashboardService {
     };
   }
 
+  getDeudasData(): DeudasData {
+    return {
+      totalDebt: 40000,
+      debtByBalance: 40000,
+      debtorCount: 1,
+      debtByPending: 0,
+      debtors: [
+        { name: 'Ginna Piñeros', email: 'piginna2015@gmail.com', initial: 'G', balance: -40000, totalDebt: 40000, pending: 0 },
+      ],
+    };
+  }
+
   getAcademiesData(): AcademiesData {
     return {
       upcomingTournaments: [
@@ -179,7 +208,7 @@ export class DashboardService {
     };
   }
 
-  getDataForTab(tab: DashboardTab): FinancesData | ReservationsData | FacturacionData | AcademiesData | null {
+  getDataForTab(tab: DashboardTab): FinancesData | ReservationsData | FacturacionData | DeudasData | AcademiesData | null {
     switch (tab) {
       case 'inicio':
         return null;
@@ -189,6 +218,8 @@ export class DashboardService {
         return this.getReservationsData();
       case 'facturacion':
         return this.getFacturacionData();
+      case 'deudas':
+        return this.getDeudasData();
       case 'academias':
         return this.getAcademiesData();
       default:
@@ -214,5 +245,9 @@ export class DashboardService {
 
   getFacturacionData$(): Observable<FacturacionData> {
     return of(this.getFacturacionData());
+  }
+
+  getDeudasData$(): Observable<DeudasData> {
+    return of(this.getDeudasData());
   }
 }

@@ -31,6 +31,9 @@
             <svg *ngSwitchCase="'receipt'" class="dashboard-preview__tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
+            <svg *ngSwitchCase="'debt'" class="dashboard-preview__tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             <svg *ngSwitchCase="'trophy'" class="dashboard-preview__tab-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
             </svg>
@@ -198,6 +201,47 @@
               <span class="dashboard-preview__fact-row-qty">{{ row.quantity }}</span>
               <span class="dashboard-preview__fact-row-total">{{ formatCurrency(row.total) }}</span>
               <span class="dashboard-preview__fact-row-pct">{{ row.percent }}%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Deudas Tab -->
+        <div *ngIf="activeTab === 'deudas' && deudasData" class="dashboard-preview__panel" role="tabpanel">
+          <div class="dashboard-preview__search">
+            <svg class="dashboard-preview__search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <span class="dashboard-preview__search-placeholder">Buscar por nombre o email...</span>
+          </div>
+          <div class="dashboard-preview__debt-summary">
+            <div class="dashboard-preview__debt-summary-col">
+              <span class="dashboard-preview__debt-summary-icon dashboard-preview__debt-summary-icon--green" aria-hidden="true">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+              </span>
+              <p class="dashboard-preview__debt-summary-label">Deuda Total</p>
+              <p class="dashboard-preview__debt-summary-value dashboard-preview__debt-summary-value--green">{{ formatCurrency(deudasData.totalDebt) }}</p>
+              <p class="dashboard-preview__debt-summary-sublabel">Por Balance {{ formatCurrency(deudasData.debtByBalance) }}</p>
+            </div>
+            <div class="dashboard-preview__debt-summary-col">
+              <span class="dashboard-preview__debt-summary-icon dashboard-preview__debt-summary-icon--orange" aria-hidden="true">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+              </span>
+              <p class="dashboard-preview__debt-summary-label">Deudores</p>
+              <p class="dashboard-preview__debt-summary-value dashboard-preview__debt-summary-value--orange">{{ deudasData.debtorCount }}</p>
+              <p class="dashboard-preview__debt-summary-sublabel">Por Pendientes {{ formatCurrency(deudasData.debtByPending) }}</p>
+            </div>
+          </div>
+          <div class="dashboard-preview__debtors">
+            <div *ngFor="let d of deudasData.debtors" class="dashboard-preview__debtor-card">
+              <span class="dashboard-preview__debtor-avatar">{{ d.initial }}</span>
+              <div class="dashboard-preview__debtor-info">
+                <h4 class="dashboard-preview__debtor-name">{{ d.name }}</h4>
+                <p class="dashboard-preview__debtor-email">{{ d.email }}</p>
+                <p class="dashboard-preview__debtor-balance">Balance <span class="dashboard-preview__debtor-balance-value">{{ formatCurrency(d.balance) }}</span></p>
+              </div>
+              <div class="dashboard-preview__debtor-detail">
+                <p class="dashboard-preview__debtor-total">{{ formatCurrency(d.totalDebt) }}</p>
+                <p class="dashboard-preview__debtor-total-label">Deuda Total</p>
+                <p class="dashboard-preview__debtor-pending">Pendientes {{ formatCurrency(d.pending) }}</p>
+              </div>
             </div>
           </div>
         </div>

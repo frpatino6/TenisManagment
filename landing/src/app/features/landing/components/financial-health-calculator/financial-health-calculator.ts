@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LeadService } from '../../../../core/services/lead.service';
 
+declare let gtag: Function;
+
 const STEPS = 5;
 const COSTE_HORA_GESTION_COP = 25000;
 
@@ -25,7 +27,7 @@ export class FinancialHealthCalculatorComponent {
     success = false;
     errorMessage: string | null = null;
 
-    constructor(private leadService: LeadService) {}
+    constructor(private leadService: LeadService) { }
 
     get monthlyLoss(): number {
         const perdidaCancelaciones = this.cancelacionesSemanales * 4 * this.tarifa;
@@ -84,6 +86,12 @@ export class FinancialHealthCalculatorComponent {
                 next: () => {
                     this.isSubmitting = false;
                     this.success = true;
+                    // Google Ads Conversion Event
+                    if (typeof gtag !== 'undefined') {
+                        gtag('event', 'conversion', {
+                            'send_to': 'AW-XXXXXXXXX/CALCULATOR_SUBMIT_LABEL'
+                        });
+                    }
                 },
                 error: () => {
                     this.isSubmitting = false;

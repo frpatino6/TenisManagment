@@ -996,6 +996,146 @@ $accent-badge-bg: #ccfbf1;
   font-weight: 500;
 }
 
+.dashboard-preview__debt-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #1a2e1a;
+  border: 1px solid rgba($primary, 0.2);
+  border-radius: 12px;
+}
+
+.dashboard-preview__debt-summary-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dashboard-preview__debt-summary-icon {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 4px;
+  svg { width: 100%; height: 100%; }
+}
+
+.dashboard-preview__debt-summary-icon--green {
+  color: $primary-light;
+}
+
+.dashboard-preview__debt-summary-icon--orange {
+  color: #ff9800;
+}
+
+.dashboard-preview__debt-summary-label {
+  font-size: 11px;
+  color: white;
+  margin: 0;
+}
+
+.dashboard-preview__debt-summary-value {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.dashboard-preview__debt-summary-value--green {
+  color: $primary-light;
+}
+
+.dashboard-preview__debt-summary-value--orange {
+  color: #ff9800;
+}
+
+.dashboard-preview__debt-summary-sublabel {
+  font-size: 10px;
+  color: var(--dash-text-muted);
+  margin: 2px 0 0;
+}
+
+.dashboard-preview__debtors {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dashboard-preview__debtor-card {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--dash-surface-elevated);
+  border: 1px solid $border;
+  border-radius: 12px;
+}
+
+.dashboard-preview__debtor-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba($primary, 0.3);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.dashboard-preview__debtor-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-preview__debtor-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--dash-text);
+  margin: 0 0 2px;
+}
+
+.dashboard-preview__debtor-email {
+  font-size: 11px;
+  color: var(--dash-text-muted);
+  margin: 0 0 6px;
+}
+
+.dashboard-preview__debtor-balance {
+  font-size: 12px;
+  color: white;
+  margin: 0;
+}
+
+.dashboard-preview__debtor-balance-value {
+  color: #ef5350;
+  font-weight: 600;
+}
+
+.dashboard-preview__debtor-detail {
+  text-align: right;
+}
+
+.dashboard-preview__debtor-total {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ef5350;
+  margin: 0 0 2px;
+}
+
+.dashboard-preview__debtor-total-label {
+  font-size: 10px;
+  color: var(--dash-text-muted);
+  margin: 0 0 4px;
+}
+
+.dashboard-preview__debtor-pending {
+  font-size: 11px;
+  color: var(--dash-text-muted);
+  margin: 0;
+}
+
 .dashboard-preview__section-icon {
   display: inline-flex;
   vertical-align: middle;

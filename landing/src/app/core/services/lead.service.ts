@@ -10,21 +10,32 @@ export interface LeadData {
     phone: string;
 }
 
+export interface CalculatorLeadData {
+    clubName: string;
+    email: string;
+    monthlyLoss: number;
+    canchas: number;
+    tarifa: number;
+    cancelacionesSemanales: number;
+    horasGestionManual: number;
+}
+
 @Injectable({
     providedIn: 'root'
 })
 export class LeadService {
-    private readonly apiUrl = `${environment.apiUrl}/public/leads`;
+    private readonly apiUrl = `${environment.apiUrl}/public`;
 
-    constructor(private http: HttpClient) { }
+    constructor(private http: HttpClient) {}
 
-    /**
-     * Envía los datos de un nuevo interesado al backend.
-     * 
-     * @param data - Datos del club e interesado
-     * @returns Observable con la respuesta del servidor
-     */
     createLead(data: LeadData): Observable<{ message: string; leadId: string }> {
-        return this.http.post<{ message: string; leadId: string }>(this.apiUrl, data);
+        return this.http.post<{ message: string; leadId: string }>(`${this.apiUrl}/leads`, data);
+    }
+
+    createCalculatorLead(data: CalculatorLeadData): Observable<{ message: string; leadId: string }> {
+        return this.http.post<{ message: string; leadId: string }>(
+            `${this.apiUrl}/calculator-leads`,
+            data
+        );
     }
 }

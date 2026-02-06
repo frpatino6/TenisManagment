@@ -103,6 +103,58 @@ export class EmailService {
     }
 
     /**
+     * Notifica al administrador cuando un usuario completa la Calculadora de Salud Financiera.
+     */
+    async sendCalculatorLeadNotification(data: {
+        clubName: string;
+        email: string;
+        monthlyLoss: number;
+        canchas: number;
+        tarifa: number;
+        cancelacionesSemanales: number;
+        horasGestionManual: number;
+    }): Promise<boolean> {
+        try {
+            const subject = `[Calculadora] Lead: ${data.clubName} - Está perdiendo $${data.monthlyLoss.toLocaleString('es-CO')}/mes`;
+            const html = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                    <h2 style="color: #2D3748;">Nuevo lead desde Calculadora de Salud Financiera</h2>
+                    <p>Un usuario completó la calculadora y dejó sus datos:</p>
+                    <div style="background-color: #F7FAFC; padding: 20px; border-radius: 8px; border: 1px solid #E2E8F0;">
+                        <p><strong>Club:</strong> ${data.clubName}</p>
+                        <p><strong>Email:</strong> ${data.email}</p>
+                        <p><strong>Pérdida mensual estimada:</strong> $${data.monthlyLoss.toLocaleString('es-CO')}</p>
+                        <p><strong>Canchas:</strong> ${data.canchas}</p>
+                        <p><strong>Tarifa/hora:</strong> $${data.tarifa.toLocaleString('es-CO')}</p>
+                        <p><strong>Cancelaciones/semana:</strong> ${data.cancelacionesSemanales}</p>
+                        <p><strong>Horas gestión manual/semana:</strong> ${data.horasGestionManual}</p>
+                    </div>
+                </div>
+            `;
+
+            await this.transporter.sendMail({
+                from: config.email.from,
+                to: config.email.from,
+                subject,
+                html
+            });
+
+            this.logger.info('Notificación de calculator lead enviada', {
+                email: data.email,
+                club: data.clubName
+            });
+
+            return true;
+        } catch (error) {
+            this.logger.error('Error enviando notificación de calculator lead', {
+                error: (error as Error).message,
+                email: data.email
+            });
+            return false;
+        }
+    }
+
+    /**
      * Envía un email de invitación a un profesor.
      */
     async sendInvitationEmail(email: string, tenantName: string): Promise<boolean> {

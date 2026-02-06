@@ -11,17 +11,13 @@
             </div>
 
             <!-- Desktop Navigation -->
-            <nav class="hidden md:flex space-x-8">
-                <a href="#white-label" class="text-gray-600 hover:text-tenis-green transition-colors font-medium">White
-                    Label</a>
-                <a href="#features"
-                    class="text-gray-600 hover:text-tenis-green transition-colors font-medium">Dashboard</a>
-                <a href="#loyalty"
-                    class="text-gray-600 hover:text-tenis-green transition-colors font-medium">Fidelización</a>
-                <a href="#pricing"
-                    class="text-gray-600 hover:text-tenis-green transition-colors font-medium">Precios</a>
-                <a href="#blog"
-                    class="text-gray-600 hover:text-tenis-green transition-colors font-medium">Blog</a>
+            <nav class="hidden md:flex items-center gap-3 lg:gap-5 flex-1 min-w-0 justify-center">
+                <a href="#white-label" class="text-gray-600 hover:text-tenis-green transition-colors font-medium whitespace-nowrap">White Label</a>
+                <a href="#features" class="text-gray-600 hover:text-tenis-green transition-colors font-medium whitespace-nowrap">Dashboard</a>
+                <a href="#loyalty" class="text-gray-600 hover:text-tenis-green transition-colors font-medium whitespace-nowrap">Fidelización</a>
+                <a href="#pricing" class="text-gray-600 hover:text-tenis-green transition-colors font-medium whitespace-nowrap">Precios</a>
+                <a href="#calculadora-salud-financiera" class="text-gray-600 hover:text-tenis-green transition-colors font-medium whitespace-nowrap">Calculadora</a>
+                <a href="#blog" class="text-gray-600 hover:text-tenis-green transition-colors font-medium whitespace-nowrap">Blog</a>
             </nav>
 
             <!-- Desktop Actions -->
@@ -61,6 +57,8 @@
                 class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-tenis-green hover:bg-gray-50">Fidelización</a>
             <a href="#pricing" (click)="isMenuOpen = false"
                 class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-tenis-green hover:bg-gray-50">Precios</a>
+            <a href="#calculadora-salud-financiera" (click)="isMenuOpen = false"
+                class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-tenis-green hover:bg-gray-50">Calculadora</a>
             <a href="#blog" (click)="isMenuOpen = false"
                 class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-tenis-green hover:bg-gray-50">Blog</a>
             <div class="mt-4 px-3 flex flex-col space-y-3">

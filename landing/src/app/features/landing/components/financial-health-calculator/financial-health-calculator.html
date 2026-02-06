@@ -1,0 +1,146 @@
+<section id="calculadora-salud-financiera" class="py-24 bg-tenis-dark relative overflow-hidden">
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute -top-40 -right-32 w-96 h-96 rounded-full bg-tenis-green opacity-10 blur-3xl"></div>
+        <div class="absolute -bottom-40 -left-32 w-96 h-96 rounded-full bg-tenis-blue opacity-10 blur-3xl"></div>
+    </div>
+
+    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl lg:text-4xl font-bold text-white">
+                Calculadora de Salud Financiera para Clubes
+            </h2>
+            <p class="mt-4 text-lg text-gray-300">
+                Descubre cuánto estás dejando de percibir cada mes.
+            </p>
+        </div>
+
+        @if (success) {
+            <div class="bg-white rounded-2xl p-10 text-center animate-fade-in-up">
+                <div class="w-16 h-16 mx-auto rounded-full bg-tenis-green/20 flex items-center justify-center mb-6">
+                    <svg class="w-8 h-8 text-tenis-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-tenis-dark mb-4">
+                    CourtHub ya está configurado para eliminar esta pérdida con su sistema de monedero digital y Wompi.
+                </h3>
+                <p class="text-gray-600 text-lg">¿Hablamos?</p>
+                <p class="mt-4 text-sm text-gray-500">
+                    Un especialista se pondrá en contacto contigo en breve.
+                </p>
+            </div>
+        } @else {
+            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <div class="p-8 sm:p-10">
+                    <div class="flex justify-between mb-8">
+                        @for (s of [0,1,2,3,4]; track s) {
+                            <div class="flex flex-col items-center flex-1">
+                                <div
+                                    class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-colors"
+                                    [class.bg-tenis-green]="s <= currentStep"
+                                    [class.text-white]="s <= currentStep"
+                                    [class.bg-gray-200]="s > currentStep"
+                                    [class.text-gray-500]="s > currentStep">
+                                    {{ s + 1 }}
+                                </div>
+                                <span class="text-xs mt-2 text-gray-500 hidden sm:block">{{ getStepLabel(s) }}</span>
+                            </div>
+                            @if (s < 4) {
+                                <div class="flex-1 flex items-center px-1">
+                                    <div class="w-full h-0.5 rounded"
+                                        [class.bg-tenis-green]="s < currentStep"
+                                        [class.bg-gray-200]="s >= currentStep"></div>
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    @switch (currentStep) {
+                        @case (0) {
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700">¿Cuántas canchas tiene tu club?</label>
+                                <input type="number" [(ngModel)]="canchas" min="1" max="50"
+                                    class="mt-3 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tenis-green focus:border-tenis-green">
+                            </div>
+                        }
+                        @case (1) {
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700">Tarifa promedio por hora (COP)</label>
+                                <input type="number" [(ngModel)]="tarifa" min="1000" step="1000"
+                                    class="mt-3 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tenis-green focus:border-tenis-green"
+                                    placeholder="Ej: 35000">
+                            </div>
+                        }
+                        @case (2) {
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700">Cancelaciones o no-show por semana</label>
+                                <input type="number" [(ngModel)]="cancelacionesSemanales" min="0" max="100"
+                                    class="mt-3 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tenis-green focus:border-tenis-green"
+                                    placeholder="Ej: 5">
+                            </div>
+                        }
+                        @case (3) {
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700">Horas semanales en gestión manual (cobros, recordatorios, Excel)</label>
+                                <input type="number" [(ngModel)]="horasGestionManual" min="0" max="168" step="0.5"
+                                    class="mt-3 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tenis-green focus:border-tenis-green"
+                                    placeholder="Ej: 8">
+                            </div>
+                        }
+                        @case (4) {
+                            <div class="space-y-6">
+                                <div class="p-6 bg-red-50 rounded-xl border border-red-100">
+                                    <p class="text-sm font-medium text-red-800">Estás dejando de percibir</p>
+                                    <p class="text-3xl font-bold text-red-600 mt-1">$ {{ formatCurrency(monthlyLoss) }} al mes</p>
+                                </div>
+                                <p class="text-gray-600">
+                                    Para ver el desglose completo y cómo recuperarlo, ingresa tu correo y nombre del club.
+                                </p>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Nombre del club</label>
+                                    <input type="text" [(ngModel)]="clubName" minlength="3"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tenis-green focus:border-tenis-green"
+                                        placeholder="Ej: Club Arena Norte">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Email corporativo</label>
+                                    <input type="email" [(ngModel)]="email"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-tenis-green focus:border-tenis-green"
+                                        placeholder="admin@tuclub.com">
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    @if (errorMessage) {
+                        <div class="mt-4 p-4 bg-red-50 rounded-lg text-red-700 text-sm">
+                            {{ errorMessage }}
+                        </div>
+                    }
+
+                    <div class="mt-10 flex justify-between">
+                        <button *ngIf="currentStep > 0" (click)="prevStep()"
+                            class="px-6 py-2.5 rounded-lg font-semibold text-gray-600 hover:text-tenis-dark transition-colors">
+                            Atrás
+                        </button>
+                        <div class="flex-1"></div>
+                        @if (isEmailStep) {
+                            <button (click)="onSubmit()" [disabled]="!canProceed() || isSubmitting"
+                                class="px-6 py-2.5 rounded-lg font-semibold bg-tenis-green text-white hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                @if (isSubmitting) {
+                                    <span class="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full mr-2 align-middle"></span>
+                                }
+                                Ver desglose y recuperar
+                            </button>
+                        } @else {
+                            <button (click)="nextStep()"
+                                class="px-6 py-2.5 rounded-lg font-semibold bg-tenis-green text-white hover:bg-green-600 transition-colors">
+                                Siguiente
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</section>

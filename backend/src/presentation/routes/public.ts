@@ -8,5 +8,6 @@ const publicController = new PublicController();
  * Rutas públicas que no requieren autenticación.
  */
 router.post('/leads', (req, res) => publicController.createLead(req, res));
+router.post('/calculator-leads', (req, res) => publicController.createCalculatorLead(req, res));
 
 export default router;

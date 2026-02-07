@@ -752,121 +752,8 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                 const Gap(8),
                 _legendChip(_vibrantOrange, 'Pendiente', colorScheme),
                 const Spacer(),
-                // Ocupación con tendencia desde backend
-                Consumer(
-                  builder: (context, ref, child) {
-                    final statsAsync = ref.watch(bookingStatsProvider);
-
-                    return statsAsync.when(
-                      data: (stats) {
-                        final occupancy = stats.occupancy;
-
-                        if (occupancy == null) {
-                          // Fallback: calcular localmente si no hay datos del backend
-                          final localOccupancy = _computeOccupancy(
-                            data.bookings,
-                            data.courts.length,
-                            firstHour,
-                            lastHour,
-                          );
-                          return Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Ocupación: ${localOccupancy.toStringAsFixed(0)}%',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                ),
-                              ),
-                            ],
-                          );
-                        }
-
-                        // Determinar icono y color según tendencia
-                        IconData trendIcon;
-                        Color trendColor;
-
-                        switch (occupancy.trend) {
-                          case 'up':
-                            trendIcon = Icons.arrow_upward;
-                            trendColor = Colors.greenAccent;
-                            break;
-                          case 'down':
-                            trendIcon = Icons.arrow_downward;
-                            trendColor = Colors.redAccent;
-                            break;
-                          case 'stable':
-                          default:
-                            trendIcon = Icons.remove;
-                            trendColor = Colors.grey;
-                            break;
-                        }
-
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(trendIcon, size: 14, color: trendColor),
-                            const Gap(4),
-                            Text(
-                              'Ocupación: ${occupancy.currentPercentage.toStringAsFixed(0)}%',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white.withValues(alpha: 0.6),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                      loading: () => Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            width: 12,
-                            height: 12,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white.withValues(alpha: 0.4),
-                            ),
-                          ),
-                          const Gap(4),
-                          Text(
-                            'Ocupación: --',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white.withValues(alpha: 0.6),
-                            ),
-                          ),
-                        ],
-                      ),
-                      error: (_, __) {
-                        // En caso de error, calcular localmente
-                        final localOccupancy = _computeOccupancy(
-                          data.bookings,
-                          data.courts.length,
-                          firstHour,
-                          lastHour,
-                        );
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Ocupación: ${localOccupancy.toStringAsFixed(0)}%',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white.withValues(alpha: 0.6),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                ),
+                // Ocupación (cálculo local)
+                _buildOccupancyIndicator(data, firstHour, lastHour),
               ],
             ),
           ),
@@ -908,6 +795,33 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     );
   }
 
+  Widget _buildOccupancyIndicator(
+    AdminCourtGridData data,
+    int firstHour,
+    int lastHour,
+  ) {
+    final occupancy = _computeOccupancy(
+      data.bookings,
+      data.courts.length,
+      firstHour,
+      lastHour,
+    );
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Ocupación: ${occupancy.toStringAsFixed(0)}%',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Colors.white.withValues(alpha: 0.6),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildScrollableGrid(
     AdminCourtGridData data,
     Set<String> debtorIds,
@@ -922,7 +836,9 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     final timelineW = _timelineWidth(firstHour, lastHour);
     return NotificationListener<ScrollNotification>(
       onNotification: (_) {
-        setState(() {});
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() {});
+        });
         return false;
       },
       child: SingleChildScrollView(
@@ -1375,6 +1291,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                             hasShadow: true,
                             start: start,
                             end: end,
+                            width: pillWidth, // ← Agregar el ancho
                           ),
                         ),
                       ),
@@ -1452,6 +1369,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     required bool hasShadow,
     DateTime? start,
     DateTime? end,
+    double? width, // ← Nuevo parámetro opcional
   }) {
     double? progress;
     if (start != null && end != null) {
@@ -1462,7 +1380,8 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
         if (total > 0) progress = (elapsed / total).clamp(0.0, 1.0);
       }
     }
-    return Container(
+
+    final container = Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(pillRadius),
         gradient: LinearGradient(
@@ -1486,17 +1405,20 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 5,
-                decoration: BoxDecoration(
-                  color: sidebarColor,
-                  borderRadius: BorderRadius.horizontal(
-                    left: Radius.circular(pillRadius),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: 40, // Altura mínima para la barra lateral
+                ),
+                child: Container(
+                  width: 5,
+                  decoration: BoxDecoration(
+                    color: sidebarColor,
+                    borderRadius: BorderRadius.horizontal(
+                      left: Radius.circular(pillRadius),
+                    ),
                   ),
                 ),
               ),
@@ -1606,6 +1528,9 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
         ],
       ),
     );
+
+    // Si se proporciona un ancho, envolver en SizedBox
+    return width != null ? SizedBox(width: width, child: container) : container;
   }
 
   Widget _buildEmptyLaneTapTarget(

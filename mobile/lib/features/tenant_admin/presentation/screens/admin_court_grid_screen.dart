@@ -93,7 +93,6 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
   static const Color _cardBackground = Color(0xFF1C1F26);
   static const Color _emeraldGreen = Color(0xFF10B981);
   static const Color _vibrantOrange = Color(0xFFF59E0B);
-  static const Color _textMuted = Color(0xFF6B7280);
 
   static const TextStyle _courtNameStyle = TextStyle(
     fontFamily: 'Inter',
@@ -582,19 +581,24 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                   _courtLabelWidth +
                   _currentTimeX(firstHour, lastHour)! -
                   _horizontalOffset -
-                  2,
+                  1.5,
               top: _legendBarHeight + _rowHeight + 1,
               bottom: 0,
-              width: 4,
+              width: 3,
               child: IgnorePointer(
-                child: Container(
+                child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF00E5FF),
+                    color: Colors.cyanAccent,
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.8),
-                        blurRadius: 16,
+                        color: Colors.cyanAccent.withValues(alpha: 0.9),
+                        blurRadius: 12,
                         spreadRadius: 2,
+                      ),
+                      BoxShadow(
+                        color: Colors.cyanAccent.withValues(alpha: 0.5),
+                        blurRadius: 20,
+                        spreadRadius: 0,
                       ),
                     ],
                   ),
@@ -829,9 +833,9 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
               child: Text(
                 'Cancha',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurfaceVariant,
+                  color: Colors.white.withValues(alpha: 0.85),
                   letterSpacing: 0.5,
                 ),
               ),
@@ -844,9 +848,9 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
             right: 0,
             child: ClipRect(
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                 child: Container(
-                  color: _cardBackground.withValues(alpha: 0.85),
+                  color: _cardBackground.withValues(alpha: 0.5),
                   child: Row(
                     children: List.generate(lastHour - firstHour, (i) {
                       final hour = firstHour + i;
@@ -861,11 +865,11 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                         child: Center(
                           child: Text(
                             '${hour.toString().padLeft(2, '0')}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Inter',
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                              color: _textMuted,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: 0.75),
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -1164,7 +1168,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                                         ),
                                       ),
                                     ),
-                                    SizedBox(width: padding),
+                                    const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
                                         displayName,
@@ -1301,8 +1305,6 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     int firstHour,
     int lastHour,
   ) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final showBar = _verticalOffset > 4;
 
     if (!showBar) return const SizedBox.shrink();
@@ -1332,10 +1334,10 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                       child: Center(
                         child: Text(
                           'Cancha',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontSize: 11,
+                          style: TextStyle(
+                            fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurfaceVariant,
+                            color: Colors.white.withValues(alpha: 0.85),
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -1354,10 +1356,12 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                         child: Center(
                           child: Text(
                             '${hour.toString().padLeft(2, '0')}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: colorScheme.onSurfaceVariant,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withValues(alpha: 0.75),
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ),

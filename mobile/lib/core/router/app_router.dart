@@ -273,7 +273,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 name: 'tenant-admin-booking-details',
                 builder: (context, state) {
                   final bookingId = state.pathParameters['id']!;
-                  return TenantBookingDetailsScreen(bookingId: bookingId);
+                  final extra = state.extra as Map<String, dynamic>?;
+                  final gridDate = extra?['gridDate'] as DateTime?;
+                  return TenantBookingDetailsScreen(
+                    bookingId: bookingId,
+                    gridDate: gridDate,
+                  );
                 },
               ),
             ],

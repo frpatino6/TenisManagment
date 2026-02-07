@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/widgets/loading_widget.dart';
 import '../../../../core/widgets/error_widget.dart';
@@ -8,12 +9,18 @@ import '../../../../core/utils/currency_utils.dart';
 import '../../../../core/events/data_change_event.dart';
 import '../../../../core/observers/data_change_observer.dart';
 import '../../domain/models/tenant_booking_model.dart';
+import '../../domain/models/tenant_config_model.dart';
 import '../providers/tenant_admin_provider.dart';
 
 class TenantBookingDetailsScreen extends ConsumerStatefulWidget {
   final String bookingId;
+  final DateTime? gridDate;
 
-  const TenantBookingDetailsScreen({super.key, required this.bookingId});
+  const TenantBookingDetailsScreen({
+    super.key,
+    required this.bookingId,
+    this.gridDate,
+  });
 
   @override
   ConsumerState<TenantBookingDetailsScreen> createState() =>
@@ -26,8 +33,56 @@ class _TenantBookingDetailsScreenState
   bool _isConfirming = false;
   bool _isRescheduling = false;
 
-  static const int _firstHour = 6;
-  static const int _lastHour = 24;
+  (List<(int, int)>, int) _slotsAndLastHourForDate(
+    DateTime date,
+    TenantConfigModel? tenant,
+  ) {
+    const defaultFirst = 6;
+    const defaultLast = 24;
+    int openH = defaultFirst, openM = 0, closeH = defaultLast, closeM = 0;
+
+    final oh = tenant?.config?.operatingHours;
+    if (oh != null) {
+      if (oh.schedule != null && oh.schedule!.isNotEmpty) {
+        final dartWeekday = date.weekday;
+        final modelDay = dartWeekday == 7 ? 0 : dartWeekday;
+        final daySchedule = oh.schedule!
+            .where((s) => s.dayOfWeek == modelDay)
+            .toList();
+        if (daySchedule.isNotEmpty) {
+          final ds = daySchedule.first;
+          final o = _parseHHmm(ds.open);
+          final c = _parseHHmm(ds.close);
+          openH = o.$1;
+          openM = o.$2;
+          closeH = c.$1;
+          closeM = c.$2;
+        }
+      } else if (oh.open != null && oh.close != null) {
+        final o = _parseHHmm(oh.open!);
+        final c = _parseHHmm(oh.close!);
+        openH = o.$1;
+        openM = o.$2;
+        closeH = c.$1;
+        closeM = c.$2;
+      }
+    }
+
+    final openMin = openH * 60 + openM;
+    final closeMin = closeH * 60 + closeM;
+    final slots = <(int, int)>[];
+    for (var t = openMin; t <= closeMin - 30; t += 30) {
+      slots.add((t ~/ 60, t % 60));
+    }
+    return (slots, closeH);
+  }
+
+  (int, int) _parseHHmm(String s) {
+    final parts = s.split(':');
+    final h = int.tryParse(parts[0]) ?? 0;
+    final m = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+    return (h, m);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -508,11 +563,12 @@ class _TenantBookingDetailsScreenState
         ? 90
         : (initialDuration >= 120 ? 120 : 60);
 
-    final slots = <(int, int)>[];
-    for (int h = _firstHour; h < _lastHour; h++) {
-      slots.add((h, 0));
-      if (h < _lastHour - 1) slots.add((h, 30));
-    }
+    TenantConfigModel? tenant;
+    try {
+      tenant = await ref.read(tenantInfoProvider.future);
+    } catch (_) {}
+    if (!context.mounted) return;
+    final (slots, lastHour) = _slotsAndLastHourForDate(baseDate, tenant);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -529,8 +585,8 @@ class _TenantBookingDetailsScreenState
             );
             final newEnd = newStart.add(Duration(minutes: durationMinutes));
             final endValid =
-                newEnd.hour < _lastHour ||
-                (newEnd.hour == _lastHour && newEnd.minute == 0);
+                newEnd.hour < lastHour ||
+                (newEnd.hour == lastHour && newEnd.minute == 0);
 
             return Padding(
               padding: EdgeInsets.only(
@@ -614,7 +670,7 @@ class _TenantBookingDetailsScreenState
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
-                            'El horario debe terminar antes de $_lastHour:00',
+                            'El horario debe terminar antes de $lastHour:00',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: colorScheme.error,
                             ),
@@ -725,12 +781,11 @@ class _TenantBookingDetailsScreenState
           entityId: widget.bookingId,
         ),
       );
-      final normalizedDate = DateTime(
-        baseDate.year,
-        baseDate.month,
-        baseDate.day,
-      );
-      ref.invalidate(adminCourtGridDataProvider(normalizedDate));
+      final dateToRefresh =
+          widget.gridDate ??
+          DateTime(baseDate.year, baseDate.month, baseDate.day);
+      ref.invalidate(adminCourtGridDataProvider(dateToRefresh));
+      await ref.read(adminCourtGridDataProvider(dateToRefresh).future);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -738,7 +793,7 @@ class _TenantBookingDetailsScreenState
             backgroundColor: Colors.green,
           ),
         );
-        setState(() {});
+        context.pop(true);
       }
     } catch (e) {
       if (mounted) {

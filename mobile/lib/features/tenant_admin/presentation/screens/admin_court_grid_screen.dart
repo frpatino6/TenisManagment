@@ -22,11 +22,13 @@ class AdminCourtGridScreen extends ConsumerStatefulWidget {
 
 class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
   // Layout constants (sidebar +15% for longer court names)
-  static const double _courtLabelWidth = 175;
+  static const double _courtLabelWidth = 100;
   static const double _rowHeight = 64;
   static const double _pixelsPerHour = 80;
-  static const int _firstHour = 6;
-  static const int _lastHour = 24;
+
+  // Dynamic operating hours (defaults)
+  int _firstHour = 6;
+  int _lastHour = 24;
 
   // Premium color palette
   static const Color _darkBackground = Color(0xFF0F1115);
@@ -38,22 +40,23 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
 
   static const TextStyle _courtNameStyle = TextStyle(
     fontFamily: 'Inter',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: FontWeight.w600,
-    height: 1.35,
+    height: 1.2,
   );
 
   late DateTime _selectedDate;
   final ScrollController _horizontalController = ScrollController();
   final ScrollController _verticalController = ScrollController();
+  final GlobalKey _scrollContentKey = GlobalKey();
   double _horizontalOffset = 0;
   double _verticalOffset = 0;
   String? _draggingBookingId;
+  double _dragStartTimelineX = 0;
   double _dragDeltaX = 0;
   bool _justFinishedDrag = false;
   String? _reschedulingBookingId;
   double _rescheduleOffsetX = 0;
-
   @override
   void initState() {
     super.initState();
@@ -67,6 +70,41 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
       _horizontalOffset = _horizontalController.offset;
       _verticalOffset = _verticalController.offset;
     });
+  }
+
+  double? _globalToTimelineX(Offset global) {
+    final box =
+        _scrollContentKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return null;
+    final local = box.globalToLocal(global);
+    return local.dx - _courtLabelWidth;
+  }
+
+  void _onPointerMove(PointerMoveEvent e) {
+    if (_draggingBookingId == null) return;
+    final timelineX = _globalToTimelineX(e.position);
+    if (timelineX == null) return;
+    setState(() => _dragDeltaX = timelineX - _dragStartTimelineX);
+
+    if (!_horizontalController.hasClients) return;
+    final pos = _horizontalController.position;
+    const margin = 60.0;
+    const step = 20.0;
+    final contentX = timelineX + _courtLabelWidth;
+    final vLeft = pos.pixels;
+    final vRight = pos.pixels + pos.viewportDimension;
+
+    double? target;
+    if (contentX > vRight - margin) {
+      target = (pos.pixels + step).clamp(0.0, pos.maxScrollExtent);
+    } else if (contentX < vLeft + margin) {
+      target = (pos.pixels - step).clamp(0.0, pos.maxScrollExtent);
+    }
+    if (target != null && (target - pos.pixels).abs() > 1) {
+      final scrollDelta = target - pos.pixels;
+      _horizontalController.jumpTo(target);
+      setState(() => _dragDeltaX += scrollDelta);
+    }
   }
 
   @override
@@ -133,6 +171,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch providers
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final gridDataAsync = ref.watch(adminCourtGridDataProvider(_selectedDate));
@@ -227,6 +266,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
       onRefresh: () async {
         ref.invalidate(adminCourtGridDataProvider(_selectedDate));
         ref.invalidate(debtReportProvider);
+        ref.invalidate(tenantInfoProvider);
       },
       child: Stack(
         children: [
@@ -364,61 +404,66 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
         child: SingleChildScrollView(
           controller: _horizontalController,
           scrollDirection: Axis.horizontal,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Positioned(
-                left: _courtLabelWidth,
-                top: _rowHeight,
-                width: _timelineWidth,
-                height: data.courts.length * _rowHeight,
-                child: CustomPaint(
-                  size: Size(_timelineWidth, data.courts.length * _rowHeight),
-                  painter: _HourGuidesPainter(
-                    pixelsPerHour: _pixelsPerHour,
-                    hourCount: _lastHour - _firstHour,
-                    color: Colors.white.withValues(alpha: 0.05),
-                  ),
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHourHeader(colorScheme),
-                  ...List.generate(data.courts.length, (i) {
-                    return _buildCourtLane(
-                      data.courts[i],
-                      _bookingsForCourt(data.bookings, data.courts[i]),
-                      i,
-                      debtorIds,
-                      theme,
-                      colorScheme,
-                    );
-                  }),
-                ],
-              ),
-              if (currentX != null)
+          child: Listener(
+            key: _scrollContentKey,
+            onPointerMove: _onPointerMove,
+            behavior: HitTestBehavior.translucent,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
                 Positioned(
-                  left: _courtLabelWidth + currentX - 1,
+                  left: _courtLabelWidth,
                   top: _rowHeight,
-                  width: 2,
+                  width: _timelineWidth,
                   height: data.courts.length * _rowHeight,
-                  child: IgnorePointer(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: _currentTimeCyan.withValues(alpha: 0.8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _currentTimeCyan.withValues(alpha: 0.5),
-                            blurRadius: 8,
-                            spreadRadius: 0,
-                          ),
-                        ],
-                      ),
+                  child: CustomPaint(
+                    size: Size(_timelineWidth, data.courts.length * _rowHeight),
+                    painter: _HourGuidesPainter(
+                      pixelsPerHour: _pixelsPerHour,
+                      hourCount: _lastHour - _firstHour,
+                      color: Colors.white.withValues(alpha: 0.05),
                     ),
                   ),
                 ),
-            ],
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHourHeader(colorScheme),
+                    ...List.generate(data.courts.length, (i) {
+                      return _buildCourtLane(
+                        data.courts[i],
+                        _bookingsForCourt(data.bookings, data.courts[i]),
+                        i,
+                        debtorIds,
+                        theme,
+                        colorScheme,
+                      );
+                    }),
+                  ],
+                ),
+                if (currentX != null)
+                  Positioned(
+                    left: _courtLabelWidth + currentX - 1,
+                    top: _rowHeight,
+                    width: 2,
+                    height: data.courts.length * _rowHeight,
+                    child: IgnorePointer(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: _currentTimeCyan.withValues(alpha: 0.8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _currentTimeCyan.withValues(alpha: 0.5),
+                              blurRadius: 8,
+                              spreadRadius: 0,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -553,7 +598,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
             gridLineColor: colorScheme.outlineVariant.withValues(alpha: 0.6),
           ),
         ),
-        _buildEmptyLaneTapTarget(court, bookings, colorScheme),
+        _buildEmptyLaneTapTarget(court, colorScheme),
         ...bookings.map(
           (b) => _buildBookingPill(
             b,
@@ -613,10 +658,10 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     final displayName = _studentDisplayName(booking);
     final initial = _initialFromName(displayName);
     final pillWidth = (width - 8).clamp(60.0, double.infinity);
-    const pillRadius = 8.0;
+    const pillRadius = 6.0;
     final showFullName = durationMinutes > 60 && pillWidth > 80;
-    final padding = showFullName ? 12.0 : 4.0;
-    final avatarRadius = showFullName ? 16.0 : 10.0;
+    final padding = showFullName ? 8.0 : 4.0;
+    final avatarRadius = showFullName ? 12.0 : 8.0;
 
     final isDragging = _draggingBookingId == booking.id;
     final isRescheduling = _reschedulingBookingId == booking.id;
@@ -627,19 +672,18 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
 
     return Positioned(
       left: left,
-      top: 6,
-      bottom: 6,
+      top: 4,
+      bottom: 4,
       width: pillWidth,
       child: GestureDetector(
         onHorizontalDragStart: (_) {
           setState(() {
             _draggingBookingId = booking.id;
+            _dragStartTimelineX = baseLeft + 4;
             _dragDeltaX = 0;
           });
         },
-        onHorizontalDragUpdate: (details) {
-          setState(() => _dragDeltaX += details.delta.dx);
-        },
+        onHorizontalDragUpdate: (_) {},
         onHorizontalDragEnd: (details) async {
           final totalDelta = _dragDeltaX;
           setState(() {
@@ -761,7 +805,10 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                   _justFinishedDrag ||
                   _reschedulingBookingId != null)
                 return;
-              context.push('/tenant-admin-home/bookings/${booking.id}');
+              context.push(
+                '/tenant-admin-home/bookings/${booking.id}',
+                extra: {'gridDate': _selectedDate},
+              );
             },
             onLongPress: () {
               if (_draggingBookingId != null ||
@@ -882,102 +929,85 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     );
   }
 
-  bool _isSlotFree(List<TenantBookingModel> bookings, int hour, int minute) {
-    final slotStart = DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
-      hour,
-      minute,
-    );
-    final slotEnd = slotStart.add(const Duration(minutes: 60));
-    return !bookings.any((b) {
-      final oStart = b.startTime!;
-      final oEnd = b.endTime!;
-      return _bookingsOverlap(slotStart, slotEnd, oStart, oEnd);
-    });
-  }
-
   Widget _buildEmptyLaneTapTarget(
     TenantCourtModel court,
-    List<TenantBookingModel> bookings,
     ColorScheme colorScheme,
   ) {
     const double iconSize = 14;
     const double padding = 6;
+    const double hitRadius = 18.0;
 
-    return Positioned.fill(
-      child: Material(
-        color: Colors.transparent,
-        child: Stack(
-          children: [
-            for (int h = _firstHour; h < _lastHour; h++) ...[
-              if (_isSlotFree(bookings, h, 0))
-                Positioned(
-                  left:
-                      (h - _firstHour) * _pixelsPerHour +
-                      _pixelsPerHour / 4 -
-                      (iconSize / 2 + padding),
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: InkResponse(
-                      onTap: () => _openCreateBooking(court, h, 0),
-                      radius: iconSize / 2 + padding + 4,
-                      splashColor: Colors.transparent,
-                      highlightColor: Colors.transparent,
-                      child: Container(
-                        padding: const EdgeInsets.all(padding),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: colorScheme.onSurface.withValues(alpha: 0.1),
-                            width: 1,
-                          ),
-                        ),
-                        child: Icon(
-                          Icons.add,
-                          size: iconSize,
-                          color: colorScheme.onSurface.withValues(alpha: 0.08),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              if (_isSlotFree(bookings, h, 30))
-                Positioned(
-                  left:
-                      (h - _firstHour) * _pixelsPerHour +
-                      3 * _pixelsPerHour / 4 -
-                      (iconSize / 2 + padding),
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: InkResponse(
-                      onTap: () => _openCreateBooking(court, h, 30),
-                      radius: iconSize / 2 + padding + 4,
-                      splashColor: Colors.transparent,
-                      highlightColor: Colors.transparent,
-                      child: Container(
-                        padding: const EdgeInsets.all(padding),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: colorScheme.onSurface.withValues(alpha: 0.1),
-                            width: 1,
-                          ),
-                        ),
-                        child: Icon(
-                          Icons.add,
-                          size: iconSize,
-                          color: colorScheme.onSurface.withValues(alpha: 0.08),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ],
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        for (int h = _firstHour; h < _lastHour; h++) ...[
+          Positioned(
+            left:
+                (h - _firstHour) * _pixelsPerHour +
+                _pixelsPerHour / 4 -
+                (iconSize / 2 + padding),
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: _buildPlusButton(
+                colorScheme,
+                iconSize,
+                padding,
+                hitRadius,
+                () => _openCreateBooking(court, h, 0),
+              ),
+            ),
+          ),
+          Positioned(
+            left:
+                (h - _firstHour) * _pixelsPerHour +
+                3 * _pixelsPerHour / 4 -
+                (iconSize / 2 + padding),
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: _buildPlusButton(
+                colorScheme,
+                iconSize,
+                padding,
+                hitRadius,
+                () => _openCreateBooking(court, h, 30),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPlusButton(
+    ColorScheme colorScheme,
+    double iconSize,
+    double padding,
+    double hitRadius,
+    VoidCallback onTap,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      child: InkResponse(
+        onTap: onTap,
+        radius: hitRadius,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        child: Container(
+          padding: EdgeInsets.all(padding),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: colorScheme.onSurface.withValues(alpha: 0.1),
+              width: 1,
+            ),
+          ),
+          child: Icon(
+            Icons.add,
+            size: iconSize,
+            color: colorScheme.onSurface.withValues(alpha: 0.08),
+          ),
         ),
       ),
     );

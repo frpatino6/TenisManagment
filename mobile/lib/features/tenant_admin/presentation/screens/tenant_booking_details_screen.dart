@@ -917,14 +917,23 @@ class _TenantBookingDetailsScreenState
           );
 
       ref.invalidate(tenantBookingsProvider);
-      final baseDate = booking.date ?? booking.startTime;
-      if (baseDate != null) {
-        final normalizedDate = DateTime(
-          baseDate.year,
-          baseDate.month,
-          baseDate.day,
-        );
-        ref.invalidate(adminCourtGridDataProvider(normalizedDate));
+      final dateToRefresh =
+          widget.gridDate ??
+          (booking.date != null
+              ? DateTime(
+                  booking.date!.year,
+                  booking.date!.month,
+                  booking.date!.day,
+                )
+              : (booking.startTime != null
+                    ? DateTime(
+                        booking.startTime!.year,
+                        booking.startTime!.month,
+                        booking.startTime!.day,
+                      )
+                    : null));
+      if (dateToRefresh != null) {
+        ref.invalidate(adminCourtGridDataProvider(dateToRefresh));
       }
       final observer = ref.read(dataChangeObserverProvider);
       observer.notifyChange(

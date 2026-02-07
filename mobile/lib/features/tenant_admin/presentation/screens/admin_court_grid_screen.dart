@@ -37,6 +37,10 @@ class _PillDragContext {
   final int durationMinutes;
 }
 
+/// Pantalla de administración de canchas con vista de grilla temporal.
+///
+/// Permite visualizar y gestionar reservas en un formato de calendario,
+/// con funcionalidad de drag & drop para reprogramar reservas.
 class AdminCourtGridScreen extends ConsumerStatefulWidget {
   const AdminCourtGridScreen({super.key});
 

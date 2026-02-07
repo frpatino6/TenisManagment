@@ -48,7 +48,7 @@ class AdminCourtGridScreen extends ConsumerStatefulWidget {
 class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
   static const double _courtLabelWidth = 100;
   static const double _rowHeight = 64;
-  static const double _cellWidth = 80.0;
+  static const double kColumnWidth = 100.0;
 
   static const int _defaultFirstHour = 6;
   static const int _defaultLastHour = 24;
@@ -98,7 +98,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
   static const TextStyle _courtNameStyle = TextStyle(
     fontFamily: 'Inter',
     fontSize: 16,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.bold,
     color: Colors.white,
     height: 1.2,
   );
@@ -270,7 +270,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     final targetCourt = ctx.courts[targetCourtIndex];
     final changeCourt = targetCourtIndex != ctx.courtIndex;
 
-    final hourOffset = totalDeltaX / _cellWidth;
+    final hourOffset = totalDeltaX / kColumnWidth;
     final newStartHour = ctx.start.hour + ctx.start.minute / 60.0 + hourOffset;
     final newStartHourInt = newStartHour.floor();
     final newStartMinute = (newStartHour - newStartHourInt) * 60;
@@ -398,7 +398,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
   }
 
   double _timelineWidth(int firstHour, int lastHour) =>
-      (lastHour - firstHour) * _cellWidth;
+      (lastHour - firstHour) * kColumnWidth;
 
   List<TenantBookingModel> _bookingsForCourt(
     List<TenantBookingModel> bookings,
@@ -417,12 +417,12 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
 
   double _leftForTime(DateTime time, int firstHour) {
     final hour = time.hour + time.minute / 60.0 + time.second / 3600.0;
-    return (hour - firstHour) * _cellWidth;
+    return (hour - firstHour) * kColumnWidth;
   }
 
   double _widthForDuration(DateTime start, DateTime end) {
     final hours = end.difference(start).inMinutes / 60.0;
-    return (hours * _cellWidth).clamp(24.0, double.infinity);
+    return (hours * kColumnWidth).clamp(24.0, double.infinity);
   }
 
   bool get _isToday {
@@ -437,7 +437,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     final now = DateTime.now();
     final hour = now.hour + now.minute / 60.0;
     if (hour < firstHour || hour >= lastHour) return null;
-    return (hour - firstHour) * _cellWidth;
+    return (hour - firstHour) * kColumnWidth;
   }
 
   Set<String> _debtorStudentIds(AsyncValue<TenantDebtReportModel> debtAsync) {
@@ -534,6 +534,13 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
               ),
             ],
           ),
+          Positioned(
+            left: _courtLabelWidth,
+            top: _legendBarHeight,
+            bottom: 0,
+            width: 1,
+            child: IgnorePointer(child: Container(color: Colors.white10)),
+          ),
           _buildStickyTopBar(data, firstHour, lastHour),
           _buildStickyLeftBar(data, firstHour, lastHour),
         ],
@@ -549,7 +556,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
       final (firstHour, lastHour) = _hoursForDate(_selectedDate, tenant);
       final x = _currentTimeX(firstHour, lastHour);
       if (x == null) return;
-      final target = (x - 80).clamp(
+      final target = (x - kColumnWidth).clamp(
         0.0,
         _horizontalController.position.maxScrollExtent,
       );
@@ -686,7 +693,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                   child: CustomPaint(
                     size: Size(timelineW, data.courts.length * _rowHeight),
                     painter: _HourGuidesPainter(
-                      pixelsPerHour: _cellWidth,
+                      pixelsPerHour: kColumnWidth,
                       hourCount: lastHour - firstHour,
                       color: Colors.white10,
                     ),
@@ -696,6 +703,13 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildHourHeader(colorScheme, firstHour, lastHour),
+                    Container(
+                      height: 1,
+                      width:
+                          _courtLabelWidth +
+                          _timelineWidth(firstHour, lastHour),
+                      color: Colors.white10,
+                    ),
                     ...List.generate(data.courts.length, (i) {
                       return _buildCourtLane(
                         data.courts[i],
@@ -710,13 +724,20 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                         lastHour,
                       );
                     }),
+                    Container(
+                      height: 1,
+                      width:
+                          _courtLabelWidth +
+                          _timelineWidth(firstHour, lastHour),
+                      color: Colors.white10,
+                    ),
                   ],
                 ),
                 if (currentX != null)
                   Positioned(
-                    left: _courtLabelWidth + currentX - 0.75,
+                    left: _courtLabelWidth + currentX - 1,
                     top: _rowHeight,
-                    width: 1.5,
+                    width: 2,
                     height: data.courts.length * _rowHeight,
                     child: IgnorePointer(
                       child: DecoratedBox(
@@ -780,11 +801,15 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
             child: Row(
               children: List.generate(lastHour - firstHour, (i) {
                 final hour = firstHour + i;
-                return SizedBox(
-                  width: _cellWidth,
+                return Container(
+                  width: kColumnWidth,
                   height: _rowHeight,
-                  child: Align(
-                    alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    border: Border(
+                      right: BorderSide(color: Colors.white10, width: 1),
+                    ),
+                  ),
+                  child: Center(
                     child: Text(
                       '${hour.toString().padLeft(2, '0')}',
                       style: const TextStyle(
@@ -886,7 +911,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
           painter: _TimelineGridPainter(
             firstHour: firstHour,
             lastHour: lastHour,
-            pixelsPerHour: _cellWidth,
+            pixelsPerHour: kColumnWidth,
             gridLineColor: Colors.white10,
           ),
         ),
@@ -1160,7 +1185,10 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
       children: [
         for (int h = firstHour; h < lastHour; h++) ...[
           Positioned(
-            left: (h - firstHour) * _cellWidth + _cellWidth / 4 - hitWidth / 2,
+            left:
+                (h - firstHour) * kColumnWidth +
+                kColumnWidth / 4 -
+                hitWidth / 2,
             top: 0,
             bottom: 0,
             width: hitWidth,
@@ -1171,8 +1199,8 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
           ),
           Positioned(
             left:
-                (h - firstHour) * _cellWidth +
-                3 * _cellWidth / 4 -
+                (h - firstHour) * kColumnWidth +
+                3 * kColumnWidth / 4 -
                 hitWidth / 2,
             top: 0,
             bottom: 0,
@@ -1267,11 +1295,15 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                     ),
                     ...List.generate(lastHour - firstHour, (i) {
                       final hour = firstHour + i;
-                      return SizedBox(
-                        width: _cellWidth,
+                      return Container(
+                        width: kColumnWidth,
                         height: _rowHeight,
-                        child: Align(
-                          alignment: Alignment.center,
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            right: BorderSide(color: Colors.white10, width: 1),
+                          ),
+                        ),
+                        child: Center(
                           child: Text(
                             '${hour.toString().padLeft(2, '0')}',
                             style: theme.textTheme.bodySmall?.copyWith(

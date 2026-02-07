@@ -108,8 +108,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         _paymentReference = reference;
       }
 
-      final redirectUrl =
-          widget.redirectUrl ?? AppConfig.paymentRedirectUrl;
+      final redirectUrl = widget.redirectUrl ?? AppConfig.paymentRedirectUrl;
 
       if (kIsWeb) {
         setState(() {
@@ -140,8 +139,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   Future<void> _processWebPayment() async {
     if (_checkoutUrl == null) return;
 
-    final redirectUrl =
-        widget.redirectUrl ?? AppConfig.paymentRedirectUrl;
+    final redirectUrl = widget.redirectUrl ?? AppConfig.paymentRedirectUrl;
 
     setState(() {
       _isWaitingForWebResult = true;
@@ -226,8 +224,10 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                   ? null
                   : () async {
                       if (_formKey.currentState!.validate()) {
-                        final cleanAmount =
-                            _amountController.text.replaceAll('.', '');
+                        final cleanAmount = _amountController.text.replaceAll(
+                          '.',
+                          '',
+                        );
                         final amount = double.parse(cleanAmount);
                         await _initiatePayment(amount);
 

@@ -34,7 +34,7 @@ void main() {
         'membershipType': 'basic',
         'balance': 0.0,
       };
-      
+
       final student = StudentModel.fromJson(jsonWithoutOptionals);
       expect(student.phone, isNull);
       expect(student.createdAt, isNull);
@@ -50,7 +50,7 @@ void main() {
         'membershipType': 'unknown',
         'balance': 0.0,
       };
-      
+
       final student = StudentModel.fromJson(jsonWithUnknownType);
       expect(student.membershipType, equals(MembershipType.basic));
     });
@@ -66,7 +66,7 @@ void main() {
         createdAt: DateTime(2024, 1, 1),
         updatedAt: DateTime(2024, 1, 2),
       );
-      
+
       final json = student.toJson();
       expect(json['id'], equals('student-123'));
       expect(json['name'], equals('María García'));
@@ -84,12 +84,9 @@ void main() {
         membershipType: MembershipType.basic,
         balance: 100.0,
       );
-      
-      final updated = student.copyWith(
-        name: 'María López',
-        balance: 200.0,
-      );
-      
+
+      final updated = student.copyWith(name: 'María López', balance: 200.0);
+
       expect(updated.id, equals('student-123'));
       expect(updated.name, equals('María López'));
       expect(updated.email, equals('maria@example.com'));
@@ -105,7 +102,7 @@ void main() {
         membershipType: MembershipType.basic,
         balance: 0.0,
       );
-      
+
       final premiumStudent = StudentModel(
         id: 'student-456',
         name: 'Juan Pérez',
@@ -113,7 +110,7 @@ void main() {
         membershipType: MembershipType.premium,
         balance: 0.0,
       );
-      
+
       expect(basicStudent.membershipTypeDisplayName, equals('Básico'));
       expect(premiumStudent.membershipTypeDisplayName, equals('Premium'));
     });
@@ -126,7 +123,7 @@ void main() {
         membershipType: MembershipType.basic,
         balance: 0.0,
       );
-      
+
       final studentWithOneName = StudentModel(
         id: 'student-456',
         name: 'Juan',
@@ -134,7 +131,7 @@ void main() {
         membershipType: MembershipType.basic,
         balance: 0.0,
       );
-      
+
       expect(studentWithTwoNames.initials, equals('MG'));
       expect(studentWithOneName.initials, equals('J'));
     });
@@ -147,7 +144,7 @@ void main() {
         'membershipType': 'basic',
         'balance': 0.0,
       };
-      
+
       expect(
         () => StudentModel.fromJson(invalidJson),
         throwsA(isA<AssertionError>()),
@@ -162,7 +159,7 @@ void main() {
         'membershipType': 'basic',
         'balance': 0.0,
       };
-      
+
       expect(
         () => StudentModel.fromJson(invalidJson),
         throwsA(isA<AssertionError>()),
@@ -170,4 +167,3 @@ void main() {
     });
   });
 }
-

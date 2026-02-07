@@ -36,10 +36,8 @@ class ProfessorProfileCard extends ConsumerWidget {
           ),
           child: Column(
             children: [
-
               Row(
                 children: [
-
                   Container(
                     width: 60,
                     height: 60,
@@ -54,7 +52,6 @@ class ProfessorProfileCard extends ConsumerWidget {
                     child: Icon(Icons.person, color: Colors.white, size: 30),
                   ).animate().scale(duration: 400.ms, curve: Curves.easeOut),
                   const Gap(16),
-
 
                   Expanded(
                     child: Column(
@@ -99,7 +96,6 @@ class ProfessorProfileCard extends ConsumerWidget {
                     ),
                   ),
 
-
                   IconButton(
                     onPressed: () {
                       context.push('/edit-profile');
@@ -113,7 +109,6 @@ class ProfessorProfileCard extends ConsumerWidget {
               ),
 
               const Gap(20),
-
 
               Row(
                 children: [

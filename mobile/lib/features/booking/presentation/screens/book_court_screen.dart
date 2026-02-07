@@ -1658,9 +1658,7 @@ class _BookCourtScreenState extends ConsumerState<BookCourtScreen> {
       );
 
       // 4. Refresh data
-      await _commandInvoker.executeCommand(
-        RefreshDataCommand(ref),
-      );
+      await _commandInvoker.executeCommand(RefreshDataCommand(ref));
 
       // 5. Show success and navigate
       if (mounted) {

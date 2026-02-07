@@ -87,7 +87,9 @@ void main() {
     group('authStateChanges', () {
       test('should return auth state changes stream', () {
         final mockStream = MockStream();
-        when(() => mockFirebaseAuth.authStateChanges()).thenAnswer((_) => mockStream);
+        when(
+          () => mockFirebaseAuth.authStateChanges(),
+        ).thenAnswer((_) => mockStream);
 
         expect(authService.authStateChanges, equals(mockStream));
       });
@@ -105,8 +107,9 @@ void main() {
       });
 
       test('should handle errors during sign out', () async {
-        when(() => mockFirebaseAuth.signOut())
-            .thenThrow(Exception('Sign out failed'));
+        when(
+          () => mockFirebaseAuth.signOut(),
+        ).thenThrow(Exception('Sign out failed'));
 
         expect(() => authService.signOut(), throwsException);
       });
@@ -125,10 +128,12 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.get(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).thenAnswer((_) async => response);
 
         final result = await authService.getUserInfo();
 
@@ -139,24 +144,30 @@ void main() {
         expect(result.role, equals('professor'));
       });
 
-      test('should throw AuthException.notAuthenticated when no user', () async {
-        when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+      test(
+        'should throw AuthException.notAuthenticated when no user',
+        () async {
+          when(() => mockFirebaseAuth.currentUser).thenReturn(null);
 
-        expect(
-          () => authService.getUserInfo(),
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => authService.getUserInfo(),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
 
-      test('should throw AuthException.tokenExpired when token is empty', () async {
-        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
-        when(() => mockUser.getIdToken(true)).thenAnswer((_) async => '');
+      test(
+        'should throw AuthException.tokenExpired when token is empty',
+        () async {
+          when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+          when(() => mockUser.getIdToken(true)).thenAnswer((_) async => '');
 
-        expect(
-          () => authService.getUserInfo(),
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => authService.getUserInfo(),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
 
       test('should throw AuthException.tokenExpired on 401/403', () async {
         const idToken = 'test-token';
@@ -164,15 +175,14 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.get(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).thenAnswer((_) async => response);
 
-        expect(
-          () => authService.getUserInfo(),
-          throwsA(isA<AuthException>()),
-        );
+        expect(() => authService.getUserInfo(), throwsA(isA<AuthException>()));
       });
 
       test('should throw AuthException.userNotFound on 404', () async {
@@ -181,84 +191,101 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.get(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).thenAnswer((_) async => response);
 
-        expect(
-          () => authService.getUserInfo(),
-          throwsA(isA<AuthException>()),
-        );
+        expect(() => authService.getUserInfo(), throwsA(isA<AuthException>()));
       });
 
-      test('should throw NetworkException.serverError on other status codes', () async {
-        const idToken = 'test-token';
-        final response = http.Response('Server Error', 500);
+      test(
+        'should throw NetworkException.serverError on other status codes',
+        () async {
+          const idToken = 'test-token';
+          final response = http.Response('Server Error', 500);
 
-        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
-        when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
+          when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+          when(
+            () => mockUser.getIdToken(true),
+          ).thenAnswer((_) async => idToken);
+          when(
+            () => mockHttpClient.get(
               any(that: isA<Uri>()),
               headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+            ),
+          ).thenAnswer((_) async => response);
 
-        expect(
-          () => authService.getUserInfo(),
-          throwsA(isA<NetworkException>()),
-        );
-      });
+          expect(
+            () => authService.getUserInfo(),
+            throwsA(isA<NetworkException>()),
+          );
+        },
+      );
     });
 
     group('signInWithEmail', () {
-      test('should throw AuthException when user is null after sign in', () async {
-        when(() => mockFirebaseAuth.signInWithEmailAndPassword(
+      test(
+        'should throw AuthException when user is null after sign in',
+        () async {
+          when(
+            () => mockFirebaseAuth.signInWithEmailAndPassword(
               email: any(named: 'email'),
               password: any(named: 'password'),
-            )).thenAnswer((_) async => mockUserCredential);
-        when(() => mockUserCredential.user).thenReturn(null);
+            ),
+          ).thenAnswer((_) async => mockUserCredential);
+          when(() => mockUserCredential.user).thenReturn(null);
 
-        expect(
-          () => authService.signInWithEmail('test@example.com', 'password'),
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => authService.signInWithEmail('test@example.com', 'password'),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
 
-      test('should throw AuthException.invalidCredentials on wrong-password', () async {
-        when(() => mockFirebaseAuth.signInWithEmailAndPassword(
+      test(
+        'should throw AuthException.invalidCredentials on wrong-password',
+        () async {
+          when(
+            () => mockFirebaseAuth.signInWithEmailAndPassword(
               email: any(named: 'email'),
               password: any(named: 'password'),
-            )).thenThrow(
-          FirebaseAuthException(code: 'wrong-password'),
-        );
+            ),
+          ).thenThrow(FirebaseAuthException(code: 'wrong-password'));
 
-        expect(
-          () => authService.signInWithEmail('test@example.com', 'wrong'),
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => authService.signInWithEmail('test@example.com', 'wrong'),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
 
-      test('should throw AuthException.userNotFound on user-not-found', () async {
-        when(() => mockFirebaseAuth.signInWithEmailAndPassword(
+      test(
+        'should throw AuthException.userNotFound on user-not-found',
+        () async {
+          when(
+            () => mockFirebaseAuth.signInWithEmailAndPassword(
               email: any(named: 'email'),
               password: any(named: 'password'),
-            )).thenThrow(
-          FirebaseAuthException(code: 'user-not-found'),
-        );
+            ),
+          ).thenThrow(FirebaseAuthException(code: 'user-not-found'));
 
-        expect(
-          () => authService.signInWithEmail('test@example.com', 'password'),
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => authService.signInWithEmail('test@example.com', 'password'),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
 
       test('should throw ValidationException on invalid-email', () async {
-        when(() => mockFirebaseAuth.signInWithEmailAndPassword(
-              email: any(named: 'email'),
-              password: any(named: 'password'),
-            )).thenThrow(
-          FirebaseAuthException(code: 'invalid-email'),
-        );
+        when(
+          () => mockFirebaseAuth.signInWithEmailAndPassword(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          ),
+        ).thenThrow(FirebaseAuthException(code: 'invalid-email'));
 
         expect(
           () => authService.signInWithEmail('invalid-email', 'password'),
@@ -266,19 +293,22 @@ void main() {
         );
       });
 
-      test('should throw NetworkException.noConnection on network-request-failed', () async {
-        when(() => mockFirebaseAuth.signInWithEmailAndPassword(
+      test(
+        'should throw NetworkException.noConnection on network-request-failed',
+        () async {
+          when(
+            () => mockFirebaseAuth.signInWithEmailAndPassword(
               email: any(named: 'email'),
               password: any(named: 'password'),
-            )).thenThrow(
-          FirebaseAuthException(code: 'network-request-failed'),
-        );
+            ),
+          ).thenThrow(FirebaseAuthException(code: 'network-request-failed'));
 
-        expect(
-          () => authService.signInWithEmail('test@example.com', 'password'),
-          throwsA(isA<NetworkException>()),
-        );
-      });
+          expect(
+            () => authService.signInWithEmail('test@example.com', 'password'),
+            throwsA(isA<NetworkException>()),
+          );
+        },
+      );
     });
 
     // Note: signInWithGoogle and registerWithEmail tests are more complex

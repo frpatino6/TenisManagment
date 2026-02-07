@@ -8,9 +8,7 @@ void main() {
     testWidgets('should display error icon', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: AppErrorWidget(message: 'Error message'),
-          ),
+          home: Scaffold(body: AppErrorWidget(message: 'Error message')),
         ),
       );
 
@@ -22,10 +20,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: AppErrorWidget(
-              message: 'Error',
-              icon: Icons.warning,
-            ),
+            body: AppErrorWidget(message: 'Error', icon: Icons.warning),
           ),
         ),
       );
@@ -33,7 +28,9 @@ void main() {
       expect(find.byIcon(Icons.warning), findsOneWidget);
     });
 
-    testWidgets('should display retry button when onRetry is provided', (tester) async {
+    testWidgets('should display retry button when onRetry is provided', (
+      tester,
+    ) async {
       var retryCalled = false;
       await tester.pumpWidget(
         MaterialApp(
@@ -57,13 +54,13 @@ void main() {
       expect(retryCalled, isTrue);
     });
 
-    testWidgets('fromException should display exception message', (tester) async {
+    testWidgets('fromException should display exception message', (
+      tester,
+    ) async {
       final exception = AuthException.notAuthenticated();
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: AppErrorWidget.fromException(exception),
-          ),
+          home: Scaffold(body: AppErrorWidget.fromException(exception)),
         ),
       );
 
@@ -73,17 +70,15 @@ void main() {
     testWidgets('fromError should display error message', (tester) async {
       final error = Exception('Generic error');
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: AppErrorWidget.fromError(error),
-          ),
-        ),
+        MaterialApp(home: Scaffold(body: AppErrorWidget.fromError(error))),
       );
 
       expect(find.textContaining('Generic error'), findsOneWidget);
     });
 
-    testWidgets('fromError should use custom message when provided', (tester) async {
+    testWidgets('fromError should use custom message when provided', (
+      tester,
+    ) async {
       final error = Exception('Generic error');
       await tester.pumpWidget(
         MaterialApp(
@@ -100,4 +95,3 @@ void main() {
     });
   });
 }
-

@@ -16,31 +16,29 @@ final studentsListProvider = FutureProvider.autoDispose<List<StudentModel>>((
 
 final studentProfileProvider = FutureProvider.autoDispose
     .family<StudentModel?, String>((ref, studentId) async {
-  final repository = ref.read(studentsRepositoryProvider);
-  return repository.getStudentProfile(studentId);
-});
+      final repository = ref.read(studentsRepositoryProvider);
+      return repository.getStudentProfile(studentId);
+    });
 
-final filteredStudentsProvider = Provider.autoDispose.family<List<StudentModel>, String>((
-  ref,
-  searchQuery,
-) {
-  final studentsAsync = ref.watch(studentsListProvider);
+final filteredStudentsProvider = Provider.autoDispose
+    .family<List<StudentModel>, String>((ref, searchQuery) {
+      final studentsAsync = ref.watch(studentsListProvider);
 
-  return studentsAsync.when(
-    data: (students) {
-      final trimmedQuery = searchQuery.trim();
-      if (trimmedQuery.isEmpty) return students;
+      return studentsAsync.when(
+        data: (students) {
+          final trimmedQuery = searchQuery.trim();
+          if (trimmedQuery.isEmpty) return students;
 
-      final query = trimmedQuery.toLowerCase();
+          final query = trimmedQuery.toLowerCase();
 
-      return students.where((student) {
-        final nameLower = student.name.toLowerCase();
-        final emailLower = student.email.toLowerCase();
-        
-        return nameLower.contains(query) || emailLower.contains(query);
-      }).toList();
-    },
-    loading: () => [],
-    error: (_, _) => [],
-  );
-});
+          return students.where((student) {
+            final nameLower = student.name.toLowerCase();
+            final emailLower = student.email.toLowerCase();
+
+            return nameLower.contains(query) || emailLower.contains(query);
+          }).toList();
+        },
+        loading: () => [],
+        error: (_, _) => [],
+      );
+    });

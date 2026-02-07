@@ -25,9 +25,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          studentsListProvider.overrideWith(
-            (ref) async => testStudents,
-          ),
+          studentsListProvider.overrideWith((ref) async => testStudents),
         ],
       );
 
@@ -39,29 +37,30 @@ void main() {
       expect(filtered, equals(testStudents));
     });
 
-    test('should return all students when search query is only whitespace', () async {
-      final testStudents = [
-        StudentModel(
-          id: 'student-1',
-          name: 'John Doe',
-          email: 'john@example.com',
-          membershipType: MembershipType.basic,
-          balance: 0.0,
-        ),
-      ];
-
-      final container = ProviderContainer(
-        overrides: [
-          studentsListProvider.overrideWith(
-            (ref) async => testStudents,
+    test(
+      'should return all students when search query is only whitespace',
+      () async {
+        final testStudents = [
+          StudentModel(
+            id: 'student-1',
+            name: 'John Doe',
+            email: 'john@example.com',
+            membershipType: MembershipType.basic,
+            balance: 0.0,
           ),
-        ],
-      );
+        ];
 
-      await container.read(studentsListProvider.future);
-      final filtered = container.read(filteredStudentsProvider('   '));
-      expect(filtered.length, equals(1));
-    });
+        final container = ProviderContainer(
+          overrides: [
+            studentsListProvider.overrideWith((ref) async => testStudents),
+          ],
+        );
+
+        await container.read(studentsListProvider.future);
+        final filtered = container.read(filteredStudentsProvider('   '));
+        expect(filtered.length, equals(1));
+      },
+    );
 
     test('should filter students by name', () async {
       final testStudents = [
@@ -83,9 +82,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          studentsListProvider.overrideWith(
-            (ref) async => testStudents,
-          ),
+          studentsListProvider.overrideWith((ref) async => testStudents),
         ],
       );
 
@@ -108,9 +105,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          studentsListProvider.overrideWith(
-            (ref) async => testStudents,
-          ),
+          studentsListProvider.overrideWith((ref) async => testStudents),
         ],
       );
 
@@ -139,9 +134,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          studentsListProvider.overrideWith(
-            (ref) async => testStudents,
-          ),
+          studentsListProvider.overrideWith((ref) async => testStudents),
         ],
       );
 

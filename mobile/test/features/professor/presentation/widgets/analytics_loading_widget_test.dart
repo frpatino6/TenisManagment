@@ -4,32 +4,30 @@ import 'package:tennis_management/features/professor/presentation/widgets/analyt
 
 void main() {
   group('AnalyticsLoadingWidget', () {
-    testWidgets('should display analytics loading widget', (WidgetTester tester) async {
+    testWidgets('should display analytics loading widget', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: AnalyticsLoadingWidget(),
-          ),
-        ),
+        MaterialApp(home: Scaffold(body: AnalyticsLoadingWidget())),
       );
 
       await tester.pump();
 
       // Widget should be rendered
       expect(find.byType(AnalyticsLoadingWidget), findsOneWidget);
-      
+
       // Clean up
       await tester.pumpWidget(Container());
       await tester.pumpAndSettle();
     });
 
-    testWidgets('should display with custom title', (WidgetTester tester) async {
+    testWidgets('should display with custom title', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: AnalyticsLoadingWidget(
-              title: 'Cargando análisis',
-            ),
+            body: AnalyticsLoadingWidget(title: 'Cargando análisis'),
           ),
         ),
       );
@@ -37,7 +35,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Cargando análisis'), findsOneWidget);
-      
+
       // Clean up
       await tester.pumpWidget(Container());
       await tester.pumpAndSettle();
@@ -58,11 +56,10 @@ void main() {
       await tester.pump();
 
       expect(find.text('Por favor espera...'), findsOneWidget);
-      
+
       // Clean up
       await tester.pumpWidget(Container());
       await tester.pumpAndSettle();
     });
   });
 }
-

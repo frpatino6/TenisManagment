@@ -31,7 +31,8 @@ class TenantException extends DomainException {
     StackTrace? stackTrace,
   }) {
     return TenantException(
-      message ?? 'No hay un centro configurado. Por favor, selecciona un centro.',
+      message ??
+          'No hay un centro configurado. Por favor, selecciona un centro.',
       code: 'TENANT_NOT_CONFIGURED',
       originalError: originalError,
       stackTrace: stackTrace,
@@ -53,4 +54,3 @@ class TenantException extends DomainException {
     );
   }
 }
-

@@ -1,7 +1,7 @@
 import '../models/court_model.dart';
 
 /// Repository interface for court-related data operations
-/// 
+///
 /// This is a domain contract that defines the operations needed by the business logic.
 /// Implementations should be in the infrastructure layer.
 abstract class CourtRepository {

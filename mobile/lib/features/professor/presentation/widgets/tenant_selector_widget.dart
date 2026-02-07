@@ -28,8 +28,12 @@ class TenantSelectorWidget extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final currentTenantId = ref.watch(currentTenantIdProvider);
-    final AsyncValue<ITenantInfo?> currentTenant = ref.watch(currentTenantProvider);
-    final AsyncValue<List<ITenantInfo>> tenantsAsync = ref.watch(professorTenantsProvider);
+    final AsyncValue<ITenantInfo?> currentTenant = ref.watch(
+      currentTenantProvider,
+    );
+    final AsyncValue<List<ITenantInfo>> tenantsAsync = ref.watch(
+      professorTenantsProvider,
+    );
 
     return tenantsAsync.when(
       data: (tenants) {
@@ -183,9 +187,12 @@ class TenantSelectorWidget extends ConsumerWidget {
                   );
                 }
 
-                final matchingTenants = tenants.where((t) => t.id == currentTenantId).toList();
-                final ITenantInfo currentTenantModel = matchingTenants.isNotEmpty 
-                    ? matchingTenants.first 
+                final matchingTenants = tenants
+                    .where((t) => t.id == currentTenantId)
+                    .toList();
+                final ITenantInfo currentTenantModel =
+                    matchingTenants.isNotEmpty
+                    ? matchingTenants.first
                     : tenants.first;
 
                 return Column(
@@ -212,7 +219,9 @@ class TenantSelectorWidget extends ConsumerWidget {
                                 height: 40,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
-                                  return TenantSelectorWidget._buildDefaultIcon(colorScheme);
+                                  return TenantSelectorWidget._buildDefaultIcon(
+                                    colorScheme,
+                                  );
                                 },
                               ),
                             )
@@ -272,7 +281,9 @@ class TenantSelectorWidget extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                        color: colorScheme.surfaceContainerHighest.withValues(
+                          alpha: 0.5,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: colorScheme.outline.withValues(alpha: 0.3),
@@ -289,7 +300,7 @@ class TenantSelectorWidget extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               'Para unirte a otro centro, debes ser invitado por su administrador.',
-                        style: GoogleFonts.inter(
+                              style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: colorScheme.onSurfaceVariant,
                               ),
@@ -471,5 +482,4 @@ class TenantSelectorWidget extends ConsumerWidget {
       ),
     );
   }
-
 }

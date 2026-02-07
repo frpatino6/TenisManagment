@@ -10,7 +10,7 @@ import '../../domain/models/analytics_chart_data.dart';
 import '../../domain/models/analytics_error.dart';
 
 /// Infrastructure implementation of [AnalyticsRepository]
-/// 
+///
 /// Handles all HTTP communication, authentication, and data parsing.
 /// This is where all "dirty" infrastructure concerns live.
 class AnalyticsRepositoryImpl implements AnalyticsRepository {

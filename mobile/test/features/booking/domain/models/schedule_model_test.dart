@@ -16,7 +16,7 @@ void main() {
       };
 
       final schedule = ScheduleModel.fromJson(json);
-      
+
       expect(schedule.id, equals('schedule-123'));
       expect(schedule.date, equals('2025-12-06'));
       expect(schedule.status, equals('pending'));
@@ -82,7 +82,7 @@ void main() {
       };
 
       final group = TenantSchedulesGroup.fromJson(json);
-      
+
       expect(group.tenantId, equals('tenant-123'));
       expect(group.tenantName, equals('Centro A'));
       expect(group.tenantSlug, equals('centro-a'));
@@ -108,7 +108,7 @@ void main() {
       };
 
       final response = ProfessorSchedulesResponse.fromJson(json);
-      
+
       expect(response.professorId, equals('prof-123'));
       expect(response.professorName, equals('Prof. Juan'));
       expect(response.schedules.length, equals(1));
@@ -116,4 +116,3 @@ void main() {
     });
   });
 }
-

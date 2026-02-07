@@ -8,7 +8,7 @@ import '../../domain/repositories/students_repository.dart';
 import '../../domain/models/student_model.dart';
 
 /// Infrastructure implementation of [StudentsRepository]
-/// 
+///
 /// Handles all HTTP communication, authentication, and data parsing.
 /// This is where all "dirty" infrastructure concerns live.
 class StudentsRepositoryImpl implements StudentsRepository {

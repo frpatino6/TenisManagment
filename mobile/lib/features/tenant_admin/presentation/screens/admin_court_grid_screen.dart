@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,10 +46,9 @@ class AdminCourtGridScreen extends ConsumerStatefulWidget {
 }
 
 class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
-  // Layout constants (sidebar +15% for longer court names)
   static const double _courtLabelWidth = 100;
   static const double _rowHeight = 64;
-  static const double _pixelsPerHour = 80;
+  static const double _cellWidth = 80.0;
 
   static const int _defaultFirstHour = 6;
   static const int _defaultLastHour = 24;
@@ -94,16 +94,17 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
   static const Color _emeraldGreen = Color(0xFF10B981);
   static const Color _vibrantOrange = Color(0xFFF59E0B);
   static const Color _textMuted = Color(0xFF6B7280);
-  static const Color _currentTimeCyan = Color(0xFF00E5FF);
 
   static const TextStyle _courtNameStyle = TextStyle(
     fontFamily: 'Inter',
-    fontSize: 11,
-    fontWeight: FontWeight.w600,
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    color: Colors.white,
     height: 1.2,
   );
 
   late DateTime _selectedDate;
+  Timer? _currentTimeTimer;
   final ScrollController _horizontalController = ScrollController();
   final ScrollController _verticalController = ScrollController();
   final GlobalKey _scrollContentKey = GlobalKey();
@@ -127,6 +128,9 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     _selectedDate = DateTime.now();
     _horizontalController.addListener(_onScroll);
     _verticalController.addListener(_onScroll);
+    _currentTimeTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
   }
 
   void _onScroll() {
@@ -266,7 +270,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     final targetCourt = ctx.courts[targetCourtIndex];
     final changeCourt = targetCourtIndex != ctx.courtIndex;
 
-    final hourOffset = totalDeltaX / _pixelsPerHour;
+    final hourOffset = totalDeltaX / _cellWidth;
     final newStartHour = ctx.start.hour + ctx.start.minute / 60.0 + hourOffset;
     final newStartHourInt = newStartHour.floor();
     final newStartMinute = (newStartHour - newStartHourInt) * 60;
@@ -385,6 +389,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
 
   @override
   void dispose() {
+    _currentTimeTimer?.cancel();
     _horizontalController.removeListener(_onScroll);
     _verticalController.removeListener(_onScroll);
     _horizontalController.dispose();
@@ -393,7 +398,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
   }
 
   double _timelineWidth(int firstHour, int lastHour) =>
-      (lastHour - firstHour) * _pixelsPerHour;
+      (lastHour - firstHour) * _cellWidth;
 
   List<TenantBookingModel> _bookingsForCourt(
     List<TenantBookingModel> bookings,
@@ -412,12 +417,12 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
 
   double _leftForTime(DateTime time, int firstHour) {
     final hour = time.hour + time.minute / 60.0 + time.second / 3600.0;
-    return (hour - firstHour) * _pixelsPerHour;
+    return (hour - firstHour) * _cellWidth;
   }
 
   double _widthForDuration(DateTime start, DateTime end) {
     final hours = end.difference(start).inMinutes / 60.0;
-    return (hours * _pixelsPerHour).clamp(24.0, double.infinity);
+    return (hours * _cellWidth).clamp(24.0, double.infinity);
   }
 
   bool get _isToday {
@@ -432,7 +437,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     final now = DateTime.now();
     final hour = now.hour + now.minute / 60.0;
     if (hour < firstHour || hour >= lastHour) return null;
-    return (hour - firstHour) * _pixelsPerHour;
+    return (hour - firstHour) * _cellWidth;
   }
 
   Set<String> _debtorStudentIds(AsyncValue<TenantDebtReportModel> debtAsync) {
@@ -681,9 +686,9 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                   child: CustomPaint(
                     size: Size(timelineW, data.courts.length * _rowHeight),
                     painter: _HourGuidesPainter(
-                      pixelsPerHour: _pixelsPerHour,
+                      pixelsPerHour: _cellWidth,
                       hourCount: lastHour - firstHour,
-                      color: Colors.white.withValues(alpha: 0.05),
+                      color: Colors.white10,
                     ),
                   ),
                 ),
@@ -709,19 +714,19 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                 ),
                 if (currentX != null)
                   Positioned(
-                    left: _courtLabelWidth + currentX - 1,
+                    left: _courtLabelWidth + currentX - 0.75,
                     top: _rowHeight,
-                    width: 2,
+                    width: 1.5,
                     height: data.courts.length * _rowHeight,
                     child: IgnorePointer(
-                      child: Container(
+                      child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: _currentTimeCyan.withValues(alpha: 0.8),
+                          color: Colors.cyanAccent,
                           boxShadow: [
                             BoxShadow(
-                              color: _currentTimeCyan.withValues(alpha: 0.5),
+                              color: Colors.cyanAccent.withValues(alpha: 0.6),
                               blurRadius: 8,
-                              spreadRadius: 0,
+                              spreadRadius: 1,
                             ),
                           ],
                         ),
@@ -753,8 +758,9 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
             bottom: 0,
             width: _courtLabelWidth,
             child: Container(
-              color: colorScheme.surface,
-              alignment: Alignment.center,
+              color: _darkBackground,
+              padding: const EdgeInsets.only(left: 12, right: 8),
+              alignment: Alignment.centerLeft,
               child: Text(
                 'Cancha',
                 style: TextStyle(
@@ -775,7 +781,8 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
               children: List.generate(lastHour - firstHour, (i) {
                 final hour = firstHour + i;
                 return SizedBox(
-                  width: _pixelsPerHour,
+                  width: _cellWidth,
+                  height: _rowHeight,
                   child: Align(
                     alignment: Alignment.center,
                     child: Text(
@@ -823,15 +830,15 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
             bottom: 0,
             width: _courtLabelWidth,
             child: Container(
-              color: colorScheme.surface,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              alignment: Alignment.center,
+              color: _darkBackground,
+              padding: const EdgeInsets.only(left: 12, right: 8),
+              alignment: Alignment.centerLeft,
               child: Text(
                 court.name,
-                style: _courtNameStyle.copyWith(color: colorScheme.onSurface),
+                style: _courtNameStyle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
+                textAlign: TextAlign.left,
               ),
             ),
           ),
@@ -879,8 +886,8 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
           painter: _TimelineGridPainter(
             firstHour: firstHour,
             lastHour: lastHour,
-            pixelsPerHour: _pixelsPerHour,
-            gridLineColor: colorScheme.outlineVariant.withValues(alpha: 0.6),
+            pixelsPerHour: _cellWidth,
+            gridLineColor: Colors.white10,
           ),
         ),
         _buildEmptyLaneTapTarget(court, colorScheme, firstHour, lastHour),
@@ -955,7 +962,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     final displayName = _studentDisplayName(booking);
     final initial = _initialFromName(displayName);
     final pillWidth = (width - 8).clamp(60.0, double.infinity);
-    const pillRadius = 6.0;
+    const pillRadius = 12.0;
     final showFullName = durationMinutes > 60 && pillWidth > 80;
     final padding = showFullName ? 8.0 : 4.0;
     final avatarRadius = showFullName ? 12.0 : 8.0;
@@ -1044,27 +1051,13 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(pillRadius),
-                    color: _cardBackground.withValues(alpha: 0.8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 12,
-                        offset: const Offset(0, 3),
-                        spreadRadius: 0,
-                      ),
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                        spreadRadius: 0,
-                      ),
-                    ],
+                    color: _cardBackground,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 3,
+                        width: 5,
                         decoration: BoxDecoration(
                           color: sidebarColor,
                           borderRadius: BorderRadius.horizontal(
@@ -1160,83 +1153,37 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     int firstHour,
     int lastHour,
   ) {
-    const double iconSize = 14;
-    const double padding = 6;
-    const double hitRadius = 18.0;
+    const double hitWidth = 36.0;
 
     return Stack(
       clipBehavior: Clip.none,
       children: [
         for (int h = firstHour; h < lastHour; h++) ...[
           Positioned(
-            left:
-                (h - firstHour) * _pixelsPerHour +
-                _pixelsPerHour / 4 -
-                (iconSize / 2 + padding),
+            left: (h - firstHour) * _cellWidth + _cellWidth / 4 - hitWidth / 2,
             top: 0,
             bottom: 0,
-            child: Center(
-              child: _buildPlusButton(
-                colorScheme,
-                iconSize,
-                padding,
-                hitRadius,
-                () => _openCreateBooking(court, h, 0),
-              ),
+            width: hitWidth,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _openCreateBooking(court, h, 0),
             ),
           ),
           Positioned(
             left:
-                (h - firstHour) * _pixelsPerHour +
-                3 * _pixelsPerHour / 4 -
-                (iconSize / 2 + padding),
+                (h - firstHour) * _cellWidth +
+                3 * _cellWidth / 4 -
+                hitWidth / 2,
             top: 0,
             bottom: 0,
-            child: Center(
-              child: _buildPlusButton(
-                colorScheme,
-                iconSize,
-                padding,
-                hitRadius,
-                () => _openCreateBooking(court, h, 30),
-              ),
+            width: hitWidth,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _openCreateBooking(court, h, 30),
             ),
           ),
         ],
       ],
-    );
-  }
-
-  Widget _buildPlusButton(
-    ColorScheme colorScheme,
-    double iconSize,
-    double padding,
-    double hitRadius,
-    VoidCallback onTap,
-  ) {
-    return Material(
-      color: Colors.transparent,
-      child: InkResponse(
-        onTap: onTap,
-        radius: hitRadius,
-        splashColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-        child: Container(
-          padding: EdgeInsets.all(padding),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: colorScheme.onSurface.withValues(alpha: 0.1),
-              width: 1,
-            ),
-          ),
-          child: Icon(
-            Icons.add,
-            size: iconSize,
-            color: colorScheme.onSurface.withValues(alpha: 0.08),
-          ),
-        ),
-      ),
     );
   }
 
@@ -1321,7 +1268,8 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                     ...List.generate(lastHour - firstHour, (i) {
                       final hour = firstHour + i;
                       return SizedBox(
-                        width: _pixelsPerHour,
+                        width: _cellWidth,
+                        height: _rowHeight,
                         child: Align(
                           alignment: Alignment.center,
                           child: Text(
@@ -1367,12 +1315,8 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
             filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
             child: Container(
               decoration: BoxDecoration(
-                color: colorScheme.surface.withValues(alpha: 0.92),
-                border: Border(
-                  right: BorderSide(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                  ),
-                ),
+                color: _darkBackground.withValues(alpha: 0.95),
+                border: Border(right: BorderSide(color: Colors.white10)),
               ),
               child: Transform.translate(
                 offset: Offset(0, -_verticalOffset),
@@ -1398,17 +1342,16 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                       (court) => SizedBox(
                         height: _rowHeight,
                         width: _courtLabelWidth,
-                        child: Center(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            padding: const EdgeInsets.only(left: 12, right: 8),
                             child: Text(
                               court.name,
-                              style: _courtNameStyle.copyWith(
-                                color: colorScheme.onSurface,
-                              ),
+                              style: _courtNameStyle,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
+                              textAlign: TextAlign.left,
                             ),
                           ),
                         ),
@@ -1610,7 +1553,7 @@ class _TimelineGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final linePaint = Paint()
-      ..color = gridLineColor.withValues(alpha: 0.3)
+      ..color = gridLineColor
       ..strokeWidth = 0.5;
 
     for (int i = 0; i <= lastHour - firstHour; i++) {

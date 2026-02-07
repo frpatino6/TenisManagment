@@ -6,24 +6,18 @@ void main() {
   group('VersionWidget', () {
     testWidgets('should display version widget', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: VersionWidget(),
-          ),
-        ),
+        MaterialApp(home: Scaffold(body: VersionWidget())),
       );
 
       // Version widget should be rendered
       expect(find.byType(VersionWidget), findsOneWidget);
     });
 
-    testWidgets('should display version information', (WidgetTester tester) async {
+    testWidgets('should display version information', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: VersionWidget(),
-          ),
-        ),
+        MaterialApp(home: Scaffold(body: VersionWidget())),
       );
 
       await tester.pumpAndSettle();
@@ -34,4 +28,3 @@ void main() {
     });
   });
 }
-

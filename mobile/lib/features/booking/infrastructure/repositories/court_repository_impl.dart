@@ -7,7 +7,7 @@ import '../../domain/repositories/court_repository.dart';
 import '../../domain/models/court_model.dart';
 
 /// Infrastructure implementation of [CourtRepository]
-/// 
+///
 /// Handles all HTTP communication, authentication, and data parsing.
 /// This is where all "dirty" infrastructure concerns live.
 class CourtRepositoryImpl implements CourtRepository {

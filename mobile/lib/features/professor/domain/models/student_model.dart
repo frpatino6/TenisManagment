@@ -1,10 +1,7 @@
 import 'package:equatable/equatable.dart';
 import '../../../../core/validation/model_validator.dart';
 
-enum MembershipType {
-  basic,
-  premium,
-}
+enum MembershipType { basic, premium }
 
 class StudentModel extends Equatable {
   final String id;
@@ -39,7 +36,7 @@ class StudentModel extends Equatable {
       'balance',
       defaultValue: 0.0,
     );
-    
+
     return StudentModel(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -113,13 +110,13 @@ class StudentModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        email,
-        phone,
-        membershipType,
-        balance,
-        createdAt,
-        updatedAt,
-      ];
+    id,
+    name,
+    email,
+    phone,
+    membershipType,
+    balance,
+    createdAt,
+    updatedAt,
+  ];
 }

@@ -12,10 +12,7 @@ class BookingCommandInvoker {
   Future<void> executeCommand(BookingCommand command) async {
     // Remove commands after current index if we're in the middle of history
     if (_currentIndex < _commandHistory.length - 1) {
-      _commandHistory.removeRange(
-        _currentIndex + 1,
-        _commandHistory.length,
-      );
+      _commandHistory.removeRange(_currentIndex + 1, _commandHistory.length);
     }
 
     await command.execute();

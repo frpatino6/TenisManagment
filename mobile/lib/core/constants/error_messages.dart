@@ -1,5 +1,5 @@
 /// Constantes centralizadas para mensajes de error user-friendly
-/// 
+///
 /// Todos los mensajes de error mostrados al usuario deben estar aquí
 /// para facilitar su modificación, traducción y mantenimiento.
 class ErrorMessages {
@@ -11,16 +11,14 @@ class ErrorMessages {
 
   static const String notAuthenticated =
       'Usuario no autenticado. Por favor, inicia sesión.';
-  static const String invalidCredentials =
-      'Email o contraseña incorrectos.';
+  static const String invalidCredentials = 'Email o contraseña incorrectos.';
   static const String tokenExpired =
       'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.';
   static const String userNotFound =
       'Usuario no encontrado. Por favor, regístrate primero.';
   static const String emailAlreadyExists =
       'Este email ya está registrado. Inicia sesión o usa otro email.';
-  static const String userDisabled =
-      'Esta cuenta ha sido deshabilitada.';
+  static const String userDisabled = 'Esta cuenta ha sido deshabilitada.';
   static const String operationNotAllowed =
       'La operación de autenticación no está permitida.';
   static const String googleSignInCancelled =
@@ -40,12 +38,10 @@ class ErrorMessages {
       'La solicitud tardó demasiado. Verifica tu conexión.';
   static const String noConnection =
       'Sin conexión a internet. Verifica tu conexión.';
-  static const String serverError =
-      'Error del servidor. Intenta más tarde.';
+  static const String serverError = 'Error del servidor. Intenta más tarde.';
   static const String serverUnavailable =
       'El servidor no está disponible. Intenta más tarde.';
-  static const String badResponse =
-      'Error en la respuesta del servidor.';
+  static const String badResponse = 'Error en la respuesta del servidor.';
 
   // ============================================
   // Validation Errors
@@ -123,4 +119,3 @@ class ErrorMessages {
     return 'El campo "$fieldName" es inválido: $reason';
   }
 }
-

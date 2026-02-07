@@ -47,10 +47,9 @@ class _WompiWebViewScreenState extends State<WompiWebViewScreen> {
                   uri?.queryParameters['id'] ??
                   uri?.queryParameters['transaction_id'];
               // Close WebView and return to app
-              Navigator.of(context).pop({
-                'status': status,
-                'transactionId': transactionId,
-              });
+              Navigator.of(
+                context,
+              ).pop({'status': status, 'transactionId': transactionId});
             }
           },
           onWebResourceError: (WebResourceError error) {

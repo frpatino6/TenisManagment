@@ -6,7 +6,7 @@ import '../../../../core/exceptions/exceptions.dart';
 import '../../domain/repositories/pricing_repository.dart';
 
 /// Infrastructure implementation of [PricingRepository]
-/// 
+///
 /// Handles all HTTP communication, authentication, and data parsing.
 /// This is where all "dirty" infrastructure concerns live.
 class PricingRepositoryImpl implements PricingRepository {

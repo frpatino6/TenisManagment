@@ -542,7 +542,10 @@ class _TenantCourtsListScreenState
 
     try {
       final repository = ref.read(tenantAdminRepositoryProvider);
-      await repository.updateCourt(courtId: court.id, isActive: !court.isActive);
+      await repository.updateCourt(
+        courtId: court.id,
+        isActive: !court.isActive,
+      );
 
       // Refresh list
       ref.invalidate(tenantCourtsProvider);

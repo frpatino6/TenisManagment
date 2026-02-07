@@ -45,12 +45,12 @@ class AnalyticsMetric extends Equatable {
 
   @override
   List<Object?> get props => [
-        title,
-        value,
-        change,
-        icon,
-        color,
-        isPositive,
-        subtitle,
-      ];
+    title,
+    value,
+    change,
+    icon,
+    color,
+    isPositive,
+    subtitle,
+  ];
 }

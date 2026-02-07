@@ -22,7 +22,7 @@ void main() {
         'groupClass': 30,
         'courtRental': 25,
       };
-      
+
       final pricing = PricingConfig.fromJson(jsonWithInts);
       expect(pricing.individualClass, equals(50.0));
       expect(pricing.groupClass, equals(30.0));
@@ -75,7 +75,7 @@ void main() {
         'experienceYears': 0,
         'rating': 0.0,
       };
-      
+
       final professor = ProfessorBookingModel.fromJson(jsonWithoutPhone);
       expect(professor.phone, equals(''));
       expect(professor.specialties, isEmpty);
@@ -99,7 +99,7 @@ void main() {
         'experienceYears': null,
         'rating': null,
       };
-      
+
       final professor = ProfessorBookingModel.fromJson(jsonWithNulls);
       expect(professor.phone, equals(''));
       expect(professor.specialties, isEmpty);
@@ -114,7 +114,7 @@ void main() {
         groupClass: 30.0,
         courtRental: 25.0,
       );
-      
+
       final professor = ProfessorBookingModel(
         id: 'prof-123',
         name: 'Juan Pérez',
@@ -126,7 +126,7 @@ void main() {
         experienceYears: 5,
         rating: 4.5,
       );
-      
+
       final json = professor.toJson();
       expect(json['id'], equals('prof-123'));
       expect(json['name'], equals('Juan Pérez'));
@@ -139,4 +139,3 @@ void main() {
     });
   });
 }
-

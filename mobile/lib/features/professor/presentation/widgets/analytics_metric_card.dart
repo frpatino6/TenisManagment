@@ -13,7 +13,6 @@ class AnalyticsMetricCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-
     Color cardColor;
     try {
       cardColor = Color(int.parse(metric.color.replaceFirst('#', '0xFF')));
@@ -33,7 +32,6 @@ class AnalyticsMetricCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-
               Row(
                 children: [
                   Container(
@@ -64,7 +62,6 @@ class AnalyticsMetricCard extends StatelessWidget {
               ),
               const Gap(8),
 
-
               Text(
                 metric.value,
                 style: theme.textTheme.titleLarge?.copyWith(
@@ -75,7 +72,6 @@ class AnalyticsMetricCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-
 
               if (metric.subtitle != null || metric.change != null) ...[
                 const Gap(4),

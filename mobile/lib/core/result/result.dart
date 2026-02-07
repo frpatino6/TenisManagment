@@ -2,7 +2,7 @@ import '../exceptions/app_exception.dart';
 import '../exceptions/network_exception.dart';
 
 /// Result pattern for functional error handling
-/// 
+///
 /// Allows explicit error handling without using exceptions
 /// Useful for operations that can fail in an expected way
 sealed class Result<T> {
@@ -22,15 +22,15 @@ sealed class Result<T> {
 
   /// Gets the value if successful, null if error
   T? get valueOrNull => switch (this) {
-        Success<T>(:final value) => value,
-        Failure<T>() => null,
-      };
+    Success<T>(:final value) => value,
+    Failure<T>() => null,
+  };
 
   /// Gets the error if failure, null if successful
   AppException? get errorOrNull => switch (this) {
-        Success<T>() => null,
-        Failure<T>(:final error) => error,
-      };
+    Success<T>() => null,
+    Failure<T>(:final error) => error,
+  };
 
   /// Executes a function if successful
   Result<U> map<U>(U Function(T value) mapper) {
@@ -111,8 +111,7 @@ final class Success<T> extends Result<T> {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is Success<T> && value == other.value;
+      identical(this, other) || other is Success<T> && value == other.value;
 
   @override
   int get hashCode => value.hashCode;
@@ -129,8 +128,7 @@ final class Failure<T> extends Result<T> {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is Failure<T> && error == other.error;
+      identical(this, other) || other is Failure<T> && error == other.error;
 
   @override
   int get hashCode => error.hashCode;
@@ -169,4 +167,3 @@ extension ResultToException<T> on Result<T> {
     };
   }
 }
-

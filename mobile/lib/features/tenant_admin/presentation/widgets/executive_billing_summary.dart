@@ -69,8 +69,8 @@ class ExecutiveBillingSummary extends StatelessWidget {
                 child: Text(
                   'Ingresos Netos Totales',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
               TextButton(
@@ -82,9 +82,9 @@ class ExecutiveBillingSummary extends StatelessWidget {
           const Gap(8),
           Text(
             _formatCurrency(stats.totalRevenue),
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const Gap(8),
           Align(
@@ -136,9 +136,9 @@ class ExecutiveBillingSummary extends StatelessWidget {
       children: [
         Text(
           'Rendimiento Financiero',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const Gap(12),
         if (isWide)
@@ -195,15 +195,15 @@ class ExecutiveBillingSummary extends StatelessWidget {
                 Text(
                   metric.title,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const Gap(4),
                 Text(
                   metric.value,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -219,9 +219,9 @@ class ExecutiveBillingSummary extends StatelessWidget {
       children: [
         Text(
           'Tendencia e Ingresos',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const Gap(12),
         isWide
@@ -261,9 +261,9 @@ class ExecutiveBillingSummary extends StatelessWidget {
         children: [
           Text(
             'Ingresos por periodo',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const Gap(12),
           SizedBox(
@@ -318,9 +318,9 @@ class ExecutiveBillingSummary extends StatelessWidget {
         children: [
           Text(
             'Distribución de servicios',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const Gap(12),
           SizedBox(
@@ -368,9 +368,7 @@ class ExecutiveBillingSummary extends StatelessWidget {
                       ),
                     ),
                     const Gap(8),
-                    Expanded(
-                      child: Text(_serviceLabel(data.key)),
-                    ),
+                    Expanded(child: Text(_serviceLabel(data.key))),
                     Text(_formatCurrency(data.value.revenue)),
                     const Gap(8),
                     Text('${percent.toStringAsFixed(1)}%'),
@@ -402,9 +400,9 @@ class ExecutiveBillingSummary extends StatelessWidget {
         children: [
           Text(
             'Desglose Ejecutivo',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const Gap(12),
           Row(
@@ -437,9 +435,7 @@ class ExecutiveBillingSummary extends StatelessWidget {
                     color: colorScheme.primary,
                   ),
                   const Gap(8),
-                  Expanded(
-                    child: Text(_serviceLabel(entry.key)),
-                  ),
+                  Expanded(child: Text(_serviceLabel(entry.key))),
                   SizedBox(
                     width: 48,
                     child: Text(

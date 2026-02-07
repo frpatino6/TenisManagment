@@ -122,8 +122,9 @@ class WebPaymentStrategy implements PaymentPlatformStrategy {
         handleWebMessage(value);
       }
     });
-    removeFocusListener =
-        WebUtils.addWindowFocusListenerWithDispose(handleFocusReturn);
+    removeFocusListener = WebUtils.addWindowFocusListenerWithDispose(
+      handleFocusReturn,
+    );
 
     onPaymentStart();
     WebUtils.openUrl(checkoutUrl, newTab: true);

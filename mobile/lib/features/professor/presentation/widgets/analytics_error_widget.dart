@@ -34,7 +34,6 @@ class AnalyticsErrorWidget extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-
           Row(
             children: [
               Container(
@@ -73,7 +72,6 @@ class AnalyticsErrorWidget extends StatelessWidget {
               ),
             ],
           ),
-
 
           if (showDetails && error.details != null) ...[
             const Gap(16),
@@ -126,7 +124,6 @@ class AnalyticsErrorWidget extends StatelessWidget {
             ),
           ],
 
-
           if (error.isRetryable && onRetry != null) ...[
             const Gap(16),
             SizedBox(
@@ -142,7 +139,6 @@ class AnalyticsErrorWidget extends StatelessWidget {
               ),
             ),
           ],
-
 
           const Gap(12),
           _buildActionButtons(context),
@@ -203,7 +199,6 @@ class AnalyticsErrorWidget extends StatelessWidget {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: () {
-
               Navigator.of(
                 context,
               ).pushNamedAndRemoveUntil('/login', (route) => false);
@@ -221,7 +216,6 @@ class AnalyticsErrorWidget extends StatelessWidget {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: () {
-
               Navigator.of(context).pushNamed('/professor/schedule');
             },
             icon: const Icon(Icons.add),
@@ -237,7 +231,6 @@ class AnalyticsErrorWidget extends StatelessWidget {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: () {
-
               Navigator.of(context).pop();
             },
             icon: const Icon(Icons.clear),

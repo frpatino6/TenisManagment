@@ -306,8 +306,9 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
 
     if (_draggingBookingId == null ||
         _draggingPointerId == null ||
-        e.pointer != _draggingPointerId)
+        e.pointer != _draggingPointerId) {
       return;
+    }
     final distance = (_dragDeltaX * _dragDeltaX + _dragDeltaY * _dragDeltaY)
         .abs();
     if (distance < _dragThresholdPixels * _dragThresholdPixels) {
@@ -320,8 +321,9 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
   void _onPointerCancel(PointerCancelEvent e) {
     if (_draggingBookingId == null ||
         _draggingPointerId == null ||
-        e.pointer != _draggingPointerId)
+        e.pointer != _draggingPointerId) {
       return;
+    }
     _clearDragState();
   }
 
@@ -533,7 +535,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
           .map((x) => x.studentId)
           .toSet(),
       loading: () => <String>{},
-      error: (_, __) => <String>{},
+      error: (_, _) => <String>{},
     );
   }
 
@@ -1035,7 +1037,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                '${hour.toString().padLeft(2, '0')}',
+                                hour.toString().padLeft(2, '0'),
                                 style: TextStyle(
                                   fontFamily: 'Inter',
                                   fontSize: 12,
@@ -1196,7 +1198,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     final first = trimmed[0].toUpperCase();
     final parts = trimmed.split(RegExp(r'\s+'));
     if (parts.length >= 2 && parts[1].isNotEmpty) {
-      return '${first}${parts[1][0].toUpperCase()}';
+      return '$first${parts[1][0].toUpperCase()}';
     }
     return first;
   }
@@ -1232,8 +1234,8 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     int firstHour,
     int lastHour,
   ) {
-    final start = booking.startTime!;
-    final end = booking.endTime!;
+    final start = booking.startTime!.toLocal();
+    final end = booking.endTime!.toLocal();
     final durationMinutes = end.difference(start).inMinutes;
     final baseLeft = _leftForTime(start, firstHour);
     final width = _widthForDuration(start, end);
@@ -1362,14 +1364,18 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                     borderRadius: BorderRadius.circular(pillRadius),
                     child: InkWell(
                       onTap: () async {
-                        if (_justFinishedDrag || _reschedulingBookingId != null)
+                        if (_justFinishedDrag ||
+                            _reschedulingBookingId != null) {
                           return;
+                        }
                         if (_draggingBookingId == booking.id &&
-                            _dragMovedBeyondThreshold)
+                            _dragMovedBeyondThreshold) {
                           return;
+                        }
                         if (_draggingBookingId != null &&
-                            _draggingBookingId != booking.id)
+                            _draggingBookingId != booking.id) {
                           return;
+                        }
                         final refresh = await context.push<bool>(
                           '/tenant-admin-home/bookings/${booking.id}',
                           extra: {'gridDate': _selectedDate},
@@ -1381,14 +1387,18 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                         }
                       },
                       onLongPress: () {
-                        if (_justFinishedDrag || _reschedulingBookingId != null)
+                        if (_justFinishedDrag ||
+                            _reschedulingBookingId != null) {
                           return;
+                        }
                         if (_draggingBookingId == booking.id &&
-                            _dragMovedBeyondThreshold)
+                            _dragMovedBeyondThreshold) {
                           return;
+                        }
                         if (_draggingBookingId != null &&
-                            _draggingBookingId != booking.id)
+                            _draggingBookingId != booking.id) {
                           return;
+                        }
                         if (_draggingBookingId == booking.id) _clearDragState();
                         _showBookingQuickActionsSheet(context, booking);
                       },
@@ -1747,7 +1757,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                '${hour.toString().padLeft(2, '0')}',
+                                hour.toString().padLeft(2, '0'),
                                 style: TextStyle(
                                   fontFamily: 'Inter',
                                   fontSize: 12,

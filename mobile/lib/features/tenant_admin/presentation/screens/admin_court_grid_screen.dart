@@ -90,7 +90,6 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
 
   // Premium color palette
   static const Color _darkBackground = Color(0xFF0F1115);
-  static const Color _cardBackground = Color(0xFF1C1F26);
   static const Color _emeraldGreen = Color(0xFF10B981);
   static const Color _vibrantOrange = Color(0xFFF59E0B);
 
@@ -508,7 +507,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     return Scaffold(
       backgroundColor: _darkBackground,
       appBar: AppBar(
-        backgroundColor: colorScheme.surface,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 1,
         title: Text(
@@ -661,21 +660,17 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     int courtCount,
     int firstHour,
     int lastHour,
-    DateTime date,
   ) {
     if (courtCount == 0 || lastHour <= firstHour) return 0;
-    final dayStart = DateTime(date.year, date.month, date.day, firstHour, 0);
-    final dayEnd = DateTime(date.year, date.month, date.day, lastHour, 0);
     final totalMinutes = courtCount * (lastHour - firstHour) * 60;
     var occupiedMinutes = 0;
     for (final b in bookings) {
       final s = b.startTime;
       final e = b.endTime;
       if (s == null || e == null) continue;
-      final clipStart = s.isBefore(dayStart) ? dayStart : s;
-      final clipEnd = e.isAfter(dayEnd) ? dayEnd : e;
-      if (!clipStart.isBefore(clipEnd)) continue;
-      occupiedMinutes += clipEnd.difference(clipStart).inMinutes;
+      final duration = e.difference(s).inMinutes;
+      if (duration <= 0) continue;
+      occupiedMinutes += duration;
     }
     if (totalMinutes <= 0) return 0;
     return (occupiedMinutes / totalMinutes * 100).clamp(0.0, 100.0);
@@ -692,7 +687,6 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
       data.courts.length,
       firstHour,
       lastHour,
-      _selectedDate,
     );
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -700,11 +694,11 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          color: _darkBackground,
+          color: Colors.transparent,
           child: Text(
             'Ocupación: ${occupancy.toStringAsFixed(0)}%',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 16,
               fontWeight: FontWeight.w500,
               color: Colors.white.withValues(alpha: 0.7),
             ),
@@ -719,7 +713,6 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
               vertical: 8 * (1 - shrink * 0.5),
             ),
             decoration: BoxDecoration(
-              color: colorScheme.surface,
               border: Border(
                 bottom: BorderSide(
                   color: colorScheme.outlineVariant.withValues(alpha: 0.5),
@@ -956,7 +949,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                 child: Container(
-                  color: _cardBackground.withValues(alpha: 0.5),
+                  color: Colors.transparent,
                   child: Row(
                     children: List.generate(lastHour - firstHour, (i) {
                       final hour = firstHour + i;

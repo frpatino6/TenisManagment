@@ -122,6 +122,9 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
   int? _draggingPointerId;
   _PillDragContext? _pillDragContext;
   bool _dragMovedBeyondThreshold = false;
+  bool? _dragLockedHorizontal;
+  bool _hasAutoScrolledToNow = false;
+
   @override
   void initState() {
     super.initState();
@@ -152,21 +155,32 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     if (_draggingBookingId == null) return;
     final (timelineX, contentY) = _globalToContentPosition(e.position);
     if (timelineX == null || contentY == null) return;
+
+    final rawDeltaX = timelineX - _dragStartTimelineX;
+    final rawDeltaY = contentY - _dragStartContentY;
+    final distanceSq = rawDeltaX * rawDeltaX + rawDeltaY * rawDeltaY;
+
+    if (_dragLockedHorizontal == null &&
+        distanceSq >= _dragThresholdPixels * _dragThresholdPixels) {
+      _dragLockedHorizontal = rawDeltaX.abs() >= rawDeltaY.abs();
+      _dragMovedBeyondThreshold = true;
+    }
+
     setState(() {
-      _dragDeltaX = timelineX - _dragStartTimelineX;
-      _dragDeltaY = contentY - _dragStartContentY;
-      final distanceSq = _dragDeltaX * _dragDeltaX + _dragDeltaY * _dragDeltaY;
+      _dragDeltaX = rawDeltaX;
+      _dragDeltaY = rawDeltaY;
       if (distanceSq >= _dragThresholdPixels * _dragThresholdPixels) {
         _dragMovedBeyondThreshold = true;
       }
     });
 
-    final dragIsHorizontal = _dragDeltaX.abs() >= _dragDeltaY.abs();
+    final isHorizontal =
+        _dragLockedHorizontal ?? (rawDeltaX.abs() >= rawDeltaY.abs());
 
-    if (dragIsHorizontal && _horizontalController.hasClients) {
+    if (isHorizontal && _horizontalController.hasClients) {
       final pos = _horizontalController.position;
-      const margin = 60.0;
-      const step = 20.0;
+      const margin = 80.0;
+      const step = 12.0;
       final contentX = timelineX + _courtLabelWidth;
       final vLeft = pos.pixels;
       final vRight = pos.pixels + pos.viewportDimension;
@@ -180,11 +194,11 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
       if (target != null && (target - pos.pixels).abs() > 1) {
         final scrollDelta = target - pos.pixels;
         _horizontalController.jumpTo(target);
-        setState(() => _dragDeltaX += scrollDelta);
+        setState(() => _dragDeltaX = rawDeltaX + scrollDelta);
       }
     }
 
-    if (!dragIsHorizontal && _verticalController.hasClients) {
+    if (!isHorizontal && _verticalController.hasClients) {
       final vPos = _verticalController.position;
       const vMargin = 60.0;
       const vStep = 20.0;
@@ -201,7 +215,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
         _verticalController.jumpTo(vTarget);
         setState(() {
           _dragStartContentY += vScrollDelta;
-          _dragDeltaY += vScrollDelta;
+          _dragDeltaY = rawDeltaY + vScrollDelta;
         });
       }
     }
@@ -217,6 +231,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
       _dragDeltaX = 0;
       _dragDeltaY = 0;
       _dragMovedBeyondThreshold = false;
+      _dragLockedHorizontal = null;
     });
   }
 
@@ -436,8 +451,10 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     if (!_isToday) return null;
     final now = DateTime.now();
     final hour = now.hour + now.minute / 60.0;
-    if (hour < firstHour || hour >= lastHour) return null;
-    return (hour - firstHour) * kColumnWidth;
+    if (lastHour <= firstHour) return 0.0;
+    final rawX = (hour - firstHour) * kColumnWidth;
+    final maxX = (lastHour - firstHour) * kColumnWidth;
+    return rawX.clamp(0.0, maxX - 1);
   }
 
   Set<String> _debtorStudentIds(AsyncValue<TenantDebtReportModel> debtAsync) {
@@ -512,6 +529,24 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     int firstHour,
     int lastHour,
   ) {
+    if (_isToday &&
+        !_hasAutoScrolledToNow &&
+        _currentTimeX(firstHour, lastHour) != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_horizontalController.hasClients) return;
+        _hasAutoScrolledToNow = true;
+        final x = _currentTimeX(firstHour, lastHour)!;
+        final target = (x - kColumnWidth).clamp(
+          0.0,
+          _horizontalController.position.maxScrollExtent,
+        );
+        _horizontalController.animateTo(
+          target,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOutCubic,
+        );
+      });
+    }
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(adminCourtGridDataProvider(_selectedDate));
@@ -541,6 +576,31 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
             width: 1,
             child: IgnorePointer(child: Container(color: Colors.white10)),
           ),
+          if (_currentTimeX(firstHour, lastHour) != null)
+            Positioned(
+              left:
+                  _courtLabelWidth +
+                  _currentTimeX(firstHour, lastHour)! -
+                  _horizontalOffset -
+                  2,
+              top: _legendBarHeight + _rowHeight + 1,
+              bottom: 0,
+              width: 4,
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00E5FF),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.8),
+                        blurRadius: 16,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           _buildStickyTopBar(data, firstHour, lastHour),
           _buildStickyLeftBar(data, firstHour, lastHour),
         ],
@@ -665,7 +725,6 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final timelineW = _timelineWidth(firstHour, lastHour);
-    final currentX = _currentTimeX(firstHour, lastHour);
     return NotificationListener<ScrollNotification>(
       onNotification: (_) {
         setState(() {});
@@ -673,9 +732,15 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
       },
       child: SingleChildScrollView(
         controller: _verticalController,
+        physics: _draggingBookingId != null
+            ? const NeverScrollableScrollPhysics()
+            : null,
         child: SingleChildScrollView(
           controller: _horizontalController,
           scrollDirection: Axis.horizontal,
+          physics: _draggingBookingId != null
+              ? const NeverScrollableScrollPhysics()
+              : null,
           child: Listener(
             key: _scrollContentKey,
             onPointerMove: _onPointerMove,
@@ -733,27 +798,6 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                     ),
                   ],
                 ),
-                if (currentX != null)
-                  Positioned(
-                    left: _courtLabelWidth + currentX - 1,
-                    top: _rowHeight,
-                    width: 2,
-                    height: data.courts.length * _rowHeight,
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: Colors.cyanAccent,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.cyanAccent.withValues(alpha: 0.6),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
@@ -798,31 +842,39 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
             top: 0,
             bottom: 0,
             right: 0,
-            child: Row(
-              children: List.generate(lastHour - firstHour, (i) {
-                final hour = firstHour + i;
-                return Container(
-                  width: kColumnWidth,
-                  height: _rowHeight,
-                  decoration: BoxDecoration(
-                    border: Border(
-                      right: BorderSide(color: Colors.white10, width: 1),
-                    ),
+            child: ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                child: Container(
+                  color: _cardBackground.withValues(alpha: 0.85),
+                  child: Row(
+                    children: List.generate(lastHour - firstHour, (i) {
+                      final hour = firstHour + i;
+                      return Container(
+                        width: kColumnWidth,
+                        height: _rowHeight,
+                        decoration: BoxDecoration(
+                          border: Border(
+                            right: BorderSide(color: Colors.white10, width: 1),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${hour.toString().padLeft(2, '0')}',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: _textMuted,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
                   ),
-                  child: Center(
-                    child: Text(
-                      '${hour.toString().padLeft(2, '0')}',
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        color: _textMuted,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                );
-              }),
+                ),
+              ),
             ),
           ),
         ],
@@ -1266,12 +1318,8 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
             filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
             child: Container(
               decoration: BoxDecoration(
-                color: colorScheme.surface.withValues(alpha: 0.92),
-                border: Border(
-                  bottom: BorderSide(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                  ),
-                ),
+                color: _darkBackground.withValues(alpha: 0.92),
+                border: Border(bottom: BorderSide(color: Colors.white10)),
               ),
               child: Transform.translate(
                 offset: Offset(-_horizontalOffset, 0),

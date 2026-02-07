@@ -35,11 +35,13 @@ import '../../features/tenant_admin/presentation/screens/tenant_bookings_list_sc
 import '../../features/tenant_admin/presentation/screens/tenant_booking_details_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_booking_stats_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_booking_calendar_screen.dart';
+import '../../features/tenant_admin/presentation/screens/admin_court_grid_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_students_list_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_student_details_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_professor_details_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_payments_list_screen.dart';
 import '../../features/tenant_admin/presentation/screens/tenant_debt_report_screen.dart';
+import '../../features/tenant_admin/presentation/screens/tenant_booking_creation_screen.dart';
 import '../../features/ranking/presentation/screens/ranking_screen.dart';
 import '../../features/tournaments/presentation/screens/tournaments_list_screen.dart';
 import '../../features/tournaments/presentation/screens/tournament_detail_screen.dart';
@@ -230,6 +232,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const TenantBookingsListScreen(),
             routes: [
               GoRoute(
+                path: 'create',
+                name: 'tenant-admin-booking-create',
+                builder: (context, state) {
+                  final extra = state.extra as Map<String, dynamic>?;
+                  if (extra == null) {
+                    return const Scaffold(
+                      body: Center(
+                        child: Text('Error: No se proporcionaron datos'),
+                      ),
+                    );
+                  }
+                  return TenantBookingCreationScreen(
+                    courtId: extra['courtId'] as String,
+                    courtName: extra['courtName'] as String,
+                    courtPrice: extra['courtPrice'] as double,
+                    date: extra['date'] as DateTime,
+                    startTime: extra['startTime'] as DateTime,
+                  );
+                },
+              ),
+              GoRoute(
                 path: 'stats',
                 name: 'tenant-admin-booking-stats',
                 builder: (context, state) => const TenantBookingStatsScreen(),
@@ -239,6 +262,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 name: 'tenant-admin-booking-calendar',
                 builder: (context, state) =>
                     const TenantBookingCalendarScreen(),
+              ),
+              GoRoute(
+                path: 'grid',
+                name: 'tenant-admin-booking-grid',
+                builder: (context, state) => const AdminCourtGridScreen(),
               ),
               GoRoute(
                 path: ':id',

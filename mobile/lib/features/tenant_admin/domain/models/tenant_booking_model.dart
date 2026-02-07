@@ -37,26 +37,24 @@ class TenantBookingModel {
     final serviceType = json['serviceType'] as String? ?? 'court_rental';
     final bookingDate = json['bookingDate'] as String?;
     final dateValue = json['date'] as String?;
-    
+
     DateTime? parsedStartTime;
     if (json['startTime'] != null) {
       parsedStartTime = DateTime.parse(json['startTime'] as String);
     } else if (serviceType == 'court_rental' && bookingDate != null) {
       parsedStartTime = DateTime.parse(bookingDate);
     }
-    
+
     DateTime? parsedEndTime;
     if (json['endTime'] != null) {
       parsedEndTime = DateTime.parse(json['endTime'] as String);
     }
-    
+
     return TenantBookingModel(
       id: json['id'] as String? ?? json['_id'] as String,
       date: bookingDate != null
           ? DateTime.parse(bookingDate)
-          : (dateValue != null
-                ? DateTime.parse(dateValue)
-                : null),
+          : (dateValue != null ? DateTime.parse(dateValue) : null),
       startTime: parsedStartTime,
       endTime: parsedEndTime,
       court: (json['court'] != null)
@@ -171,10 +169,39 @@ class StudentInfo {
     this.phone,
   });
 
+  static bool _isValidName(String value) {
+    final t = value.trim();
+    if (t.isEmpty) return false;
+    if (t.contains('FontWeight') ||
+        t.contains('TextStyle') ||
+        t.contains('Color(') ||
+        t.length > 80) {
+      return false;
+    }
+    return true;
+  }
+
   factory StudentInfo.fromJson(Map<String, dynamic> json) {
+    final rawName = json['name'];
+    String name = 'Sin nombre';
+    if (rawName is String && rawName.trim().isNotEmpty) {
+      name = _isValidName(rawName) ? rawName.trim() : 'Sin nombre';
+    }
+    if (name == 'Sin nombre') {
+      final first = json['firstName'] as String?;
+      final last = json['lastName'] as String?;
+      if (first != null && first.trim().isNotEmpty) {
+        name = last != null && last.trim().isNotEmpty
+            ? '${first.trim()} ${last.trim()}'
+            : first.trim();
+        if (!_isValidName(name)) name = 'Sin nombre';
+      } else if (last != null && last.trim().isNotEmpty) {
+        name = _isValidName(last.trim()) ? last.trim() : 'Sin nombre';
+      }
+    }
     return StudentInfo(
       id: json['id'] as String? ?? json['_id'] as String? ?? 'unk',
-      name: json['name'] as String? ?? 'Sin nombre',
+      name: name,
       email: json['email'] as String? ?? '',
       phone: json['phone'] as String?,
     );

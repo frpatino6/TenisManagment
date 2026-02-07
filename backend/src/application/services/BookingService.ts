@@ -42,20 +42,19 @@ export class BookingService {
         courtId: Types.ObjectId,
         startTime: Date,
         endTime: Date,
-        excludeScheduleId?: Types.ObjectId
+        excludeScheduleId?: Types.ObjectId,
+        excludeBookingId?: Types.ObjectId
     ): Promise<boolean> {
         logger.info('Checking court availability', {
             tenantId: tenantId.toString(),
             courtId: courtId.toString(),
             startTime: startTime.toISOString(),
             endTime: endTime.toISOString(),
-            excludeScheduleId: excludeScheduleId?.toString()
+            excludeScheduleId: excludeScheduleId?.toString(),
+            excludeBookingId: excludeBookingId?.toString()
         });
 
-        // 1. Check for Bookings that overlap
-        // Two time ranges overlap if: start1 < end2 && start2 < end1
-        // For bookings without endTime, we assume 1 hour duration
-        const conflictingBooking = await BookingModel.findOne({
+        const bookingQuery: Record<string, unknown> = {
             tenantId,
             courtId,
             status: { $in: ['confirmed', 'pending'] },
@@ -77,7 +76,12 @@ export class BookingService {
                     ]
                 }
             ]
-        });
+        };
+        if (excludeBookingId) {
+            bookingQuery._id = { $ne: excludeBookingId };
+        }
+
+        const conflictingBooking = await BookingModel.findOne(bookingQuery as any);
 
         if (conflictingBooking) {
             logger.info('Court conflict found in Bookings', { 
@@ -559,5 +563,45 @@ export class BookingService {
         }
 
         return null;
+    }
+
+    async rescheduleBooking(
+        tenantId: Types.ObjectId,
+        bookingId: Types.ObjectId,
+        newStartTime: Date,
+        newEndTime: Date
+    ): Promise<BookingDocument> {
+        const booking = await BookingModel.findOne({
+            _id: bookingId,
+            tenantId,
+            status: { $in: ['confirmed', 'pending'] },
+        });
+
+        if (!booking) {
+            throw new Error('Reserva no encontrada');
+        }
+
+        if (booking.serviceType !== 'court_rental' || !booking.courtId) {
+            throw new Error('Solo se pueden reprogramar reservas de cancha');
+        }
+
+        const available = await this.isCourtAvailable(
+            tenantId,
+            booking.courtId as Types.ObjectId,
+            newStartTime,
+            newEndTime,
+            undefined,
+            bookingId
+        );
+
+        if (!available) {
+            throw new Error('El horario seleccionado ya está ocupado');
+        }
+
+        booking.bookingDate = newStartTime;
+        booking.endTime = newEndTime;
+        await booking.save();
+
+        return booking;
     }
 }

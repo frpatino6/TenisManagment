@@ -24,12 +24,14 @@ import { Logger } from '../../infrastructure/services/Logger';
 import { Types } from 'mongoose';
 import { EmailService } from '../../infrastructure/services/EmailService';
 import { BalanceService } from '../services/BalanceService';
+import { BookingService } from '../services/BookingService';
 
 const logger = new Logger({ module: 'TenantAdminController' });
 
 export class TenantAdminController {
   private emailService = new EmailService();
   private balanceService = new BalanceService();
+  private bookingService = new BookingService();
 
   constructor(private readonly tenantService: TenantService) { }
 
@@ -2063,7 +2065,57 @@ export class TenantAdminController {
       });
     } catch (error) {
       logger.error('Error cancelando reserva', { error: (error as Error).message });
-      res.status(500).json({ error: 'Error interno del servidor' });
+      res.status(500).json({ error: (error as Error).message });
+    }
+  };
+
+  rescheduleBooking = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const { id } = req.params;
+      const { startTime: startTimeStr, endTime: endTimeStr } = req.body;
+
+      if (!startTimeStr || !endTimeStr) {
+        res.status(400).json({ error: 'startTime y endTime son requeridos' });
+        return;
+      }
+
+      const newStartTime = new Date(startTimeStr);
+      const newEndTime = new Date(endTimeStr);
+
+      if (isNaN(newStartTime.getTime()) || isNaN(newEndTime.getTime())) {
+        res.status(400).json({ error: 'Fechas inválidas' });
+        return;
+      }
+
+      if (newEndTime <= newStartTime) {
+        res.status(400).json({ error: 'endTime debe ser posterior a startTime' });
+        return;
+      }
+
+      const booking = await this.bookingService.rescheduleBooking(
+        new Types.ObjectId(tenantId),
+        new Types.ObjectId(id),
+        newStartTime,
+        newEndTime
+      );
+
+      res.json({
+        id: booking._id.toString(),
+        startTime: booking.bookingDate,
+        endTime: booking.endTime,
+        message: 'Reserva reprogramada exitosamente',
+      });
+    } catch (error) {
+      const msg = (error as Error).message;
+      logger.error('Error reprogramando reserva', { error: msg });
+      const status = msg.includes('encontrada') || msg.includes('inválidas') ? 404 : msg.includes('ocupado') ? 409 : 500;
+      res.status(status).json({ error: msg });
     }
   };
 

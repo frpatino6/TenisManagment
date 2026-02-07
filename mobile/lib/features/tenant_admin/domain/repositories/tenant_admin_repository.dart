@@ -9,7 +9,7 @@ import '../models/tenant_payment_model.dart';
 import '../models/tenant_debt_report_model.dart';
 
 /// Repository interface for tenant admin data operations
-/// 
+///
 /// This is a domain contract that defines the operations needed by the business logic.
 /// Implementations should be in the infrastructure layer.
 abstract class TenantAdminRepository {
@@ -129,11 +129,15 @@ abstract class TenantAdminRepository {
   /// Confirm a booking and register manual payment
   Future<void> confirmBooking(String bookingId, {String? paymentStatus});
 
-  /// Get booking statistics
-  Future<BookingStatsModel> getBookingStats({
-    DateTime? from,
-    DateTime? to,
+  /// Reschedule a booking to new start and end times
+  Future<void> rescheduleBooking(
+    String bookingId, {
+    required DateTime startTime,
+    required DateTime endTime,
   });
+
+  /// Get booking statistics
+  Future<BookingStatsModel> getBookingStats({DateTime? from, DateTime? to});
 
   /// Get list of students with filters and pagination
   Future<TenantStudentsResponse> getStudents({
@@ -155,4 +159,16 @@ abstract class TenantAdminRepository {
 
   /// Confirm a manual payment
   Future<void> confirmPayment(String paymentId);
+
+  /// Create a new booking
+  Future<TenantBookingModel> createBooking({
+    required String courtId,
+    required String studentId,
+    required DateTime startTime,
+    required DateTime endTime,
+    required String paymentStatus,
+    required String paymentMethod,
+    required double price,
+    String serviceType = 'court_booking',
+  });
 }

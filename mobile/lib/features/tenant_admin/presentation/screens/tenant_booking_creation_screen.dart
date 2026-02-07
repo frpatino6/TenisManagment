@@ -466,17 +466,21 @@ class _TenantBookingCreationScreenState
       );
     }
 
-    // Check wallet balance
-    if (_paymentMethod == 'wallet' && _selectedStudent!.balance < 0) {
-      warnings.add(
-        _warningCard(
-          theme,
-          'Saldo insuficiente en el monedero',
-          Icons.error_outline,
-          theme.colorScheme.errorContainer,
-          theme.colorScheme.onErrorContainer,
-        ),
-      );
+    // Check wallet balance when Monedero Digital is selected
+    if (_paymentMethod == 'wallet') {
+      final price = (widget.courtPrice / 60) * _durationMinutes;
+      if (_selectedStudent!.balance < price) {
+        warnings.add(
+          _warningCard(
+            theme,
+            'Saldo insuficiente en el monedero (\$${_selectedStudent!.balance.toStringAsFixed(0)}). '
+            'El costo es \$${price.toStringAsFixed(0)}',
+            Icons.error_outline,
+            theme.colorScheme.errorContainer,
+            theme.colorScheme.onErrorContainer,
+          ),
+        );
+      }
     }
 
     if (warnings.isEmpty) return const SizedBox.shrink();
@@ -523,7 +527,16 @@ class _TenantBookingCreationScreenState
 
   Widget _buildBottomBar(ThemeData theme) {
     final colorScheme = theme.colorScheme;
-    final canCreate = _selectedStudent != null && !_isCreating;
+    final price = (widget.courtPrice / 60) * _durationMinutes;
+    final hasEnoughBalance = _selectedStudent == null
+        ? false
+        : _selectedStudent!.balance >= price;
+    final walletBlocked =
+        _paymentMethod == 'wallet' &&
+        _selectedStudent != null &&
+        !hasEnoughBalance;
+    final canCreate =
+        _selectedStudent != null && !_isCreating && !walletBlocked;
 
     return Container(
       padding: const EdgeInsets.all(16),

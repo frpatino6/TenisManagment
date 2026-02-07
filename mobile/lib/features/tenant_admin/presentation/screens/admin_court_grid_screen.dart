@@ -123,6 +123,12 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
   bool _dragMovedBeyondThreshold = false;
   bool? _dragLockedHorizontal;
   bool _hasAutoScrolledToNow = false;
+  int? _dragHoverCourtIndex;
+  int? _dragHoverSlotHour;
+  int? _dragHoverSlotMinute;
+  int _cachedFirstHour = 6;
+  int _cachedLastHour = 24;
+  int _cachedCourtCount = 0;
 
   @override
   void initState() {
@@ -165,9 +171,27 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
       _dragMovedBeyondThreshold = true;
     }
 
+    int? hoverCourt;
+    int? hoverHour;
+    int? hoverMinute;
+    if (timelineX >= 0 && contentY >= _rowHeight) {
+      final hourIdx = (timelineX / kColumnWidth).floor();
+      final courtIdx = ((contentY - _rowHeight) / _rowHeight).floor();
+      if (hourIdx >= 0 &&
+          hourIdx < _cachedLastHour - _cachedFirstHour &&
+          courtIdx >= 0 &&
+          courtIdx < _cachedCourtCount) {
+        hoverCourt = courtIdx;
+        hoverHour = _cachedFirstHour + hourIdx;
+        hoverMinute = (timelineX % kColumnWidth) < kColumnWidth / 2 ? 0 : 30;
+      }
+    }
     setState(() {
       _dragDeltaX = rawDeltaX;
       _dragDeltaY = rawDeltaY;
+      _dragHoverCourtIndex = hoverCourt;
+      _dragHoverSlotHour = hoverHour;
+      _dragHoverSlotMinute = hoverMinute;
       if (distanceSq >= _dragThresholdPixels * _dragThresholdPixels) {
         _dragMovedBeyondThreshold = true;
       }
@@ -231,6 +255,9 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
       _dragDeltaY = 0;
       _dragMovedBeyondThreshold = false;
       _dragLockedHorizontal = null;
+      _dragHoverCourtIndex = null;
+      _dragHoverSlotHour = null;
+      _dragHoverSlotMinute = null;
     });
   }
 
@@ -557,7 +584,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildLegendBar(),
+              _buildLegendBar(data, firstHour, lastHour),
               Expanded(
                 child: _buildScrollableGrid(
                   data,
@@ -570,7 +597,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
           ),
           Positioned(
             left: _courtLabelWidth,
-            top: _legendBarHeight,
+            top: _headerSectionHeight(),
             bottom: 0,
             width: 1,
             child: IgnorePointer(child: Container(color: Colors.white10)),
@@ -581,27 +608,24 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                   _courtLabelWidth +
                   _currentTimeX(firstHour, lastHour)! -
                   _horizontalOffset -
-                  1.5,
-              top: _legendBarHeight + _rowHeight + 1,
+                  3,
+              top: _headerSectionHeight() + _rowHeight + 1,
               bottom: 0,
-              width: 3,
+              width: 6,
               child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.cyanAccent,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.cyanAccent.withValues(alpha: 0.9),
-                        blurRadius: 12,
-                        spreadRadius: 2,
-                      ),
-                      BoxShadow(
-                        color: Colors.cyanAccent.withValues(alpha: 0.5),
-                        blurRadius: 20,
-                        spreadRadius: 0,
-                      ),
-                    ],
-                  ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 6,
+                      color: Colors.cyanAccent.withValues(alpha: 0.1),
+                    ),
+                    Container(
+                      width: 4,
+                      color: Colors.cyanAccent.withValues(alpha: 0.3),
+                    ),
+                    Container(width: 2, color: Colors.cyanAccent),
+                  ],
                 ),
               ),
             ),
@@ -632,58 +656,123 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     });
   }
 
-  Widget _buildLegendBar() {
+  double _computeOccupancy(
+    List<TenantBookingModel> bookings,
+    int courtCount,
+    int firstHour,
+    int lastHour,
+    DateTime date,
+  ) {
+    if (courtCount == 0 || lastHour <= firstHour) return 0;
+    final dayStart = DateTime(date.year, date.month, date.day, firstHour, 0);
+    final dayEnd = DateTime(date.year, date.month, date.day, lastHour, 0);
+    final totalMinutes = courtCount * (lastHour - firstHour) * 60;
+    var occupiedMinutes = 0;
+    for (final b in bookings) {
+      final s = b.startTime;
+      final e = b.endTime;
+      if (s == null || e == null) continue;
+      final clipStart = s.isBefore(dayStart) ? dayStart : s;
+      final clipEnd = e.isAfter(dayEnd) ? dayEnd : e;
+      if (!clipStart.isBefore(clipEnd)) continue;
+      occupiedMinutes += clipEnd.difference(clipStart).inMinutes;
+    }
+    if (totalMinutes <= 0) return 0;
+    return (occupiedMinutes / totalMinutes * 100).clamp(0.0, 100.0);
+  }
+
+  Widget _buildLegendBar(AdminCourtGridData data, int firstHour, int lastHour) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return SizedBox(
-      height: _legendBarHeight,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          border: Border(
-            bottom: BorderSide(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-              width: 1,
+    final shrink = (_verticalOffset / 80).clamp(0.0, 1.0);
+    final barHeight = _legendBarHeight * (1 - shrink * 0.35);
+    final fontSize = 14.0 - (shrink * 3);
+    final occupancy = _computeOccupancy(
+      data.bookings,
+      data.courts.length,
+      firstHour,
+      lastHour,
+      _selectedDate,
+    );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          color: _darkBackground,
+          child: Text(
+            'Ocupación: ${occupancy.toStringAsFixed(0)}%',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.white.withValues(alpha: 0.7),
             ),
           ),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              DateFormat('EEEE d MMM', 'es').format(_selectedDate),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          height: barHeight,
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8 * (1 - shrink * 0.5),
+            ),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              border: Border(
+                bottom: BorderSide(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  width: 1,
+                ),
               ),
             ),
-            const Spacer(),
-            if (_isToday)
-              TextButton.icon(
-                onPressed: _scrollToNow,
-                icon: Icon(Icons.today, size: 16, color: colorScheme.primary),
-                label: Text(
-                  'Hoy',
-                  style: TextStyle(
-                    fontSize: 12,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 150),
+                  style: theme.textTheme.bodyMedium!.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: colorScheme.primary,
+                    color: colorScheme.onSurface,
+                    fontSize: fontSize,
+                  ),
+                  child: Text(
+                    DateFormat('EEEE d MMM', 'es').format(_selectedDate),
                   ),
                 ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-            const Gap(12),
-            _legendChip(_emeraldGreen, 'Pago', colorScheme),
-            const Gap(8),
-            _legendChip(_vibrantOrange, 'Pendiente', colorScheme),
-          ],
+                const Spacer(),
+                if (_isToday)
+                  TextButton.icon(
+                    onPressed: _scrollToNow,
+                    icon: Icon(
+                      Icons.today,
+                      size: 16,
+                      color: colorScheme.primary,
+                    ),
+                    label: Text(
+                      'Hoy',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                const Gap(12),
+                _legendChip(_emeraldGreen, 'Pago', colorScheme),
+                const Gap(8),
+                _legendChip(_vibrantOrange, 'Pendiente', colorScheme),
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -726,6 +815,9 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     int firstHour,
     int lastHour,
   ) {
+    _cachedFirstHour = firstHour;
+    _cachedLastHour = lastHour;
+    _cachedCourtCount = data.courts.length;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final timelineW = _timelineWidth(firstHour, lastHour);
@@ -765,6 +857,20 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                       pixelsPerHour: kColumnWidth,
                       hourCount: lastHour - firstHour,
                       color: Colors.white10,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: _courtLabelWidth,
+                  top: _rowHeight,
+                  width: timelineW,
+                  height: data.courts.length * _rowHeight,
+                  child: CustomPaint(
+                    size: Size(timelineW, data.courts.length * _rowHeight),
+                    painter: _HalfHourDashedPainter(
+                      pixelsPerHour: kColumnWidth,
+                      hourCount: lastHour - firstHour,
+                      color: Colors.white.withValues(alpha: 0.04),
                     ),
                   ),
                 ),
@@ -971,7 +1077,13 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
             gridLineColor: Colors.white10,
           ),
         ),
-        _buildEmptyLaneTapTarget(court, colorScheme, firstHour, lastHour),
+        _buildEmptyLaneTapTarget(
+          court,
+          courtIndex,
+          colorScheme,
+          firstHour,
+          lastHour,
+        ),
         ...bookings.map(
           (b) => _buildBookingPill(
             b,
@@ -1050,21 +1162,20 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
 
     final isDragging = _draggingBookingId == booking.id;
     final isRescheduling = _reschedulingBookingId == booking.id;
-    final left =
-        baseLeft +
-        4 +
-        (isDragging ? _dragDeltaX : (isRescheduling ? _rescheduleOffsetX : 0));
-    final offsetY = isDragging
-        ? _dragDeltaY
-        : (isRescheduling ? _rescheduleOffsetY : 0.0);
+    final baseLeftPx = baseLeft + 4;
 
     return Positioned(
-      left: left,
+      left:
+          baseLeftPx +
+          (isDragging ? 0 : (isRescheduling ? _rescheduleOffsetX : 0)),
       top: 4,
       bottom: 4,
       width: pillWidth,
       child: Transform.translate(
-        offset: Offset(0, offsetY),
+        offset: Offset(
+          0,
+          isDragging ? 0 : (isRescheduling ? _rescheduleOffsetY : 0),
+        ),
         child: Listener(
           onPointerDown: (e) {
             final box =
@@ -1098,138 +1209,281 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
               if (_draggingBookingId != booking.id) return;
               _completeDrag();
             },
-            child: Material(
-              color: Colors.transparent,
-              elevation: 0,
-              borderRadius: BorderRadius.circular(pillRadius),
-              child: InkWell(
-                onTap: () async {
-                  if (_draggingBookingId != null ||
-                      _justFinishedDrag ||
-                      _reschedulingBookingId != null)
-                    return;
-                  final refresh = await context.push<bool>(
-                    '/tenant-admin-home/bookings/${booking.id}',
-                    extra: {'gridDate': _selectedDate},
-                  );
-                  if (refresh == true && mounted) {
-                    ref.invalidate(adminCourtGridDataProvider(_selectedDate));
-                  }
-                },
-                onLongPress: () {
-                  if (_justFinishedDrag || _reschedulingBookingId != null)
-                    return;
-                  if (_draggingBookingId == booking.id &&
-                      _dragMovedBeyondThreshold)
-                    return;
-                  if (_draggingBookingId != null &&
-                      _draggingBookingId != booking.id)
-                    return;
-                  if (_draggingBookingId == booking.id) _clearDragState();
-                  _showBookingQuickActionsSheet(context, booking);
-                },
-                borderRadius: BorderRadius.circular(pillRadius),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(pillRadius),
-                    color: _cardBackground,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+            child: isDragging && _dragMovedBeyondThreshold
+                ? Stack(
+                    clipBehavior: Clip.none,
                     children: [
-                      Container(
-                        width: 5,
-                        decoration: BoxDecoration(
-                          color: sidebarColor,
-                          borderRadius: BorderRadius.horizontal(
-                            left: Radius.circular(pillRadius),
+                      Opacity(
+                        opacity: 0.3,
+                        child: _buildPillBody(
+                          pillRadius: pillRadius,
+                          sidebarColor: sidebarColor,
+                          padding: padding,
+                          showFullName: showFullName,
+                          avatarRadius: avatarRadius,
+                          displayName: displayName,
+                          initial: initial,
+                          isPaid: isPaid,
+                          booking: booking,
+                          hasShadow: false,
+                          start: start,
+                          end: end,
+                        ),
+                      ),
+                      Positioned(
+                        left: _dragDeltaX,
+                        top: _dragDeltaY,
+                        child: Transform.scale(
+                          scale: 1.1,
+                          child: _buildPillBody(
+                            pillRadius: pillRadius,
+                            sidebarColor: sidebarColor,
+                            padding: padding,
+                            showFullName: showFullName,
+                            avatarRadius: avatarRadius,
+                            displayName: displayName,
+                            initial: initial,
+                            isPaid: isPaid,
+                            booking: booking,
+                            hasShadow: true,
+                            start: start,
+                            end: end,
                           ),
                         ),
                       ),
-                      Expanded(
-                        child: Padding(
-                          padding: EdgeInsets.all(padding),
-                          child: showFullName
-                              ? Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    CircleAvatar(
-                                      radius: avatarRadius,
-                                      backgroundColor: sidebarColor.withValues(
-                                        alpha: 0.15,
-                                      ),
-                                      foregroundColor: sidebarColor,
-                                      child: Text(
-                                        initial,
-                                        style: const TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        displayName,
-                                        style: const TextStyle(
-                                          fontFamily: 'Inter',
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13,
-                                          color: Colors.white,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    if (isPaid)
-                                      Icon(
-                                        Icons.lock_rounded,
-                                        size: 14,
-                                        color: _emeraldGreen,
-                                      ),
-                                    if (booking.isConfirmed) ...[
-                                      if (isPaid) const SizedBox(width: 4),
-                                      Icon(
-                                        Icons.check_circle_rounded,
-                                        size: 14,
-                                        color: _emeraldGreen,
-                                      ),
-                                    ],
-                                  ],
-                                )
-                              : Center(
-                                  child: CircleAvatar(
-                                    radius: avatarRadius,
-                                    backgroundColor: sidebarColor.withValues(
-                                      alpha: 0.15,
-                                    ),
-                                    foregroundColor: sidebarColor,
-                                    child: Text(
-                                      initial,
-                                      style: TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: avatarRadius > 12 ? 12 : 10,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                        ),
-                      ),
                     ],
+                  )
+                : Material(
+                    color: Colors.transparent,
+                    elevation: 0,
+                    borderRadius: BorderRadius.circular(pillRadius),
+                    child: InkWell(
+                      onTap: () async {
+                        if (_justFinishedDrag || _reschedulingBookingId != null)
+                          return;
+                        if (_draggingBookingId == booking.id &&
+                            _dragMovedBeyondThreshold)
+                          return;
+                        if (_draggingBookingId != null &&
+                            _draggingBookingId != booking.id)
+                          return;
+                        final refresh = await context.push<bool>(
+                          '/tenant-admin-home/bookings/${booking.id}',
+                          extra: {'gridDate': _selectedDate},
+                        );
+                        if (refresh == true && mounted) {
+                          ref.invalidate(
+                            adminCourtGridDataProvider(_selectedDate),
+                          );
+                        }
+                      },
+                      onLongPress: () {
+                        if (_justFinishedDrag || _reschedulingBookingId != null)
+                          return;
+                        if (_draggingBookingId == booking.id &&
+                            _dragMovedBeyondThreshold)
+                          return;
+                        if (_draggingBookingId != null &&
+                            _draggingBookingId != booking.id)
+                          return;
+                        if (_draggingBookingId == booking.id) _clearDragState();
+                        _showBookingQuickActionsSheet(context, booking);
+                      },
+                      borderRadius: BorderRadius.circular(pillRadius),
+                      child: _buildPillBody(
+                        pillRadius: pillRadius,
+                        sidebarColor: sidebarColor,
+                        padding: padding,
+                        showFullName: showFullName,
+                        avatarRadius: avatarRadius,
+                        displayName: displayName,
+                        initial: initial,
+                        isPaid: isPaid,
+                        booking: booking,
+                        hasShadow: false,
+                        start: start,
+                        end: end,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
           ),
         ),
       ),
     );
   }
 
+  Widget _buildPillBody({
+    required double pillRadius,
+    required Color sidebarColor,
+    required double padding,
+    required bool showFullName,
+    required double avatarRadius,
+    required String displayName,
+    required String initial,
+    required bool isPaid,
+    required TenantBookingModel booking,
+    required bool hasShadow,
+    DateTime? start,
+    DateTime? end,
+  }) {
+    double? progress;
+    if (start != null && end != null) {
+      final now = DateTime.now();
+      if (!now.isBefore(start) && !now.isAfter(end)) {
+        final total = end.difference(start).inMilliseconds;
+        final elapsed = now.difference(start).inMilliseconds;
+        if (total > 0) progress = (elapsed / total).clamp(0.0, 1.0);
+      }
+    }
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(pillRadius),
+        gradient: LinearGradient(
+          colors: [
+            sidebarColor.withValues(alpha: 0.18),
+            sidebarColor.withValues(alpha: 0.08),
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        boxShadow: hasShadow
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                  spreadRadius: 2,
+                ),
+              ]
+            : null,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 5,
+                decoration: BoxDecoration(
+                  color: sidebarColor,
+                  borderRadius: BorderRadius.horizontal(
+                    left: Radius.circular(pillRadius),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.all(padding),
+                  child: showFullName
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(
+                              radius: avatarRadius,
+                              backgroundColor: sidebarColor.withValues(
+                                alpha: 0.15,
+                              ),
+                              foregroundColor: sidebarColor,
+                              child: Text(
+                                initial,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                displayName,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                  color: Colors.white,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (isPaid)
+                              Icon(
+                                Icons.lock_rounded,
+                                size: 14,
+                                color: _emeraldGreen,
+                              ),
+                            if (booking.isConfirmed) ...[
+                              if (isPaid) const SizedBox(width: 4),
+                              Icon(
+                                Icons.check_circle_rounded,
+                                size: 14,
+                                color: _emeraldGreen,
+                              ),
+                            ],
+                          ],
+                        )
+                      : Center(
+                          child: CircleAvatar(
+                            radius: avatarRadius,
+                            backgroundColor: sidebarColor.withValues(
+                              alpha: 0.15,
+                            ),
+                            foregroundColor: sidebarColor,
+                            child: Text(
+                              initial,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontWeight: FontWeight.w600,
+                                fontSize: avatarRadius > 12 ? 12 : 10,
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+          if (progress != null)
+            Container(
+              margin: const EdgeInsets.only(top: 4, left: 5, right: 5),
+              height: 2,
+              decoration: BoxDecoration(
+                color: sidebarColor.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(1),
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final fillW = (constraints.maxWidth * progress!).clamp(
+                    0.0,
+                    double.infinity,
+                  );
+                  return Row(
+                    children: [
+                      SizedBox(
+                        width: fillW,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: sidebarColor,
+                            borderRadius: BorderRadius.circular(1),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmptyLaneTapTarget(
     TenantCourtModel court,
+    int courtIndex,
     ColorScheme colorScheme,
     int firstHour,
     int lastHour,
@@ -1240,32 +1494,48 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
       clipBehavior: Clip.none,
       children: [
         for (int h = firstHour; h < lastHour; h++) ...[
-          Positioned(
-            left:
-                (h - firstHour) * kColumnWidth +
-                kColumnWidth / 4 -
-                hitWidth / 2,
-            top: 0,
-            bottom: 0,
-            width: hitWidth,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => _openCreateBooking(court, h, 0),
+          for (int m in [0, 30]) ...[
+            Builder(
+              builder: (_) {
+                final isHighlighted =
+                    _draggingBookingId != null &&
+                    _dragHoverCourtIndex == courtIndex &&
+                    _dragHoverSlotHour == h &&
+                    _dragHoverSlotMinute == m;
+                final left =
+                    (h - firstHour) * kColumnWidth +
+                    (m == 0 ? kColumnWidth / 4 : 3 * kColumnWidth / 4) -
+                    hitWidth / 2;
+                return Positioned(
+                  left: left,
+                  top: 0,
+                  bottom: 0,
+                  width: hitWidth,
+                  child: Stack(
+                    children: [
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => _openCreateBooking(court, h, m),
+                      ),
+                      if (isHighlighted)
+                        IgnorePointer(
+                          child: Container(
+                            margin: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: Colors.cyanAccent.withValues(alpha: 0.5),
+                                width: 1.5,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
             ),
-          ),
-          Positioned(
-            left:
-                (h - firstHour) * kColumnWidth +
-                3 * kColumnWidth / 4 -
-                hitWidth / 2,
-            top: 0,
-            bottom: 0,
-            width: hitWidth,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => _openCreateBooking(court, h, 30),
-            ),
-          ),
+          ],
         ],
       ],
     );
@@ -1298,7 +1568,12 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     }
   }
 
+  static const double _occupationBarHeight = 28;
   static const double _legendBarHeight = 48;
+
+  double _headerSectionHeight() =>
+      _occupationBarHeight +
+      _legendBarHeight * (1 - (_verticalOffset / 80).clamp(0.0, 1.0) * 0.35);
 
   Widget _buildStickyTopBar(
     AdminCourtGridData data,
@@ -1310,7 +1585,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     if (!showBar) return const SizedBox.shrink();
 
     return Positioned(
-      top: _legendBarHeight,
+      top: _headerSectionHeight(),
       left: 0,
       right: 0,
       height: _rowHeight,
@@ -1389,7 +1664,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     if (!showBar) return const SizedBox.shrink();
 
     return Positioned(
-      top: _legendBarHeight,
+      top: _headerSectionHeight(),
       left: 0,
       bottom: 0,
       width: _courtLabelWidth,
@@ -1674,5 +1949,59 @@ class _HourGuidesPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _HourGuidesPainter oldDelegate) =>
+      oldDelegate.pixelsPerHour != pixelsPerHour ||
+      oldDelegate.hourCount != hourCount ||
+      oldDelegate.color != color;
+}
+
+class _HalfHourDashedPainter extends CustomPainter {
+  final double pixelsPerHour;
+  final int hourCount;
+  final Color color;
+
+  _HalfHourDashedPainter({
+    required this.pixelsPerHour,
+    required this.hourCount,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withValues(alpha: 0.25)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+    for (int i = 0; i < hourCount; i++) {
+      final x = (i + 0.5) * pixelsPerHour;
+      _drawDashedLine(canvas, Offset(x, 0), Offset(x, size.height), paint);
+    }
+  }
+
+  void _drawDashedLine(Canvas canvas, Offset start, Offset end, Paint paint) {
+    const dashWidth = 4.0;
+    const dashSpace = 6.0;
+    final delta = end - start;
+    final length = delta.distance;
+    final unit = Offset(delta.dx / length, delta.dy / length);
+    double pos = 0;
+    while (pos < length) {
+      final p1 = start + Offset(unit.dx * pos, unit.dy * pos);
+      pos += dashWidth;
+      final p2 =
+          start +
+          Offset(
+            unit.dx * (pos < length ? pos : length),
+            unit.dy * (pos < length ? pos : length),
+          );
+      canvas.drawLine(p1, p2, paint);
+      pos += dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _HalfHourDashedPainter oldDelegate) =>
+      oldDelegate.pixelsPerHour != pixelsPerHour ||
+      oldDelegate.hourCount != hourCount ||
+      oldDelegate.color != color;
 }

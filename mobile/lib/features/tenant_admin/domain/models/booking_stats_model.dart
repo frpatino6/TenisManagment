@@ -1,3 +1,5 @@
+import 'occupancy_stats_model.dart';
+
 class BookingStatsModel {
   final int total;
   final double totalRevenue;
@@ -9,6 +11,7 @@ class BookingStatsModel {
   final Map<String, ServiceTypeStats> byServiceType;
   final List<CourtStats> topCourts;
   final List<ProfessorStats> topProfessors;
+  final OccupancyStats? occupancy;
 
   BookingStatsModel({
     required this.total,
@@ -21,6 +24,7 @@ class BookingStatsModel {
     required this.byServiceType,
     required this.topCourts,
     required this.topProfessors,
+    this.occupancy,
   });
 
   factory BookingStatsModel.fromJson(Map<String, dynamic> json) {
@@ -49,6 +53,9 @@ class BookingStatsModel {
       topProfessors: (json['topProfessors'] as List<dynamic>)
           .map((e) => ProfessorStats.fromJson(e as Map<String, dynamic>))
           .toList(),
+      occupancy: json['occupancy'] != null
+          ? OccupancyStats.fromJson(json['occupancy'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -66,6 +73,7 @@ class BookingStatsModel {
       ),
       'topCourts': topCourts.map((e) => e.toJson()).toList(),
       'topProfessors': topProfessors.map((e) => e.toJson()).toList(),
+      if (occupancy != null) 'occupancy': occupancy!.toJson(),
     };
   }
 

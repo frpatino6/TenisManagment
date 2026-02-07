@@ -682,26 +682,21 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     final shrink = (_verticalOffset / 80).clamp(0.0, 1.0);
     final barHeight = _legendBarHeight * (1 - shrink * 0.35);
     final fontSize = 14.0 - (shrink * 3);
-    final occupancy = _computeOccupancy(
-      data.bookings,
-      data.courts.length,
-      firstHour,
-      lastHour,
-    );
+
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          color: Colors.transparent,
-          child: Text(
-            'Ocupación: ${occupancy.toStringAsFixed(0)}%',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.white.withValues(alpha: 0.7),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 150),
+            style: theme.textTheme.bodyMedium!.copyWith(
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+              fontSize: fontSize,
             ),
+            child: Text(DateFormat('EEEE d MMM', 'es').format(_selectedDate)),
           ),
         ),
         AnimatedContainer(
@@ -723,44 +718,155 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 150),
-                  style: theme.textTheme.bodyMedium!.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                    fontSize: fontSize,
-                  ),
-                  child: Text(
-                    DateFormat('EEEE d MMM', 'es').format(_selectedDate),
-                  ),
-                ),
-                const Spacer(),
                 if (_isToday)
-                  TextButton.icon(
-                    onPressed: _scrollToNow,
-                    icon: Icon(
-                      Icons.today,
-                      size: 16,
-                      color: colorScheme.primary,
-                    ),
-                    label: Text(
-                      'Hoy',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.primary,
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _scrollToNow,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: colorScheme.primary.withValues(alpha: 0.6),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          'Hoy',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.primary,
+                          ),
+                        ),
                       ),
                     ),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
                   ),
-                const Gap(12),
+                if (_isToday) const Gap(12),
                 _legendChip(_emeraldGreen, 'Pago', colorScheme),
                 const Gap(8),
                 _legendChip(_vibrantOrange, 'Pendiente', colorScheme),
+                const Spacer(),
+                // Ocupación con tendencia desde backend
+                Consumer(
+                  builder: (context, ref, child) {
+                    final statsAsync = ref.watch(bookingStatsProvider);
+
+                    return statsAsync.when(
+                      data: (stats) {
+                        final occupancy = stats.occupancy;
+
+                        if (occupancy == null) {
+                          // Fallback: calcular localmente si no hay datos del backend
+                          final localOccupancy = _computeOccupancy(
+                            data.bookings,
+                            data.courts.length,
+                            firstHour,
+                            lastHour,
+                          );
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Ocupación: ${localOccupancy.toStringAsFixed(0)}%',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+
+                        // Determinar icono y color según tendencia
+                        IconData trendIcon;
+                        Color trendColor;
+
+                        switch (occupancy.trend) {
+                          case 'up':
+                            trendIcon = Icons.arrow_upward;
+                            trendColor = Colors.greenAccent;
+                            break;
+                          case 'down':
+                            trendIcon = Icons.arrow_downward;
+                            trendColor = Colors.redAccent;
+                            break;
+                          case 'stable':
+                          default:
+                            trendIcon = Icons.remove;
+                            trendColor = Colors.grey;
+                            break;
+                        }
+
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(trendIcon, size: 14, color: trendColor),
+                            const Gap(4),
+                            Text(
+                              'Ocupación: ${occupancy.currentPercentage.toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white.withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                      loading: () => Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white.withValues(alpha: 0.4),
+                            ),
+                          ),
+                          const Gap(4),
+                          Text(
+                            'Ocupación: --',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white.withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                      error: (_, __) {
+                        // En caso de error, calcular localmente
+                        final localOccupancy = _computeOccupancy(
+                          data.bookings,
+                          data.courts.length,
+                          firstHour,
+                          lastHour,
+                        );
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Ocupación: ${localOccupancy.toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white.withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -947,12 +1053,14 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
             right: 0,
             child: ClipRect(
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
                   color: Colors.transparent,
                   child: Row(
                     children: List.generate(lastHour - firstHour, (i) {
                       final hour = firstHour + i;
+                      final isCurrentHour =
+                          _isToday && DateTime.now().hour == hour;
                       return Container(
                         width: kColumnWidth,
                         height: _rowHeight,
@@ -962,15 +1070,41 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                           ),
                         ),
                         child: Center(
-                          child: Text(
-                            '${hour.toString().padLeft(2, '0')}',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white.withValues(alpha: 0.75),
-                              letterSpacing: 0.5,
-                            ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${hour.toString().padLeft(2, '0')}',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isCurrentHour
+                                      ? Colors.cyanAccent
+                                      : Colors.white.withValues(alpha: 0.75),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              if (isCurrentHour)
+                                Container(
+                                  margin: const EdgeInsets.only(top: 2),
+                                  width: 4,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: Colors.cyanAccent,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.cyanAccent.withValues(
+                                          alpha: 0.8,
+                                        ),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       );
@@ -1561,11 +1695,11 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     }
   }
 
-  static const double _occupationBarHeight = 28;
+  static const double _dateRowHeight = 36;
   static const double _legendBarHeight = 48;
 
   double _headerSectionHeight() =>
-      _occupationBarHeight +
+      _dateRowHeight +
       _legendBarHeight * (1 - (_verticalOffset / 80).clamp(0.0, 1.0) * 0.35);
 
   Widget _buildStickyTopBar(
@@ -1585,10 +1719,10 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
       child: IgnorePointer(
         child: ClipRect(
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
               decoration: BoxDecoration(
-                color: _darkBackground.withValues(alpha: 0.92),
+                color: Colors.black45,
                 border: Border(bottom: BorderSide(color: Colors.white10)),
               ),
               child: Transform.translate(
@@ -1613,6 +1747,8 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                     ),
                     ...List.generate(lastHour - firstHour, (i) {
                       final hour = firstHour + i;
+                      final isCurrentHour =
+                          _isToday && DateTime.now().hour == hour;
                       return Container(
                         width: kColumnWidth,
                         height: _rowHeight,
@@ -1622,15 +1758,41 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                           ),
                         ),
                         child: Center(
-                          child: Text(
-                            '${hour.toString().padLeft(2, '0')}',
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white.withValues(alpha: 0.75),
-                              letterSpacing: 0.5,
-                            ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${hour.toString().padLeft(2, '0')}',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isCurrentHour
+                                      ? Colors.cyanAccent
+                                      : Colors.white.withValues(alpha: 0.75),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              if (isCurrentHour)
+                                Container(
+                                  margin: const EdgeInsets.only(top: 2),
+                                  width: 4,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: Colors.cyanAccent,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.cyanAccent.withValues(
+                                          alpha: 0.8,
+                                        ),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       );

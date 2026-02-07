@@ -569,7 +569,8 @@ export class BookingService {
         tenantId: Types.ObjectId,
         bookingId: Types.ObjectId,
         newStartTime: Date,
-        newEndTime: Date
+        newEndTime: Date,
+        newCourtId?: Types.ObjectId
     ): Promise<BookingDocument> {
         const booking = await BookingModel.findOne({
             _id: bookingId,
@@ -585,9 +586,10 @@ export class BookingService {
             throw new Error('Solo se pueden reprogramar reservas de cancha');
         }
 
+        const courtIdToCheck = newCourtId ?? (booking.courtId as Types.ObjectId);
         const available = await this.isCourtAvailable(
             tenantId,
-            booking.courtId as Types.ObjectId,
+            courtIdToCheck,
             newStartTime,
             newEndTime,
             undefined,
@@ -600,6 +602,9 @@ export class BookingService {
 
         booking.bookingDate = newStartTime;
         booking.endTime = newEndTime;
+        if (newCourtId) {
+            booking.courtId = newCourtId;
+        }
         await booking.save();
 
         return booking;

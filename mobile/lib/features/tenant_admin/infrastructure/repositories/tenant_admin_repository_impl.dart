@@ -1107,6 +1107,7 @@ class TenantAdminRepositoryImpl implements TenantAdminRepository {
     String bookingId, {
     required DateTime startTime,
     required DateTime endTime,
+    String? courtId,
   }) async {
     try {
       final headers = await _getAuthHeaders();
@@ -1129,6 +1130,7 @@ class TenantAdminRepositoryImpl implements TenantAdminRepository {
       final body = <String, dynamic>{
         'startTime': startUtc.toIso8601String(),
         'endTime': endUtc.toIso8601String(),
+        if (courtId != null) 'courtId': courtId,
       };
 
       final response = await _httpClient.patch(

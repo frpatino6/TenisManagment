@@ -2078,7 +2078,11 @@ export class TenantAdminController {
       }
 
       const { id } = req.params;
-      const { startTime: startTimeStr, endTime: endTimeStr } = req.body;
+      const {
+        startTime: startTimeStr,
+        endTime: endTimeStr,
+        courtId: courtIdStr,
+      } = req.body;
 
       if (!startTimeStr || !endTimeStr) {
         res.status(400).json({ error: 'startTime y endTime son requeridos' });
@@ -2098,11 +2102,16 @@ export class TenantAdminController {
         return;
       }
 
+      const newCourtId = courtIdStr
+        ? new Types.ObjectId(courtIdStr)
+        : undefined;
+
       const booking = await this.bookingService.rescheduleBooking(
         new Types.ObjectId(tenantId),
         new Types.ObjectId(id),
         newStartTime,
-        newEndTime
+        newEndTime,
+        newCourtId
       );
 
       res.json({

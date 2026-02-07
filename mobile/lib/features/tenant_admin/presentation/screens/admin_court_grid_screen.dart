@@ -13,6 +13,29 @@ import '../../domain/models/tenant_debt_report_model.dart';
 import '../providers/tenant_admin_provider.dart';
 import '../utils/tenant_booking_actions.dart';
 
+class _PillDragContext {
+  const _PillDragContext({
+    required this.booking,
+    required this.courtIndex,
+    required this.courts,
+    required this.allBookings,
+    required this.courtBookings,
+    required this.firstHour,
+    required this.lastHour,
+    required this.start,
+    required this.durationMinutes,
+  });
+  final TenantBookingModel booking;
+  final int courtIndex;
+  final List<TenantCourtModel> courts;
+  final List<TenantBookingModel> allBookings;
+  final List<TenantBookingModel> courtBookings;
+  final int firstHour;
+  final int lastHour;
+  final DateTime start;
+  final int durationMinutes;
+}
+
 class AdminCourtGridScreen extends ConsumerStatefulWidget {
   const AdminCourtGridScreen({super.key});
 
@@ -88,10 +111,16 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
   double _verticalOffset = 0;
   String? _draggingBookingId;
   double _dragStartTimelineX = 0;
+  double _dragStartContentY = 0;
   double _dragDeltaX = 0;
+  double _dragDeltaY = 0;
   bool _justFinishedDrag = false;
   String? _reschedulingBookingId;
   double _rescheduleOffsetX = 0;
+  double _rescheduleOffsetY = 0;
+  int? _draggingPointerId;
+  _PillDragContext? _pillDragContext;
+  bool _dragMovedBeyondThreshold = false;
   @override
   void initState() {
     super.initState();
@@ -107,38 +136,250 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
     });
   }
 
-  double? _globalToTimelineX(Offset global) {
+  (double?, double?) _globalToContentPosition(Offset global) {
     final box =
         _scrollContentKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return null;
+    if (box == null || !box.hasSize) return (null, null);
     final local = box.globalToLocal(global);
-    return local.dx - _courtLabelWidth;
+    return (local.dx - _courtLabelWidth, local.dy);
   }
 
   void _onPointerMove(PointerMoveEvent e) {
     if (_draggingBookingId == null) return;
-    final timelineX = _globalToTimelineX(e.position);
-    if (timelineX == null) return;
-    setState(() => _dragDeltaX = timelineX - _dragStartTimelineX);
+    final (timelineX, contentY) = _globalToContentPosition(e.position);
+    if (timelineX == null || contentY == null) return;
+    setState(() {
+      _dragDeltaX = timelineX - _dragStartTimelineX;
+      _dragDeltaY = contentY - _dragStartContentY;
+      final distanceSq = _dragDeltaX * _dragDeltaX + _dragDeltaY * _dragDeltaY;
+      if (distanceSq >= _dragThresholdPixels * _dragThresholdPixels) {
+        _dragMovedBeyondThreshold = true;
+      }
+    });
 
-    if (!_horizontalController.hasClients) return;
-    final pos = _horizontalController.position;
-    const margin = 60.0;
-    const step = 20.0;
-    final contentX = timelineX + _courtLabelWidth;
-    final vLeft = pos.pixels;
-    final vRight = pos.pixels + pos.viewportDimension;
+    final dragIsHorizontal = _dragDeltaX.abs() >= _dragDeltaY.abs();
 
-    double? target;
-    if (contentX > vRight - margin) {
-      target = (pos.pixels + step).clamp(0.0, pos.maxScrollExtent);
-    } else if (contentX < vLeft + margin) {
-      target = (pos.pixels - step).clamp(0.0, pos.maxScrollExtent);
+    if (dragIsHorizontal && _horizontalController.hasClients) {
+      final pos = _horizontalController.position;
+      const margin = 60.0;
+      const step = 20.0;
+      final contentX = timelineX + _courtLabelWidth;
+      final vLeft = pos.pixels;
+      final vRight = pos.pixels + pos.viewportDimension;
+
+      double? target;
+      if (contentX > vRight - margin) {
+        target = (pos.pixels + step).clamp(0.0, pos.maxScrollExtent);
+      } else if (contentX < vLeft + margin) {
+        target = (pos.pixels - step).clamp(0.0, pos.maxScrollExtent);
+      }
+      if (target != null && (target - pos.pixels).abs() > 1) {
+        final scrollDelta = target - pos.pixels;
+        _horizontalController.jumpTo(target);
+        setState(() => _dragDeltaX += scrollDelta);
+      }
     }
-    if (target != null && (target - pos.pixels).abs() > 1) {
-      final scrollDelta = target - pos.pixels;
-      _horizontalController.jumpTo(target);
-      setState(() => _dragDeltaX += scrollDelta);
+
+    if (!dragIsHorizontal && _verticalController.hasClients) {
+      final vPos = _verticalController.position;
+      const vMargin = 60.0;
+      const vStep = 20.0;
+      final vTop = vPos.pixels;
+      final vBottom = vPos.pixels + vPos.viewportDimension;
+      double? vTarget;
+      if (contentY < vTop + vMargin) {
+        vTarget = (vPos.pixels - vStep).clamp(0.0, vPos.maxScrollExtent);
+      } else if (contentY > vBottom - vMargin) {
+        vTarget = (vPos.pixels + vStep).clamp(0.0, vPos.maxScrollExtent);
+      }
+      if (vTarget != null && (vTarget - vPos.pixels).abs() > 1) {
+        final vScrollDelta = vTarget - vPos.pixels;
+        _verticalController.jumpTo(vTarget);
+        setState(() {
+          _dragStartContentY += vScrollDelta;
+          _dragDeltaY += vScrollDelta;
+        });
+      }
+    }
+  }
+
+  static const double _dragThresholdPixels = 8;
+
+  void _clearDragState() {
+    setState(() {
+      _draggingBookingId = null;
+      _draggingPointerId = null;
+      _pillDragContext = null;
+      _dragDeltaX = 0;
+      _dragDeltaY = 0;
+      _dragMovedBeyondThreshold = false;
+    });
+  }
+
+  void _onPointerUp(PointerUpEvent e) {
+    if (_draggingBookingId == null ||
+        _draggingPointerId == null ||
+        e.pointer != _draggingPointerId)
+      return;
+    final distance = (_dragDeltaX * _dragDeltaX + _dragDeltaY * _dragDeltaY)
+        .abs();
+    if (distance < _dragThresholdPixels * _dragThresholdPixels) {
+      _clearDragState();
+      return;
+    }
+    _completeDrag();
+  }
+
+  void _onPointerCancel(PointerCancelEvent e) {
+    if (_draggingBookingId == null ||
+        _draggingPointerId == null ||
+        e.pointer != _draggingPointerId)
+      return;
+    _clearDragState();
+  }
+
+  Future<void> _completeDrag() async {
+    final ctx = _pillDragContext;
+    if (ctx == null) return;
+    final totalDeltaX = _dragDeltaX;
+    final totalDeltaY = _dragDeltaY;
+    _pillDragContext = null;
+    _draggingBookingId = null;
+    _draggingPointerId = null;
+    setState(() {
+      _dragDeltaX = 0;
+      _dragDeltaY = 0;
+      _reschedulingBookingId = ctx.booking.id;
+      _rescheduleOffsetX = totalDeltaX;
+      _rescheduleOffsetY = totalDeltaY;
+      _justFinishedDrag = true;
+    });
+    Future.microtask(() {
+      if (mounted) setState(() => _justFinishedDrag = false);
+    });
+
+    final targetCourtIndex =
+        (ctx.courtIndex + (totalDeltaY / _rowHeight).round()).clamp(
+          0,
+          ctx.courts.length - 1,
+        );
+    final targetCourt = ctx.courts[targetCourtIndex];
+    final changeCourt = targetCourtIndex != ctx.courtIndex;
+
+    final hourOffset = totalDeltaX / _pixelsPerHour;
+    final newStartHour = ctx.start.hour + ctx.start.minute / 60.0 + hourOffset;
+    final newStartHourInt = newStartHour.floor();
+    final newStartMinute = (newStartHour - newStartHourInt) * 60;
+    final roundedMinute = newStartMinute < 30 ? 0 : 30;
+    final newStart = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      newStartHourInt,
+      roundedMinute,
+    );
+    final newEnd = newStart.add(Duration(minutes: ctx.durationMinutes));
+
+    if (newStart.hour < ctx.firstHour ||
+        (newEnd.hour > ctx.lastHour ||
+            (newEnd.hour == ctx.lastHour && newEnd.minute > 0))) {
+      setState(() {
+        _reschedulingBookingId = null;
+        _rescheduleOffsetX = 0;
+        _rescheduleOffsetY = 0;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'El horario debe estar entre ${ctx.firstHour}:00 y ${ctx.lastHour}:00',
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    final bookingsToCheck = changeCourt
+        ? _bookingsForCourt(ctx.allBookings, targetCourt)
+        : ctx.courtBookings;
+    final others = bookingsToCheck
+        .where((b) => b.id != ctx.booking.id)
+        .toList();
+    final hasOverlap = others.any((o) {
+      final oStart = o.startTime!;
+      final oEnd = o.endTime!;
+      return _bookingsOverlap(newStart, newEnd, oStart, oEnd);
+    });
+    if (hasOverlap) {
+      setState(() {
+        _reschedulingBookingId = null;
+        _rescheduleOffsetX = 0;
+        _rescheduleOffsetY = 0;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('No se puede superponer con otra reserva'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      await ref
+          .read(tenantAdminRepositoryProvider)
+          .rescheduleBooking(
+            ctx.booking.id,
+            startTime: newStart,
+            endTime: newEnd,
+            courtId: changeCourt ? targetCourt.id : null,
+          );
+      ref.invalidate(adminCourtGridDataProvider(_selectedDate));
+      ref.invalidate(tenantBookingsProvider);
+      await ref.read(adminCourtGridDataProvider(_selectedDate).future);
+      if (mounted) {
+        setState(() {
+          _reschedulingBookingId = null;
+          _rescheduleOffsetX = 0;
+          _rescheduleOffsetY = 0;
+        });
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              changeCourt
+                  ? 'Reserva movida a ${targetCourt.name}'
+                  : 'Reserva movida',
+            ),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _reschedulingBookingId = null;
+          _rescheduleOffsetX = 0;
+          _rescheduleOffsetY = 0;
+        });
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -255,43 +496,6 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
           onRetry: () =>
               ref.invalidate(adminCourtGridDataProvider(_selectedDate)),
         ),
-      ),
-      floatingActionButton: gridDataAsync.maybeWhen(
-        data: (data) => data.courts.isNotEmpty
-            ? FloatingActionButton(
-                onPressed: () {
-                  // Use first court and current time as defaults
-                  final now = DateTime.now();
-                  final roundedMinute = now.minute < 30 ? 0 : 30;
-                  final startHour = roundedMinute == 30
-                      ? now.hour
-                      : (now.minute > 0 ? now.hour + 1 : now.hour);
-                  final startTime = DateTime(
-                    _selectedDate.year,
-                    _selectedDate.month,
-                    _selectedDate.day,
-                    startHour,
-                    roundedMinute,
-                  );
-
-                  context.push(
-                    '/tenant-admin-home/bookings/create',
-                    extra: {
-                      'courtId': data.courts.first.id,
-                      'courtName': data.courts.first.name,
-                      'courtPrice': data.courts.first.price,
-                      'date': _selectedDate,
-                      'startTime': startTime,
-                    },
-                  );
-                },
-                backgroundColor: _emeraldGreen,
-                foregroundColor: Colors.white,
-                elevation: 4,
-                child: const Icon(Icons.add, size: 24),
-              )
-            : null,
-        orElse: () => null,
       ),
     );
   }
@@ -463,6 +667,8 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
           child: Listener(
             key: _scrollContentKey,
             onPointerMove: _onPointerMove,
+            onPointerUp: _onPointerUp,
+            onPointerCancel: _onPointerCancel,
             behavior: HitTestBehavior.translucent,
             child: Stack(
               clipBehavior: Clip.none,
@@ -760,261 +966,186 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
         baseLeft +
         4 +
         (isDragging ? _dragDeltaX : (isRescheduling ? _rescheduleOffsetX : 0));
+    final offsetY = isDragging
+        ? _dragDeltaY
+        : (isRescheduling ? _rescheduleOffsetY : 0.0);
 
     return Positioned(
       left: left,
       top: 4,
       bottom: 4,
       width: pillWidth,
-      child: GestureDetector(
-        onHorizontalDragStart: (_) {
-          setState(() {
-            _draggingBookingId = booking.id;
-            _dragStartTimelineX = baseLeft + 4;
-            _dragDeltaX = 0;
-          });
-        },
-        onHorizontalDragUpdate: (_) {},
-        onHorizontalDragEnd: (details) async {
-          final totalDelta = _dragDeltaX;
-          setState(() {
-            _draggingBookingId = null;
-            _dragDeltaX = 0;
-            _reschedulingBookingId = booking.id;
-            _rescheduleOffsetX = totalDelta;
-            _justFinishedDrag = true;
-          });
-          Future.microtask(() {
-            if (mounted) setState(() => _justFinishedDrag = false);
-          });
-
-          final hourOffset = totalDelta / _pixelsPerHour;
-          final newStartHour = start.hour + start.minute / 60.0 + hourOffset;
-          final newStartHourInt = newStartHour.floor();
-          final newStartMinute = (newStartHour - newStartHourInt) * 60;
-          final roundedMinute = newStartMinute < 30 ? 0 : 30;
-          final newStart = DateTime(
-            _selectedDate.year,
-            _selectedDate.month,
-            _selectedDate.day,
-            newStartHourInt,
-            roundedMinute,
-          );
-          final newEnd = newStart.add(Duration(minutes: durationMinutes));
-
-          if (newStart.hour < firstHour ||
-              (newEnd.hour > lastHour ||
-                  (newEnd.hour == lastHour && newEnd.minute > 0))) {
-            setState(() {
-              _reschedulingBookingId = null;
-              _rescheduleOffsetX = 0;
-            });
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'El horario debe estar entre $firstHour:00 y $lastHour:00',
-                  ),
-                  backgroundColor: colorScheme.error,
-                ),
-              );
-            }
-            return;
-          }
-
-          final others = courtBookings
-              .where((b) => b.id != booking.id)
-              .toList();
-          final hasOverlap = others.any((o) {
-            final oStart = o.startTime!;
-            final oEnd = o.endTime!;
-            return _bookingsOverlap(newStart, newEnd, oStart, oEnd);
-          });
-          if (hasOverlap) {
-            setState(() {
-              _reschedulingBookingId = null;
-              _rescheduleOffsetX = 0;
-            });
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text(
-                    'No se puede superponer con otra reserva',
-                  ),
-                  backgroundColor: colorScheme.error,
-                ),
-              );
-            }
-            return;
-          }
-
-          try {
-            await ref
-                .read(tenantAdminRepositoryProvider)
-                .rescheduleBooking(
-                  booking.id,
-                  startTime: newStart,
-                  endTime: newEnd,
+      child: Transform.translate(
+        offset: Offset(0, offsetY),
+        child: Listener(
+          onPointerDown: (e) {
+            final box =
+                _scrollContentKey.currentContext?.findRenderObject()
+                    as RenderBox?;
+            if (box != null && box.hasSize) {
+              final local = box.globalToLocal(e.position);
+              setState(() {
+                _draggingBookingId = booking.id;
+                _draggingPointerId = e.pointer;
+                _dragStartTimelineX = baseLeft + 4;
+                _dragStartContentY = local.dy;
+                _dragDeltaX = 0;
+                _dragDeltaY = 0;
+                _pillDragContext = _PillDragContext(
+                  booking: booking,
+                  courtIndex: courtIndex,
+                  courts: courts,
+                  allBookings: allBookings,
+                  courtBookings: courtBookings,
+                  firstHour: firstHour,
+                  lastHour: lastHour,
+                  start: start,
+                  durationMinutes: durationMinutes,
                 );
-            ref.invalidate(adminCourtGridDataProvider(_selectedDate));
-            ref.invalidate(tenantBookingsProvider);
-            await ref.read(adminCourtGridDataProvider(_selectedDate).future);
-            if (mounted) {
-              setState(() {
-                _reschedulingBookingId = null;
-                _rescheduleOffsetX = 0;
               });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Reserva movida'),
-                  backgroundColor: colorScheme.primary,
-                ),
-              );
             }
-          } catch (e) {
-            if (mounted) {
-              setState(() {
-                _reschedulingBookingId = null;
-                _rescheduleOffsetX = 0;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Error: ${e.toString()}'),
-                  backgroundColor: colorScheme.error,
-                ),
-              );
-            }
-          }
-        },
-        child: Material(
-          color: Colors.transparent,
-          elevation: 0,
-          borderRadius: BorderRadius.circular(pillRadius),
-          child: InkWell(
-            onTap: () async {
-              if (_draggingBookingId != null ||
-                  _justFinishedDrag ||
-                  _reschedulingBookingId != null)
-                return;
-              final refresh = await context.push<bool>(
-                '/tenant-admin-home/bookings/${booking.id}',
-                extra: {'gridDate': _selectedDate},
-              );
-              if (refresh == true && mounted) {
-                ref.invalidate(adminCourtGridDataProvider(_selectedDate));
-              }
+          },
+          child: GestureDetector(
+            onPanEnd: (_) {
+              if (_draggingBookingId != booking.id) return;
+              _completeDrag();
             },
-            onLongPress: () {
-              if (_draggingBookingId != null ||
-                  _justFinishedDrag ||
-                  _reschedulingBookingId != null)
-                return;
-              _showBookingQuickActionsSheet(context, booking);
-            },
-            borderRadius: BorderRadius.circular(pillRadius),
-            child: Container(
-              decoration: BoxDecoration(
+            child: Material(
+              color: Colors.transparent,
+              elevation: 0,
+              borderRadius: BorderRadius.circular(pillRadius),
+              child: InkWell(
+                onTap: () async {
+                  if (_draggingBookingId != null ||
+                      _justFinishedDrag ||
+                      _reschedulingBookingId != null)
+                    return;
+                  final refresh = await context.push<bool>(
+                    '/tenant-admin-home/bookings/${booking.id}',
+                    extra: {'gridDate': _selectedDate},
+                  );
+                  if (refresh == true && mounted) {
+                    ref.invalidate(adminCourtGridDataProvider(_selectedDate));
+                  }
+                },
+                onLongPress: () {
+                  if (_justFinishedDrag || _reschedulingBookingId != null)
+                    return;
+                  if (_draggingBookingId == booking.id &&
+                      _dragMovedBeyondThreshold)
+                    return;
+                  if (_draggingBookingId != null &&
+                      _draggingBookingId != booking.id)
+                    return;
+                  if (_draggingBookingId == booking.id) _clearDragState();
+                  _showBookingQuickActionsSheet(context, booking);
+                },
                 borderRadius: BorderRadius.circular(pillRadius),
-                color: _cardBackground.withValues(alpha: 0.8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 12,
-                    offset: const Offset(0, 3),
-                    spreadRadius: 0,
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                    spreadRadius: 0,
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 3,
-                    decoration: BoxDecoration(
-                      color: sidebarColor,
-                      borderRadius: BorderRadius.horizontal(
-                        left: Radius.circular(pillRadius),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(pillRadius),
+                    color: _cardBackground.withValues(alpha: 0.8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.15),
+                        blurRadius: 12,
+                        offset: const Offset(0, 3),
+                        spreadRadius: 0,
                       ),
-                    ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                        spreadRadius: 0,
+                      ),
+                    ],
                   ),
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.all(padding),
-                      child: showFullName
-                          ? Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                CircleAvatar(
-                                  radius: avatarRadius,
-                                  backgroundColor: sidebarColor.withValues(
-                                    alpha: 0.15,
-                                  ),
-                                  foregroundColor: sidebarColor,
-                                  child: Text(
-                                    initial,
-                                    style: const TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 3,
+                        decoration: BoxDecoration(
+                          color: sidebarColor,
+                          borderRadius: BorderRadius.horizontal(
+                            left: Radius.circular(pillRadius),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.all(padding),
+                          child: showFullName
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: avatarRadius,
+                                      backgroundColor: sidebarColor.withValues(
+                                        alpha: 0.15,
+                                      ),
+                                      foregroundColor: sidebarColor,
+                                      child: Text(
+                                        initial,
+                                        style: const TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(width: padding),
+                                    Expanded(
+                                      child: Text(
+                                        displayName,
+                                        style: const TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                          color: Colors.white,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (isPaid)
+                                      Icon(
+                                        Icons.lock_rounded,
+                                        size: 14,
+                                        color: _emeraldGreen,
+                                      ),
+                                    if (booking.isConfirmed) ...[
+                                      if (isPaid) const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.check_circle_rounded,
+                                        size: 14,
+                                        color: _emeraldGreen,
+                                      ),
+                                    ],
+                                  ],
+                                )
+                              : Center(
+                                  child: CircleAvatar(
+                                    radius: avatarRadius,
+                                    backgroundColor: sidebarColor.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    foregroundColor: sidebarColor,
+                                    child: Text(
+                                      initial,
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: avatarRadius > 12 ? 12 : 10,
+                                      ),
                                     ),
                                   ),
                                 ),
-                                SizedBox(width: padding),
-                                Expanded(
-                                  child: Text(
-                                    displayName,
-                                    style: const TextStyle(
-                                      fontFamily: 'Inter',
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                      color: Colors.white,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (isPaid)
-                                  Icon(
-                                    Icons.lock_rounded,
-                                    size: 14,
-                                    color: _emeraldGreen,
-                                  ),
-                                if (booking.isConfirmed) ...[
-                                  if (isPaid) const SizedBox(width: 4),
-                                  Icon(
-                                    Icons.check_circle_rounded,
-                                    size: 14,
-                                    color: _emeraldGreen,
-                                  ),
-                                ],
-                              ],
-                            )
-                          : Center(
-                              child: CircleAvatar(
-                                radius: avatarRadius,
-                                backgroundColor: sidebarColor.withValues(
-                                  alpha: 0.15,
-                                ),
-                                foregroundColor: sidebarColor,
-                                child: Text(
-                                  initial,
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: avatarRadius > 12 ? 12 : 10,
-                                  ),
-                                ),
-                              ),
-                            ),
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),

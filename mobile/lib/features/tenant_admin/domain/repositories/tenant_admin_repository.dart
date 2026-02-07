@@ -130,10 +130,12 @@ abstract class TenantAdminRepository {
   Future<void> confirmBooking(String bookingId, {String? paymentStatus});
 
   /// Reschedule a booking to new start and end times
+  /// Optionally change the court when [courtId] is provided.
   Future<void> rescheduleBooking(
     String bookingId, {
     required DateTime startTime,
     required DateTime endTime,
+    String? courtId,
   });
 
   /// Get booking statistics

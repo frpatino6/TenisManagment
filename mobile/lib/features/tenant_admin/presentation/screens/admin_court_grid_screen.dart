@@ -133,6 +133,13 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
   int _cachedLastHour = 24;
   int _cachedCourtCount = 0;
 
+  // Delayed drag activation
+  Timer? _dragActivationTimer;
+  String? _pendingDragBookingId;
+  int? _pendingDragPointerId;
+  Offset? _pointerDownPosition;
+  static const Duration _dragActivationDelay = Duration(milliseconds: 150);
+
   @override
   void initState() {
     super.initState();
@@ -160,6 +167,21 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
   }
 
   void _onPointerMove(PointerMoveEvent e) {
+    // Si hay un drag pendiente y el usuario se mueve mucho, cancelar el drag
+    if (_pendingDragBookingId != null && _pointerDownPosition != null) {
+      final distance = (e.position - _pointerDownPosition!).distance;
+      if (distance > _dragThresholdPixels) {
+        // Usuario está haciendo scroll, cancelar drag pendiente
+        _dragActivationTimer?.cancel();
+        setState(() {
+          _pendingDragBookingId = null;
+          _pendingDragPointerId = null;
+          _pointerDownPosition = null;
+        });
+        return;
+      }
+    }
+
     if (_draggingBookingId == null) return;
     final (timelineX, contentY) = _globalToContentPosition(e.position);
     if (timelineX == null || contentY == null) return;
@@ -250,9 +272,13 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
   static const double _dragThresholdPixels = 8;
 
   void _clearDragState() {
+    _dragActivationTimer?.cancel();
     setState(() {
       _draggingBookingId = null;
       _draggingPointerId = null;
+      _pendingDragBookingId = null;
+      _pendingDragPointerId = null;
+      _pointerDownPosition = null;
       _pillDragContext = null;
       _dragDeltaX = 0;
       _dragDeltaY = 0;
@@ -265,6 +291,19 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
   }
 
   void _onPointerUp(PointerUpEvent e) {
+    // Cancelar timer si existe
+    _dragActivationTimer?.cancel();
+
+    // Si había un drag pendiente pero no se activó, limpiar
+    if (_pendingDragBookingId != null) {
+      setState(() {
+        _pendingDragBookingId = null;
+        _pendingDragPointerId = null;
+        _pointerDownPosition = null;
+      });
+      return;
+    }
+
     if (_draggingBookingId == null ||
         _draggingPointerId == null ||
         e.pointer != _draggingPointerId)
@@ -434,6 +473,7 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
   @override
   void dispose() {
     _currentTimeTimer?.cancel();
+    _dragActivationTimer?.cancel();
     _horizontalController.removeListener(_onScroll);
     _verticalController.removeListener(_onScroll);
     _horizontalController.dispose();
@@ -1230,24 +1270,39 @@ class _AdminCourtGridScreenState extends ConsumerState<AdminCourtGridScreen> {
                     as RenderBox?;
             if (box != null && box.hasSize) {
               final local = box.globalToLocal(e.position);
+
+              // Guardar información pero NO activar drag todavía
               setState(() {
-                _draggingBookingId = booking.id;
-                _draggingPointerId = e.pointer;
-                _dragStartTimelineX = baseLeft + 4;
-                _dragStartContentY = local.dy;
-                _dragDeltaX = 0;
-                _dragDeltaY = 0;
-                _pillDragContext = _PillDragContext(
-                  booking: booking,
-                  courtIndex: courtIndex,
-                  courts: courts,
-                  allBookings: allBookings,
-                  courtBookings: courtBookings,
-                  firstHour: firstHour,
-                  lastHour: lastHour,
-                  start: start,
-                  durationMinutes: durationMinutes,
-                );
+                _pendingDragBookingId = booking.id;
+                _pendingDragPointerId = e.pointer;
+                _pointerDownPosition = e.position;
+              });
+
+              // Iniciar timer para activar drag después del delay
+              _dragActivationTimer?.cancel();
+              _dragActivationTimer = Timer(_dragActivationDelay, () {
+                if (_pendingDragBookingId == booking.id && mounted) {
+                  // Timer expiró, activar drag
+                  setState(() {
+                    _draggingBookingId = _pendingDragBookingId;
+                    _draggingPointerId = _pendingDragPointerId;
+                    _dragStartTimelineX = baseLeft + 4;
+                    _dragStartContentY = local.dy;
+                    _dragDeltaX = 0;
+                    _dragDeltaY = 0;
+                    _pillDragContext = _PillDragContext(
+                      booking: booking,
+                      courtIndex: courtIndex,
+                      courts: courts,
+                      allBookings: allBookings,
+                      courtBookings: courtBookings,
+                      firstHour: firstHour,
+                      lastHour: lastHour,
+                      start: start,
+                      durationMinutes: durationMinutes,
+                    );
+                  });
+                }
               });
             }
           },

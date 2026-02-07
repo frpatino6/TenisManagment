@@ -1,9 +1,5 @@
 /// Event types for data changes
-enum DataChangeType {
-  created,
-  updated,
-  deleted,
-}
+enum DataChangeType { created, updated, deleted }
 
 /// Represents a data change event in the application
 /// Used by the Observer Pattern to notify about data mutations

@@ -14,9 +14,9 @@ void main() {
     test('should update tenant ID', () {
       final container = ProviderContainer();
       final notifier = container.read(currentTenantIdProvider.notifier);
-      
+
       notifier.update('tenant-123');
-      
+
       final state = container.read(currentTenantIdProvider);
       expect(state, equals('tenant-123'));
     });
@@ -24,10 +24,10 @@ void main() {
     test('should update to null', () {
       final container = ProviderContainer();
       final notifier = container.read(currentTenantIdProvider.notifier);
-      
+
       notifier.update('tenant-123');
       notifier.update(null);
-      
+
       final state = container.read(currentTenantIdProvider);
       expect(state, isNull);
     });
@@ -58,4 +58,3 @@ void main() {
     });
   });
 }
-

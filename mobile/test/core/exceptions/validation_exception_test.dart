@@ -6,18 +6,28 @@ void main() {
   group('ValidationException', () {
     group('missingRequiredField', () {
       test('should create exception with correct message', () {
-        final exception = ValidationException.missingRequiredField(field: 'email');
+        final exception = ValidationException.missingRequiredField(
+          field: 'email',
+        );
         expect(exception, isA<ValidationException>());
         expect(exception.message, equals(ErrorMessages.missingRequiredField));
         expect(exception.code, equals('MISSING_REQUIRED_FIELD'));
         expect(exception.fieldErrors, isNotNull);
-        expect(exception.fieldErrors!['email'], equals(ErrorMessages.fieldRequired));
+        expect(
+          exception.fieldErrors!['email'],
+          equals(ErrorMessages.fieldRequired),
+        );
       });
 
       test('should include field name in fieldErrors', () {
-        final exception = ValidationException.missingRequiredField(field: 'password');
+        final exception = ValidationException.missingRequiredField(
+          field: 'password',
+        );
         expect(exception.fieldErrors, isNotNull);
-        expect(exception.fieldErrors!['password'], equals(ErrorMessages.fieldRequired));
+        expect(
+          exception.fieldErrors!['password'],
+          equals(ErrorMessages.fieldRequired),
+        );
       });
     });
 
@@ -61,4 +71,3 @@ void main() {
     });
   });
 }
-

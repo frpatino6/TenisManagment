@@ -16,8 +16,7 @@ class RecentActivityScreen extends ConsumerStatefulWidget {
       _RecentActivityScreenState();
 }
 
-class _RecentActivityScreenState
-    extends ConsumerState<RecentActivityScreen>
+class _RecentActivityScreenState extends ConsumerState<RecentActivityScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String? _typeFilter;
@@ -84,23 +83,14 @@ class _RecentActivityScreenState
             }
           },
           tabs: const [
-            Tab(
-              icon: Icon(Icons.access_time, size: 20),
-              text: 'Recientes',
-            ),
-            Tab(
-              icon: Icon(Icons.history, size: 20),
-              text: 'Historial',
-            ),
+            Tab(icon: Icon(Icons.access_time, size: 20), text: 'Recientes'),
+            Tab(icon: Icon(Icons.history, size: 20), text: 'Historial'),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildRecentTab(),
-          _buildHistoryTab(),
-        ],
+        children: [_buildRecentTab(), _buildHistoryTab()],
       ),
     );
   }
@@ -115,7 +105,10 @@ class _RecentActivityScreenState
               .when(
                 data: (activities) {
                   if (activities.isEmpty) {
-                    return _buildEmptyState(context, 'No hay actividades recientes');
+                    return _buildEmptyState(
+                      context,
+                      'No hay actividades recientes',
+                    );
                   }
                   return RefreshIndicator(
                     onRefresh: () async {
@@ -247,7 +240,9 @@ class _RecentActivityScreenState
           if (todayActivities.isNotEmpty) ...[
             _buildSectionHeader(context, 'Hoy', todayActivities.length),
             const Gap(12),
-            ...todayActivities.map((activity) => _buildActivityCard(context, activity)),
+            ...todayActivities.map(
+              (activity) => _buildActivityCard(context, activity),
+            ),
             const Gap(24),
           ],
           if (thisWeekActivities.isNotEmpty) ...[
@@ -296,9 +291,9 @@ class _RecentActivityScreenState
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
         const Gap(8),
         Container(
@@ -310,9 +305,9 @@ class _RecentActivityScreenState
           child: Text(
             count.toString(),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: Theme.of(context).colorScheme.onPrimary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -331,9 +326,7 @@ class _RecentActivityScreenState
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
           // TODO: TEN-114 - Implement activity detail navigation
@@ -376,7 +369,9 @@ class _RecentActivityScreenState
                     Text(
                       activity.timeAgo,
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                        color: colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.6,
+                        ),
                       ),
                     ),
                   ],
@@ -385,7 +380,9 @@ class _RecentActivityScreenState
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _getStatusColor(activity.status).withValues(alpha: 0.1),
+                  color: _getStatusColor(
+                    activity.status,
+                  ).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -403,10 +400,7 @@ class _RecentActivityScreenState
     );
   }
 
-  Widget _buildHistoryCard(
-    BuildContext context,
-    RecentActivityModel activity,
-  ) {
+  Widget _buildHistoryCard(BuildContext context, RecentActivityModel activity) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final activityColor = _getColorFromString(activity.color);
@@ -415,9 +409,7 @@ class _RecentActivityScreenState
     return Card(
       elevation: 1,
       margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: InkWell(
         onTap: () {
           // TODO: TEN-114 - Implement activity detail navigation
@@ -462,13 +454,17 @@ class _RecentActivityScreenState
                         Icon(
                           Icons.access_time,
                           size: 12,
-                          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                          color: colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.6,
+                          ),
                         ),
                         const Gap(4),
                         Text(
                           activity.timeAgo,
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.6,
+                            ),
                           ),
                         ),
                         const Gap(8),
@@ -478,8 +474,9 @@ class _RecentActivityScreenState
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(activity.status)
-                                .withValues(alpha: 0.1),
+                            color: _getStatusColor(
+                              activity.status,
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(

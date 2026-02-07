@@ -43,10 +43,7 @@ class CourtService {
     required String courtId,
     required DateTime date,
   }) async {
-    return _repository.getAvailableSlots(
-      courtId: courtId,
-      date: date,
-    );
+    return _repository.getAvailableSlots(courtId: courtId, date: date);
   }
 
   /// Books a court for a specific time period

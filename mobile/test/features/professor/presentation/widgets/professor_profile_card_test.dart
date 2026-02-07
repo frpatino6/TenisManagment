@@ -10,35 +10,29 @@ void main() {
     testWidgets('should display loading state', (WidgetTester tester) async {
       final container = ProviderContainer(
         overrides: [
-          professorInfoProvider.overrideWith(
-            (ref) async {
-              // Return immediately but test will catch loading state
-              return ProfessorModel(
-                id: '1',
-                name: 'Test',
-                email: 'test@example.com',
-                hourlyRate: 50.0,
-                specialties: ['Tenis'],
-                experienceYears: 5,
-                totalStudents: 10,
-                totalClasses: 50,
-                monthlyEarnings: 1000.0,
-                weeklyEarnings: 250.0,
-                rating: 4.5,
-              );
-            },
-          ),
+          professorInfoProvider.overrideWith((ref) async {
+            // Return immediately but test will catch loading state
+            return ProfessorModel(
+              id: '1',
+              name: 'Test',
+              email: 'test@example.com',
+              hourlyRate: 50.0,
+              specialties: ['Tenis'],
+              experienceYears: 5,
+              totalStudents: 10,
+              totalClasses: 50,
+              monthlyEarnings: 1000.0,
+              weeklyEarnings: 250.0,
+              rating: 4.5,
+            );
+          }),
         ],
       );
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp(
-            home: Scaffold(
-              body: ProfessorProfileCard(),
-            ),
-          ),
+          child: MaterialApp(home: Scaffold(body: ProfessorProfileCard())),
         ),
       );
 
@@ -47,14 +41,16 @@ void main() {
 
       // Widget should be rendered
       expect(find.byType(ProfessorProfileCard), findsOneWidget);
-      
+
       // Clean up
       await tester.pumpWidget(Container());
       await tester.pumpAndSettle();
       container.dispose();
     });
 
-    testWidgets('should display professor information when data is available', (WidgetTester tester) async {
+    testWidgets('should display professor information when data is available', (
+      WidgetTester tester,
+    ) async {
       final professor = ProfessorModel(
         id: '1',
         name: 'John Doe',
@@ -72,20 +68,14 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          professorInfoProvider.overrideWith(
-            (ref) async => professor,
-          ),
+          professorInfoProvider.overrideWith((ref) async => professor),
         ],
       );
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp(
-            home: Scaffold(
-              body: ProfessorProfileCard(),
-            ),
-          ),
+          child: MaterialApp(home: Scaffold(body: ProfessorProfileCard())),
         ),
       );
 
@@ -94,29 +84,23 @@ void main() {
       // Should display professor name and email
       expect(find.text('John Doe'), findsOneWidget);
       expect(find.text('john@example.com'), findsOneWidget);
-      
+
       container.dispose();
     });
 
     testWidgets('should display error state', (WidgetTester tester) async {
       final container = ProviderContainer(
         overrides: [
-          professorInfoProvider.overrideWith(
-            (ref) async {
-              throw Exception('Error loading professor');
-            },
-          ),
+          professorInfoProvider.overrideWith((ref) async {
+            throw Exception('Error loading professor');
+          }),
         ],
       );
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp(
-            home: Scaffold(
-              body: ProfessorProfileCard(),
-            ),
-          ),
+          child: MaterialApp(home: Scaffold(body: ProfessorProfileCard())),
         ),
       );
 
@@ -124,9 +108,8 @@ void main() {
 
       // Should display error widget
       expect(find.byType(ProfessorProfileCard), findsOneWidget);
-      
+
       container.dispose();
     });
   });
 }
-

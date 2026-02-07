@@ -6,11 +6,7 @@ void main() {
   group('LoadingWidget', () {
     testWidgets('should display CircularProgressIndicator', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: LoadingWidget(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: LoadingWidget())),
       );
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -19,9 +15,7 @@ void main() {
     testWidgets('should display message when provided', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: LoadingWidget(message: 'Loading...'),
-          ),
+          home: Scaffold(body: LoadingWidget(message: 'Loading...')),
         ),
       );
 
@@ -31,11 +25,7 @@ void main() {
 
     testWidgets('should use custom size when provided', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: LoadingWidget(size: 60),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: LoadingWidget(size: 60))),
       );
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -56,15 +46,10 @@ void main() {
 
     testWidgets('small should use smaller size', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: LoadingWidget.small(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: LoadingWidget.small())),
       );
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
   });
 }
-

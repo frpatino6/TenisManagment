@@ -8,10 +8,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: CustomButton(
-              text: 'Login',
-              onPressed: () {},
-            ),
+            body: CustomButton(text: 'Login', onPressed: () {}),
           ),
         ),
       );
@@ -19,9 +16,11 @@ void main() {
       expect(find.text('Login'), findsOneWidget);
     });
 
-    testWidgets('should call onPressed when tapped', (WidgetTester tester) async {
+    testWidgets('should call onPressed when tapped', (
+      WidgetTester tester,
+    ) async {
       bool wasPressed = false;
-      
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -39,15 +38,12 @@ void main() {
       expect(wasPressed, isTrue);
     });
 
-    testWidgets('should be disabled when onPressed is null', (WidgetTester tester) async {
+    testWidgets('should be disabled when onPressed is null', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: CustomButton(
-              text: 'Login',
-              onPressed: null,
-            ),
-          ),
+          home: Scaffold(body: CustomButton(text: 'Login', onPressed: null)),
         ),
       );
 
@@ -55,7 +51,9 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
-    testWidgets('should display loading indicator when isLoading is true', (WidgetTester tester) async {
+    testWidgets('should display loading indicator when isLoading is true', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -72,7 +70,9 @@ void main() {
       expect(find.text('Login'), findsNothing);
     });
 
-    testWidgets('should be disabled when isLoading is true', (WidgetTester tester) async {
+    testWidgets('should be disabled when isLoading is true', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -89,7 +89,9 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
-    testWidgets('should display icon when provided', (WidgetTester tester) async {
+    testWidgets('should display icon when provided', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -106,7 +108,9 @@ void main() {
       expect(find.text('Login'), findsOneWidget);
     });
 
-    testWidgets('should use outlined style when isOutlined is true', (WidgetTester tester) async {
+    testWidgets('should use outlined style when isOutlined is true', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -127,11 +131,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: CustomButton(
-              text: 'Login',
-              width: 200,
-              onPressed: () {},
-            ),
+            body: CustomButton(text: 'Login', width: 200, onPressed: () {}),
           ),
         ),
       );
@@ -144,11 +144,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: CustomButton(
-              text: 'Login',
-              height: 60,
-              onPressed: () {},
-            ),
+            body: CustomButton(text: 'Login', height: 60, onPressed: () {}),
           ),
         ),
       );
@@ -163,10 +159,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: CustomIconButton(
-              icon: Icons.settings,
-              onPressed: () {},
-            ),
+            body: CustomIconButton(icon: Icons.settings, onPressed: () {}),
           ),
         ),
       );
@@ -174,9 +167,11 @@ void main() {
       expect(find.byIcon(Icons.settings), findsOneWidget);
     });
 
-    testWidgets('should call onPressed when tapped', (WidgetTester tester) async {
+    testWidgets('should call onPressed when tapped', (
+      WidgetTester tester,
+    ) async {
       bool wasPressed = false;
-      
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -194,7 +189,9 @@ void main() {
       expect(wasPressed, isTrue);
     });
 
-    testWidgets('should display tooltip when provided', (WidgetTester tester) async {
+    testWidgets('should display tooltip when provided', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -217,10 +214,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: CustomFloatingActionButton(
-              icon: Icons.add,
-              onPressed: () {},
-            ),
+            body: CustomFloatingActionButton(icon: Icons.add, onPressed: () {}),
           ),
         ),
       );
@@ -228,9 +222,11 @@ void main() {
       expect(find.byIcon(Icons.add), findsOneWidget);
     });
 
-    testWidgets('should call onPressed when tapped', (WidgetTester tester) async {
+    testWidgets('should call onPressed when tapped', (
+      WidgetTester tester,
+    ) async {
       bool wasPressed = false;
-      
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -248,7 +244,9 @@ void main() {
       expect(wasPressed, isTrue);
     });
 
-    testWidgets('should display tooltip when provided', (WidgetTester tester) async {
+    testWidgets('should display tooltip when provided', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -261,9 +259,10 @@ void main() {
         ),
       );
 
-      final fab = tester.widget<FloatingActionButton>(find.byType(FloatingActionButton));
+      final fab = tester.widget<FloatingActionButton>(
+        find.byType(FloatingActionButton),
+      );
       expect(fab.tooltip, equals('Add'));
     });
   });
 }
-

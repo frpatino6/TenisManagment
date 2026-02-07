@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  
+
   group('UpdateCheckService', () {
     setUp(() async {
       // Clear SharedPreferences before each test
@@ -22,14 +22,14 @@ void main() {
     test('clearLastCheck should remove cache keys', () async {
       final service = UpdateCheckService.instance;
       final prefs = await SharedPreferences.getInstance();
-      
+
       // Set some test data
       await prefs.setString('last_update_check', '2024-01-01T00:00:00.000Z');
       await prefs.setString('last_check_version', '1.0.0');
-      
+
       // Clear the cache
       await service.clearLastCheck();
-      
+
       // Verify keys are removed
       expect(prefs.getString('last_update_check'), isNull);
       expect(prefs.getString('last_check_version'), isNull);
@@ -42,7 +42,7 @@ void main() {
         minVersion: '2.0.0',
         currentVersion: '1.0.0',
       );
-      
+
       expect(result.updateRequired, isTrue);
       expect(result.forceUpdate, isFalse);
       expect(result.minVersion, equals('2.0.0'));
@@ -53,4 +53,3 @@ void main() {
     // for integration tests. Unit tests would require mocking HTTP and SharedPreferences.
   });
 }
-

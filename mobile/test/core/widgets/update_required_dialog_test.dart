@@ -4,7 +4,9 @@ import 'package:tennis_management/core/widgets/update_required_dialog.dart';
 
 void main() {
   group('UpdateRequiredDialog', () {
-    testWidgets('should display dialog when shown', (WidgetTester tester) async {
+    testWidgets('should display dialog when shown', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -34,7 +36,9 @@ void main() {
       expect(find.byType(AlertDialog), findsOneWidget);
     });
 
-    testWidgets('should display update message and version', (WidgetTester tester) async {
+    testWidgets('should display update message and version', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -96,7 +100,9 @@ void main() {
       expect(find.byType(ElevatedButton), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('should prevent closing when forceUpdate is true', (WidgetTester tester) async {
+    testWidgets('should prevent closing when forceUpdate is true', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -126,10 +132,9 @@ void main() {
 
       // Dialog should be shown
       expect(find.byType(AlertDialog), findsOneWidget);
-      
+
       // Try to pop - should not work when forceUpdate is true
       // (This is tested through PopScope.canPop)
     });
   });
 }
-

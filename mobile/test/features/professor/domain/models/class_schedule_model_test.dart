@@ -44,7 +44,7 @@ void main() {
         'status': 'pending',
         'price': 50.0,
       };
-      
+
       final schedule = ClassScheduleModel.fromJson(jsonWithoutOptionals);
       expect(schedule.notes, isNull);
       expect(schedule.tenantId, isNull);
@@ -62,7 +62,7 @@ void main() {
         'status': 'pending',
         'price': 50.0,
       };
-      
+
       final schedule = ClassScheduleModel.fromJson(jsonWithAlternatives);
       expect(schedule.id, equals('schedule-123'));
       expect(schedule.type, equals('Clase grupal'));
@@ -77,7 +77,7 @@ void main() {
         'endTime': endTime.toIso8601String(),
         'price': null,
       };
-      
+
       final schedule = ClassScheduleModel.fromJson(jsonWithDefaults);
       expect(schedule.type, equals('Clase individual'));
       expect(schedule.status, equals('pending'));
@@ -87,7 +87,7 @@ void main() {
     test('should convert ClassScheduleModel to JSON', () {
       final schedule = ClassScheduleModel.fromJson(validJson);
       final json = schedule.toJson();
-      
+
       expect(json['id'], equals('schedule-123'));
       expect(json['studentName'], equals('María García'));
       expect(json['studentId'], equals('student-456'));
@@ -107,7 +107,7 @@ void main() {
         'status': 'pending',
         'price': 50.0,
       };
-      
+
       expect(
         () => ClassScheduleModel.fromJson(invalidJson),
         throwsA(isA<AssertionError>()),
@@ -125,7 +125,7 @@ void main() {
         'status': 'pending',
         'price': 50.0,
       };
-      
+
       expect(
         () => ClassScheduleModel.fromJson(invalidJson),
         throwsA(isA<AssertionError>()),
@@ -143,7 +143,7 @@ void main() {
         'status': 'pending',
         'price': 50.0,
       };
-      
+
       expect(
         () => ClassScheduleModel.fromJson(invalidJson),
         throwsA(isA<AssertionError>()),
@@ -159,9 +159,8 @@ void main() {
     test('should be equal when properties match', () {
       final schedule1 = ClassScheduleModel.fromJson(validJson);
       final schedule2 = ClassScheduleModel.fromJson(validJson);
-      
+
       expect(schedule1, equals(schedule2));
     });
   });
 }
-

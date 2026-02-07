@@ -2,7 +2,7 @@ import '../models/analytics_overview.dart';
 import '../models/analytics_chart_data.dart';
 
 /// Repository interface for analytics-related data operations
-/// 
+///
 /// This is a domain contract that defines the operations needed by the business logic.
 /// Implementations should be in the infrastructure layer.
 abstract class AnalyticsRepository {

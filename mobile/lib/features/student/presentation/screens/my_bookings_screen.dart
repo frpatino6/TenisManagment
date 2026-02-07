@@ -21,8 +21,9 @@ class MyBookingsScreen extends ConsumerStatefulWidget {
 
 class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
     with SingleTickerProviderStateMixin {
-  final _statusStrategy =
-      StatusColorStrategyFactory.getStrategy(StatusType.booking);
+  final _statusStrategy = StatusColorStrategyFactory.getStrategy(
+    StatusType.booking,
+  );
   late TabController _tabController;
   String? _serviceTypeFilter;
   String? _lastRouteName;
@@ -52,9 +53,11 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
       _lastRouteName = currentRouteName;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          ref.invalidate(upcomingBookingsProvider(
-            _serviceTypeFilter == 'classes' ? null : _serviceTypeFilter,
-          ));
+          ref.invalidate(
+            upcomingBookingsProvider(
+              _serviceTypeFilter == 'classes' ? null : _serviceTypeFilter,
+            ),
+          );
         }
       });
     }
@@ -73,13 +76,17 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              ref.invalidate(upcomingBookingsProvider(
-                _serviceTypeFilter == 'classes' ? null : _serviceTypeFilter,
-              ));
-              if (_tabController.index == 1) {
-                ref.invalidate(bookingHistoryProvider(
+              ref.invalidate(
+                upcomingBookingsProvider(
                   _serviceTypeFilter == 'classes' ? null : _serviceTypeFilter,
-                ));
+                ),
+              );
+              if (_tabController.index == 1) {
+                ref.invalidate(
+                  bookingHistoryProvider(
+                    _serviceTypeFilter == 'classes' ? null : _serviceTypeFilter,
+                  ),
+                );
               }
             },
           ),
@@ -94,23 +101,14 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
             }
           },
           tabs: const [
-            Tab(
-              icon: Icon(Icons.calendar_today, size: 20),
-              text: 'Próximas',
-            ),
-            Tab(
-              icon: Icon(Icons.history, size: 20),
-              text: 'Historial',
-            ),
+            Tab(icon: Icon(Icons.calendar_today, size: 20), text: 'Próximas'),
+            Tab(icon: Icon(Icons.history, size: 20), text: 'Historial'),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildUpcomingTab(),
-          _buildHistoryTab(),
-        ],
+        children: [_buildUpcomingTab(), _buildHistoryTab()],
       ),
     );
   }
@@ -121,13 +119,17 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
         _buildFilterChips(),
         Expanded(
           child: ref
-              .watch(upcomingBookingsProvider(
-                _serviceTypeFilter == 'classes' ? null : _serviceTypeFilter,
-              ))
+              .watch(
+                upcomingBookingsProvider(
+                  _serviceTypeFilter == 'classes' ? null : _serviceTypeFilter,
+                ),
+              )
               .when(
                 data: (bookings) {
-                  final filteredBookings =
-                      _filterBookingsByServiceType(bookings, _serviceTypeFilter);
+                  final filteredBookings = _filterBookingsByServiceType(
+                    bookings,
+                    _serviceTypeFilter,
+                  );
                   if (filteredBookings.isEmpty) {
                     return EmptyStateWidget.booking(
                       action: ElevatedButton.icon(
@@ -148,11 +150,13 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
                 loading: () => const LoadingWidget(),
                 error: (error, stack) => AppErrorWidget.fromError(
                   error,
-                  onRetry: () => ref.invalidate(upcomingBookingsProvider(
-                        _serviceTypeFilter == 'classes'
-                            ? null
-                            : _serviceTypeFilter,
-                      )),
+                  onRetry: () => ref.invalidate(
+                    upcomingBookingsProvider(
+                      _serviceTypeFilter == 'classes'
+                          ? null
+                          : _serviceTypeFilter,
+                    ),
+                  ),
                 ),
               ),
         ),
@@ -166,13 +170,17 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
         _buildFilterChips(),
         Expanded(
           child: ref
-              .watch(bookingHistoryProvider(
-                _serviceTypeFilter == 'classes' ? null : _serviceTypeFilter,
-              ))
+              .watch(
+                bookingHistoryProvider(
+                  _serviceTypeFilter == 'classes' ? null : _serviceTypeFilter,
+                ),
+              )
               .when(
                 data: (bookings) {
-                  final filteredBookings =
-                      _filterBookingsByServiceType(bookings, _serviceTypeFilter);
+                  final filteredBookings = _filterBookingsByServiceType(
+                    bookings,
+                    _serviceTypeFilter,
+                  );
                   if (filteredBookings.isEmpty) {
                     return const Center(
                       child: Text('No hay reservas en el historial'),
@@ -183,8 +191,9 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
                 loading: () => const LoadingWidget(),
                 error: (error, stack) => AppErrorWidget.fromError(
                   error,
-                  onRetry: () =>
-                      ref.invalidate(bookingHistoryProvider(_serviceTypeFilter)),
+                  onRetry: () => ref.invalidate(
+                    bookingHistoryProvider(_serviceTypeFilter),
+                  ),
                 ),
               ),
         ),
@@ -238,9 +247,11 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
     }
     if (filter == 'classes') {
       return bookings
-          .where((b) =>
-              b.serviceType == 'individual_class' ||
-              b.serviceType == 'group_class')
+          .where(
+            (b) =>
+                b.serviceType == 'individual_class' ||
+                b.serviceType == 'group_class',
+          )
           .toList();
     }
     return bookings.where((b) => b.serviceType == filter).toList();
@@ -250,15 +261,27 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
     final now = DateTime.now();
     final endOfWeek = now.add(Duration(days: 7 - now.weekday));
     final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-    final startOfWeekDate = DateTime(startOfWeek.year, startOfWeek.month, startOfWeek.day);
-    final endOfWeekDate = DateTime(endOfWeek.year, endOfWeek.month, endOfWeek.day);
+    final startOfWeekDate = DateTime(
+      startOfWeek.year,
+      startOfWeek.month,
+      startOfWeek.day,
+    );
+    final endOfWeekDate = DateTime(
+      endOfWeek.year,
+      endOfWeek.month,
+      endOfWeek.day,
+    );
 
     final thisWeekBookings = <BookingModel>[];
     final laterBookings = <BookingModel>[];
 
     for (final booking in bookings) {
       final startTime = DateTime.parse(booking.schedule.startTime);
-      final bookingDate = DateTime(startTime.year, startTime.month, startTime.day);
+      final bookingDate = DateTime(
+        startTime.year,
+        startTime.month,
+        startTime.day,
+      );
 
       if (bookingDate.isAfter(endOfWeekDate)) {
         laterBookings.add(booking);
@@ -288,7 +311,11 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (thisWeekBookings.isNotEmpty) ...[
-            _buildSectionHeader(context, 'Esta Semana', thisWeekBookings.length),
+            _buildSectionHeader(
+              context,
+              'Esta Semana',
+              thisWeekBookings.length,
+            ),
             const Gap(12),
             ...thisWeekBookings.map(
               (booking) => _buildUpcomingCard(context, booking),
@@ -329,9 +356,9 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
         const Gap(8),
         Container(
@@ -343,9 +370,9 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
           child: Text(
             count.toString(),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: Theme.of(context).colorScheme.onPrimary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -355,7 +382,8 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
   Widget _buildUpcomingCard(BuildContext context, BookingModel booking) {
     final startTime = DateTime.parse(booking.schedule.startTime);
     final endTime = DateTime.parse(booking.schedule.endTime);
-    final isToday = startTime.day == DateTime.now().day &&
+    final isToday =
+        startTime.day == DateTime.now().day &&
         startTime.month == DateTime.now().month &&
         startTime.year == DateTime.now().year;
 
@@ -382,8 +410,8 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
                   child: Text(
                     booking.professor.name,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 if (isToday)
@@ -399,9 +427,9 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
                     child: Text(
                       'HOY',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
               ],
@@ -449,9 +477,9 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
                 Text(
                   CurrencyUtils.format(booking.price),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
               ],
             ),
@@ -468,13 +496,14 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
                   Text(
                     'Cancha: ${booking.court!.name}',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
             ],
-            if (booking.status == 'confirmed' || booking.status == 'pending') ...[
+            if (booking.status == 'confirmed' ||
+                booking.status == 'pending') ...[
               const Gap(16),
               Row(
                 children: [
@@ -540,7 +569,8 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
                         const Gap(4),
                         Text(
                           statusLabel,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
                                 color: statusColor,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -551,8 +581,8 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
                     Text(
                       booking.professor.name,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const Gap(4),
                     Row(
@@ -587,7 +617,9 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
                           Icon(
                             Icons.location_on,
                             size: 14,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                           const Gap(4),
                           Text(
@@ -606,9 +638,9 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
                   Text(
                     CurrencyUtils.format(booking.price),
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                   const Gap(4),
                   Icon(

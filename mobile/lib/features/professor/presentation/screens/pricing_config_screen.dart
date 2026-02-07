@@ -23,7 +23,7 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
 
   bool _isLoading = true;
   bool _isSaving = false;
-  
+
   PricingResponse? _pricingData;
 
   @override
@@ -48,10 +48,11 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
     try {
       final dataMap = await _pricingRepository.getMyPricing();
       final data = PricingResponse.fromJson(dataMap);
-      
+
       setState(() {
         _pricingData = data;
-        _individualController.text = data.pricing.individualClass.toStringAsFixed(0);
+        _individualController.text = data.pricing.individualClass
+            .toStringAsFixed(0);
         _groupController.text = data.pricing.groupClass.toStringAsFixed(0);
         _courtController.text = data.pricing.courtRental.toStringAsFixed(0);
         _isLoading = false;
@@ -60,7 +61,7 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
       setState(() {
         _isLoading = false;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -120,7 +121,10 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Restablecer Precios', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        title: Text(
+          'Restablecer Precios',
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
         content: Text(
           '¿Deseas restablecer tus precios a los valores base del sistema?',
           style: GoogleFonts.inter(),
@@ -147,10 +151,11 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
     try {
       final dataMap = await _pricingRepository.resetMyPricing();
       final data = PricingResponse.fromJson(dataMap);
-      
+
       setState(() {
         _pricingData = data;
-        _individualController.text = data.pricing.individualClass.toStringAsFixed(0);
+        _individualController.text = data.pricing.individualClass
+            .toStringAsFixed(0);
         _groupController.text = data.pricing.groupClass.toStringAsFixed(0);
         _courtController.text = data.pricing.courtRental.toStringAsFixed(0);
         _isSaving = false;
@@ -209,12 +214,13 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
                     if (_pricingData != null) ...[
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+                          color: colorScheme.primaryContainer.withValues(
+                            alpha: 0.3,
+                          ),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: colorScheme.primary.withValues(alpha: 0.3),
@@ -244,7 +250,6 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
                       const Gap(24),
                     ],
 
-
                     Text(
                       'Clase Individual',
                       style: GoogleFonts.inter(
@@ -261,7 +266,10 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
                         labelText: 'Precio por hora',
                         prefixText: '\$ ',
                         suffixText: 'COP',
-                        hintText: _pricingData?.basePricing.individualClass.toStringAsFixed(0) ?? '50000',
+                        hintText:
+                            _pricingData?.basePricing.individualClass
+                                .toStringAsFixed(0) ??
+                            '50000',
                         border: const OutlineInputBorder(),
                         labelStyle: GoogleFonts.inter(),
                         hintStyle: GoogleFonts.inter(),
@@ -278,7 +286,6 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
                       },
                     ),
                     const Gap(24),
-
 
                     Text(
                       'Clase Grupal',
@@ -296,7 +303,10 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
                         labelText: 'Precio por hora',
                         prefixText: '\$ ',
                         suffixText: 'COP',
-                        hintText: _pricingData?.basePricing.groupClass.toStringAsFixed(0) ?? '35000',
+                        hintText:
+                            _pricingData?.basePricing.groupClass
+                                .toStringAsFixed(0) ??
+                            '35000',
                         border: const OutlineInputBorder(),
                         labelStyle: GoogleFonts.inter(),
                         hintStyle: GoogleFonts.inter(),
@@ -314,7 +324,6 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
                     ),
                     const Gap(24),
 
-
                     Text(
                       'Alquiler de Cancha',
                       style: GoogleFonts.inter(
@@ -331,7 +340,10 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
                         labelText: 'Precio por hora',
                         prefixText: '\$ ',
                         suffixText: 'COP',
-                        hintText: _pricingData?.basePricing.courtRental.toStringAsFixed(0) ?? '25000',
+                        hintText:
+                            _pricingData?.basePricing.courtRental
+                                .toStringAsFixed(0) ??
+                            '25000',
                         border: const OutlineInputBorder(),
                         labelStyle: GoogleFonts.inter(),
                         hintStyle: GoogleFonts.inter(),
@@ -348,7 +360,6 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
                       },
                     ),
                     const Gap(32),
-
 
                     SizedBox(
                       width: double.infinity,
@@ -381,4 +392,3 @@ class _PricingConfigScreenState extends State<PricingConfigScreen> {
     );
   }
 }
-

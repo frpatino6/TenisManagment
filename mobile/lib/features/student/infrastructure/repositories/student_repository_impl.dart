@@ -9,7 +9,7 @@ import '../../domain/models/booking_model.dart';
 import '../../domain/models/student_payment_model.dart';
 
 /// Infrastructure implementation of [StudentRepository]
-/// 
+///
 /// Handles all HTTP communication, authentication, and data parsing.
 /// This is where all "dirty" infrastructure concerns live.
 class StudentRepositoryImpl implements StudentRepository {
@@ -20,8 +20,8 @@ class StudentRepositoryImpl implements StudentRepository {
   StudentRepositoryImpl({
     FirebaseAuth? firebaseAuth,
     required AppHttpClient httpClient,
-  })  : _auth = firebaseAuth ?? FirebaseAuth.instance,
-        _httpClient = httpClient;
+  }) : _auth = firebaseAuth ?? FirebaseAuth.instance,
+       _httpClient = httpClient;
 
   /// Get authorization headers
   Future<Map<String, String>> _getAuthHeaders() async {
@@ -89,7 +89,7 @@ class StudentRepositoryImpl implements StudentRepository {
     try {
       final headers = await _getAuthHeaders();
       final queryParams = <String, String>{};
-      
+
       if (fromDate != null) {
         queryParams['fromDate'] = fromDate.toIso8601String();
       }
@@ -100,9 +100,10 @@ class StudentRepositoryImpl implements StudentRepository {
         queryParams['type'] = type;
       }
 
-      final uri = Uri.parse('$_baseUrl/student-dashboard/activities')
-          .replace(queryParameters: queryParams);
-      
+      final uri = Uri.parse(
+        '$_baseUrl/student-dashboard/activities',
+      ).replace(queryParameters: queryParams);
+
       final response = await _httpClient.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
@@ -165,7 +166,7 @@ class StudentRepositoryImpl implements StudentRepository {
     try {
       final headers = await _getAuthHeaders();
       final queryParams = <String, String>{};
-      
+
       if (fromDate != null) {
         queryParams['fromDate'] = fromDate.toIso8601String();
       }
@@ -176,9 +177,10 @@ class StudentRepositoryImpl implements StudentRepository {
         queryParams['serviceType'] = serviceType;
       }
 
-      final uri = Uri.parse('$_baseUrl/student-dashboard/bookings')
-          .replace(queryParameters: queryParams);
-      
+      final uri = Uri.parse(
+        '$_baseUrl/student-dashboard/bookings',
+      ).replace(queryParameters: queryParams);
+
       final response = await _httpClient.get(uri, headers: headers);
 
       if (response.statusCode == 200) {

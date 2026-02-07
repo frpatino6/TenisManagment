@@ -373,7 +373,51 @@ final bookingCalendarProvider = FutureProvider.autoDispose
         throw Exception('Tenant ID requerido');
       }
       final repository = ref.read(tenantAdminRepositoryProvider);
-      return await repository.getBookingCalendar(from: range.from, to: range.to);
+      return await repository.getBookingCalendar(
+        from: range.from,
+        to: range.to,
+      );
+    });
+
+/// Data for admin court grid: courts + bookings for a single day
+class AdminCourtGridData {
+  final List<TenantCourtModel> courts;
+  final List<TenantBookingModel> bookings;
+
+  AdminCourtGridData({required this.courts, required this.bookings});
+}
+
+/// Provider for admin court grid view: courts and bookings for the given date
+final adminCourtGridDataProvider = FutureProvider.autoDispose
+    .family<AdminCourtGridData, DateTime>((ref, date) async {
+      final tenantId = ref.watch(currentTenantIdProvider);
+      if (tenantId == null || tenantId.isEmpty) {
+        throw Exception('Tenant ID requerido');
+      }
+      final repository = ref.read(tenantAdminRepositoryProvider);
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+      final courtsResult = await ref.read(tenantCourtsProvider.future);
+      final activeCourts = courtsResult.where((c) => c.isActive).toList()
+        ..sort((a, b) => a.name.compareTo(b.name));
+      final bookingsResult = await repository.getBookings(
+        from: startOfDay,
+        to: endOfDay,
+        page: 1,
+        limit: 500,
+      );
+      final bookings =
+          (bookingsResult['bookings'] as List<TenantBookingModel>?)
+              ?.where(
+                (b) =>
+                    b.court != null &&
+                    b.startTime != null &&
+                    b.endTime != null &&
+                    b.status != 'cancelled',
+              )
+              .toList() ??
+          [];
+      return AdminCourtGridData(courts: activeCourts, bookings: bookings);
     });
 
 // ============================================================================

@@ -20,7 +20,9 @@ class InitiatePaymentCommand implements PaymentCommand {
 
   @override
   Future<Map<String, dynamic>?> execute() async {
-    final result = await ref.read(paymentControllerProvider.notifier).initPayment(
+    final result = await ref
+        .read(paymentControllerProvider.notifier)
+        .initPayment(
           amount,
           bookingData: bookingData,
           redirectUrl: redirectUrl,

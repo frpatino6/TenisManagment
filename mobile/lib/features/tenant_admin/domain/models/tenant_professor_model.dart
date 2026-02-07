@@ -38,7 +38,8 @@ class TenantProfessorModel extends Equatable {
       name: json['name']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
       phone: json['phone']?.toString(),
-      specialties: (json['specialties'] as List<dynamic>?)
+      specialties:
+          (json['specialties'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
@@ -85,17 +86,17 @@ class TenantProfessorModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        email,
-        phone,
-        specialties,
-        hourlyRate,
-        experienceYears,
-        pricing,
-        isActive,
-        joinedAt,
-        bookingsCount,
-        authUserId,
-      ];
+    id,
+    name,
+    email,
+    phone,
+    specialties,
+    hourlyRate,
+    experienceYears,
+    pricing,
+    isActive,
+    joinedAt,
+    bookingsCount,
+    authUserId,
+  ];
 }

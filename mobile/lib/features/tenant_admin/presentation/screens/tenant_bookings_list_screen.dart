@@ -83,6 +83,11 @@ class _TenantBookingsListScreenState
   @override
   List<Widget>? appBarActions(BuildContext context) => [
     IconButton(
+      icon: const Icon(Icons.grid_view_rounded),
+      onPressed: () => context.push('/tenant-admin-home/bookings/grid'),
+      tooltip: 'Vista canchas (grilla)',
+    ),
+    IconButton(
       icon: const Icon(Icons.calendar_month),
       onPressed: () => context.push('/tenant-admin-home/bookings/calendar'),
       tooltip: 'Vista de calendario',

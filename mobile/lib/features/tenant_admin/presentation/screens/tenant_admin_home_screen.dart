@@ -419,6 +419,14 @@ class TenantAdminHomeScreen extends ConsumerWidget {
             ),
             _buildQuickActionCard(
               context,
+              title: 'Vista Canchas',
+              subtitle: 'Grilla por cancha y hora',
+              icon: Icons.grid_view_rounded,
+              color: Colors.indigo,
+              onTap: () => context.push('/tenant-admin-home/bookings/grid'),
+            ),
+            _buildQuickActionCard(
+              context,
               title: 'Profesores',
               subtitle: 'Gestionar profesores',
               icon: Icons.people,
@@ -501,32 +509,38 @@ class TenantAdminHomeScreen extends ConsumerWidget {
               end: Alignment.bottomRight,
             ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: color, size: 32),
-              const Gap(8),
-              Text(
-                title,
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: color, size: 28),
+                const Gap(6),
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const Gap(4),
-              Text(
-                subtitle,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: colorScheme.onSurfaceVariant,
+                const Gap(2),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

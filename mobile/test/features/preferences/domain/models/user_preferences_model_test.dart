@@ -11,7 +11,7 @@ void main() {
             'name': 'Profesor Juan',
             'email': 'juan@example.com',
             'specialties': ['Tennis', 'Padel'],
-          }
+          },
         ],
         'favoriteTenants': [
           {
@@ -20,7 +20,7 @@ void main() {
             'slug': 'centro-a',
             'logo': 'logo.png',
             'isActive': true,
-          }
+          },
         ],
       };
 
@@ -35,10 +35,7 @@ void main() {
     });
 
     test('should handle empty lists', () {
-      final json = {
-        'favoriteProfessors': [],
-        'favoriteTenants': [],
-      };
+      final json = {'favoriteProfessors': [], 'favoriteTenants': []};
 
       final preferences = UserPreferencesModel.fromJson(json);
 
@@ -165,4 +162,3 @@ void main() {
     });
   });
 }
-

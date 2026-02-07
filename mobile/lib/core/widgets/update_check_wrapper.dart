@@ -9,10 +9,7 @@ import 'update_required_dialog.dart';
 class UpdateCheckWrapper extends ConsumerStatefulWidget {
   final Widget child;
 
-  const UpdateCheckWrapper({
-    super.key,
-    required this.child,
-  });
+  const UpdateCheckWrapper({super.key, required this.child});
 
   @override
   ConsumerState<UpdateCheckWrapper> createState() => _UpdateCheckWrapperState();
@@ -56,4 +53,3 @@ class _UpdateCheckWrapperState extends ConsumerState<UpdateCheckWrapper> {
     return widget.child;
   }
 }
-

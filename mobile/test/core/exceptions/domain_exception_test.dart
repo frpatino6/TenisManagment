@@ -74,7 +74,10 @@ void main() {
           operation: 'update',
         );
         expect(exception, isA<DomainException>());
-        expect(exception.message, equals(ErrorMessages.operationNotAllowedDomain));
+        expect(
+          exception.message,
+          equals(ErrorMessages.operationNotAllowedDomain),
+        );
         expect(exception.code, equals('OPERATION_NOT_ALLOWED'));
       });
     });
@@ -91,4 +94,3 @@ void main() {
     });
   });
 }
-

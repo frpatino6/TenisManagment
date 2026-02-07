@@ -12,28 +12,28 @@ class ModelValidator {
     double? max,
   }) {
     assert(value >= 0, '$fieldName must be non-negative, got $value');
-    
+
     if (value < 0) {
       throw ValidationException.invalidField(
         field: fieldName,
         reason: 'No puede ser negativo',
       );
     }
-    
+
     if (min != null && value < min) {
       throw ValidationException.invalidField(
         field: fieldName,
         reason: 'Debe ser al menos $min',
       );
     }
-    
+
     if (max != null && value > max) {
       throw ValidationException.invalidField(
         field: fieldName,
         reason: 'No puede ser mayor que $max',
       );
     }
-    
+
     return value;
   }
 
@@ -45,28 +45,28 @@ class ModelValidator {
     int? max,
   }) {
     assert(value >= 0, '$fieldName must be non-negative, got $value');
-    
+
     if (value < 0) {
       throw ValidationException.invalidField(
         field: fieldName,
         reason: 'No puede ser negativo',
       );
     }
-    
+
     if (min != null && value < min) {
       throw ValidationException.invalidField(
         field: fieldName,
         reason: 'Debe ser al menos $min',
       );
     }
-    
+
     if (max != null && value > max) {
       throw ValidationException.invalidField(
         field: fieldName,
         reason: 'No puede ser mayor que $max',
       );
     }
-    
+
     return value;
   }
 
@@ -76,25 +76,25 @@ class ModelValidator {
       value >= 0.0 && value <= 5.0,
       '$fieldName must be between 0.0 and 5.0, got $value',
     );
-    
+
     if (value < 0.0 || value > 5.0) {
       throw ValidationException.invalidField(
         field: fieldName,
         reason: 'Debe estar entre 0.0 y 5.0',
       );
     }
-    
+
     return value;
   }
 
   /// Validates that a string is not empty
   static String validateNonEmpty(String value, String fieldName) {
     assert(value.isNotEmpty, '$fieldName must not be empty');
-    
+
     if (value.isEmpty) {
       throw ValidationException.missingRequiredField(field: fieldName);
     }
-    
+
     return value;
   }
 
@@ -102,14 +102,14 @@ class ModelValidator {
   static String validateEmail(String value, String fieldName) {
     final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
     assert(emailRegex.hasMatch(value), '$fieldName must be a valid email');
-    
+
     if (!emailRegex.hasMatch(value)) {
       throw ValidationException.invalidField(
         field: fieldName,
         reason: 'Formato de email inválido',
       );
     }
-    
+
     return value;
   }
 
@@ -123,7 +123,7 @@ class ModelValidator {
       endTime.isAfter(startTime),
       '$fieldName: endTime must be after startTime',
     );
-    
+
     if (!endTime.isAfter(startTime)) {
       throw ValidationException.invalidField(
         field: fieldName,
@@ -133,10 +133,7 @@ class ModelValidator {
   }
 
   /// Validates a price value (non-negative, with optional max)
-  static double validatePrice(
-    double value, {
-    double max = 1000000.0,
-  }) {
+  static double validatePrice(double value, {double max = 1000000.0}) {
     return validateNonNegative(value, 'price', max: max);
   }
 
@@ -164,4 +161,3 @@ class ModelValidator {
     return validateNonNegativeInt(intValue, fieldName, min: min, max: max);
   }
 }
-

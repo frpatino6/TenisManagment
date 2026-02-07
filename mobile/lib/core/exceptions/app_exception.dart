@@ -21,10 +21,9 @@ abstract class AppException implements Exception {
 
   /// Returns technical details for debugging
   Map<String, dynamic> toMap() => {
-        'message': message,
-        'code': code,
-        'type': runtimeType.toString(),
-        if (originalError != null) 'originalError': originalError.toString(),
-      };
+    'message': message,
+    'code': code,
+    'type': runtimeType.toString(),
+    if (originalError != null) 'originalError': originalError.toString(),
+  };
 }
-

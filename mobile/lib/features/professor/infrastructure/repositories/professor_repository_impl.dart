@@ -14,7 +14,7 @@ import '../../domain/models/class_schedule_model.dart';
 import '../../domain/models/professor_schedule_model.dart';
 
 /// Infrastructure implementation of [ProfessorRepository]
-/// 
+///
 /// Handles all HTTP communication, authentication, and data parsing.
 /// This is where all "dirty" infrastructure concerns live.
 class ProfessorRepositoryImpl implements ProfessorRepository {
@@ -23,11 +23,9 @@ class ProfessorRepositoryImpl implements ProfessorRepository {
   final _logger = AppLogger.tag('ProfessorRepositoryImpl');
   final http.Client _httpClient;
 
-  ProfessorRepositoryImpl({
-    FirebaseAuth? firebaseAuth,
-    http.Client? httpClient,
-  })  : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-        _httpClient = httpClient ?? http.Client();
+  ProfessorRepositoryImpl({FirebaseAuth? firebaseAuth, http.Client? httpClient})
+    : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+      _httpClient = httpClient ?? http.Client();
 
   @override
   Future<ProfessorModel> getProfessorInfo() async {

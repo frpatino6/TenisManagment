@@ -46,7 +46,7 @@ class ProfessorModel extends Equatable {
     final id = json['_id'] ?? json['id'] ?? '';
     final name = json['name'] ?? '';
     final email = json['email'] ?? '';
-    
+
     return ProfessorModel(
       id: id,
       name: name,

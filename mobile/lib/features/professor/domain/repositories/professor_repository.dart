@@ -4,7 +4,7 @@ import '../models/class_schedule_model.dart';
 import '../models/professor_schedule_model.dart';
 
 /// Repository interface for professor-related data operations
-/// 
+///
 /// This is a domain contract that defines the operations needed by the business logic.
 /// Implementations should be in the infrastructure layer.
 abstract class ProfessorRepository {
@@ -80,7 +80,11 @@ abstract class ProfessorRepository {
   /// [scheduleId] The ID of the schedule to block
   /// [reason] The reason for blocking
   /// [courtId] Optional court ID
-  Future<void> blockSchedule(String scheduleId, String reason, {String? courtId});
+  Future<void> blockSchedule(
+    String scheduleId,
+    String reason, {
+    String? courtId,
+  });
 
   /// Unblocks a schedule
   /// [scheduleId] The ID of the schedule to unblock
@@ -90,13 +94,21 @@ abstract class ProfessorRepository {
   /// [scheduleId] The ID of the schedule/class to complete
   /// [paymentAmount] Optional payment amount received for the class
   /// [paymentStatus] Optional payment status
-  Future<void> completeClass(String scheduleId, {double? paymentAmount, String? paymentStatus});
+  Future<void> completeClass(
+    String scheduleId, {
+    double? paymentAmount,
+    String? paymentStatus,
+  });
 
   /// Cancels a student's booking for a schedule
   /// [scheduleId] The ID of the schedule/booking to cancel
   /// [reason] Optional reason for cancellation
   /// [penaltyAmount] Optional penalty amount to apply
-  Future<void> cancelBooking(String scheduleId, {String? reason, double? penaltyAmount});
+  Future<void> cancelBooking(
+    String scheduleId, {
+    String? reason,
+    double? penaltyAmount,
+  });
 
   /// Joins a tenant (center) as a professor
   /// [tenantId] The ID of the tenant to join

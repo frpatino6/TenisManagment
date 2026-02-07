@@ -30,7 +30,7 @@ void main() {
           // We'll use a StateProvider for testing instead
         ],
       );
-      
+
       // Set tenant ID after container is created
       container.read(currentTenantIdProvider.notifier).update('tenant-1');
     });
@@ -55,13 +55,15 @@ void main() {
           weeklyEarnings: 1250.0,
         );
 
-        when(() => mockRepository.updateProfile(
-              name: any(named: 'name'),
-              phone: any(named: 'phone'),
-              specialties: any(named: 'specialties'),
-              hourlyRate: any(named: 'hourlyRate'),
-              experienceYears: any(named: 'experienceYears'),
-            )).thenAnswer((_) async => updatedProfessor);
+        when(
+          () => mockRepository.updateProfile(
+            name: any(named: 'name'),
+            phone: any(named: 'phone'),
+            specialties: any(named: 'specialties'),
+            hourlyRate: any(named: 'hourlyRate'),
+            experienceYears: any(named: 'experienceYears'),
+          ),
+        ).thenAnswer((_) async => updatedProfessor);
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -79,13 +81,15 @@ void main() {
       });
 
       test('should handle errors when updating profile', () async {
-        when(() => mockRepository.updateProfile(
-              name: any(named: 'name'),
-              phone: any(named: 'phone'),
-              specialties: any(named: 'specialties'),
-              hourlyRate: any(named: 'hourlyRate'),
-              experienceYears: any(named: 'experienceYears'),
-            )).thenThrow(ValidationException('Invalid data'));
+        when(
+          () => mockRepository.updateProfile(
+            name: any(named: 'name'),
+            phone: any(named: 'phone'),
+            specialties: any(named: 'specialties'),
+            hourlyRate: any(named: 'hourlyRate'),
+            experienceYears: any(named: 'experienceYears'),
+          ),
+        ).thenThrow(ValidationException('Invalid data'));
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -105,7 +109,9 @@ void main() {
 
     group('confirmClass', () {
       test('should confirm class successfully', () async {
-        when(() => mockRepository.confirmClass(any())).thenAnswer((_) async => {});
+        when(
+          () => mockRepository.confirmClass(any()),
+        ).thenAnswer((_) async => {});
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -117,8 +123,9 @@ void main() {
       });
 
       test('should handle errors when confirming class', () async {
-        when(() => mockRepository.confirmClass(any()))
-            .thenThrow(ScheduleException.notFound());
+        when(
+          () => mockRepository.confirmClass(any()),
+        ).thenThrow(ScheduleException.notFound());
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -132,7 +139,9 @@ void main() {
 
     group('cancelClass', () {
       test('should cancel class successfully', () async {
-        when(() => mockRepository.cancelClass(any(), any())).thenAnswer((_) async => {});
+        when(
+          () => mockRepository.cancelClass(any(), any()),
+        ).thenAnswer((_) async => {});
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -144,8 +153,9 @@ void main() {
       });
 
       test('should handle errors when canceling class', () async {
-        when(() => mockRepository.cancelClass(any(), any()))
-            .thenThrow(ScheduleException.notFound());
+        when(
+          () => mockRepository.cancelClass(any(), any()),
+        ).thenThrow(ScheduleException.notFound());
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -163,12 +173,14 @@ void main() {
           'date': '2024-01-01T10:00:00Z',
         };
 
-        when(() => mockRepository.createSchedule(
-              date: any(named: 'date'),
-              startTime: any(named: 'startTime'),
-              endTime: any(named: 'endTime'),
-              tenantId: any(named: 'tenantId'),
-            )).thenAnswer((_) async => scheduleData);
+        when(
+          () => mockRepository.createSchedule(
+            date: any(named: 'date'),
+            startTime: any(named: 'startTime'),
+            endTime: any(named: 'endTime'),
+            tenantId: any(named: 'tenantId'),
+          ),
+        ).thenAnswer((_) async => scheduleData);
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -184,12 +196,14 @@ void main() {
       });
 
       test('should handle errors when creating schedule', () async {
-        when(() => mockRepository.createSchedule(
-              date: any(named: 'date'),
-              startTime: any(named: 'startTime'),
-              endTime: any(named: 'endTime'),
-              tenantId: any(named: 'tenantId'),
-            )).thenThrow(ScheduleException.conflict(message: 'Schedule conflict'));
+        when(
+          () => mockRepository.createSchedule(
+            date: any(named: 'date'),
+            startTime: any(named: 'startTime'),
+            endTime: any(named: 'endTime'),
+            tenantId: any(named: 'tenantId'),
+          ),
+        ).thenThrow(ScheduleException.conflict(message: 'Schedule conflict'));
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -206,7 +220,9 @@ void main() {
 
     group('deleteSchedule', () {
       test('should delete schedule successfully', () async {
-        when(() => mockRepository.deleteSchedule(any())).thenAnswer((_) async => {});
+        when(
+          () => mockRepository.deleteSchedule(any()),
+        ).thenAnswer((_) async => {});
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -218,8 +234,9 @@ void main() {
       });
 
       test('should handle errors when deleting schedule', () async {
-        when(() => mockRepository.deleteSchedule(any()))
-            .thenThrow(ScheduleException.notFound());
+        when(
+          () => mockRepository.deleteSchedule(any()),
+        ).thenThrow(ScheduleException.notFound());
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -232,8 +249,12 @@ void main() {
 
     group('completeClass', () {
       test('should complete class successfully', () async {
-        when(() => mockRepository.completeClass(any(), paymentAmount: any(named: 'paymentAmount')))
-            .thenAnswer((_) async => {});
+        when(
+          () => mockRepository.completeClass(
+            any(),
+            paymentAmount: any(named: 'paymentAmount'),
+          ),
+        ).thenAnswer((_) async => {});
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -245,8 +266,12 @@ void main() {
       });
 
       test('should complete class without payment amount', () async {
-        when(() => mockRepository.completeClass(any(), paymentAmount: any(named: 'paymentAmount')))
-            .thenAnswer((_) async => {});
+        when(
+          () => mockRepository.completeClass(
+            any(),
+            paymentAmount: any(named: 'paymentAmount'),
+          ),
+        ).thenAnswer((_) async => {});
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -259,11 +284,13 @@ void main() {
 
     group('cancelBooking', () {
       test('should cancel booking successfully', () async {
-        when(() => mockRepository.cancelBooking(
-              any(),
-              reason: any(named: 'reason'),
-              penaltyAmount: any(named: 'penaltyAmount'),
-            )).thenAnswer((_) async => {});
+        when(
+          () => mockRepository.cancelBooking(
+            any(),
+            reason: any(named: 'reason'),
+            penaltyAmount: any(named: 'penaltyAmount'),
+          ),
+        ).thenAnswer((_) async => {});
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -279,11 +306,13 @@ void main() {
       });
 
       test('should cancel booking without optional parameters', () async {
-        when(() => mockRepository.cancelBooking(
-              any(),
-              reason: any(named: 'reason'),
-              penaltyAmount: any(named: 'penaltyAmount'),
-            )).thenAnswer((_) async => {});
+        when(
+          () => mockRepository.cancelBooking(
+            any(),
+            reason: any(named: 'reason'),
+            penaltyAmount: any(named: 'penaltyAmount'),
+          ),
+        ).thenAnswer((_) async => {});
 
         final notifier = container.read(professorNotifierProvider.notifier);
 
@@ -310,7 +339,9 @@ void main() {
     test('should return false when professor info is loading', () {
       final container = ProviderContainer(
         overrides: [
-          professorRepositoryProvider.overrideWithValue(MockProfessorRepository()),
+          professorRepositoryProvider.overrideWithValue(
+            MockProfessorRepository(),
+          ),
           professorInfoProvider.overrideWith(
             (ref) => Future<ProfessorModel>.delayed(
               Duration(seconds: 10),
@@ -325,4 +356,3 @@ void main() {
     });
   });
 }
-

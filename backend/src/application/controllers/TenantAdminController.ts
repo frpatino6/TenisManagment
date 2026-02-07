@@ -24,12 +24,14 @@ import { Logger } from '../../infrastructure/services/Logger';
 import { Types } from 'mongoose';
 import { EmailService } from '../../infrastructure/services/EmailService';
 import { BalanceService } from '../services/BalanceService';
+import { BookingService } from '../services/BookingService';
 
 const logger = new Logger({ module: 'TenantAdminController' });
 
 export class TenantAdminController {
   private emailService = new EmailService();
   private balanceService = new BalanceService();
+  private bookingService = new BookingService();
 
   constructor(private readonly tenantService: TenantService) { }
 
@@ -2063,7 +2065,66 @@ export class TenantAdminController {
       });
     } catch (error) {
       logger.error('Error cancelando reserva', { error: (error as Error).message });
-      res.status(500).json({ error: 'Error interno del servidor' });
+      res.status(500).json({ error: (error as Error).message });
+    }
+  };
+
+  rescheduleBooking = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ error: 'Tenant ID requerido' });
+        return;
+      }
+
+      const { id } = req.params;
+      const {
+        startTime: startTimeStr,
+        endTime: endTimeStr,
+        courtId: courtIdStr,
+      } = req.body;
+
+      if (!startTimeStr || !endTimeStr) {
+        res.status(400).json({ error: 'startTime y endTime son requeridos' });
+        return;
+      }
+
+      const newStartTime = new Date(startTimeStr);
+      const newEndTime = new Date(endTimeStr);
+
+      if (isNaN(newStartTime.getTime()) || isNaN(newEndTime.getTime())) {
+        res.status(400).json({ error: 'Fechas inválidas' });
+        return;
+      }
+
+      if (newEndTime <= newStartTime) {
+        res.status(400).json({ error: 'endTime debe ser posterior a startTime' });
+        return;
+      }
+
+      const newCourtId = courtIdStr
+        ? new Types.ObjectId(courtIdStr)
+        : undefined;
+
+      const booking = await this.bookingService.rescheduleBooking(
+        new Types.ObjectId(tenantId),
+        new Types.ObjectId(id),
+        newStartTime,
+        newEndTime,
+        newCourtId
+      );
+
+      res.json({
+        id: booking._id.toString(),
+        startTime: booking.bookingDate,
+        endTime: booking.endTime,
+        message: 'Reserva reprogramada exitosamente',
+      });
+    } catch (error) {
+      const msg = (error as Error).message;
+      logger.error('Error reprogramando reserva', { error: msg });
+      const status = msg.includes('encontrada') || msg.includes('inválidas') ? 404 : msg.includes('ocupado') ? 409 : 500;
+      res.status(status).json({ error: msg });
     }
   };
 
@@ -2289,6 +2350,107 @@ export class TenantAdminController {
       const walletRevenue =
         channelStats.find((item: any) => item._id === false)?.total ?? 0;
 
+      // ========== CÁLCULO DE OCUPACIÓN Y TENDENCIA ==========
+      let occupancy = null;
+
+      try {
+        // Obtener tenant para acceder a operatingHours
+        const tenant = await TenantModel.findById(tenantObjectId);
+
+        if (tenant && tenant.config?.operatingHours?.schedule) {
+          const operatingSchedule = tenant.config.operatingHours.schedule;
+
+          // Obtener canchas activas
+          const activeCourts = await CourtModel.countDocuments({
+            tenantId: tenantObjectId,
+            isActive: true,
+          });
+
+          if (activeCourts > 0 && operatingSchedule.length > 0) {
+            // Función auxiliar para calcular ocupación en un rango de fechas
+            const calculateOccupancy = async (fromDate: Date, toDate: Date): Promise<number> => {
+              // Calcular minutos disponibles totales
+              let totalAvailableMinutes = 0;
+              const currentDate = new Date(fromDate);
+
+              while (currentDate <= toDate) {
+                const dayOfWeek = currentDate.getDay();
+                const daySchedule = operatingSchedule.find((s: any) => s.dayOfWeek === dayOfWeek);
+
+                if (daySchedule) {
+                  const [openHour, openMinute] = daySchedule.open.split(':').map(Number);
+                  const [closeHour, closeMinute] = daySchedule.close.split(':').map(Number);
+                  const dailyMinutes = (closeHour * 60 + closeMinute) - (openHour * 60 + openMinute);
+                  totalAvailableMinutes += dailyMinutes * activeCourts;
+                }
+
+                currentDate.setDate(currentDate.getDate() + 1);
+              }
+
+              // Calcular minutos ocupados
+              const bookingsInRange = await BookingModel.find({
+                tenantId: tenantObjectId,
+                status: { $in: ['pending', 'confirmed', 'completed'] },
+                bookingDate: { $gte: fromDate, $lte: toDate },
+              }).lean();
+
+              let totalBookedMinutes = 0;
+              for (const booking of bookingsInRange) {
+                const startTime = booking.bookingDate;
+                const endTime = booking.endTime;
+
+                if (startTime && endTime) {
+                  const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+                  if (duration > 0) {
+                    totalBookedMinutes += duration;
+                  }
+                }
+              }
+
+              // Calcular porcentaje
+              if (totalAvailableMinutes > 0) {
+                return Math.min((totalBookedMinutes / totalAvailableMinutes) * 100, 100);
+              }
+              return 0;
+            };
+
+            // Calcular ocupación actual
+            const currentFrom = from ? new Date(from as string) : new Date();
+            const currentTo = to ? new Date(to as string) : new Date();
+            const currentPercentage = await calculateOccupancy(currentFrom, currentTo);
+
+            // Calcular ocupación de la semana anterior
+            const previousFrom = new Date(currentFrom);
+            previousFrom.setDate(previousFrom.getDate() - 7);
+            const previousTo = new Date(currentTo);
+            previousTo.setDate(previousTo.getDate() - 7);
+            const previousPercentage = await calculateOccupancy(previousFrom, previousTo);
+
+            // Determinar tendencia
+            let trend: 'up' | 'down' | 'stable' = 'stable';
+            const difference = currentPercentage - previousPercentage;
+
+            if (difference > 5) {
+              trend = 'up';
+            } else if (difference < -5) {
+              trend = 'down';
+            }
+
+            occupancy = {
+              currentPercentage: Math.round(currentPercentage * 10) / 10,
+              previousPercentage: Math.round(previousPercentage * 10) / 10,
+              trend,
+            };
+          }
+        }
+      } catch (occupancyError) {
+        logger.error('Error calculando ocupación', {
+          error: (occupancyError as Error).message,
+        });
+        // No fallar el endpoint completo si falla el cálculo de ocupación
+      }
+      // ========== FIN CÁLCULO DE OCUPACIÓN ==========
+
       res.json({
         total: stats.total,
         totalRevenue: stats.totalRevenue,
@@ -2315,6 +2477,7 @@ export class TenantAdminController {
         })),
         walletRevenue,
         directRevenue,
+        occupancy,
       });
     } catch (error) {
       logger.error('Error obteniendo estadísticas de reservas', {

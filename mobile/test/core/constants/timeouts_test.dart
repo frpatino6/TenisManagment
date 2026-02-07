@@ -10,19 +10,28 @@ void main() {
 
     test('should have httpRequestLong timeout defined', () {
       expect(Timeouts.httpRequestLong, isA<Duration>());
-      expect(Timeouts.httpRequestLong.inSeconds, greaterThan(Timeouts.httpRequest.inSeconds));
+      expect(
+        Timeouts.httpRequestLong.inSeconds,
+        greaterThan(Timeouts.httpRequest.inSeconds),
+      );
     });
 
     test('should have httpRequestShort timeout defined', () {
       expect(Timeouts.httpRequestShort, isA<Duration>());
-      expect(Timeouts.httpRequestShort.inSeconds, lessThan(Timeouts.httpRequest.inSeconds));
+      expect(
+        Timeouts.httpRequestShort.inSeconds,
+        lessThan(Timeouts.httpRequest.inSeconds),
+      );
     });
 
     test('should have snackbar durations defined', () {
       expect(Timeouts.snackbarSuccess, isA<Duration>());
       expect(Timeouts.snackbarError, isA<Duration>());
       expect(Timeouts.snackbarInfo, isA<Duration>());
-      expect(Timeouts.snackbarError.inSeconds, greaterThanOrEqualTo(Timeouts.snackbarSuccess.inSeconds));
+      expect(
+        Timeouts.snackbarError.inSeconds,
+        greaterThanOrEqualTo(Timeouts.snackbarSuccess.inSeconds),
+      );
     });
 
     test('should have animation durations defined', () {
@@ -30,10 +39,19 @@ void main() {
       expect(Timeouts.animationMedium, isA<Duration>());
       expect(Timeouts.animationLong, isA<Duration>());
       expect(Timeouts.animationExtraLong, isA<Duration>());
-      
-      expect(Timeouts.animationShort.inMilliseconds, lessThan(Timeouts.animationMedium.inMilliseconds));
-      expect(Timeouts.animationMedium.inMilliseconds, lessThan(Timeouts.animationLong.inMilliseconds));
-      expect(Timeouts.animationLong.inMilliseconds, lessThan(Timeouts.animationExtraLong.inMilliseconds));
+
+      expect(
+        Timeouts.animationShort.inMilliseconds,
+        lessThan(Timeouts.animationMedium.inMilliseconds),
+      );
+      expect(
+        Timeouts.animationMedium.inMilliseconds,
+        lessThan(Timeouts.animationLong.inMilliseconds),
+      );
+      expect(
+        Timeouts.animationLong.inMilliseconds,
+        lessThan(Timeouts.animationExtraLong.inMilliseconds),
+      );
     });
 
     test('should have specific delays defined', () {
@@ -52,4 +70,3 @@ void main() {
     });
   });
 }
-

@@ -671,7 +671,9 @@ class _ManageSchedulesScreenState extends ConsumerState<ManageSchedulesScreen> {
                         });
 
                         try {
-                          final repository = ref.read(professorRepositoryProvider);
+                          final repository = ref.read(
+                            professorRepositoryProvider,
+                          );
                           await repository.blockSchedule(
                             schedule.id,
                             reasonController.text,

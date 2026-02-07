@@ -57,13 +57,13 @@ class BookCourtResult {
   final String? errorCode;
 
   BookCourtResult.success(this.data)
-      : success = true,
-        errorMessage = null,
-        errorCode = null;
+    : success = true,
+      errorMessage = null,
+      errorCode = null;
 
   BookCourtResult.failure(this.errorMessage, {this.errorCode})
-      : success = false,
-        data = null;
+    : success = false,
+      data = null;
 }
 
 /// Use case for booking a court
@@ -71,9 +71,8 @@ class BookCourtResult {
 class BookCourtUseCase {
   final CourtService _courtService;
 
-  BookCourtUseCase({
-    required CourtService courtService,
-  }) : _courtService = courtService;
+  BookCourtUseCase({required CourtService courtService})
+    : _courtService = courtService;
 
   /// Executes the court booking operation
   ///
@@ -98,25 +97,13 @@ class BookCourtUseCase {
 
       return BookCourtResult.success(result);
     } on ValidationException catch (e) {
-      return BookCourtResult.failure(
-        e.message,
-        errorCode: e.code,
-      );
+      return BookCourtResult.failure(e.message, errorCode: e.code);
     } on AuthException catch (e) {
-      return BookCourtResult.failure(
-        e.message,
-        errorCode: 'AUTH_ERROR',
-      );
+      return BookCourtResult.failure(e.message, errorCode: 'AUTH_ERROR');
     } on DomainException catch (e) {
-      return BookCourtResult.failure(
-        e.message,
-        errorCode: 'DOMAIN_ERROR',
-      );
+      return BookCourtResult.failure(e.message, errorCode: 'DOMAIN_ERROR');
     } on NetworkException catch (e) {
-      return BookCourtResult.failure(
-        e.message,
-        errorCode: 'NETWORK_ERROR',
-      );
+      return BookCourtResult.failure(e.message, errorCode: 'NETWORK_ERROR');
     } catch (e) {
       return BookCourtResult.failure(
         'Error inesperado al realizar la reserva: ${e.toString()}',

@@ -90,7 +90,6 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
       final breakdownData = await _analyticsRepository.getRevenueBreakdown();
       final trendData = await _analyticsRepository.getRevenueTrend();
 
-
       final breakdown = breakdownData['breakdown'] is List
           ? breakdownData['breakdown'] as List
           : <Map<String, dynamic>>[];
@@ -124,7 +123,6 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
       final breakdownData = await _analyticsRepository.getBookingsBreakdown();
       final trendData = await _analyticsRepository.getBookingsTrend();
 
-
       final breakdown = breakdownData['breakdown'] is List
           ? breakdownData['breakdown'] as List
           : <Map<String, dynamic>>[];
@@ -157,7 +155,6 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
       final studentsData = await _analyticsRepository.getStudentsData();
       final breakdownData = await _analyticsRepository.getStudentsBreakdown();
       final trendData = await _analyticsRepository.getStudentsTrend();
-
 
       final breakdown = breakdownData['breakdown'] is List
           ? breakdownData['breakdown'] as List
@@ -195,7 +192,6 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
   Future<Map<String, dynamic>> _loadOccupancyDetails() async {
     try {
       final occupancyData = await _analyticsRepository.getOccupancyDetails();
-
 
       final breakdown = occupancyData['breakdown'] is List
           ? occupancyData['breakdown'] as List
@@ -324,7 +320,6 @@ class _MetricDetailWidgetState extends State<MetricDetailWidget> {
     if (trend == null || trend.isEmpty) {
       return const SizedBox.shrink();
     }
-
 
     final chartData = trend.map((item) {
       return ChartDataPoint(

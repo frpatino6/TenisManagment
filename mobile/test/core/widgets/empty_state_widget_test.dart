@@ -6,11 +6,7 @@ void main() {
   group('EmptyStateWidget', () {
     testWidgets('should display default icon', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: EmptyStateWidget(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: EmptyStateWidget())),
       );
 
       expect(find.byIcon(Icons.inbox_outlined), findsOneWidget);
@@ -35,9 +31,7 @@ void main() {
     testWidgets('should display custom icon', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: EmptyStateWidget(icon: Icons.search_off),
-          ),
+          home: Scaffold(body: EmptyStateWidget(icon: Icons.search_off)),
         ),
       );
 
@@ -50,10 +44,7 @@ void main() {
           home: Scaffold(
             body: EmptyStateWidget(
               title: 'Empty',
-              action: ElevatedButton(
-                onPressed: null,
-                child: Text('Add Item'),
-              ),
+              action: ElevatedButton(onPressed: null, child: Text('Add Item')),
             ),
           ),
         ),
@@ -65,11 +56,7 @@ void main() {
 
     testWidgets('list should use list defaults', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: EmptyStateWidget.list(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: EmptyStateWidget.list())),
       );
 
       expect(find.byIcon(Icons.inbox_outlined), findsOneWidget);
@@ -77,11 +64,7 @@ void main() {
 
     testWidgets('search should use search defaults', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: EmptyStateWidget.search(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: EmptyStateWidget.search())),
       );
 
       expect(find.byIcon(Icons.search_off), findsOneWidget);
@@ -89,11 +72,7 @@ void main() {
 
     testWidgets('schedule should use schedule defaults', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: EmptyStateWidget.schedule(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: EmptyStateWidget.schedule())),
       );
 
       expect(find.byIcon(Icons.event_busy), findsOneWidget);
@@ -101,15 +80,10 @@ void main() {
 
     testWidgets('booking should use booking defaults', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: EmptyStateWidget.booking(),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: EmptyStateWidget.booking())),
       );
 
       expect(find.byIcon(Icons.calendar_today_outlined), findsOneWidget);
     });
   });
 }
-

@@ -16,7 +16,7 @@ import '../../domain/models/tenant_payment_model.dart';
 import '../../domain/models/tenant_debt_report_model.dart';
 
 /// Infrastructure implementation of [TenantAdminRepository]
-/// 
+///
 /// Handles all HTTP communication, authentication, and data parsing.
 /// This is where all "dirty" infrastructure concerns live.
 class TenantAdminRepositoryImpl implements TenantAdminRepository {
@@ -27,8 +27,8 @@ class TenantAdminRepositoryImpl implements TenantAdminRepository {
   TenantAdminRepositoryImpl({
     required AppHttpClient httpClient,
     FirebaseAuth? auth,
-  })  : _httpClient = httpClient,
-        _auth = auth ?? FirebaseAuth.instance;
+  }) : _httpClient = httpClient,
+       _auth = auth ?? FirebaseAuth.instance;
 
   /// Get authorization headers
   Future<Map<String, String>> _getAuthHeaders() async {
@@ -1103,6 +1103,81 @@ class TenantAdminRepositoryImpl implements TenantAdminRepository {
   }
 
   @override
+  Future<void> rescheduleBooking(
+    String bookingId, {
+    required DateTime startTime,
+    required DateTime endTime,
+    String? courtId,
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final uri = Uri.parse('$_baseUrl/tenant/bookings/$bookingId/reschedule');
+
+      final startUtc = DateTime.utc(
+        startTime.year,
+        startTime.month,
+        startTime.day,
+        startTime.hour,
+        startTime.minute,
+      );
+      final endUtc = DateTime.utc(
+        endTime.year,
+        endTime.month,
+        endTime.day,
+        endTime.hour,
+        endTime.minute,
+      );
+      final body = <String, dynamic>{
+        'startTime': startUtc.toIso8601String(),
+        'endTime': endUtc.toIso8601String(),
+        if (courtId != null) 'courtId': courtId,
+      };
+
+      final response = await _httpClient.patch(
+        uri,
+        headers: headers,
+        body: json.encode(body),
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 200) {
+        return;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 404) {
+        throw ValidationException(
+          'Reserva no encontrada',
+          code: 'BOOKING_NOT_FOUND',
+        );
+      } else if (response.statusCode == 409) {
+        final errorData = json.decode(response.body);
+        throw ValidationException(
+          errorData['error']?.toString() ?? 'El horario ya está ocupado',
+          code: 'BOOKING_CONFLICT',
+        );
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        final errorData = json.decode(response.body);
+        throw ValidationException(
+          errorData['error']?.toString() ?? 'Error al reprogramar',
+          code: 'RESCHEDULE_FAILED',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
+  @override
   Future<BookingStatsModel> getBookingStats({
     DateTime? from,
     DateTime? to,
@@ -1333,6 +1408,115 @@ class TenantAdminRepositoryImpl implements TenantAdminRepository {
         throw NetworkException.serverError(
           statusCode: response.statusCode,
           message: 'Error al confirmar pago: ${response.statusCode}',
+        );
+      }
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      if (e is AppException) {
+        rethrow;
+      }
+      throw NetworkException.serverError(
+        statusCode: 0,
+        message: 'Error desconocido: ${e.toString()}',
+      );
+    }
+  }
+
+  @override
+  Future<TenantBookingModel> createBooking({
+    required String courtId,
+    required String studentId,
+    required DateTime startTime,
+    required DateTime endTime,
+    required String paymentStatus,
+    required String paymentMethod,
+    required double price,
+    String serviceType = 'court_rental',
+  }) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final uri = Uri.parse('$_baseUrl/student-dashboard/book-court');
+
+      final startUtc = DateTime.utc(
+        startTime.year,
+        startTime.month,
+        startTime.day,
+        startTime.hour,
+        startTime.minute,
+      );
+      final endUtc = DateTime.utc(
+        endTime.year,
+        endTime.month,
+        endTime.day,
+        endTime.hour,
+        endTime.minute,
+      );
+      final body = <String, dynamic>{
+        'courtId': courtId,
+        'studentId': studentId,
+        'startTime': startUtc.toIso8601String(),
+        'endTime': endUtc.toIso8601String(),
+        'price': price,
+      };
+
+      final response = await _httpClient.post(
+        uri,
+        headers: headers,
+        body: json.encode(body),
+        timeout: Timeouts.httpRequest,
+      );
+
+      if (response.statusCode == 201) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final bookingMap = <String, dynamic>{
+          'id': data['id'] ?? data['_id'],
+          'startTime': data['startTime'],
+          'endTime': data['endTime'],
+          'courtId': data['courtId'] != null
+              ? {
+                  '_id': data['courtId'],
+                  'id': data['courtId'],
+                  'name': '',
+                  'type': 'tennis',
+                }
+              : null,
+          'studentId': data['studentId'] != null
+              ? {
+                  '_id': data['studentId'],
+                  'id': data['studentId'],
+                  'name': '',
+                  'email': '',
+                }
+              : null,
+          'serviceType': data['serviceType'] ?? 'court_rental',
+          'status': data['status'] ?? 'pending',
+          'paymentStatus': paymentStatus,
+          'price': data['price'],
+          'createdAt': data['createdAt'],
+          'updatedAt': data['updatedAt'] ?? data['createdAt'],
+        };
+        return TenantBookingModel.fromJson(bookingMap);
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthException.tokenExpired();
+      } else if (response.statusCode == 400) {
+        final errorData = json.decode(response.body);
+        throw ValidationException(
+          errorData['error']?.toString() ?? 'Datos de reserva inválidos',
+          code: 'INVALID_BOOKING_DATA',
+        );
+      } else if (response.statusCode == 409) {
+        final errorData = json.decode(response.body);
+        throw ValidationException(
+          errorData['error']?.toString() ?? 'Conflicto de horario',
+          code: 'BOOKING_CONFLICT',
+        );
+      } else if (response.statusCode >= 500) {
+        throw NetworkException.serverError(statusCode: response.statusCode);
+      } else {
+        throw NetworkException.serverError(
+          statusCode: response.statusCode,
+          message: 'Error al crear reserva: ${response.statusCode}',
         );
       }
     } on AppException {

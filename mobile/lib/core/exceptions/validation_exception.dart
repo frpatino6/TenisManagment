@@ -20,10 +20,7 @@ class ValidationException extends AppException {
     dynamic originalError,
     StackTrace? stackTrace,
   }) {
-    final errors = <String, String>{
-      field: reason,
-      ...?additionalErrors,
-    };
+    final errors = <String, String>{field: reason, ...?additionalErrors};
     return ValidationException(
       ErrorMessages.invalidFieldMessage(field, reason),
       code: 'INVALID_FIELD',
@@ -52,4 +49,3 @@ class ValidationException extends AppException {
     );
   }
 }
-

@@ -55,10 +55,12 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.get(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).thenAnswer((_) async => response);
 
         final result = await professorService.getProfessorInfo();
 
@@ -67,14 +69,17 @@ void main() {
         expect(result.name, equals('Test Professor'));
       });
 
-      test('should throw AuthException.notAuthenticated when no user', () async {
-        when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+      test(
+        'should throw AuthException.notAuthenticated when no user',
+        () async {
+          when(() => mockFirebaseAuth.currentUser).thenReturn(null);
 
-        expect(
-          () => professorService.getProfessorInfo(),
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => professorService.getProfessorInfo(),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
 
       test('should throw AuthException.tokenExpired on 401/403', () async {
         const idToken = 'test-token';
@@ -82,10 +87,12 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.get(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).thenAnswer((_) async => response);
 
         expect(
           () => professorService.getProfessorInfo(),
@@ -99,10 +106,12 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.get(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).thenAnswer((_) async => response);
 
         expect(
           () => professorService.getProfessorInfo(),
@@ -112,37 +121,44 @@ void main() {
     });
 
     group('getStudents', () {
-      test('should return list of StudentSummaryModel when request succeeds', () async {
-        const idToken = 'test-token';
-        final studentsJson = {
-          'items': [
-            {
-              'id': 'student-1',
-              'name': 'Student One',
-              'email': 'student1@example.com',
-            },
-            {
-              'id': 'student-2',
-              'name': 'Student Two',
-              'email': 'student2@example.com',
-            },
-          ],
-        };
-        final response = http.Response(json.encode(studentsJson), 200);
+      test(
+        'should return list of StudentSummaryModel when request succeeds',
+        () async {
+          const idToken = 'test-token';
+          final studentsJson = {
+            'items': [
+              {
+                'id': 'student-1',
+                'name': 'Student One',
+                'email': 'student1@example.com',
+              },
+              {
+                'id': 'student-2',
+                'name': 'Student Two',
+                'email': 'student2@example.com',
+              },
+            ],
+          };
+          final response = http.Response(json.encode(studentsJson), 200);
 
-        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
-        when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
+          when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+          when(
+            () => mockUser.getIdToken(true),
+          ).thenAnswer((_) async => idToken);
+          when(
+            () => mockHttpClient.get(
               any(that: isA<Uri>()),
               headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+            ),
+          ).thenAnswer((_) async => response);
 
-        final result = await professorService.getStudents();
+          final result = await professorService.getStudents();
 
-        expect(result, isA<List<StudentSummaryModel>>());
-        expect(result.length, equals(2));
-        expect(result[0].id, equals('student-1'));
-      });
+          expect(result, isA<List<StudentSummaryModel>>());
+          expect(result.length, equals(2));
+          expect(result[0].id, equals('student-1'));
+        },
+      );
 
       test('should return empty list when items is null', () async {
         const idToken = 'test-token';
@@ -151,64 +167,79 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.get(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).thenAnswer((_) async => response);
 
         final result = await professorService.getStudents();
 
         expect(result, isEmpty);
       });
 
-      test('should throw AuthException.notAuthenticated when no user', () async {
-        when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+      test(
+        'should throw AuthException.notAuthenticated when no user',
+        () async {
+          when(() => mockFirebaseAuth.currentUser).thenReturn(null);
 
-        expect(
-          () => professorService.getStudents(),
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => professorService.getStudents(),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
     });
 
     group('getMySchedules', () {
-      test('should return list of ProfessorScheduleModel when request succeeds', () async {
-        const idToken = 'test-token';
-        final schedulesJson = {
-          'items': [
-            {
-              'id': 'schedule-1',
-              'date': '2024-01-01T10:00:00Z',
-              'startTime': '2024-01-01T10:00:00Z',
-              'endTime': '2024-01-01T11:00:00Z',
-              'status': 'available',
-            },
-          ],
-        };
-        final response = http.Response(json.encode(schedulesJson), 200);
+      test(
+        'should return list of ProfessorScheduleModel when request succeeds',
+        () async {
+          const idToken = 'test-token';
+          final schedulesJson = {
+            'items': [
+              {
+                'id': 'schedule-1',
+                'date': '2024-01-01T10:00:00Z',
+                'startTime': '2024-01-01T10:00:00Z',
+                'endTime': '2024-01-01T11:00:00Z',
+                'status': 'available',
+              },
+            ],
+          };
+          final response = http.Response(json.encode(schedulesJson), 200);
 
-        when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
-        when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
+          when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
+          when(
+            () => mockUser.getIdToken(true),
+          ).thenAnswer((_) async => idToken);
+          when(
+            () => mockHttpClient.get(
               any(that: isA<Uri>()),
               headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+            ),
+          ).thenAnswer((_) async => response);
 
-        final result = await professorService.getMySchedules();
+          final result = await professorService.getMySchedules();
 
-        expect(result, isA<List<ProfessorScheduleModel>>());
-        expect(result.length, equals(1));
-        expect(result[0].id, equals('schedule-1'));
-      });
+          expect(result, isA<List<ProfessorScheduleModel>>());
+          expect(result.length, equals(1));
+          expect(result[0].id, equals('schedule-1'));
+        },
+      );
 
-      test('should throw AuthException.notAuthenticated when no user', () async {
-        when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+      test(
+        'should throw AuthException.notAuthenticated when no user',
+        () async {
+          when(() => mockFirebaseAuth.currentUser).thenReturn(null);
 
-        expect(
-          () => professorService.getMySchedules(),
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => professorService.getMySchedules(),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
 
       test('should throw AuthException.tokenExpired on 401/403', () async {
         const idToken = 'test-token';
@@ -216,10 +247,12 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.get(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.get(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).thenAnswer((_) async => response);
 
         expect(
           () => professorService.getMySchedules(),
@@ -241,11 +274,13 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.post(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.post(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => response);
 
         final result = await professorService.createSchedule(
           date: DateTime(2024, 1, 1),
@@ -268,11 +303,13 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.post(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.post(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => response);
 
         expect(
           () => professorService.createSchedule(
@@ -284,18 +321,21 @@ void main() {
         );
       });
 
-      test('should throw AuthException.notAuthenticated when no user', () async {
-        when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+      test(
+        'should throw AuthException.notAuthenticated when no user',
+        () async {
+          when(() => mockFirebaseAuth.currentUser).thenReturn(null);
 
-        expect(
-          () => professorService.createSchedule(
-            date: DateTime(2024, 1, 1),
-            startTime: DateTime(2024, 1, 1, 10),
-            endTime: DateTime(2024, 1, 1, 11),
-          ),
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => professorService.createSchedule(
+              date: DateTime(2024, 1, 1),
+              startTime: DateTime(2024, 1, 1, 10),
+              endTime: DateTime(2024, 1, 1, 11),
+            ),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
     });
 
     group('deleteSchedule', () {
@@ -306,17 +346,21 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.delete(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.delete(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).thenAnswer((_) async => response);
 
         await professorService.deleteSchedule(scheduleId);
 
-        verify(() => mockHttpClient.delete(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).called(1);
+        verify(
+          () => mockHttpClient.delete(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).called(1);
       });
 
       test('should throw ScheduleException.notFound on 404', () async {
@@ -327,10 +371,12 @@ void main() {
 
         when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
         when(() => mockUser.getIdToken(true)).thenAnswer((_) async => idToken);
-        when(() => mockHttpClient.delete(
-              any(that: isA<Uri>()),
-              headers: any(named: 'headers', that: isA<Map<String, String>>()),
-            )).thenAnswer((_) async => response);
+        when(
+          () => mockHttpClient.delete(
+            any(that: isA<Uri>()),
+            headers: any(named: 'headers', that: isA<Map<String, String>>()),
+          ),
+        ).thenAnswer((_) async => response);
 
         expect(
           () => professorService.deleteSchedule(scheduleId),
@@ -338,15 +384,17 @@ void main() {
         );
       });
 
-      test('should throw AuthException.notAuthenticated when no user', () async {
-        when(() => mockFirebaseAuth.currentUser).thenReturn(null);
+      test(
+        'should throw AuthException.notAuthenticated when no user',
+        () async {
+          when(() => mockFirebaseAuth.currentUser).thenReturn(null);
 
-        expect(
-          () => professorService.deleteSchedule('schedule-1'),
-          throwsA(isA<AuthException>()),
-        );
-      });
+          expect(
+            () => professorService.deleteSchedule('schedule-1'),
+            throwsA(isA<AuthException>()),
+          );
+        },
+      );
     });
   });
 }
-

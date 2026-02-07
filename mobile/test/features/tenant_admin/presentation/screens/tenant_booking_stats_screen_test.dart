@@ -6,9 +6,7 @@ import 'package:tennis_management/features/tenant_admin/presentation/providers/t
 import 'package:tennis_management/features/tenant_admin/presentation/screens/tenant_booking_stats_screen.dart';
 
 void main() {
-  testWidgets('shows executive billing summary', (
-    tester,
-  ) async {
+  testWidgets('shows executive billing summary', (tester) async {
     final stats = BookingStatsModel(
       total: 1,
       totalRevenue: 50000,

@@ -1115,8 +1115,7 @@ export class StudentDashboardController {
         return res.status(401).json({ error: 'Usuario no autenticado' });
       }
 
-      const { courtId, startTime, endTime, price } = req.body;
-
+      const { courtId, startTime, endTime, price, studentId } = req.body;
 
       if (!courtId) {
         return res.status(400).json({ error: 'courtId es requerido' });
@@ -1130,15 +1129,21 @@ export class StudentDashboardController {
         return res.status(400).json({ error: 'price es requerido y debe ser mayor a 0' });
       }
 
-      // Get student
-      const authUser = await AuthUserModel.findOne({ firebaseUid });
-      if (!authUser) {
-        return res.status(404).json({ error: 'Usuario no encontrado' });
-      }
-
-      const student = await StudentModel.findOne({ authUserId: authUser._id });
-      if (!student) {
-        return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
+      let student;
+      if (studentId && req.user?.role === 'tenant_admin') {
+        student = await StudentModel.findById(studentId);
+        if (!student) {
+          return res.status(404).json({ error: 'Estudiante no encontrado' });
+        }
+      } else {
+        const authUser = await AuthUserModel.findOne({ firebaseUid });
+        if (!authUser) {
+          return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+        student = await StudentModel.findOne({ authUserId: authUser._id });
+        if (!student) {
+          return res.status(404).json({ error: 'Perfil de estudiante no encontrado' });
+        }
       }
 
 
@@ -1152,10 +1157,13 @@ export class StudentDashboardController {
         return res.status(400).json({ error: 'Esta cancha no está disponible' });
       }
 
-      // Get tenantId from court (required for multi-tenancy)
       const tenantId = court.tenantId;
       if (!tenantId) {
         return res.status(400).json({ error: 'La cancha no tiene un tenant asociado' });
+      }
+
+      if (req.user?.role === 'tenant_admin' && req.tenantId && tenantId.toString() !== req.tenantId) {
+        return res.status(403).json({ error: 'No tienes acceso a crear reservas en este centro' });
       }
 
       // Ensure StudentTenant relationship exists (creates if not exists)

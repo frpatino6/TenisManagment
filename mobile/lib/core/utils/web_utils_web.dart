@@ -53,7 +53,10 @@ class WebUtils {
 
     return () {
       web.window.removeEventListener('focus', jsFocusListener);
-      web.document.removeEventListener('visibilitychange', jsVisibilityListener);
+      web.document.removeEventListener(
+        'visibilitychange',
+        jsVisibilityListener,
+      );
     };
   }
 

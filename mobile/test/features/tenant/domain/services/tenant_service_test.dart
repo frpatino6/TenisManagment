@@ -17,7 +17,7 @@ void main() {
       };
 
       final tenant = TenantModel.fromJson(json);
-      
+
       expect(tenant.id, equals('tenant-123'));
       expect(tenant.name, equals('Centro A'));
       expect(tenant.slug, equals('centro-a'));
@@ -35,7 +35,7 @@ void main() {
       };
 
       final tenant = TenantModel.fromJson(json);
-      
+
       expect(tenant.id, equals('tenant-123'));
       expect(tenant.name, equals('Centro B'));
       expect(tenant.domain, isNull);
@@ -53,7 +53,7 @@ void main() {
       );
 
       final json = tenant.toJson();
-      
+
       expect(json['id'], equals('tenant-123'));
       expect(json['name'], equals('Centro A'));
       expect(json['slug'], equals('centro-a'));
@@ -70,11 +70,10 @@ void main() {
       };
 
       final tenant = TenantModel.fromJson(json);
-      
+
       expect(tenant.id, equals('tenant-123'));
       expect(tenant.name, equals('Centro C'));
       expect(tenant.slug, equals('centro-c'));
     });
   });
 }
-

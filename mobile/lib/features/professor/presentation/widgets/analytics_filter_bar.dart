@@ -115,7 +115,6 @@ class AnalyticsFilterBar extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             shrinkWrap: true,
             children: [
-
               if (selectedValue != null)
                 Padding(
                   padding: const EdgeInsets.only(right: 8),

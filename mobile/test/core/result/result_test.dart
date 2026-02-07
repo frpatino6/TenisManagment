@@ -43,7 +43,9 @@ void main() {
       });
 
       test('should return default value with getOrElse', () {
-        final exception = ValidationException.missingRequiredField(field: 'email');
+        final exception = ValidationException.missingRequiredField(
+          field: 'email',
+        );
         final result = Result.failure(exception);
         expect(result.getOrElse('default'), equals('default'));
       });
@@ -156,7 +158,9 @@ void main() {
 
     group('onFailure', () {
       test('should execute action on failure', () {
-        final exception = ValidationException.missingRequiredField(field: 'email');
+        final exception = ValidationException.missingRequiredField(
+          field: 'email',
+        );
         final result = Result.failure(exception);
         var executed = false;
         result.onFailure((error) {
@@ -196,6 +200,7 @@ void main() {
       Future<int> future() async {
         throw AuthException.notAuthenticated();
       }
+
       final result = await future.toResult();
       expect(result.isFailure, isTrue);
       expect(result.errorOrNull, isA<AuthException>());
@@ -205,6 +210,7 @@ void main() {
       Future<int> future() async {
         throw Exception('Generic error');
       }
+
       final result = await future.toResult();
       expect(result.isFailure, isTrue);
       expect(result.errorOrNull, isA<NetworkException>());
@@ -212,4 +218,3 @@ void main() {
     });
   });
 }
-

@@ -71,57 +71,63 @@ void main() {
       expect(model.startTime, isNull);
     });
 
-    test('should parse startTime and endTime from bookingDate and endTime for court_rental', () {
-      final json = {
-        'id': '123',
-        'serviceType': 'court_rental',
-        'status': 'confirmed',
-        'price': 50.0,
-        'bookingDate': '2026-01-26T10:00:00.000Z',
-        'endTime': '2026-01-26T11:00:00.000Z',
-        'student': {
-          'id': 's1',
-          'name': 'Student 1',
-          'email': 'student@test.com',
-        },
-      };
+    test(
+      'should parse startTime and endTime from bookingDate and endTime for court_rental',
+      () {
+        final json = {
+          'id': '123',
+          'serviceType': 'court_rental',
+          'status': 'confirmed',
+          'price': 50.0,
+          'bookingDate': '2026-01-26T10:00:00.000Z',
+          'endTime': '2026-01-26T11:00:00.000Z',
+          'student': {
+            'id': 's1',
+            'name': 'Student 1',
+            'email': 'student@test.com',
+          },
+        };
 
-      final model = TenantBookingModel.fromJson(json);
+        final model = TenantBookingModel.fromJson(json);
 
-      expect(model.startTime, isNotNull);
-      expect(model.endTime, isNotNull);
-      expect(model.startTime!.toIso8601String(), '2026-01-26T10:00:00.000Z');
-      expect(model.endTime!.toIso8601String(), '2026-01-26T11:00:00.000Z');
-    });
+        expect(model.startTime, isNotNull);
+        expect(model.endTime, isNotNull);
+        expect(model.startTime!.toIso8601String(), '2026-01-26T10:00:00.000Z');
+        expect(model.endTime!.toIso8601String(), '2026-01-26T11:00:00.000Z');
+      },
+    );
 
-    test('should parse startTime and endTime from schedule for bookings with schedule', () {
-      final json = {
-        'id': '123',
-        'serviceType': 'individual_class',
-        'status': 'confirmed',
-        'price': 100.0,
-        'date': '2026-01-26T00:00:00.000Z',
-        'startTime': '2026-01-26T14:00:00.000Z',
-        'endTime': '2026-01-26T15:00:00.000Z',
-        'student': {
-          'id': 's1',
-          'name': 'Student 1',
-          'email': 'student@test.com',
-        },
-        'professor': {
-          'id': 'p1',
-          'name': 'Professor 1',
-          'email': 'prof@test.com',
-        },
-      };
+    test(
+      'should parse startTime and endTime from schedule for bookings with schedule',
+      () {
+        final json = {
+          'id': '123',
+          'serviceType': 'individual_class',
+          'status': 'confirmed',
+          'price': 100.0,
+          'date': '2026-01-26T00:00:00.000Z',
+          'startTime': '2026-01-26T14:00:00.000Z',
+          'endTime': '2026-01-26T15:00:00.000Z',
+          'student': {
+            'id': 's1',
+            'name': 'Student 1',
+            'email': 'student@test.com',
+          },
+          'professor': {
+            'id': 'p1',
+            'name': 'Professor 1',
+            'email': 'prof@test.com',
+          },
+        };
 
-      final model = TenantBookingModel.fromJson(json);
+        final model = TenantBookingModel.fromJson(json);
 
-      expect(model.startTime, isNotNull);
-      expect(model.endTime, isNotNull);
-      expect(model.startTime!.toIso8601String(), '2026-01-26T14:00:00.000Z');
-      expect(model.endTime!.toIso8601String(), '2026-01-26T15:00:00.000Z');
-    });
+        expect(model.startTime, isNotNull);
+        expect(model.endTime, isNotNull);
+        expect(model.startTime!.toIso8601String(), '2026-01-26T14:00:00.000Z');
+        expect(model.endTime!.toIso8601String(), '2026-01-26T15:00:00.000Z');
+      },
+    );
 
     test('should handle null values for optional fields', () {
       final json = {

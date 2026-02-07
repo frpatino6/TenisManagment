@@ -67,4 +67,3 @@ class DomainException extends AppException {
     );
   }
 }
-

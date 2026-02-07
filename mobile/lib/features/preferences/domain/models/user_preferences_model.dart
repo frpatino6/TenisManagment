@@ -10,12 +10,19 @@ class UserPreferencesModel {
 
   factory UserPreferencesModel.fromJson(Map<String, dynamic> json) {
     return UserPreferencesModel(
-      favoriteProfessors: (json['favoriteProfessors'] as List<dynamic>?)
-              ?.map((item) => FavoriteProfessor.fromJson(item as Map<String, dynamic>))
+      favoriteProfessors:
+          (json['favoriteProfessors'] as List<dynamic>?)
+              ?.map(
+                (item) =>
+                    FavoriteProfessor.fromJson(item as Map<String, dynamic>),
+              )
               .toList() ??
           [],
-      favoriteTenants: (json['favoriteTenants'] as List<dynamic>?)
-              ?.map((item) => FavoriteTenant.fromJson(item as Map<String, dynamic>))
+      favoriteTenants:
+          (json['favoriteTenants'] as List<dynamic>?)
+              ?.map(
+                (item) => FavoriteTenant.fromJson(item as Map<String, dynamic>),
+              )
               .toList() ??
           [],
     );
@@ -58,7 +65,8 @@ class FavoriteProfessor {
       id: json['id'] as String,
       name: json['name'] as String,
       email: json['email'] as String,
-      specialties: (json['specialties'] as List<dynamic>?)
+      specialties:
+          (json['specialties'] as List<dynamic>?)
               ?.map((item) => item as String)
               .toList() ??
           [],
@@ -66,12 +74,7 @@ class FavoriteProfessor {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'email': email,
-      'specialties': specialties,
-    };
+    return {'id': id, 'name': name, 'email': email, 'specialties': specialties};
   }
 }
 
@@ -111,4 +114,3 @@ class FavoriteTenant {
     };
   }
 }
-

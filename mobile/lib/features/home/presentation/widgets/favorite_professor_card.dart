@@ -14,10 +14,7 @@ import '../../../student/domain/models/booking_model.dart';
 class FavoriteProfessorCard extends ConsumerWidget {
   final FavoriteProfessor professor;
 
-  const FavoriteProfessorCard({
-    super.key,
-    required this.professor,
-  });
+  const FavoriteProfessorCard({super.key, required this.professor});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,10 +27,12 @@ class FavoriteProfessorCard extends ConsumerWidget {
       data: (bookings) {
         final now = DateTime.now();
         return bookings
-            .where((b) =>
-                b.professor.id == professor.id &&
-                b.status != 'cancelled' &&
-                b.status != 'completed')
+            .where(
+              (b) =>
+                  b.professor.id == professor.id &&
+                  b.status != 'cancelled' &&
+                  b.status != 'completed',
+            )
             .map((b) {
               try {
                 final startTime = DateTime.parse(b.schedule.startTime);
@@ -43,19 +42,16 @@ class FavoriteProfessorCard extends ConsumerWidget {
               }
             })
             .whereType<BookingModel>()
-            .fold<BookingModel?>(
-              null,
-              (prev, current) {
-                if (prev == null) return current;
-                try {
-                  final prevTime = DateTime.parse(prev.schedule.startTime);
-                  final currentTime = DateTime.parse(current.schedule.startTime);
-                  return currentTime.isBefore(prevTime) ? current : prev;
-                } catch (e) {
-                  return prev;
-                }
-              },
-            );
+            .fold<BookingModel?>(null, (prev, current) {
+              if (prev == null) return current;
+              try {
+                final prevTime = DateTime.parse(prev.schedule.startTime);
+                final currentTime = DateTime.parse(current.schedule.startTime);
+                return currentTime.isBefore(prevTime) ? current : prev;
+              } catch (e) {
+                return prev;
+              }
+            });
       },
       orElse: () => null,
     );
@@ -63,13 +59,13 @@ class FavoriteProfessorCard extends ConsumerWidget {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: () {
           // Navigate to professor schedules
-          context.push('/professor/${professor.id}/schedules?name=${professor.name}');
+          context.push(
+            '/professor/${professor.id}/schedules?name=${professor.name}',
+          );
         },
         borderRadius: BorderRadius.circular(16),
         child: Container(
@@ -148,7 +144,9 @@ class FavoriteProfessorCard extends ConsumerWidget {
                             professor.specialties.join(', '),
                             style: GoogleFonts.inter(
                               fontSize: 12,
-                              color: colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                              color: colorScheme.onPrimaryContainer.withValues(
+                                alpha: 0.7,
+                              ),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -164,7 +162,9 @@ class FavoriteProfessorCard extends ConsumerWidget {
                       size: 20,
                     ),
                     onPressed: () {
-                      context.push('/professor/${professor.id}/schedules?name=${professor.name}');
+                      context.push(
+                        '/professor/${professor.id}/schedules?name=${professor.name}',
+                      );
                     },
                   ),
                 ],
@@ -195,7 +195,8 @@ class FavoriteProfessorCard extends ConsumerWidget {
                               style: GoogleFonts.inter(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
-                                color: colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                                color: colorScheme.onPrimaryContainer
+                                    .withValues(alpha: 0.7),
                               ),
                             ),
                             const Gap(2),
@@ -221,7 +222,9 @@ class FavoriteProfessorCard extends ConsumerWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        context.push('/professor/${professor.id}/schedules?name=${professor.name}');
+                        context.push(
+                          '/professor/${professor.id}/schedules?name=${professor.name}',
+                        );
                       },
                       icon: const Icon(Icons.schedule, size: 18),
                       label: Text(
@@ -242,7 +245,9 @@ class FavoriteProfessorCard extends ConsumerWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        context.push('/professor/${professor.id}/schedules?name=${professor.name}');
+                        context.push(
+                          '/professor/${professor.id}/schedules?name=${professor.name}',
+                        );
                       },
                       icon: const Icon(Icons.book_online, size: 18),
                       label: Text(
@@ -273,7 +278,11 @@ class FavoriteProfessorCard extends ConsumerWidget {
       final startTime = DateTime.parse(booking.schedule.startTime);
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      final classDate = DateTime(startTime.year, startTime.month, startTime.day);
+      final classDate = DateTime(
+        startTime.year,
+        startTime.month,
+        startTime.day,
+      );
 
       if (classDate == today) {
         return 'Hoy ${DateFormat('HH:mm').format(startTime)}';
@@ -287,4 +296,3 @@ class FavoriteProfessorCard extends ConsumerWidget {
     }
   }
 }
-

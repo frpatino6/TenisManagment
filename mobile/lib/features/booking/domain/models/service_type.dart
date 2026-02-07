@@ -16,7 +16,7 @@ enum ServiceType {
       orElse: () => ServiceType.individualClass,
     );
   }
-  
+
   /// Get price for this service type from professor's pricing
   double getPrice(PricingConfig pricing) {
     switch (this) {

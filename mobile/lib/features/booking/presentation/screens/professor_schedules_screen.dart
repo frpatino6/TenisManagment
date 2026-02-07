@@ -29,9 +29,7 @@ class _ProfessorSchedulesScreenState
         professorSchedulesDataProvider(widget.professorId),
       );
       schedulesAsync.whenData((data) {
-        final availableDates = ref.read(
-          availableDatesProvider(data),
-        );
+        final availableDates = ref.read(availableDatesProvider(data));
         if (availableDates.isNotEmpty) {
           ref.read(selectedDateProvider.notifier).setDate(availableDates.first);
         }
@@ -62,16 +60,16 @@ class _ProfessorSchedulesScreenState
     );
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Horarios de ${widget.professorName}'),
-      ),
+      appBar: AppBar(title: Text('Horarios de ${widget.professorName}')),
       body: schedulesAsync.when(
         data: (schedulesData) {
           if (schedulesData.schedules.isEmpty) {
             return _buildEmptyState(context);
           }
 
-          final availableDates = ref.watch(availableDatesProvider(schedulesData));
+          final availableDates = ref.watch(
+            availableDatesProvider(schedulesData),
+          );
           final selectedDate = ref.watch(selectedDateProvider);
           final filteredSchedules = ref.watch(
             filteredSchedulesByDateProvider(schedulesData),
@@ -83,7 +81,9 @@ class _ProfessorSchedulesScreenState
 
           if (selectedDate == null && availableDates.isNotEmpty) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              ref.read(selectedDateProvider.notifier).setDate(availableDates.first);
+              ref
+                  .read(selectedDateProvider.notifier)
+                  .setDate(availableDates.first);
             });
             return const Center(child: CircularProgressIndicator());
           }
@@ -143,7 +143,8 @@ class _ProfessorSchedulesScreenState
         itemCount: availableDates.length,
         itemBuilder: (context, index) {
           final date = availableDates[index];
-          final isSelected = selectedDate.year == date.year &&
+          final isSelected =
+              selectedDate.year == date.year &&
               selectedDate.month == date.month &&
               selectedDate.day == date.day;
 
@@ -156,11 +157,7 @@ class _ProfessorSchedulesScreenState
     );
   }
 
-  Widget _buildDateCard(
-    BuildContext context,
-    DateTime date,
-    bool isSelected,
-  ) {
+  Widget _buildDateCard(BuildContext context, DateTime date, bool isSelected) {
     final dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     final dayName = dayNames[date.weekday % 7];
 
@@ -178,7 +175,9 @@ class _ProfessorSchedulesScreenState
           border: isSelected
               ? null
               : Border.all(
-                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.2),
                 ),
         ),
         child: Column(
@@ -187,21 +186,21 @@ class _ProfessorSchedulesScreenState
             Text(
               dayName,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: isSelected
-                        ? Theme.of(context).colorScheme.onPrimary
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                  ),
+                color: isSelected
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               date.day.toString(),
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: isSelected
-                        ? Theme.of(context).colorScheme.onPrimary
-                        : Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.bold,
-                  ),
+                color: isSelected
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
@@ -225,11 +224,7 @@ class _ProfessorSchedulesScreenState
           return const SizedBox.shrink();
         }
 
-        return _buildTenantSection(
-          context,
-          tenantGroup,
-          tenantPeriods,
-        );
+        return _buildTenantSection(context, tenantGroup, tenantPeriods);
       },
     );
   }
@@ -242,9 +237,7 @@ class _ProfessorSchedulesScreenState
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -278,8 +271,8 @@ class _ProfessorSchedulesScreenState
                   child: Text(
                     tenantGroup.tenantName,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -289,11 +282,7 @@ class _ProfessorSchedulesScreenState
             padding: const EdgeInsets.all(16),
             child: Column(
               children: periods.map((periodGroup) {
-                return _buildPeriodSection(
-                  context,
-                  tenantGroup,
-                  periodGroup,
-                );
+                return _buildPeriodSection(context, tenantGroup, periodGroup);
               }).toList(),
             ),
           ),
@@ -339,9 +328,9 @@ class _ProfessorSchedulesScreenState
             Text(
               periodTitle,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
           ],
         ),
@@ -350,11 +339,7 @@ class _ProfessorSchedulesScreenState
           spacing: 8,
           runSpacing: 8,
           children: periodGroup.schedules.map((schedule) {
-            return _buildTimeSlotChip(
-              context,
-              schedule,
-              tenantGroup,
-            );
+            return _buildTimeSlotChip(context, schedule, tenantGroup);
           }).toList(),
         ),
         const SizedBox(height: 24),
@@ -376,13 +361,11 @@ class _ProfessorSchedulesScreenState
       onPressed: () => _selectSchedule(schedule, tenantGroup),
       backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
-            fontWeight: FontWeight.w600,
-          ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        color: Theme.of(context).colorScheme.onPrimaryContainer,
+        fontWeight: FontWeight.w600,
       ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     );
   }
 
@@ -407,8 +390,8 @@ class _ProfessorSchedulesScreenState
             child: Text(
               'Este profesor no tiene horarios disponibles en este momento',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -438,8 +421,8 @@ class _ProfessorSchedulesScreenState
             child: Text(
               'No hay horarios disponibles para la fecha seleccionada',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -462,8 +445,8 @@ class _ProfessorSchedulesScreenState
           Text(
             'Error al cargar horarios',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+              color: Theme.of(context).colorScheme.error,
+            ),
           ),
           const SizedBox(height: 8),
           Padding(
@@ -488,4 +471,3 @@ class _ProfessorSchedulesScreenState
     );
   }
 }
-

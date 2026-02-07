@@ -2,10 +2,7 @@ import 'status_color_strategy.dart';
 import 'booking_status_color_strategy.dart';
 import 'payment_status_color_strategy.dart';
 
-enum StatusType {
-  booking,
-  payment,
-}
+enum StatusType { booking, payment }
 
 class StatusColorStrategyFactory {
   static StatusColorStrategy getStrategy(StatusType type) {
